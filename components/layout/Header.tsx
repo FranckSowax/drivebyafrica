@@ -45,7 +45,7 @@ export function Header() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-cod-gray/95 backdrop-blur-md border-b border-nobel/20">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -53,7 +53,7 @@ export function Header() {
             <div className="w-10 h-10 bg-mandarin rounded-lg flex items-center justify-center">
               <Car className="w-6 h-6 text-white" />
             </div>
-            <span className="font-bold text-xl text-white hidden sm:block">
+            <span className="font-bold text-xl text-gray-900 hidden sm:block">
               Driveby<span className="text-mandarin">Africa</span>
             </span>
           </Link>
@@ -68,7 +68,7 @@ export function Header() {
                   'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                   isActive(link.href)
                     ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-white hover:bg-surface-hover'
+                    : 'text-gray-700 hover:bg-gray-100'
                 )}
               >
                 <span className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export function Header() {
             {user ? (
               <>
                 {/* Notifications */}
-                <button className="relative p-2 text-nobel hover:text-white transition-colors">
+                <button className="relative p-2 text-gray-500 hover:text-gray-900 transition-colors">
                   <Bell className="w-5 h-5" />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-mandarin rounded-full" />
                 </button>
@@ -93,10 +93,10 @@ export function Header() {
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-hover transition-colors"
+                    className="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <Avatar src={profile?.avatar_url} size="sm" />
-                    <span className="hidden sm:block text-sm text-white">
+                    <span className="hidden sm:block text-sm text-gray-900">
                       {profile?.full_name || 'Mon compte'}
                     </span>
                   </button>
@@ -113,13 +113,13 @@ export function Header() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute right-0 mt-2 w-56 bg-cod-gray border border-nobel/20 rounded-xl shadow-xl overflow-hidden z-20"
+                          className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden z-20"
                         >
-                          <div className="p-3 border-b border-nobel/20">
-                            <p className="font-medium text-white truncate">
+                          <div className="p-3 border-b border-gray-200">
+                            <p className="font-medium text-gray-900 truncate">
                               {profile?.full_name || 'Utilisateur'}
                             </p>
-                            <p className="text-xs text-nobel truncate">
+                            <p className="text-xs text-gray-500 truncate">
                               {user.email}
                             </p>
                           </div>
@@ -129,20 +129,20 @@ export function Header() {
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => setIsUserMenuOpen(false)}
-                                className="flex items-center gap-3 px-3 py-2 text-sm text-white hover:bg-surface-hover transition-colors"
+                                className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                               >
-                                <link.icon className="w-4 h-4 text-nobel" />
+                                <link.icon className="w-4 h-4 text-gray-500" />
                                 {link.label}
                               </Link>
                             ))}
                           </div>
-                          <div className="border-t border-nobel/20 py-2">
+                          <div className="border-t border-gray-200 py-2">
                             <button
                               onClick={() => {
                                 setIsUserMenuOpen(false);
                                 signOut();
                               }}
-                              className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-surface-hover transition-colors"
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-gray-100 transition-colors"
                             >
                               <LogOut className="w-4 h-4" />
                               Déconnexion
@@ -172,7 +172,7 @@ export function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-white"
+              className="md:hidden p-2 text-gray-900"
             >
               {isMobileMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -191,7 +191,7 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-nobel/20 bg-cod-gray"
+            className="md:hidden border-t border-gray-200 bg-white"
           >
             <nav className="container mx-auto px-4 py-4 space-y-1">
               {navLinks.map((link) => (
@@ -203,7 +203,7 @@ export function Header() {
                     'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     isActive(link.href)
                       ? 'bg-mandarin/10 text-mandarin'
-                      : 'text-white hover:bg-surface-hover'
+                      : 'text-gray-700 hover:bg-gray-100'
                   )}
                 >
                   {link.icon && <link.icon className="w-5 h-5" />}

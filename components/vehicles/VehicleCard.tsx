@@ -34,9 +34,9 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
-      <div className="bg-cod-gray rounded-xl overflow-hidden border border-nobel/20 hover:border-mandarin/50 transition-all duration-300 hover:shadow-lg hover:shadow-mandarin/5">
+      <div className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-mandarin/50 transition-all duration-300 hover:shadow-lg hover:shadow-mandarin/10">
         {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-surface">
+        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
           <Image
             src={mainImage}
             alt={`${vehicle.make} ${vehicle.model}`}
@@ -46,7 +46,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           />
 
           {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-cod-gray/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
           {/* Status Badge */}
           <Badge className={cn('absolute top-3 left-3', status.bg)}>
@@ -95,12 +95,12 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
         {/* Content */}
         <div className="p-4">
           {/* Title */}
-          <h3 className="font-bold text-white text-lg truncate group-hover:text-mandarin transition-colors">
+          <h3 className="font-bold text-gray-900 text-lg truncate group-hover:text-mandarin transition-colors">
             {vehicle.make} {vehicle.model}
           </h3>
 
           {/* Specs */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-nobel">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-gray-500">
             <span>{vehicle.year}</span>
             <span>•</span>
             <span>{vehicle.transmission}</span>
@@ -113,7 +113,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           </div>
 
           {/* Mileage & Auction Date */}
-          <div className="flex items-center gap-4 mt-3 text-sm text-nobel">
+          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
             {vehicle.mileage && (
               <div className="flex items-center gap-1">
                 <Gauge className="w-4 h-4" />
@@ -131,7 +131,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           {/* Prices */}
           <div className="mt-4 flex justify-between items-end">
             <div>
-              <p className="text-xs text-nobel">Prix départ</p>
+              <p className="text-xs text-gray-500">Prix départ</p>
               <p className="text-mandarin font-bold text-lg">
                 {vehicle.start_price_usd
                   ? formatUsdToLocal(vehicle.start_price_usd)
@@ -140,7 +140,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             </div>
             {vehicle.current_price_usd && vehicle.current_price_usd > (vehicle.start_price_usd || 0) && (
               <div className="text-right">
-                <p className="text-xs text-nobel">Enchère actuelle</p>
+                <p className="text-xs text-gray-500">Enchère actuelle</p>
                 <p className="text-jewel font-bold">
                   {formatUsdToLocal(vehicle.current_price_usd)}
                 </p>
@@ -149,7 +149,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           </div>
 
           {/* Auction Info */}
-          <div className="mt-3 pt-3 border-t border-nobel/20 flex justify-between text-xs text-nobel">
+          <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between text-xs text-gray-500">
             <span>{vehicle.auction_platform || 'Enchère'}</span>
             {vehicle.lot_number && <span>Lot #{vehicle.lot_number}</span>}
           </div>

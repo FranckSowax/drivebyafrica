@@ -28,7 +28,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-cod-gray disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed';
 
     const variants = {
       primary:
@@ -36,9 +36,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       secondary:
         'bg-royal-blue text-white hover:bg-blue-600 focus-visible:ring-royal-blue shadow-md hover:shadow-lg',
       outline:
-        'border border-nobel/30 text-white hover:bg-surface-hover hover:border-mandarin focus-visible:ring-mandarin',
+        'border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-mandarin focus-visible:ring-mandarin',
       ghost:
-        'text-white hover:bg-surface-hover focus-visible:ring-nobel',
+        'text-gray-700 hover:bg-gray-100 focus-visible:ring-gray-300',
       danger:
         'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 shadow-md hover:shadow-lg',
     };

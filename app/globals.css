@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
-/* Driveby Africa Design System */
+/* Driveby Africa Design System - Light Theme */
 :root {
   /* Primary Colors */
-  --cod-gray: #04090C;
-  --nobel: #485257;
+  --cod-gray: #FFFFFF;
+  --cod-gray-dark: #04090C;
+  --nobel: #6B7280;
   --mandarin: #F97316;
   --royal-blue: #2563EB;
-  --white: #FFFFFF;
+  --white: #111827;
   --jewel: #15803D;
 
   /* Semantic Colors */
-  --background: var(--cod-gray);
-  --foreground: var(--white);
-  --muted: var(--nobel);
+  --background: #FFFFFF;
+  --foreground: #111827;
+  --muted: #6B7280;
   --accent: var(--mandarin);
   --accent-secondary: var(--royal-blue);
   --success: var(--jewel);
@@ -21,9 +22,9 @@
   --warning: #F59E0B;
 
   /* Border & Surface */
-  --border: rgba(72, 82, 87, 0.3);
-  --surface: rgba(72, 82, 87, 0.1);
-  --surface-hover: rgba(72, 82, 87, 0.2);
+  --border: rgba(0, 0, 0, 0.1);
+  --surface: #F3F4F6;
+  --surface-hover: #E5E7EB;
 }
 
 @theme inline {
@@ -124,11 +125,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--cod-gray);
+  background: #F3F4F6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--nobel);
+  background: #D1D5DB;
   border-radius: var(--radius-full);
 }
 
@@ -149,7 +150,7 @@ body {
 }
 
 .bg-gradient-dark {
-  background: linear-gradient(180deg, var(--cod-gray) 0%, #0D1117 100%);
+  background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
 }
 
 .border-glow {

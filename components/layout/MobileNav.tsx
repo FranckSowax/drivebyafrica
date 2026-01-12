@@ -24,7 +24,7 @@ export function MobileNav() {
   };
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-cod-gray/95 backdrop-blur-md border-t border-nobel/20 safe-area-inset-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 safe-area-inset-bottom">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => (
           <Link
@@ -32,7 +32,7 @@ export function MobileNav() {
             href={item.href}
             className={cn(
               'flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors',
-              isActive(item.href) ? 'text-mandarin' : 'text-nobel'
+              isActive(item.href) ? 'text-mandarin' : 'text-gray-500'
             )}
           >
             <item.icon className="w-5 h-5" />

@@ -34,13 +34,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-white mb-1.5">
+          <label className="block text-sm font-medium text-gray-900 mb-1.5">
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-nobel">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
               {leftIcon}
             </div>
           )}
@@ -49,13 +49,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             type={inputType}
             disabled={disabled}
             className={cn(
-              'w-full h-10 px-3 bg-cod-gray border rounded-lg text-white placeholder:text-nobel/60',
+              'w-full h-10 px-3 bg-white border rounded-lg text-gray-900 placeholder:text-gray-400',
               'transition-colors duration-200',
               'focus:outline-none focus:ring-2 focus:ring-mandarin focus:border-transparent',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               error
                 ? 'border-red-500 focus:ring-red-500'
-                : 'border-nobel/30 hover:border-nobel/50',
+                : 'border-gray-300 hover:border-gray-400',
               leftIcon && 'pl-10',
               (rightIcon || isPassword) && 'pr-10',
               className
@@ -66,7 +66,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-nobel hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
               tabIndex={-1}
             >
               {showPassword ? (
@@ -77,14 +77,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             </button>
           )}
           {rightIcon && !isPassword && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-nobel">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
               {rightIcon}
             </div>
           )}
         </div>
         {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
         {hint && !error && (
-          <p className="mt-1.5 text-sm text-nobel">{hint}</p>
+          <p className="mt-1.5 text-sm text-gray-500">{hint}</p>
         )}
       </div>
     );

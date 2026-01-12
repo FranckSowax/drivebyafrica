@@ -82,7 +82,7 @@ export default async function HomePage() {
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-cod-gray via-cod-gray to-mandarin/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-mandarin/10" />
         <div className="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-5" />
 
         <div className="container mx-auto px-4 relative z-10">
@@ -93,12 +93,12 @@ export default async function HomePage() {
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
               Importez votre véhicule depuis{' '}
               <span className="text-mandarin">le monde entier</span>
             </h1>
 
-            <p className="text-lg text-nobel mb-8 max-w-xl">
+            <p className="text-lg text-gray-500 mb-8 max-w-xl">
               Accédez aux enchères automobiles de Corée du Sud, Chine et Dubaï.
               Suivi complet de l&apos;enchère jusqu&apos;à la livraison en Afrique.
             </p>
@@ -118,19 +118,19 @@ export default async function HomePage() {
 
             {/* Source Badges */}
             <div className="flex items-center gap-6 mt-12">
-              <p className="text-sm text-nobel">Sources:</p>
+              <p className="text-sm text-gray-500">Sources:</p>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-full">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
                   <span className="text-xl">🇰🇷</span>
-                  <span className="text-sm text-white">Corée</span>
+                  <span className="text-sm text-gray-700">Corée</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-full">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
                   <span className="text-xl">🇨🇳</span>
-                  <span className="text-sm text-white">Chine</span>
+                  <span className="text-sm text-gray-700">Chine</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-full">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
                   <span className="text-xl">🇦🇪</span>
-                  <span className="text-sm text-white">Dubaï</span>
+                  <span className="text-sm text-gray-700">Dubaï</span>
                 </div>
               </div>
             </div>
@@ -146,13 +146,13 @@ export default async function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-surface/50">
+      <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-3xl lg:text-4xl font-bold text-mandarin">{stat.value}</p>
-                <p className="text-nobel mt-1">{stat.label}</p>
+                <p className="text-gray-500 mt-1">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -161,14 +161,14 @@ export default async function HomePage() {
 
       {/* Featured Vehicles */}
       {featuredVehicles && featuredVehicles.length > 0 && (
-        <section className="py-20">
+        <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-end mb-10">
               <div>
-                <h2 className="text-3xl font-bold text-white mb-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
                   Véhicules <span className="text-mandarin">populaires</span>
                 </h2>
-                <p className="text-nobel">
+                <p className="text-gray-500">
                   Les véhicules les plus recherchés par nos clients
                 </p>
               </div>
@@ -189,13 +189,13 @@ export default async function HomePage() {
       )}
 
       {/* How It Works */}
-      <section className="py-20 bg-gradient-to-b from-transparent to-surface/30">
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Comment ça <span className="text-mandarin">fonctionne</span>
             </h2>
-            <p className="text-nobel max-w-xl mx-auto">
+            <p className="text-gray-500 max-w-xl mx-auto">
               Un processus simple et transparent pour importer votre véhicule
             </p>
           </div>
@@ -208,10 +208,10 @@ export default async function HomePage() {
                   <div className="hidden lg:block absolute top-8 left-1/2 w-full h-0.5 bg-gradient-to-r from-mandarin to-transparent" />
                 )}
 
-                <div className="relative bg-cod-gray border border-nobel/20 rounded-xl p-6 hover:border-mandarin/50 transition-colors">
+                <div className="relative bg-white border border-gray-200 rounded-xl p-6 hover:border-mandarin/50 transition-colors shadow-sm">
                   <span className="text-5xl font-bold text-mandarin/20">{step.number}</span>
-                  <h3 className="text-xl font-bold text-white mt-4 mb-2">{step.title}</h3>
-                  <p className="text-nobel text-sm">{step.description}</p>
+                  <h3 className="text-xl font-bold text-gray-900 mt-4 mb-2">{step.title}</h3>
+                  <p className="text-gray-500 text-sm">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -220,13 +220,13 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="py-20">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Pourquoi <span className="text-mandarin">Driveby Africa</span>
             </h2>
-            <p className="text-nobel max-w-xl mx-auto">
+            <p className="text-gray-500 max-w-xl mx-auto">
               Une plateforme conçue pour simplifier l&apos;importation de véhicules vers l&apos;Afrique
             </p>
           </div>
@@ -238,8 +238,8 @@ export default async function HomePage() {
                   <feature.icon className="w-6 h-6 text-mandarin" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">{feature.title}</h3>
-                  <p className="text-nobel text-sm">{feature.description}</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{feature.title}</h3>
+                  <p className="text-gray-500 text-sm">{feature.description}</p>
                 </div>
               </Card>
             ))}
