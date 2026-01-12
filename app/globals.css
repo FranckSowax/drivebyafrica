@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
-/* Driveby Africa Design System - Light Theme */
-:root {
+/* Driveby Africa Design System */
+
+/* Light Theme (Default) */
+:root,
+[data-theme="light"] {
   /* Primary Colors */
   --cod-gray: #FFFFFF;
   --cod-gray-dark: #04090C;
@@ -25,6 +28,57 @@
   --border: rgba(0, 0, 0, 0.1);
   --surface: #F3F4F6;
   --surface-hover: #E5E7EB;
+
+  /* Card & Component backgrounds */
+  --card-bg: #FFFFFF;
+  --card-border: #E5E7EB;
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --input-bg: #FFFFFF;
+  --input-border: #D1D5DB;
+
+  /* Text colors */
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  /* Primary Colors */
+  --cod-gray: #0A0F14;
+  --cod-gray-dark: #04090C;
+  --nobel: #9CA3AF;
+  --mandarin: #F97316;
+  --royal-blue: #3B82F6;
+  --white: #FFFFFF;
+  --jewel: #22C55E;
+
+  /* Semantic Colors */
+  --background: #0A0F14;
+  --foreground: #F9FAFB;
+  --muted: #9CA3AF;
+  --accent: var(--mandarin);
+  --accent-secondary: var(--royal-blue);
+  --success: var(--jewel);
+  --error: #EF4444;
+  --warning: #FBBF24;
+
+  /* Border & Surface */
+  --border: rgba(255, 255, 255, 0.1);
+  --surface: #111827;
+  --surface-hover: #1F2937;
+
+  /* Card & Component backgrounds */
+  --card-bg: #111827;
+  --card-border: #1F2937;
+  --header-bg: rgba(10, 15, 20, 0.95);
+  --input-bg: #111827;
+  --input-border: #374151;
+
+  /* Text colors */
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
 }
 
 @theme inline {
@@ -45,6 +99,14 @@
   --color-border: var(--border);
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-header-bg: var(--header-bg);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
 
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -125,11 +187,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: var(--surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: var(--surface-hover);
   border-radius: var(--radius-full);
 }
 
