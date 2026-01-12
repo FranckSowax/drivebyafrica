@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
+/* Driveby Africa Design System */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Colors */
+  --cod-gray: #04090C;
+  --nobel: #485257;
+  --mandarin: #F97316;
+  --royal-blue: #2563EB;
+  --white: #FFFFFF;
+  --jewel: #15803D;
+
+  /* Semantic Colors */
+  --background: var(--cod-gray);
+  --foreground: var(--white);
+  --muted: var(--nobel);
+  --accent: var(--mandarin);
+  --accent-secondary: var(--royal-blue);
+  --success: var(--jewel);
+  --error: #DC2626;
+  --warning: #F59E0B;
+
+  /* Border & Surface */
+  --border: rgba(72, 82, 87, 0.3);
+  --surface: rgba(72, 82, 87, 0.1);
+  --surface-hover: rgba(72, 82, 87, 0.2);
 }
 
 @theme inline {
+  /* Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cod-gray: var(--cod-gray);
+  --color-nobel: var(--nobel);
+  --color-mandarin: var(--mandarin);
+  --color-royal-blue: var(--royal-blue);
+  --color-jewel: var(--jewel);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Font Sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+
+  /* Spacing */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-glow-mandarin: 0 0 20px rgba(249, 115, 22, 0.3);
+  --shadow-glow-blue: 0 0 20px rgba(37, 99, 235, 0.3);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base Styles */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus Styles */
+:focus-visible {
+  outline: 2px solid var(--mandarin);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--mandarin);
+  color: var(--white);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cod-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--nobel);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mandarin);
+}
+
+/* Custom Utilities */
+.text-gradient {
+  background: linear-gradient(135deg, var(--mandarin) 0%, var(--royal-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--mandarin) 0%, #EA580C 100%);
+}
+
+.bg-gradient-dark {
+  background: linear-gradient(180deg, var(--cod-gray) 0%, #0D1117 100%);
+}
+
+.border-glow {
+  box-shadow: 0 0 0 1px var(--mandarin), var(--shadow-glow-mandarin);
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
 }
