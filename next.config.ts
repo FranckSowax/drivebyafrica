@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.cloudinary.com',
       },
+      // Encar Korea images
+      {
+        protocol: 'https',
+        hostname: 'ci.encar.com',
+      },
+      {
+        protocol: 'http',
+        hostname: 'ci.encar.com',
+      },
     ],
   },
 };
