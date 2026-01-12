@@ -6,6 +6,9 @@ import { Calculator, Ship, Shield, FileCheck, ArrowRight, Info, HelpCircle } fro
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
+// Taux de conversion: 1 USD = 640 FCFA
+const USD_TO_XAF = 640;
+
 const destinations = [
   { id: 'libreville', name: 'Libreville, Gabon', shippingCost: 1800, customsRate: 0.25 },
   { id: 'douala', name: 'Douala, Cameroun', shippingCost: 1700, customsRate: 0.30 },
@@ -29,42 +32,44 @@ const vehicleTypes = [
 ];
 
 export default function CalculatorPage() {
-  const [vehiclePrice, setVehiclePrice] = useState<number>(8000);
+  const [vehiclePriceXAF, setVehiclePriceXAF] = useState<number>(5000000); // 5 millions FCFA par défaut
   const [destination, setDestination] = useState(destinations[0]);
   const [source, setSource] = useState(sources[0]);
   const [vehicleType, setVehicleType] = useState(vehicleTypes[0]);
 
   const calculations = useMemo(() => {
-    const auctionFee = vehiclePrice * 0.05; // 5% frais d'enchère
-    const shippingCost = destination.shippingCost * vehicleType.multiplier;
-    const insuranceCost = vehiclePrice * 0.02; // 2% assurance
-    const inspectionFee = 150; // Frais d'inspection fixes
-    const documentFee = 100; // Frais de documents
-    const customsDuty = (vehiclePrice + shippingCost) * destination.customsRate;
+    // Convertir le prix FCFA en USD pour les calculs internes
+    const vehiclePriceUSD = vehiclePriceXAF / USD_TO_XAF;
 
-    const subtotal = vehiclePrice + auctionFee + shippingCost + insuranceCost + inspectionFee + documentFee;
+    const auctionFee = vehiclePriceUSD * 0.05; // 5% frais d'enchère
+    const shippingCost = destination.shippingCost * vehicleType.multiplier;
+    const insuranceCost = vehiclePriceUSD * 0.02; // 2% assurance
+    const inspectionFee = 150; // Frais d'inspection fixes (USD)
+    const documentFee = 100; // Frais de documents (USD)
+    const customsDuty = (vehiclePriceUSD + shippingCost) * destination.customsRate;
+
+    const subtotal = vehiclePriceUSD + auctionFee + shippingCost + insuranceCost + inspectionFee + documentFee;
     const total = subtotal + customsDuty;
 
+    // Tout convertir en FCFA pour l'affichage
     return {
-      vehiclePrice,
-      auctionFee,
-      shippingCost,
-      insuranceCost,
-      inspectionFee,
-      documentFee,
-      customsDuty,
-      subtotal,
-      total,
+      vehiclePrice: vehiclePriceXAF,
+      auctionFee: Math.round(auctionFee * USD_TO_XAF),
+      shippingCost: Math.round(shippingCost * USD_TO_XAF),
+      insuranceCost: Math.round(insuranceCost * USD_TO_XAF),
+      inspectionFee: Math.round(inspectionFee * USD_TO_XAF),
+      documentFee: Math.round(documentFee * USD_TO_XAF),
+      customsDuty: Math.round(customsDuty * USD_TO_XAF),
+      subtotal: Math.round(subtotal * USD_TO_XAF),
+      total: Math.round(total * USD_TO_XAF),
     };
-  }, [vehiclePrice, destination, vehicleType]);
+  }, [vehiclePriceXAF, destination, vehicleType]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount) + ' FCFA';
   };
 
   return (
@@ -101,31 +106,31 @@ export default function CalculatorPage() {
                 {/* Vehicle Price */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-white mb-2">
-                    Prix du véhicule (USD)
+                    Prix du véhicule (FCFA)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-nobel">$</span>
                     <input
                       type="number"
-                      value={vehiclePrice}
-                      onChange={(e) => setVehiclePrice(Number(e.target.value))}
-                      className="w-full pl-8 pr-4 py-3 bg-cod-gray border border-nobel/20 rounded-xl text-white focus:outline-none focus:border-mandarin"
-                      min={1000}
-                      step={500}
+                      value={vehiclePriceXAF}
+                      onChange={(e) => setVehiclePriceXAF(Number(e.target.value))}
+                      className="w-full px-4 py-3 bg-cod-gray border border-nobel/20 rounded-xl text-white focus:outline-none focus:border-mandarin"
+                      min={500000}
+                      step={100000}
                     />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-nobel text-sm">FCFA</span>
                   </div>
                   <input
                     type="range"
-                    value={vehiclePrice}
-                    onChange={(e) => setVehiclePrice(Number(e.target.value))}
-                    min={1000}
-                    max={50000}
-                    step={500}
+                    value={vehiclePriceXAF}
+                    onChange={(e) => setVehiclePriceXAF(Number(e.target.value))}
+                    min={500000}
+                    max={32000000}
+                    step={100000}
                     className="w-full mt-3 accent-mandarin"
                   />
                   <div className="flex justify-between text-xs text-nobel mt-1">
-                    <span>$1,000</span>
-                    <span>$50,000</span>
+                    <span>500 000 FCFA</span>
+                    <span>32 000 000 FCFA</span>
                   </div>
                 </div>
 

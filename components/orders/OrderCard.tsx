@@ -7,7 +7,7 @@ import { fr } from 'date-fns/locale';
 import { Package, MapPin, ChevronRight, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/types/database';
@@ -90,7 +90,7 @@ export function OrderCard({
                 {/* Total Price */}
                 {order.total_price_usd && (
                   <div className="text-mandarin font-medium">
-                    {formatCurrency(order.total_price_usd, 'USD')}
+                    {formatUsdToLocal(order.total_price_usd)}
                   </div>
                 )}
               </div>
@@ -135,7 +135,7 @@ export function OrderCardCompact({ order, vehicleTitle, className }: OrderCardCo
         </div>
         {order.total_price_usd && (
           <span className="text-sm text-mandarin font-medium ml-2">
-            {formatCurrency(order.total_price_usd, 'USD')}
+            {formatUsdToLocal(order.total_price_usd)}
           </span>
         )}
       </div>

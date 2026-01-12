@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Calendar, Gauge } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
@@ -134,7 +134,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
               <p className="text-xs text-nobel">Prix départ</p>
               <p className="text-mandarin font-bold text-lg">
                 {vehicle.start_price_usd
-                  ? formatCurrency(vehicle.start_price_usd, 'USD')
+                  ? formatUsdToLocal(vehicle.start_price_usd)
                   : '-'}
               </p>
             </div>
@@ -142,7 +142,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
               <div className="text-right">
                 <p className="text-xs text-nobel">Enchère actuelle</p>
                 <p className="text-jewel font-bold">
-                  {formatCurrency(vehicle.current_price_usd, 'USD')}
+                  {formatUsdToLocal(vehicle.current_price_usd)}
                 </p>
               </div>
             )}

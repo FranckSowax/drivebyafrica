@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Clock,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { OrderCardCompact } from '@/components/orders/OrderCard';
 import type { Order, Bid, Profile } from '@/types/database';
 
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
         <StatCard
           icon={TrendingUp}
           label="Total dépensé"
-          value={formatCurrency(totalSpent, 'USD')}
+          value={formatUsdToLocal(totalSpent)}
           color="text-jewel"
         />
       </div>
@@ -185,7 +185,7 @@ export default async function DashboardPage() {
                     <p className="text-xs text-nobel">En attente</p>
                   </div>
                   <span className="text-mandarin font-medium">
-                    {formatCurrency(bid.amount_usd, 'USD')}
+                    {formatUsdToLocal(bid.amount_usd)}
                   </span>
                 </div>
               ))}
@@ -211,7 +211,7 @@ export default async function DashboardPage() {
             <div>
               <p className="text-sm text-nobel">Solde du compte</p>
               <p className="text-2xl font-bold text-white mt-1">
-                {formatCurrency(profileData.balance || 0, profileData.preferred_currency || 'USD')}
+                {formatUsdToLocal(profileData.balance || 0)}
               </p>
             </div>
             <Link href="/dashboard/wallet">

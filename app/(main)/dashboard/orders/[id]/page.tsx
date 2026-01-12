@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -204,7 +204,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   <span className="text-white font-bold">Total</span>
                   <span className="text-xl font-bold text-mandarin">
                     {orderData.total_price_usd
-                      ? formatCurrency(orderData.total_price_usd, 'USD')
+                      ? formatUsdToLocal(orderData.total_price_usd)
                       : '-'}
                   </span>
                 </div>
@@ -277,7 +277,7 @@ function PriceRow({
     <div className="flex justify-between text-sm">
       <span className="text-nobel">{label}</span>
       <span className="text-white">
-        {value ? formatCurrency(value, 'USD') : '-'}
+        {value ? formatUsdToLocal(value) : '-'}
       </span>
     </div>
   );

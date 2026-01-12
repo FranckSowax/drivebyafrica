@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useBids } from '@/lib/hooks/useBids';
 import { usePresence } from '@/lib/hooks/useRealtime';
 import { useAuthStore } from '@/store/useAuthStore';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { CountdownTimer } from './CountdownTimer';
 import { BidHistory, BidHistoryCompact } from './BidHistory';
 import { cn } from '@/lib/utils';
@@ -69,7 +69,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
     }
 
     if (amount < minNextBid) {
-      toast.error('Montant insuffisant', `Le montant minimum est de ${formatCurrency(minNextBid, 'USD')}`);
+      toast.error('Montant insuffisant', `Le montant minimum est de ${formatUsdToLocal(minNextBid)}`);
       return;
     }
 
@@ -131,7 +131,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
             animate={newBidAnimation ? { scale: [1, 1.1, 1] } : {}}
             transition={{ duration: 0.3 }}
           >
-            {formatCurrency(currentPrice, 'USD')}
+            {formatUsdToLocal(currentPrice)}
           </motion.p>
           {highestBid && (
             <p className="text-sm text-nobel mt-1">
@@ -202,7 +202,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
             <div className="flex gap-2 mb-4">
               <Input
                 type="number"
-                placeholder={`Min: ${formatCurrency(minNextBid, 'USD')}`}
+                placeholder={`Min: ${formatUsdToLocal(minNextBid)}`}
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
                 className="flex-1"
@@ -221,7 +221,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
 
             {/* Min bid notice */}
             <p className="text-xs text-nobel text-center">
-              Enchère minimum: {formatCurrency(minNextBid, 'USD')}
+              Enchère minimum: {formatUsdToLocal(minNextBid)}
             </p>
           </>
         )}
@@ -232,7 +232,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
             <Badge variant="error" className="mb-2">Enchère terminée</Badge>
             {highestBid && (
               <p className="text-nobel">
-                Vendu pour {formatCurrency(highestBid.amount_usd, 'USD')}
+                Vendu pour {formatUsdToLocal(highestBid.amount_usd)}
               </p>
             )}
           </div>
@@ -242,7 +242,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
         {vehicle.buy_now_price_usd && !auctionEnded && (
           <div className="mt-4 pt-4 border-t border-nobel/20">
             <Button variant="secondary" className="w-full" disabled={!user}>
-              Acheter maintenant - {formatCurrency(vehicle.buy_now_price_usd, 'USD')}
+              Acheter maintenant - {formatUsdToLocal(vehicle.buy_now_price_usd)}
             </Button>
           </div>
         )}

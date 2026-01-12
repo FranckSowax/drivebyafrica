@@ -19,7 +19,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils';
 import { LiveBidding } from '@/components/auction/LiveBidding';
@@ -328,7 +328,7 @@ export function AuctionRoomClient({ vehicle, initialBids }: AuctionRoomClientPro
                 <span className="text-nobel">Prix de départ</span>
                 <span className="text-white">
                   {vehicle.start_price_usd
-                    ? formatCurrency(vehicle.start_price_usd, 'USD')
+                    ? formatUsdToLocal(vehicle.start_price_usd)
                     : '-'}
                 </span>
               </div>
@@ -336,7 +336,7 @@ export function AuctionRoomClient({ vehicle, initialBids }: AuctionRoomClientPro
                 <div className="flex justify-between text-sm">
                   <span className="text-nobel">Achat immédiat</span>
                   <span className="text-royal-blue font-medium">
-                    {formatCurrency(vehicle.buy_now_price_usd, 'USD')}
+                    {formatUsdToLocal(vehicle.buy_now_price_usd)}
                   </span>
                 </div>
               )}

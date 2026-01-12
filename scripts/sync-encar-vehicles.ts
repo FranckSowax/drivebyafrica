@@ -1,6 +1,9 @@
 /**
  * Script de synchronisation des véhicules Encar vers Supabase
- * Usage: npx tsx scripts/sync-encar-vehicles.ts [maxPages]
+ * Usage: npx tsx scripts/sync-encar-vehicles.ts [maxPages] [--all]
+ *
+ * Par défaut, seules les marques sélectionnées sont synchronisées.
+ * Utilisez --all pour synchroniser toutes les marques.
  */
 
 import { config } from 'dotenv';
@@ -12,6 +15,27 @@ const ACCESS_NAME = process.env.ENCAR_ACCESS_NAME || 'api1';
 const API_KEY = process.env.ENCAR_API_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Marques autorisées pour la synchronisation
+const ALLOWED_MAKES = [
+  // Coréennes
+  'Hyundai',
+  'Kia',
+  // Japonaises
+  'Toyota',
+  'Honda',
+  'Nissan',
+  'Mazda',
+  'Mitsubishi',
+  'Suzuki',
+  'Lexus',
+  // Européennes
+  'Mercedes-Benz',
+  'Land Rover',
+  // Américaines
+  'Ford',
+  'Jeep',
+];
 
 // Vérification des variables d'environnement
 if (!API_KEY) {
@@ -161,8 +185,11 @@ function convertToVehicle(encar: EncarVehicle) {
   };
 }
 
-async function fetchOffers(page: number): Promise<{ result: EncarVehicle[]; meta: any }> {
-  const url = `${BASE_URL}/offers?api_key=${API_KEY}&page=${page}`;
+async function fetchOffers(page: number, mark?: string): Promise<{ result: EncarVehicle[]; meta: any }> {
+  let url = `${BASE_URL}/offers?api_key=${API_KEY}&page=${page}`;
+  if (mark) {
+    url += `&mark=${encodeURIComponent(mark)}`;
+  }
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -172,22 +199,17 @@ async function fetchOffers(page: number): Promise<{ result: EncarVehicle[]; meta
   return response.json();
 }
 
-async function syncVehicles(maxPages: number) {
-  console.log('🚀 Démarrage de la synchronisation Encar -> Supabase');
-  console.log(`   Max pages: ${maxPages}`);
-
-  let totalAdded = 0;
-  let totalUpdated = 0;
-  let totalErrors = 0;
+async function syncVehiclesForMake(make: string, maxPagesPerMake: number, stats: { added: number; updated: number; errors: number; skipped: number }) {
   let currentPage = 1;
   let hasMore = true;
 
-  while (hasMore && currentPage <= maxPages) {
-    console.log(`\n📄 Page ${currentPage}...`);
-
+  while (hasMore && currentPage <= maxPagesPerMake) {
     try {
-      const { result, meta } = await fetchOffers(currentPage);
-      console.log(`   ${result.length} véhicules récupérés`);
+      const { result, meta } = await fetchOffers(currentPage, make);
+
+      if (result.length === 0) {
+        break;
+      }
 
       for (const encarVehicle of result) {
         try {
@@ -212,10 +234,9 @@ async function syncVehicles(maxPages: number) {
               .eq('id', existing.id);
 
             if (error) {
-              console.error(`   ❌ Erreur update ${vehicleData.source_id}:`, error.message);
-              totalErrors++;
+              stats.errors++;
             } else {
-              totalUpdated++;
+              stats.updated++;
             }
           } else {
             // Insérer
@@ -224,19 +245,15 @@ async function syncVehicles(maxPages: number) {
               .insert(vehicleData);
 
             if (error) {
-              console.error(`   ❌ Erreur insert ${vehicleData.source_id}:`, error.message);
-              totalErrors++;
+              stats.errors++;
             } else {
-              totalAdded++;
+              stats.added++;
             }
           }
         } catch (err: any) {
-          console.error(`   ❌ Erreur véhicule ${encarVehicle.inner_id}:`, err.message);
-          totalErrors++;
+          stats.errors++;
         }
       }
-
-      console.log(`   ✅ Page ${currentPage} traitée (ajoutés: ${totalAdded}, màj: ${totalUpdated}, erreurs: ${totalErrors})`);
 
       // Vérifier s'il y a plus de pages
       if (meta.next_page === null) {
@@ -246,22 +263,119 @@ async function syncVehicles(maxPages: number) {
       }
 
       // Pause entre les pages
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (err: any) {
-      console.error(`   ❌ Erreur page ${currentPage}:`, err.message);
-      totalErrors++;
+      console.error(`      ❌ Erreur: ${err.message}`);
       break;
     }
   }
 
-  console.log('\n✨ Synchronisation terminée!');
-  console.log(`   Véhicules ajoutés: ${totalAdded}`);
-  console.log(`   Véhicules mis à jour: ${totalUpdated}`);
-  console.log(`   Erreurs: ${totalErrors}`);
+  return currentPage - 1;
+}
 
-  return { added: totalAdded, updated: totalUpdated, errors: totalErrors };
+async function syncVehicles(maxPagesPerMake: number, syncAllMakes: boolean) {
+  console.log('🚀 Démarrage de la synchronisation Encar -> Supabase');
+  console.log(`   Pages max par marque: ${maxPagesPerMake}`);
+
+  const stats = { added: 0, updated: 0, errors: 0, skipped: 0 };
+
+  if (syncAllMakes) {
+    console.log('   Mode: TOUTES les marques\n');
+    // Sync sans filtre de marque
+    let currentPage = 1;
+    let hasMore = true;
+    const totalMaxPages = maxPagesPerMake * ALLOWED_MAKES.length;
+
+    while (hasMore && currentPage <= totalMaxPages) {
+      console.log(`📄 Page ${currentPage}/${totalMaxPages}...`);
+
+      try {
+        const { result, meta } = await fetchOffers(currentPage);
+        console.log(`   ${result.length} véhicules récupérés`);
+
+        for (const encarVehicle of result) {
+          try {
+            const vehicleData = convertToVehicle(encarVehicle);
+
+            const { data: existing } = await supabase
+              .from('vehicles')
+              .select('id')
+              .eq('source_id', vehicleData.source_id)
+              .single();
+
+            if (existing) {
+              const { error } = await supabase
+                .from('vehicles')
+                .update({
+                  current_price_usd: vehicleData.current_price_usd,
+                  images: vehicleData.images,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existing.id);
+
+              if (error) stats.errors++;
+              else stats.updated++;
+            } else {
+              const { error } = await supabase.from('vehicles').insert(vehicleData);
+              if (error) stats.errors++;
+              else stats.added++;
+            }
+          } catch {
+            stats.errors++;
+          }
+        }
+
+        console.log(`   ✅ (ajoutés: ${stats.added}, màj: ${stats.updated}, erreurs: ${stats.errors})`);
+
+        if (meta.next_page === null) {
+          hasMore = false;
+        } else {
+          currentPage = meta.next_page;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (err: any) {
+        console.error(`   ❌ Erreur: ${err.message}`);
+        break;
+      }
+    }
+  } else {
+    console.log(`   Mode: Marques sélectionnées (${ALLOWED_MAKES.length} marques)\n`);
+
+    for (const make of ALLOWED_MAKES) {
+      const beforeAdded = stats.added;
+      const beforeUpdated = stats.updated;
+
+      process.stdout.write(`🚗 ${make}... `);
+      const pagesProcessed = await syncVehiclesForMake(make, maxPagesPerMake, stats);
+
+      const addedForMake = stats.added - beforeAdded;
+      const updatedForMake = stats.updated - beforeUpdated;
+      console.log(`✅ ${pagesProcessed} pages (${addedForMake} ajoutés, ${updatedForMake} màj)`);
+
+      // Pause entre les marques
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  console.log('\n✨ Synchronisation terminée!');
+  console.log(`   Véhicules ajoutés: ${stats.added}`);
+  console.log(`   Véhicules mis à jour: ${stats.updated}`);
+  console.log(`   Erreurs: ${stats.errors}`);
+
+  return stats;
 }
 
 // Exécution
-const maxPages = parseInt(process.argv[2] || '5', 10);
-syncVehicles(maxPages).catch(console.error);
+const args = process.argv.slice(2);
+const syncAllMakes = args.includes('--all');
+const maxPagesArg = args.find(arg => !arg.startsWith('--'));
+const maxPagesPerMake = parseInt(maxPagesArg || '10', 10);
+
+console.log('═══════════════════════════════════════════════════════');
+console.log('   DRIVEBY AFRICA - Synchronisation Encar');
+console.log('═══════════════════════════════════════════════════════');
+console.log(`   Marques: ${syncAllMakes ? 'Toutes' : ALLOWED_MAKES.join(', ')}`);
+console.log('═══════════════════════════════════════════════════════\n');
+
+syncVehicles(maxPagesPerMake, syncAllMakes).catch(console.error);

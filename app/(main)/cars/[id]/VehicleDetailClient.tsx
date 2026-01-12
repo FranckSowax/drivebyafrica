@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import { formatDate, formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
@@ -269,7 +269,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     <p className="text-xs text-nobel">Prix de départ</p>
                     <p className="text-2xl font-bold text-mandarin">
                       {vehicle.start_price_usd
-                        ? formatCurrency(vehicle.start_price_usd, 'USD')
+                        ? formatUsdToLocal(vehicle.start_price_usd)
                         : '-'}
                     </p>
                   </div>
@@ -278,7 +278,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       <div className="text-right">
                         <p className="text-xs text-nobel">Enchère actuelle</p>
                         <p className="text-xl font-bold text-jewel">
-                          {formatCurrency(vehicle.current_price_usd, 'USD')}
+                          {formatUsdToLocal(vehicle.current_price_usd)}
                         </p>
                       </div>
                     )}
@@ -288,7 +288,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   <div className="mt-3 pt-3 border-t border-nobel/20">
                     <p className="text-xs text-nobel">Achat immédiat</p>
                     <p className="text-lg font-bold text-royal-blue">
-                      {formatCurrency(vehicle.buy_now_price_usd, 'USD')}
+                      {formatUsdToLocal(vehicle.buy_now_price_usd)}
                     </p>
                   </div>
                 )}

@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { User, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/utils/currency';
+import { formatUsdToLocal } from '@/lib/utils/currency';
 import type { Bid } from '@/types/database';
 
 interface BidHistoryProps {
@@ -102,7 +102,7 @@ export function BidHistory({
                   isHighest ? 'text-mandarin' : 'text-white'
                 )}
               >
-                {formatCurrency(bid.amount_usd, 'USD')}
+                {formatUsdToLocal(bid.amount_usd)}
               </p>
               {bid.status === 'pending' && (
                 <span className="text-xs text-jewel">En attente</span>
@@ -158,7 +158,7 @@ export function BidHistoryCompact({
               {isCurrentUser ? 'Vous' : `#${bid.user_id.slice(-4)}`}
             </span>
             <span className="text-white font-medium">
-              {formatCurrency(bid.amount_usd, 'USD')}
+              {formatUsdToLocal(bid.amount_usd)}
             </span>
           </div>
         );
