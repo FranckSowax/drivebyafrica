@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
+import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { formatDate, formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils';
@@ -276,11 +277,17 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
 
               {/* Actions */}
               <div className="space-y-3">
-                <Link href="/calculator">
-                  <Button variant="primary" className="w-full" size="lg">
-                    Estimer les frais de livraison
-                  </Button>
-                </Link>
+                {/* Shipping Estimator */}
+                {vehicle.start_price_usd && (
+                  <ShippingEstimator
+                    vehiclePriceUSD={vehicle.start_price_usd}
+                    vehicleSource={source}
+                    vehicleId={vehicle.id}
+                    vehicleMake={vehicle.make || 'Unknown'}
+                    vehicleModel={vehicle.model || 'Unknown'}
+                    vehicleYear={vehicle.year || new Date().getFullYear()}
+                  />
+                )}
 
                 <div className="flex gap-3">
                   <Button
@@ -329,18 +336,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               </div>
             </Card>
 
-            {/* Price Calculator Placeholder */}
-            <Card>
-              <h3 className="font-bold text-[var(--text-primary)] mb-3">Estimation totale</h3>
-              <p className="text-sm text-[var(--text-muted)] mb-4">
-                Calculez le coût total incluant le transport et les frais de douane.
-              </p>
-              <Link href="/calculator">
-                <Button variant="secondary" className="w-full">
-                  Calculer le prix total
-                </Button>
-              </Link>
-            </Card>
           </div>
         </div>
       </div>
