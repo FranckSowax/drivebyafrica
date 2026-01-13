@@ -138,17 +138,15 @@ export default async function HomePage() {
         </div>
 
         {/* Hero Car Image */}
-        <div className="hidden lg:block absolute right-0 bottom-0 w-1/2 h-full">
-          <div className="relative w-full h-full flex items-end justify-center">
-            <Image
-              src="/imgi_62_image.png"
-              alt="Véhicules disponibles"
-              width={800}
-              height={400}
-              className="object-contain max-w-full h-auto"
-              priority
-            />
-          </div>
+        <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-[55%] h-auto">
+          <Image
+            src="/imgi_62_image.png"
+            alt="Véhicules disponibles"
+            width={1200}
+            height={600}
+            className="object-contain w-full h-auto"
+            priority
+          />
         </div>
       </section>
 
