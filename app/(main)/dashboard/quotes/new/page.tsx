@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   FileText,
@@ -14,6 +14,7 @@ import {
   Loader2,
   CheckCircle,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -52,14 +53,16 @@ const SOURCE_FLAGS: Record<string, string> = {
 };
 
 const SOURCE_NAMES: Record<string, string> = {
-  korea: 'Corée du Sud',
+  korea: 'Coree du Sud',
   china: 'Chine',
-  dubai: 'Dubaï',
+  dubai: 'Dubai',
 };
+
+// Logo base64 will be loaded dynamically
+let logoBase64: string | null = null;
 
 export default function NewQuotePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const toast = useToast();
 
@@ -80,12 +83,36 @@ export default function NewQuotePage() {
       setQuoteNumber(`DBA-${timestamp}-${random}`);
     } else {
       // No quote data, redirect back
-      toast.error('Aucune donnée de devis trouvée');
+      toast.error('Aucune donnee de devis trouvee');
       router.push('/cars');
     }
+
+    // Preload logo
+    loadLogo();
   }, [router, toast]);
 
+  const loadLogo = async () => {
+    try {
+      const response = await fetch('/logo-driveby-africa-dark.png');
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        logoBase64 = reader.result as string;
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error loading logo:', error);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' FCFA';
+  };
+
+  const formatCurrencyPDF = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
@@ -98,207 +125,260 @@ export default function NewQuotePage() {
     setIsGenerating(true);
 
     try {
-      // Create PDF using browser's print functionality or a PDF library
-      const quoteContent = document.getElementById('quote-content');
-      if (!quoteContent) throw new Error('Quote content not found');
+      // Create A4 PDF (210 x 297 mm)
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-      // For now, use browser print as PDF
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        throw new Error('Popup blocked');
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 20;
+      const contentWidth = pageWidth - 2 * margin;
+      let y = margin;
+
+      // Colors
+      const mandarin = '#F97316';
+      const darkGray = '#1a1a1a';
+      const mediumGray = '#666666';
+      const lightGray = '#999999';
+      const bgOrange = '#FFF7ED';
+
+      // ========== HEADER ==========
+      // Logo
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'PNG', margin, y, 50, 20);
+      } else {
+        // Fallback text logo
+        doc.setFontSize(24);
+        doc.setTextColor(mandarin);
+        doc.setFont('helvetica', 'bold');
+        doc.text('driveby', margin, y + 12);
+        doc.setTextColor(darkGray);
+        doc.text('AFRICA', margin + 35, y + 12);
       }
 
-      const styles = `
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            padding: 40px;
-            color: #1a1a1a;
-            line-height: 1.5;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #F97316;
-          }
-          .logo { font-size: 28px; font-weight: bold; color: #F97316; }
-          .logo span { color: #1a1a1a; }
-          .quote-info { text-align: right; }
-          .quote-number { font-size: 14px; color: #666; }
-          .quote-date { font-size: 12px; color: #999; margin-top: 4px; }
-          h1 { font-size: 24px; margin-bottom: 30px; color: #1a1a1a; }
-          .section { margin-bottom: 30px; }
-          .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #F97316;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 15px;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-          }
-          .info-item { }
-          .info-label { font-size: 12px; color: #666; margin-bottom: 2px; }
-          .info-value { font-size: 14px; font-weight: 500; }
-          .costs-table { width: 100%; border-collapse: collapse; }
-          .costs-table th, .costs-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-          }
-          .costs-table th {
-            font-size: 12px;
-            color: #666;
-            font-weight: 500;
-          }
-          .costs-table td { font-size: 14px; }
-          .costs-table td:last-child { text-align: right; font-weight: 500; }
-          .total-row {
-            background: #FFF7ED;
-            font-weight: bold;
-          }
-          .total-row td {
-            color: #F97316;
-            font-size: 16px;
-          }
-          .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            font-size: 11px;
-            color: #666;
-          }
-          .footer p { margin-bottom: 8px; }
-          .contact { margin-top: 20px; }
-          @media print {
-            body { padding: 20px; }
-            @page { margin: 1cm; }
-          }
-        </style>
-      `;
+      // Quote info on right
+      doc.setFontSize(10);
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Devis N° ${quoteNumber}`, pageWidth - margin, y + 5, { align: 'right' });
+      doc.setFontSize(9);
+      doc.setTextColor(lightGray);
+      const dateStr = new Date().toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      doc.text(dateStr, pageWidth - margin, y + 10, { align: 'right' });
 
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Devis ${quoteNumber}</title>
-          ${styles}
-        </head>
-        <body>
-          <div class="header">
-            <div class="logo">Driveby <span>Africa</span></div>
-            <div class="quote-info">
-              <div class="quote-number">Devis N° ${quoteNumber}</div>
-              <div class="quote-date">${new Date().toLocaleDateString('fr-FR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}</div>
-            </div>
-          </div>
+      y += 28;
 
-          <h1>Devis d'importation véhicule</h1>
+      // Orange line separator
+      doc.setDrawColor(mandarin);
+      doc.setLineWidth(0.8);
+      doc.line(margin, y, pageWidth - margin, y);
 
-          <div class="section">
-            <div class="section-title">Informations client</div>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Email</div>
-                <div class="info-value">${user.email}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Date de demande</div>
-                <div class="info-value">${new Date(quoteData.requestedAt).toLocaleDateString('fr-FR')}</div>
-              </div>
-            </div>
-          </div>
+      y += 12;
 
-          <div class="section">
-            <div class="section-title">Véhicule</div>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Marque / Modèle</div>
-                <div class="info-value">${quoteData.vehicleMake} ${quoteData.vehicleModel}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Année</div>
-                <div class="info-value">${quoteData.vehicleYear}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Origine</div>
-                <div class="info-value">${SOURCE_FLAGS[quoteData.vehicleSource]} ${SOURCE_NAMES[quoteData.vehicleSource]}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Destination</div>
-                <div class="info-value">${quoteData.destination.flag} ${quoteData.destination.name}, ${quoteData.destination.country}</div>
-              </div>
-            </div>
-          </div>
+      // ========== TITLE ==========
+      doc.setFontSize(20);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text("DEVIS D'IMPORTATION VEHICULE", margin, y);
 
-          <div class="section">
-            <div class="section-title">Détail des coûts</div>
-            <table class="costs-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th style="text-align: right;">Montant</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Prix du véhicule (FOB)</td>
-                  <td>${formatCurrency(quoteData.calculations.vehiclePrice)}</td>
-                </tr>
-                <tr>
-                  <td>Transport maritime (${SOURCE_NAMES[quoteData.vehicleSource]} → ${quoteData.destination.name})</td>
-                  <td>${formatCurrency(quoteData.calculations.shippingCost)}</td>
-                </tr>
-                <tr>
-                  <td>Assurance cargo (2.5%)</td>
-                  <td>${formatCurrency(quoteData.calculations.insuranceCost)}</td>
-                </tr>
-                <tr>
-                  <td>Inspection & Documents</td>
-                  <td>${formatCurrency(quoteData.calculations.inspectionFee)}</td>
-                </tr>
-                <tr class="total-row">
-                  <td>TOTAL ESTIMÉ</td>
-                  <td>${formatCurrency(quoteData.calculations.total)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      y += 15;
 
-          <div class="footer">
-            <p><strong>Note importante:</strong> Ce devis est une estimation et n'inclut pas les frais de dédouanement qui varient selon la réglementation locale de ${quoteData.destination.country}.</p>
-            <p>Ce devis est valable 7 jours à compter de sa date d'émission.</p>
-            <div class="contact">
-              <strong>Contact:</strong><br>
-              Driveby Africa<br>
-              Email: contact@drivebyafrica.com<br>
-              WhatsApp: +241 XX XX XX XX
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
+      // ========== CLIENT SECTION ==========
+      doc.setFontSize(11);
+      doc.setTextColor(mandarin);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INFORMATIONS CLIENT', margin, y);
 
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+      y += 8;
 
-      // Wait for content to load then print
-      printWindow.onload = () => {
-        printWindow.print();
-      };
+      // Client info box
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'F');
+
+      doc.setFontSize(9);
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Email', margin + 5, y + 6);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(user.email || '', margin + 5, y + 12);
+
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Date de demande', margin + contentWidth / 2, y + 6);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(new Date(quoteData.requestedAt).toLocaleDateString('fr-FR'), margin + contentWidth / 2, y + 12);
+
+      y += 28;
+
+      // ========== VEHICLE SECTION ==========
+      doc.setFontSize(11);
+      doc.setTextColor(mandarin);
+      doc.setFont('helvetica', 'bold');
+      doc.text('VEHICULE', margin, y);
+
+      y += 8;
+
+      // Vehicle info box
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(margin, y, contentWidth, 35, 2, 2, 'F');
+
+      // Row 1
+      doc.setFontSize(9);
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Marque / Modele', margin + 5, y + 6);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${quoteData.vehicleMake} ${quoteData.vehicleModel}`, margin + 5, y + 12);
+
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Annee', margin + contentWidth / 2, y + 6);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(quoteData.vehicleYear.toString(), margin + contentWidth / 2, y + 12);
+
+      // Row 2
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Origine', margin + 5, y + 21);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${SOURCE_NAMES[quoteData.vehicleSource]}`, margin + 5, y + 27);
+
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Destination', margin + contentWidth / 2, y + 21);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${quoteData.destination.name}, ${quoteData.destination.country}`, margin + contentWidth / 2, y + 27);
+
+      y += 43;
+
+      // ========== COSTS TABLE ==========
+      doc.setFontSize(11);
+      doc.setTextColor(mandarin);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DETAIL DES COUTS', margin, y);
+
+      y += 8;
+
+      // Table header
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, y, contentWidth, 10, 'F');
+
+      doc.setFontSize(9);
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Description', margin + 5, y + 7);
+      doc.text('Montant', pageWidth - margin - 5, y + 7, { align: 'right' });
+
+      y += 10;
+
+      // Table rows
+      const costs = [
+        { label: 'Prix du vehicule (FOB)', value: quoteData.calculations.vehiclePrice },
+        { label: `Transport maritime (${SOURCE_NAMES[quoteData.vehicleSource]} -> ${quoteData.destination.name})`, value: quoteData.calculations.shippingCost },
+        { label: 'Assurance cargo (2.5%)', value: quoteData.calculations.insuranceCost },
+        { label: 'Inspection & Documents', value: quoteData.calculations.inspectionFee },
+      ];
+
+      doc.setFont('helvetica', 'normal');
+      costs.forEach((cost, index) => {
+        // Alternate row background
+        if (index % 2 === 0) {
+          doc.setFillColor(252, 252, 252);
+          doc.rect(margin, y, contentWidth, 12, 'F');
+        }
+
+        doc.setTextColor(darkGray);
+        doc.setFontSize(10);
+        doc.text(cost.label, margin + 5, y + 8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatCurrencyPDF(cost.value), pageWidth - margin - 5, y + 8, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+
+        // Row border
+        doc.setDrawColor(230, 230, 230);
+        doc.setLineWidth(0.2);
+        doc.line(margin, y + 12, pageWidth - margin, y + 12);
+
+        y += 12;
+      });
+
+      // Total row
+      doc.setFillColor(255, 247, 237); // Orange tint
+      doc.rect(margin, y, contentWidth, 14, 'F');
+
+      doc.setFontSize(11);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL ESTIME', margin + 5, y + 10);
+      doc.setTextColor(mandarin);
+      doc.setFontSize(12);
+      doc.text(formatCurrencyPDF(quoteData.calculations.total), pageWidth - margin - 5, y + 10, { align: 'right' });
+
+      y += 22;
+
+      // ========== NOTES ==========
+      doc.setDrawColor(230, 230, 230);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+
+      y += 8;
+
+      doc.setFontSize(9);
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Note importante:', margin, y);
+
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const noteText = `Ce devis est une estimation et n'inclut pas les frais de dedouanement qui varient selon la reglementation locale de ${quoteData.destination.country}. Ce devis est valable 7 jours a compter de sa date d'emission.`;
+      const noteLines = doc.splitTextToSize(noteText, contentWidth);
+      doc.text(noteLines, margin, y);
+
+      y += noteLines.length * 4 + 10;
+
+      // ========== FOOTER CONTACT ==========
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(margin, y, contentWidth, 28, 2, 2, 'F');
+
+      doc.setFontSize(10);
+      doc.setTextColor(mandarin);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Contact', margin + 5, y + 7);
+
+      doc.setFontSize(9);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Driveby Africa', margin + 5, y + 14);
+      doc.text('Email: contact@drivebyafrica.com', margin + 5, y + 20);
+      doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
+      doc.text('Site: www.drivebyafrica.com', margin + contentWidth / 2, y + 20);
+
+      // ========== PAGE FOOTER ==========
+      doc.setFontSize(8);
+      doc.setTextColor(lightGray);
+      doc.text(
+        `Driveby Africa - Votre partenaire d'importation automobile en Afrique`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+
+      // Save the PDF
+      doc.save(`Devis-${quoteNumber}.pdf`);
 
       // Save quote to database
       const response = await fetch('/api/quotes', {
@@ -329,10 +409,10 @@ export default function NewQuotePage() {
 
       setIsGenerated(true);
       sessionStorage.removeItem('pendingQuote');
-      toast.success('Devis généré avec succès!');
+      toast.success('Devis genere avec succes!');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Erreur lors de la génération du PDF');
+      toast.error('Erreur lors de la generation du PDF');
     } finally {
       setIsGenerating(false);
     }
@@ -373,10 +453,10 @@ export default function NewQuotePage() {
             <CheckCircle className="w-6 h-6 text-jewel" />
             <div>
               <p className="font-medium text-[var(--text-primary)]">
-                Devis généré avec succès!
+                Devis genere avec succes!
               </p>
               <p className="text-sm text-[var(--text-muted)]">
-                Votre devis a été sauvegardé dans votre espace client.
+                Votre devis a ete sauvegarde dans votre espace client.
               </p>
             </div>
           </div>
@@ -418,7 +498,7 @@ export default function NewQuotePage() {
         {/* Cost Breakdown */}
         <div className="py-4 space-y-3">
           <div className="flex justify-between">
-            <span className="text-[var(--text-muted)]">Prix du véhicule (FOB)</span>
+            <span className="text-[var(--text-muted)]">Prix du vehicule (FOB)</span>
             <span className="text-[var(--text-primary)] font-medium">
               {formatCurrency(quoteData.calculations.vehiclePrice)}
             </span>
@@ -442,7 +522,7 @@ export default function NewQuotePage() {
             </span>
           </div>
           <div className="flex justify-between pt-3 mt-3 border-t border-[var(--card-border)]">
-            <span className="font-bold text-[var(--text-primary)]">Total estimé</span>
+            <span className="font-bold text-[var(--text-primary)]">Total estime</span>
             <span className="text-xl font-bold text-mandarin">
               {formatCurrency(quoteData.calculations.total)}
             </span>
@@ -451,7 +531,7 @@ export default function NewQuotePage() {
 
         {/* Disclaimer */}
         <p className="text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--card-border)]">
-          * Cette estimation n'inclut pas les frais de dédouanement qui varient selon la réglementation locale.
+          * Cette estimation n&apos;inclut pas les frais de dedouanement qui varient selon la reglementation locale.
           Ce devis est valable 7 jours.
         </p>
       </Card>
@@ -496,14 +576,14 @@ export default function NewQuotePage() {
             )
           }
         >
-          {isGenerating ? 'Génération...' : 'Télécharger le PDF'}
+          {isGenerating ? 'Generation...' : 'Telecharger le PDF'}
         </Button>
       </div>
 
       {/* Next Steps */}
       <Card>
         <h3 className="font-bold text-[var(--text-primary)] mb-4">
-          Prochaines étapes
+          Prochaines etapes
         </h3>
         <ol className="space-y-3">
           <li className="flex gap-3">
@@ -511,9 +591,9 @@ export default function NewQuotePage() {
               1
             </span>
             <div>
-              <p className="font-medium text-[var(--text-primary)]">Téléchargez votre devis</p>
+              <p className="font-medium text-[var(--text-primary)]">Telechargez votre devis</p>
               <p className="text-sm text-[var(--text-muted)]">
-                Conservez ce document pour vos démarches
+                Conservez ce document pour vos demarches
               </p>
             </div>
           </li>
@@ -524,7 +604,7 @@ export default function NewQuotePage() {
             <div>
               <p className="font-medium text-[var(--text-primary)]">Contactez-nous</p>
               <p className="text-sm text-[var(--text-muted)]">
-                Notre équipe vous accompagnera dans votre achat
+                Notre equipe vous accompagnera dans votre achat
               </p>
             </div>
           </li>
@@ -535,7 +615,7 @@ export default function NewQuotePage() {
             <div>
               <p className="font-medium text-[var(--text-primary)]">Validez votre commande</p>
               <p className="text-sm text-[var(--text-muted)]">
-                Effectuez un acompte pour réserver le véhicule
+                Effectuez un acompte pour reserver le vehicule
               </p>
             </div>
           </li>
