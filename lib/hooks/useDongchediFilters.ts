@@ -6,16 +6,18 @@ import { useState, useEffect, useMemo } from 'react';
  * Dongchedi Filters Response from API
  */
 interface DongchediFiltersResponse {
-  mark: Record<string, {
+  brands: string[];
+  popularBrands: string[];
+  transmissionTypes: string[];
+  colors: string[];
+  bodyTypes: string[];
+  engineTypes: string[];
+  driveTypes: string[];
+  hierarchy: Record<string, {
     model: Record<string, {
       complectation: string[];
     }>;
   }>;
-  transmission_type: string[];
-  color: string[];
-  body_type: string[];
-  engine_type: string[];
-  drive_type: string[];
 }
 
 /**
@@ -177,22 +179,29 @@ export function useDongchediFilters() {
       };
     }
 
-    // Extract brands and models
-    const brands = Object.keys(rawFilters.mark).sort();
+    // Extract brands and models from hierarchy
+    const brands = rawFilters.brands || [];
     const models: Record<string, string[]> = {};
 
-    for (const [brand, brandData] of Object.entries(rawFilters.mark)) {
-      models[brand] = Object.keys(brandData.model).sort();
+    // Safely extract models from hierarchy
+    if (rawFilters.hierarchy && typeof rawFilters.hierarchy === 'object') {
+      for (const [brand, brandData] of Object.entries(rawFilters.hierarchy)) {
+        if (brandData && brandData.model && typeof brandData.model === 'object') {
+          models[brand] = Object.keys(brandData.model).sort();
+        } else {
+          models[brand] = [];
+        }
+      }
     }
 
     return {
       brands,
       models,
-      transmissionTypes: rawFilters.transmission_type || [],
-      colors: rawFilters.color || [],
-      bodyTypes: rawFilters.body_type || [],
-      engineTypes: rawFilters.engine_type || [],
-      driveTypes: rawFilters.drive_type || [],
+      transmissionTypes: rawFilters.transmissionTypes || [],
+      colors: rawFilters.colors || [],
+      bodyTypes: rawFilters.bodyTypes || [],
+      engineTypes: rawFilters.engineTypes || [],
+      driveTypes: rawFilters.driveTypes || [],
       isLoading,
       error,
     };

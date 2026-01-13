@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
               start_price_usd: vehicle.start_price_usd,
               current_price_usd: vehicle.current_price_usd,
               auction_status: 'ongoing',
-              images: formatPgArray(vehicle.images),
+              // Cast to unknown to handle PostgreSQL TEXT[] format
+              images: formatPgArray(vehicle.images) as unknown as string[],
               updated_at: new Date().toISOString(),
             }));
 
@@ -167,7 +168,8 @@ export async function POST(request: NextRequest) {
             start_price_usd: vehicle.start_price_usd,
             current_price_usd: vehicle.current_price_usd,
             auction_status: 'ongoing',
-            images: formatPgArray(vehicle.images),
+            // Cast to unknown to handle PostgreSQL TEXT[] format
+            images: formatPgArray(vehicle.images) as unknown as string[],
             updated_at: new Date().toISOString(),
           }));
 
