@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Car, RefreshCw, BarChart3 } from 'lucide-react';
 import { AdminStats, SyncStatus, VehicleTable } from '@/components/admin';
 import { Card } from '@/components/ui/Card';
@@ -78,8 +78,12 @@ export default function AdminVehiclesPage() {
   // Active tab
   const [activeTab, setActiveTab] = useState<'stats' | 'vehicles' | 'sync'>('stats');
 
-  // Fetch stats
-  const fetchStats = useCallback(async () => {
+  // Track if initial load is done
+  const statsLoaded = useRef(false);
+  const vehiclesTabLoaded = useRef(false);
+
+  // Fetch stats function
+  const fetchStats = async () => {
     try {
       setStatsLoading(true);
       const response = await fetch('/api/admin/vehicles/stats');
@@ -98,19 +102,19 @@ export default function AdminVehiclesPage() {
     } finally {
       setStatsLoading(false);
     }
-  }, [toast]);
+  };
 
-  // Fetch vehicles
-  const fetchVehicles = useCallback(async () => {
+  // Fetch vehicles function
+  const fetchVehicles = async (pageNum: number, currentFilters: typeof filters) => {
     try {
       setVehiclesLoading(true);
       const params = new URLSearchParams({
-        page: page.toString(),
+        page: pageNum.toString(),
         limit: '20',
-        ...(filters.source !== 'all' && { source: filters.source }),
-        ...(filters.status !== 'all' && { status: filters.status }),
-        ...(filters.search && { search: filters.search }),
-        ...(filters.isVisible !== 'all' && { isVisible: filters.isVisible }),
+        ...(currentFilters.source !== 'all' && { source: currentFilters.source }),
+        ...(currentFilters.status !== 'all' && { status: currentFilters.status }),
+        ...(currentFilters.search && { search: currentFilters.search }),
+        ...(currentFilters.isVisible !== 'all' && { isVisible: currentFilters.isVisible }),
       });
 
       const response = await fetch(`/api/admin/vehicles?${params}`);
@@ -129,18 +133,22 @@ export default function AdminVehiclesPage() {
     } finally {
       setVehiclesLoading(false);
     }
-  }, [page, filters, toast]);
+  };
 
-  // Initial load
+  // Initial stats load - only once
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    if (!statsLoaded.current) {
+      statsLoaded.current = true;
+      fetchStats();
+    }
+  }, []);
 
+  // Load vehicles when tab becomes active or filters/page change
   useEffect(() => {
     if (activeTab === 'vehicles') {
-      fetchVehicles();
+      fetchVehicles(page, filters);
     }
-  }, [activeTab, fetchVehicles]);
+  }, [activeTab, page, filters.source, filters.status, filters.search, filters.isVisible]);
 
   // Handle sync
   const handleSync = async (mode: 'full' | 'changes') => {
@@ -162,7 +170,7 @@ export default function AdminVehiclesPage() {
       toast.success(`Sync terminée: +${data.added} ajoutés, ~${data.updated} mis à jour`);
       fetchStats();
       if (activeTab === 'vehicles') {
-        fetchVehicles();
+        fetchVehicles(page, filters);
       }
     } catch (error) {
       console.error('Sync error:', error);
@@ -186,7 +194,7 @@ export default function AdminVehiclesPage() {
       }
 
       toast.success(`${data.updated} véhicule(s) mis à jour`);
-      fetchVehicles();
+      fetchVehicles(page, filters);
       fetchStats();
     } catch (error) {
       console.error('Update error:', error);
@@ -210,7 +218,7 @@ export default function AdminVehiclesPage() {
       }
 
       toast.success(`${data.deleted} véhicule(s) supprimé(s)`);
-      fetchVehicles();
+      fetchVehicles(page, filters);
       fetchStats();
     } catch (error) {
       console.error('Delete error:', error);
