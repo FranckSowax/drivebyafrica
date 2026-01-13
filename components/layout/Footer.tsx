@@ -14,9 +14,9 @@ const footerLinks = {
   ],
   services: [
     { label: 'Véhicules', href: '/cars' },
-    { label: 'Enchères', href: '/auctions' },
+    { label: 'Estimation des frais', href: '/calculator' },
     { label: 'Suivi de commande', href: '/dashboard/orders' },
-    { label: 'Estimation de prix', href: '/calculator' },
+    { label: 'Demander un devis', href: '/quote' },
   ],
   support: [
     { label: 'FAQ', href: '/faq' },

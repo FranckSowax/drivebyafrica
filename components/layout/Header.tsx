@@ -9,7 +9,6 @@ import {
   Menu,
   X,
   Car,
-  Gavel,
   Heart,
   User,
   Bell,
@@ -27,7 +26,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 const navLinks = [
   { href: '/cars', label: 'Véhicules', icon: Car },
-  { href: '/auctions', label: 'Enchères', icon: Gavel },
+  { href: '/calculator', label: 'Estimation', icon: null },
   { href: '/how-it-works', label: 'Comment ça marche', icon: null },
 ];
 

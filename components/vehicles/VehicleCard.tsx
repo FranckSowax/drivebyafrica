@@ -2,12 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Eye, Calendar, Gauge } from 'lucide-react';
+import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { formatUsdToLocal } from '@/lib/utils/currency';
-import { formatRelativeTime } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils';
-import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
+import type { Vehicle, VehicleSource } from '@/types/vehicle';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -21,22 +20,28 @@ const SOURCE_FLAGS: Record<VehicleSource, string> = {
   dubai: '🇦🇪',
 };
 
-const STATUS_STYLES: Record<AuctionStatus, { bg: string; label: string }> = {
-  upcoming: { bg: 'bg-royal-blue', label: 'À venir' },
-  ongoing: { bg: 'bg-mandarin', label: 'En cours' },
+const SOURCE_LABELS: Record<VehicleSource, string> = {
+  korea: 'Corée du Sud',
+  china: 'Chine',
+  dubai: 'Dubaï',
+};
+
+const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
+  available: { bg: 'bg-jewel', label: 'Disponible' },
+  reserved: { bg: 'bg-mandarin', label: 'Réservé' },
   sold: { bg: 'bg-red-500', label: 'Vendu' },
-  ended: { bg: 'bg-nobel', label: 'Terminé' },
+  pending: { bg: 'bg-royal-blue', label: 'En attente' },
 };
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
-  const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
+  const status = STATUS_STYLES[vehicle.status || 'available'] || STATUS_STYLES.available;
   const mainImage = vehicle.images?.[0] || '/images/placeholder-car.jpg';
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
-      <div className="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-mandarin/50 transition-all duration-300 hover:shadow-lg hover:shadow-mandarin/10">
+      <div className="bg-[var(--card-bg)] rounded-xl overflow-hidden border border-[var(--card-border)] hover:border-mandarin/50 transition-all duration-300 hover:shadow-lg hover:shadow-mandarin/10">
         {/* Image Container */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+        <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface)]">
           <Image
             src={mainImage}
             alt={`${vehicle.make} ${vehicle.model}`}
@@ -88,19 +93,19 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           {/* Views */}
           <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-white/80">
             <Eye className="w-3.5 h-3.5" />
-            <span>{vehicle.views_count}</span>
+            <span>{vehicle.views_count || 0}</span>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-4">
           {/* Title */}
-          <h3 className="font-bold text-gray-900 text-lg truncate group-hover:text-mandarin transition-colors">
+          <h3 className="font-bold text-[var(--text-primary)] text-lg truncate group-hover:text-mandarin transition-colors">
             {vehicle.make} {vehicle.model}
           </h3>
 
           {/* Specs */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-sm text-[var(--text-muted)]">
             <span>{vehicle.year}</span>
             <span>•</span>
             <span>{vehicle.transmission}</span>
@@ -112,46 +117,40 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             )}
           </div>
 
-          {/* Mileage & Auction Date */}
-          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+          {/* Mileage & Source */}
+          <div className="flex items-center gap-4 mt-3 text-sm text-[var(--text-muted)]">
             {vehicle.mileage && (
               <div className="flex items-center gap-1">
                 <Gauge className="w-4 h-4" />
                 <span>{vehicle.mileage.toLocaleString()} km</span>
               </div>
             )}
-            {vehicle.auction_date && (
-              <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                <span>{formatRelativeTime(vehicle.auction_date)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Prices */}
-          <div className="mt-4 flex justify-between items-end">
-            <div>
-              <p className="text-xs text-gray-500">Prix départ</p>
-              <p className="text-mandarin font-bold text-lg">
-                {vehicle.start_price_usd
-                  ? formatUsdToLocal(vehicle.start_price_usd)
-                  : '-'}
-              </p>
+            <div className="flex items-center gap-1">
+              <MapPin className="w-4 h-4" />
+              <span>{SOURCE_LABELS[vehicle.source as VehicleSource] || vehicle.source}</span>
             </div>
-            {vehicle.current_price_usd && vehicle.current_price_usd > (vehicle.start_price_usd || 0) && (
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Enchère actuelle</p>
-                <p className="text-jewel font-bold">
-                  {formatUsdToLocal(vehicle.current_price_usd)}
-                </p>
-              </div>
-            )}
           </div>
 
-          {/* Auction Info */}
-          <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between text-xs text-gray-500">
-            <span>{vehicle.auction_platform || 'Enchère'}</span>
-            {vehicle.lot_number && <span>Lot #{vehicle.lot_number}</span>}
+          {/* Price */}
+          <div className="mt-4">
+            <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
+            <p className="text-mandarin font-bold text-xl">
+              {vehicle.start_price_usd
+                ? formatUsdToLocal(vehicle.start_price_usd)
+                : 'Sur demande'}
+            </p>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-[var(--text-muted)]">
+                Estimation gratuite
+              </span>
+              <span className="text-sm font-medium text-mandarin group-hover:underline">
+                Voir le détail →
+              </span>
+            </div>
           </div>
         </div>
       </div>

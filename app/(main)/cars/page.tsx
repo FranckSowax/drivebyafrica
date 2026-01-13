@@ -12,12 +12,12 @@ import { useFilterStore } from '@/store/useFilterStore';
 import { cn } from '@/lib/utils';
 
 const SORT_OPTIONS = [
-  { value: 'date_asc', label: 'Date enchère (proche)' },
-  { value: 'date_desc', label: 'Date enchère (lointaine)' },
   { value: 'price_asc', label: 'Prix croissant' },
   { value: 'price_desc', label: 'Prix décroissant' },
   { value: 'year_desc', label: 'Année (récent)' },
+  { value: 'year_asc', label: 'Année (ancien)' },
   { value: 'mileage_asc', label: 'Kilométrage (bas)' },
+  { value: 'mileage_desc', label: 'Kilométrage (haut)' },
 ];
 
 export default function CarsPage() {
@@ -55,7 +55,7 @@ export default function CarsPage() {
           </h1>
           <p className="text-[var(--text-muted)] max-w-xl">
             Explorez des véhicules vérifiés de Corée, Chine et Dubaï.
-            Filtres intelligents, fiches d&apos;enchères et spécifications complètes.
+            Obtenez une estimation des frais et réservez avec un acompte.
           </p>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function CarsPage() {
                 {/* Sort */}
                 <Select
                   options={SORT_OPTIONS}
-                  value={filters.sortBy || 'date_asc'}
+                  value={filters.sortBy || 'price_asc'}
                   onChange={(e) =>
                     setFilters({ sortBy: e.target.value as typeof filters.sortBy })
                   }

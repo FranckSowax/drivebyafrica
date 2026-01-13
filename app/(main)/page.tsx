@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Car, Shield, Truck, Headphones, CheckCircle } from 'lucide-react';
+import { ArrowRight, Car, Shield, Truck, Headphones, Calculator, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { createClient } from '@/lib/supabase/server';
@@ -12,19 +12,19 @@ const features = [
     icon: Car,
     title: 'Véhicules vérifiés',
     description:
-      "Chaque véhicule est inspecté et dispose d'une fiche d'enchère détaillée avec historique complet.",
+      "Chaque véhicule est inspecté avec une fiche technique détaillée et un historique complet.",
   },
   {
     icon: Shield,
     title: 'Transactions sécurisées',
     description:
-      'Paiements sécurisés via Stripe et Mobile Money. Votre argent est protégé jusqu\'à la livraison.',
+      'Paiements sécurisés via Stripe et Mobile Money. Votre acompte est protégé jusqu\'à la livraison.',
   },
   {
     icon: Truck,
     title: 'Livraison complète',
     description:
-      'De l\'enchère au port africain. Suivi en temps réel et assistance douanière incluse.',
+      'De la réservation au port africain. Suivi en temps réel et assistance douanière incluse.',
   },
   {
     icon: Headphones,
@@ -42,18 +42,18 @@ const steps = [
   },
   {
     number: '02',
-    title: 'Enchérissez',
-    description: 'Participez aux enchères en direct ou optez pour l\'achat immédiat.',
+    title: 'Estimez',
+    description: 'Calculez les frais de transport jusqu\'à votre port et obtenez un devis personnalisé.',
   },
   {
     number: '03',
-    title: 'Payez',
-    description: 'Réglez de manière sécurisée via carte bancaire ou Mobile Money.',
+    title: 'Réservez',
+    description: 'Versez un acompte pour bloquer le véhicule et lancer la procédure d\'importation.',
   },
   {
     number: '04',
     title: 'Recevez',
-    description: 'Suivez votre véhicule jusqu\'à sa livraison au port de votre choix.',
+    description: 'Suivez votre véhicule en temps réel jusqu\'à sa livraison au port de votre choix.',
   },
 ];
 
@@ -71,7 +71,7 @@ export default async function HomePage() {
   const { data } = await supabase
     .from('vehicles')
     .select('*')
-    .eq('auction_status', 'upcoming')
+    .eq('status', 'available')
     .order('favorites_count', { ascending: false })
     .limit(6);
 
@@ -89,7 +89,7 @@ export default async function HomePage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-mandarin/10 rounded-full border border-mandarin/20 mb-6">
               <span className="text-mandarin font-medium text-sm">
-                Nouveau: Enchères en direct depuis Dubaï 🇦🇪
+                Nouveau: Importation directe depuis la Corée du Sud
               </span>
             </div>
 
@@ -99,8 +99,8 @@ export default async function HomePage() {
             </h1>
 
             <p className="text-lg text-[var(--text-muted)] mb-8 max-w-xl">
-              Accédez aux enchères automobiles de Corée du Sud, Chine et Dubaï.
-              Suivi complet de l&apos;enchère jusqu&apos;à la livraison en Afrique.
+              Accédez à des milliers de véhicules depuis la Corée du Sud, la Chine et Dubaï.
+              Estimation gratuite et livraison jusqu&apos;à votre port en Afrique.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -109,9 +109,9 @@ export default async function HomePage() {
                   Explorer les véhicules
                 </Button>
               </Link>
-              <Link href="/how-it-works">
-                <Button variant="outline" size="lg">
-                  Comment ça marche
+              <Link href="/calculator">
+                <Button variant="outline" size="lg" leftIcon={<Calculator className="w-5 h-5" />}>
+                  Estimer les frais
                 </Button>
               </Link>
             </div>
@@ -261,8 +261,8 @@ export default async function HomePage() {
                 Prêt à importer votre prochain véhicule?
               </h2>
               <p className="text-white/80 mb-8">
-                Créez votre compte gratuitement et accédez à des milliers de véhicules
-                aux meilleurs prix.
+                Créez votre compte gratuitement, explorez notre catalogue et obtenez
+                un devis personnalisé pour votre importation.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/register">
