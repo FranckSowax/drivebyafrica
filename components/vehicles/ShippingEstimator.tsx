@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
@@ -11,6 +11,7 @@ import {
   FileText,
   Loader2,
   Search,
+  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -109,6 +110,56 @@ export function ShippingEstimator({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isRequestingQuote, setIsRequestingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate dropdown position based on available space
+  useEffect(() => {
+    if (isDropdownOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      const dropdownHeight = 320; // max height of dropdown
+
+      // If not enough space below but enough above, show above
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        setDropdownPosition('top');
+      } else {
+        setDropdownPosition('bottom');
+      }
+
+      // Focus search input when dropdown opens
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isDropdownOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+        setSearchQuery('');
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // Filter destinations based on search query
   const filteredDestinations = destinations.filter(
@@ -190,12 +241,16 @@ export function ShippingEstimator({
         </label>
         <div className="relative">
           <button
+            ref={buttonRef}
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className={cn(
-              'w-full px-4 py-3 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl',
+              'w-full px-4 py-3 bg-[var(--card-bg)] border rounded-xl',
               'text-left flex items-center justify-between',
-              'hover:border-mandarin/50 transition-colors',
-              'text-[var(--text-primary)]'
+              'transition-colors',
+              'text-[var(--text-primary)]',
+              isDropdownOpen
+                ? 'border-mandarin ring-2 ring-mandarin/20'
+                : 'border-[var(--card-border)] hover:border-mandarin/50'
             )}
           >
             {selectedDestination ? (
@@ -208,7 +263,7 @@ export function ShippingEstimator({
             )}
             <ChevronDown
               className={cn(
-                'w-5 h-5 text-[var(--text-muted)] transition-transform',
+                'w-5 h-5 text-[var(--text-muted)] transition-transform duration-200',
                 isDropdownOpen && 'rotate-180'
               )}
             />
@@ -218,26 +273,43 @@ export function ShippingEstimator({
           <AnimatePresence>
             {isDropdownOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 top-full left-0 right-0 mt-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-lg overflow-hidden"
+                ref={dropdownRef}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className={cn(
+                  'absolute z-50 left-0 right-0 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl overflow-hidden',
+                  dropdownPosition === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
+                )}
               >
-                {/* Search Input */}
-                <div className="p-2 border-b border-[var(--card-border)]">
+                {/* Search Header */}
+                <div className="p-3 border-b border-[var(--card-border)] bg-[var(--surface)]">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                     <input
+                      ref={searchInputRef}
                       type="text"
                       placeholder="Rechercher un pays ou une ville..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-mandarin"
+                      className="w-full pl-9 pr-8 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-mandarin"
                     />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-2">
+                    {filteredDestinations.length} destination{filteredDestinations.length > 1 ? 's' : ''} disponible{filteredDestinations.length > 1 ? 's' : ''}
+                  </p>
                 </div>
                 {/* Destinations List */}
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-56 overflow-y-auto overscroll-contain">
                   {filteredDestinations.length > 0 ? (
                     filteredDestinations.map((dest) => (
                       <button
@@ -250,19 +322,24 @@ export function ShippingEstimator({
                         className={cn(
                           'w-full px-4 py-3 text-left flex items-center gap-3',
                           'hover:bg-mandarin/10 transition-colors',
+                          'border-b border-[var(--card-border)]/30 last:border-b-0',
                           selectedDestination?.id === dest.id && 'bg-mandarin/10'
                         )}
                       >
-                        <span className="text-xl">{dest.flag}</span>
-                        <div>
-                          <span className="text-[var(--text-primary)] font-medium">{dest.name}</span>
-                          <span className="text-[var(--text-muted)] text-sm ml-1">({dest.country})</span>
+                        <span className="text-2xl">{dest.flag}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[var(--text-primary)] font-medium block">{dest.name}</span>
+                          <span className="text-[var(--text-muted)] text-xs">{dest.country}</span>
                         </div>
+                        {selectedDestination?.id === dest.id && (
+                          <div className="w-2 h-2 rounded-full bg-mandarin" />
+                        )}
                       </button>
                     ))
                   ) : (
-                    <div className="px-4 py-6 text-center text-[var(--text-muted)]">
-                      Aucune destination trouvée
+                    <div className="px-4 py-8 text-center">
+                      <p className="text-[var(--text-muted)]">Aucune destination trouvée</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">Essayez un autre terme de recherche</p>
                     </div>
                   )}
                 </div>
