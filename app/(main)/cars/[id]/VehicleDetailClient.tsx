@@ -52,6 +52,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
   const source = vehicle.source as VehicleSource;
 
+  // Check if images are external with signatures (byteimg.com) - need unoptimized
+  const isExternalImage = (img: string) => img.includes('byteimg.com') || img.includes('x-expires');
+
   const handleShare = async () => {
     try {
       await navigator.share({
@@ -115,6 +118,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     fill
                     className="object-cover"
                     priority
+                    unoptimized={isExternalImage(images[currentImageIndex])}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -167,6 +171,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-cover"
+                      unoptimized={isExternalImage(image)}
                     />
                   </button>
                 ))}

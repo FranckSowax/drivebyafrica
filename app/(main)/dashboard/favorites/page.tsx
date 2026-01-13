@@ -87,6 +87,7 @@ export default async function FavoritesPage() {
                       alt={`${vehicle.make} ${vehicle.model}`}
                       fill
                       className="object-cover"
+                      unoptimized={vehicle.images[0].includes('byteimg.com') || vehicle.images[0].includes('x-expires')}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

@@ -36,6 +36,8 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
   const status = STATUS_STYLES[vehicle.status || 'available'] || STATUS_STYLES.available;
   const mainImage = vehicle.images?.[0] || '/images/placeholder-car.jpg';
+  // External images with signatures (byteimg.com) need unoptimized to avoid server-side refetch
+  const isExternalImage = mainImage.includes('byteimg.com') || mainImage.includes('x-expires');
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
@@ -48,6 +50,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized={isExternalImage}
           />
 
           {/* Overlay gradient */}

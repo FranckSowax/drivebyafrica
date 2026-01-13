@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
         protocol: 'http',
         hostname: 'ci.encar.com',
       },
+      // Dongchedi China images (byteimg.com CDN)
+      {
+        protocol: 'https',
+        hostname: '**.byteimg.com',
+      },
     ],
   },
 };

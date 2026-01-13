@@ -102,6 +102,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     alt={`${vehicleData.make} ${vehicleData.model}`}
                     fill
                     className="object-cover"
+                    unoptimized={vehicleData.images[0].includes('byteimg.com') || vehicleData.images[0].includes('x-expires')}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
