@@ -41,9 +41,9 @@ export function Footer() {
               <Image
                 src={theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png'}
                 alt="Driveby Africa"
-                width={160}
-                height={45}
-                className="h-10 w-auto"
+                width={320}
+                height={90}
+                className="h-20 w-auto"
               />
             </Link>
             <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm">

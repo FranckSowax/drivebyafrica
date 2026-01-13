@@ -51,10 +51,10 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-gray-200 pb-4">
+    <div className="border-b border-[var(--card-border)] pb-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full py-2 text-sm font-medium text-gray-900 hover:text-mandarin transition-colors"
+        className="flex items-center justify-between w-full py-2 text-sm font-medium text-[var(--text-primary)] hover:text-mandarin transition-colors"
       >
         {title}
         {isOpen ? (
@@ -80,12 +80,12 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className={cn('bg-white border border-gray-200 rounded-xl p-5 shadow-sm', className)}>
+    <div className={cn('bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5 shadow-sm', className)}>
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-lg font-bold text-gray-900">Filtres</h2>
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
         <button
           onClick={resetFilters}
-          className="text-sm text-gray-500 hover:text-mandarin flex items-center gap-1 transition-colors"
+          className="text-sm text-[var(--text-muted)] hover:text-mandarin flex items-center gap-1 transition-colors"
         >
           <X className="w-4 h-4" />
           Réinitialiser
@@ -104,7 +104,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
                   'px-3 py-1.5 rounded-full text-sm transition-colors',
                   filters.source === source.value
                     ? 'bg-mandarin text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                 )}
               >
                 {source.flag && <span className="mr-1">{source.flag}</span>}
@@ -131,7 +131,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
                   'px-3 py-1.5 rounded-full text-sm transition-colors',
                   filters.makes?.includes(make)
                     ? 'bg-mandarin text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                 )}
               >
                 {make}
@@ -197,7 +197,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
                   'px-3 py-1.5 rounded-full text-sm transition-colors',
                   filters.transmission === trans.value
                     ? 'bg-mandarin text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                 )}
               >
                 {trans.label}
@@ -224,7 +224,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
                   'px-3 py-1.5 rounded-full text-sm transition-colors',
                   filters.fuelType === fuel.value
                     ? 'bg-mandarin text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
                 )}
               >
                 {fuel.label}
@@ -255,7 +255,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
             onChange={(e) => setFilters({ notifyNewMatches: e.target.checked })}
             className="sr-only peer"
           />
-          <div className="relative w-10 h-6 bg-gray-200 rounded-full peer-checked:bg-mandarin transition-colors">
+          <div className="relative w-10 h-6 bg-[var(--surface-hover)] rounded-full peer-checked:bg-mandarin transition-colors">
             <div
               className={cn(
                 'absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm',
@@ -263,8 +263,8 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
               )}
             />
           </div>
-          <Bell className="w-4 h-4 text-gray-500" />
-          <span className="text-sm text-gray-700">Alertes nouveaux véhicules</span>
+          <Bell className="w-4 h-4 text-[var(--text-muted)]" />
+          <span className="text-sm text-[var(--text-secondary)]">Alertes nouveaux véhicules</span>
         </label>
       </div>
     </div>

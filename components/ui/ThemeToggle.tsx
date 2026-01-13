@@ -15,17 +15,29 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     <button
       onClick={toggleTheme}
       className={cn(
-        'relative p-2 rounded-lg transition-colors',
-        'hover:bg-[var(--surface)] text-[var(--text-muted)]',
+        'relative w-14 h-7 rounded-full transition-all duration-300',
+        'bg-[var(--surface-hover)] border border-[var(--card-border)]',
+        'hover:border-mandarin/50',
         className
       )}
       aria-label={theme === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}
     >
-      {theme === 'light' ? (
-        <Moon className="w-5 h-5" />
-      ) : (
-        <Sun className="w-5 h-5" />
-      )}
+      {/* Toggle circle */}
+      <div
+        className={cn(
+          'absolute top-0.5 w-6 h-6 rounded-full transition-all duration-300',
+          'flex items-center justify-center',
+          theme === 'light'
+            ? 'left-0.5 bg-mandarin text-white'
+            : 'left-7 bg-mandarin text-white'
+        )}
+      >
+        {theme === 'light' ? (
+          <Sun className="w-4 h-4" />
+        ) : (
+          <Moon className="w-4 h-4" />
+        )}
+      </div>
     </button>
   );
 }

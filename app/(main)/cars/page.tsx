@@ -46,14 +46,14 @@ export default function CarsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[var(--background)]">
       {/* Header Section */}
-      <div className="bg-gradient-to-b from-gray-100 to-transparent py-10 lg:py-14">
+      <div className="bg-gradient-to-b from-[var(--surface)] to-transparent py-10 lg:py-14">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold text-[var(--text-primary)] mb-2">
             <span className="text-mandarin">TROUVEZ</span> VOTRE VÉHICULE
           </h1>
-          <p className="text-gray-500 max-w-xl">
+          <p className="text-[var(--text-muted)] max-w-xl">
             Explorez des véhicules vérifiés de Corée, Chine et Dubaï.
             Filtres intelligents, fiches d&apos;enchères et spécifications complètes.
           </p>
@@ -109,8 +109,8 @@ export default function CarsPage() {
 
             {/* Results Count */}
             <div className="flex justify-between items-center mb-6">
-              <p className="text-gray-500">
-                <span className="text-gray-900 font-bold">
+              <p className="text-[var(--text-muted)]">
+                <span className="text-[var(--text-primary)] font-bold">
                   {totalCount.toLocaleString()}
                 </span>{' '}
                 véhicules disponibles
@@ -147,12 +147,12 @@ export default function CarsPage() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowMobileFilters(false)}
           />
-          <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-white overflow-y-auto">
-            <div className="sticky top-0 flex items-center justify-between p-4 bg-white border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">Filtres</h2>
+          <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-[var(--card-bg)] overflow-y-auto">
+            <div className="sticky top-0 flex items-center justify-between p-4 bg-[var(--card-bg)] border-b border-[var(--card-border)]">
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="p-2 text-gray-500 hover:text-gray-900"
+                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               >
                 <X className="w-5 h-5" />
               </button>

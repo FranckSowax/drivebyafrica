@@ -51,15 +51,15 @@ export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
               src={theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png'}
               alt="Driveby Africa"
-              width={150}
-              height={40}
-              className="h-8 w-auto"
+              width={300}
+              height={80}
+              className="h-16 w-auto"
               priority
             />
           </Link>
