@@ -13,11 +13,18 @@ import type {
 } from '@/types/encar';
 import { convertEncarPriceToUSD } from '@/types/encar';
 
-// Client Supabase admin pour les opérations d'écriture
+// Client Supabase admin pour les opérations d'écriture (typé)
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   return createClient<Database>(supabaseUrl, supabaseServiceKey);
+}
+
+// Client Supabase admin non-typé pour les tables sync (créées par migration)
+function getSupabaseAdminUntyped() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(supabaseUrl, supabaseServiceKey);
 }
 
 /**
@@ -289,21 +296,132 @@ export async function applyEncarChanges(
  * Récupère le dernier change_id stocké dans la base de données
  */
 export async function getLastSyncedChangeId(): Promise<number | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseAdminUntyped();
 
-  // On peut stocker le dernier change_id dans une table de configuration
-  // Pour l'instant, on retourne null pour forcer une récupération depuis l'API
-  // TODO: Implémenter le stockage du change_id
+  const { data, error } = await supabase
+    .from('sync_config')
+    .select('last_change_id')
+    .eq('source', 'encar')
+    .single();
 
-  return null;
+  if (error || !data) {
+    console.log('Aucun change_id trouvé, utilisation de la valeur par défaut');
+    return null;
+  }
+
+  return data.last_change_id as number;
 }
 
 /**
  * Stocke le dernier change_id synchronisé
  */
 export async function setLastSyncedChangeId(changeId: number): Promise<void> {
-  // TODO: Implémenter le stockage du change_id dans une table de configuration
-  console.log(`Change ID synchronisé: ${changeId}`);
+  const supabase = getSupabaseAdminUntyped();
+
+  const { error } = await supabase
+    .from('sync_config')
+    .upsert({
+      source: 'encar',
+      last_change_id: changeId,
+      last_sync_at: new Date().toISOString(),
+    }, {
+      onConflict: 'source',
+    });
+
+  if (error) {
+    console.error('Erreur lors de la mise à jour du change_id:', error);
+  } else {
+    console.log(`Change ID synchronisé: ${changeId}`);
+  }
+}
+
+/**
+ * Met à jour le statut de synchronisation
+ */
+export async function updateSyncStatus(
+  status: 'running' | 'success' | 'failed',
+  stats?: { added?: number; updated?: number; removed?: number; error?: string }
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const supabaseUntyped = getSupabaseAdminUntyped();
+
+  const updateData: Record<string, unknown> = {
+    last_sync_status: status,
+    last_sync_at: new Date().toISOString(),
+  };
+
+  if (stats) {
+    if (stats.added !== undefined) updateData.vehicles_added = stats.added;
+    if (stats.updated !== undefined) updateData.vehicles_updated = stats.updated;
+    if (stats.removed !== undefined) updateData.vehicles_removed = stats.removed;
+    if (stats.error !== undefined) updateData.last_sync_error = stats.error;
+  }
+
+  // Update total count
+  const { count } = await supabase
+    .from('vehicles')
+    .select('*', { count: 'exact', head: true })
+    .eq('source', 'korea');
+
+  updateData.total_vehicles = count || 0;
+
+  await supabaseUntyped
+    .from('sync_config')
+    .upsert({
+      source: 'encar',
+      ...updateData,
+    }, {
+      onConflict: 'source',
+    });
+}
+
+/**
+ * Crée une entrée de log de synchronisation
+ */
+export async function createSyncLog(
+  syncType: 'full' | 'changes' | 'manual'
+): Promise<string | null> {
+  const supabase = getSupabaseAdminUntyped();
+
+  const { data, error } = await supabase
+    .from('sync_logs')
+    .insert({
+      source: 'encar',
+      sync_type: syncType,
+      status: 'running',
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('Erreur création log sync:', error);
+    return null;
+  }
+
+  return data.id as string;
+}
+
+/**
+ * Met à jour une entrée de log de synchronisation
+ */
+export async function updateSyncLog(
+  logId: string,
+  status: 'success' | 'failed',
+  stats: { added: number; updated: number; removed: number; error?: string }
+): Promise<void> {
+  const supabase = getSupabaseAdminUntyped();
+
+  await supabase
+    .from('sync_logs')
+    .update({
+      status,
+      completed_at: new Date().toISOString(),
+      vehicles_added: stats.added,
+      vehicles_updated: stats.updated,
+      vehicles_removed: stats.removed,
+      error_message: stats.error || null,
+    })
+    .eq('id', logId);
 }
 
 export default {
@@ -312,4 +430,7 @@ export default {
   mapEncarToVehicle,
   getLastSyncedChangeId,
   setLastSyncedChangeId,
+  updateSyncStatus,
+  createSyncLog,
+  updateSyncLog,
 };

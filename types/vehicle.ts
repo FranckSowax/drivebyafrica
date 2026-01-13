@@ -11,6 +11,8 @@ export interface Vehicle extends DbVehicle {
   source: VehicleSource;
   auction_status: AuctionStatus;
   status?: VehicleStatus;
+  is_visible?: boolean;
+  admin_notes?: string;
 }
 
 export interface VehicleFilters {
