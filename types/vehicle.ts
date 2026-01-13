@@ -29,11 +29,12 @@ export interface VehicleFilters {
   mileageMax?: number;
   engineCcMin?: number;
   engineCcMax?: number;
-  transmission?: TransmissionType;
-  fuelType?: FuelType;
-  driveType?: DriveType;
-  color?: VehicleColor;
-  bodyType?: BodyType;
+  // Allow string values from API (Dongchedi uses original values)
+  transmission?: TransmissionType | string;
+  fuelType?: FuelType | string;
+  driveType?: DriveType | string;
+  color?: VehicleColor | string;
+  bodyType?: BodyType | string;
   status?: VehicleStatus;
   search?: string;
   sortBy?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc';

@@ -49,6 +49,10 @@ export function useVehicles({
         query = query.in('make', filters.makes);
       }
 
+      if (filters?.models && filters.models.length > 0) {
+        query = query.in('model', filters.models);
+      }
+
       if (filters?.yearFrom) {
         query = query.gte('year', filters.yearFrom);
       }

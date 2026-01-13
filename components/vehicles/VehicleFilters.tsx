@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   X,
   ChevronDown,
   Check,
   RotateCcw,
-  MapPin,
   Car,
   Calendar,
   DollarSign,
@@ -17,75 +16,13 @@ import {
   Palette,
   Tag,
   Filter,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
 import { useFilterStore } from '@/store/useFilterStore';
+import { useDongchediFilters, getFilterLabel, getColorHex } from '@/lib/hooks/useDongchediFilters';
 import { cn } from '@/lib/utils';
-import type { VehicleSource, DriveType, VehicleColor, BodyType, VehicleStatus } from '@/types/vehicle';
-
-// Filter options data
-const SOURCES: { value: VehicleSource | 'all'; label: string; flag?: string }[] = [
-  { value: 'all', label: 'Toutes origines' },
-  { value: 'korea', label: 'Coree du Sud', flag: '🇰🇷' },
-  { value: 'china', label: 'Chine', flag: '🇨🇳' },
-  { value: 'dubai', label: 'Dubai', flag: '🇦🇪' },
-];
-
-const MAKES = [
-  'Toyota', 'Lexus', 'Honda', 'Nissan', 'BMW',
-  'Mercedes', 'Hyundai', 'Kia', 'Audi', 'Volkswagen',
-  'Ford', 'Chevrolet', 'Mazda', 'Subaru', 'Porsche',
-];
-
-const TRANSMISSIONS = [
-  { value: 'automatic', label: 'Automatique' },
-  { value: 'manual', label: 'Manuelle' },
-  { value: 'cvt', label: 'CVT' },
-];
-
-const FUEL_TYPES = [
-  { value: 'petrol', label: 'Essence' },
-  { value: 'diesel', label: 'Diesel' },
-  { value: 'hybrid', label: 'Hybride' },
-  { value: 'electric', label: 'Electrique' },
-  { value: 'lpg', label: 'GPL' },
-];
-
-const DRIVE_TYPES: { value: DriveType; label: string }[] = [
-  { value: 'FWD', label: 'Traction avant (FWD)' },
-  { value: 'RWD', label: 'Propulsion (RWD)' },
-  { value: 'AWD', label: 'AWD' },
-  { value: '4WD', label: '4x4' },
-];
-
-const COLORS: { value: VehicleColor; label: string; hex: string }[] = [
-  { value: 'white', label: 'Blanc', hex: '#FFFFFF' },
-  { value: 'black', label: 'Noir', hex: '#1a1a1a' },
-  { value: 'silver', label: 'Argent', hex: '#C0C0C0' },
-  { value: 'gray', label: 'Gris', hex: '#6B7280' },
-  { value: 'red', label: 'Rouge', hex: '#DC2626' },
-  { value: 'blue', label: 'Bleu', hex: '#2563EB' },
-  { value: 'green', label: 'Vert', hex: '#16A34A' },
-  { value: 'brown', label: 'Marron', hex: '#78350F' },
-  { value: 'beige', label: 'Beige', hex: '#D4B896' },
-];
-
-const BODY_TYPES: { value: BodyType; label: string }[] = [
-  { value: 'sedan', label: 'Berline' },
-  { value: 'suv', label: 'SUV / Crossover' },
-  { value: 'hatchback', label: 'Compacte' },
-  { value: 'pickup', label: 'Pick-up' },
-  { value: 'van', label: 'Minivan / Monospace' },
-  { value: 'coupe', label: 'Coupe' },
-  { value: 'wagon', label: 'Break' },
-  { value: 'convertible', label: 'Cabriolet' },
-];
-
-const STATUSES: { value: VehicleStatus; label: string; color: string }[] = [
-  { value: 'available', label: 'Disponible', color: 'bg-green-500' },
-  { value: 'reserved', label: 'Reserve', color: 'bg-yellow-500' },
-];
 
 // Modern Dropdown Component
 interface DropdownProps {
@@ -98,6 +35,8 @@ interface DropdownProps {
   multiple?: boolean;
   selectedValues?: string[];
   onMultiChange?: (values: string[]) => void;
+  isLoading?: boolean;
+  searchable?: boolean;
 }
 
 function FilterDropdown({
@@ -110,19 +49,32 @@ function FilterDropdown({
   multiple = false,
   selectedValues = [],
   onMultiChange,
+  isLoading = false,
+  searchable = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearchTerm('');
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options;
+    const term = searchTerm.toLowerCase();
+    return options.filter(opt =>
+      opt.label.toLowerCase().includes(term) ||
+      opt.value.toLowerCase().includes(term)
+    );
+  }, [options, searchTerm]);
 
   const selectedOption = options.find((opt) => opt.value === value);
   const hasSelection = multiple ? selectedValues.length > 0 : !!value;
@@ -138,9 +90,11 @@ function FilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        disabled={isLoading}
         className={cn(
           'w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200',
           'bg-[var(--surface)] hover:bg-[var(--surface-hover)]',
+          isLoading && 'opacity-50 cursor-wait',
           isOpen
             ? 'border-mandarin ring-2 ring-mandarin/20'
             : hasSelection
@@ -152,7 +106,7 @@ function FilterDropdown({
           'flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center',
           hasSelection ? 'bg-mandarin/10 text-mandarin' : 'bg-[var(--card-border)] text-[var(--text-muted)]'
         )}>
-          {icon}
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon}
         </span>
         <div className="flex-1 text-left">
           <p className="text-xs text-[var(--text-muted)] mb-0.5">{label}</p>
@@ -173,61 +127,82 @@ function FilterDropdown({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 py-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-          {/* Clear option for single select */}
-          {!multiple && value && (
-            <button
-              type="button"
-              onClick={() => {
-                onChange(undefined);
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--surface)] transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Effacer la selection
-            </button>
+        <div className="absolute z-50 w-full mt-2 py-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-72 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Search input for searchable dropdowns */}
+          {searchable && options.length > 10 && (
+            <div className="px-3 pb-2 border-b border-[var(--card-border)]">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher..."
+                className="w-full px-3 py-2 text-sm bg-[var(--surface)] border border-[var(--card-border)] rounded-lg focus:outline-none focus:border-mandarin"
+              />
+            </div>
           )}
 
-          {options.map((option) => {
-            const isSelected = multiple
-              ? selectedValues.includes(option.value)
-              : value === option.value;
-
-            return (
+          <div className="overflow-y-auto max-h-56">
+            {/* Clear option for single select */}
+            {!multiple && value && (
               <button
-                key={option.value}
                 type="button"
                 onClick={() => {
-                  if (multiple && onMultiChange) {
-                    const newValues = isSelected
-                      ? selectedValues.filter((v) => v !== option.value)
-                      : [...selectedValues, option.value];
-                    onMultiChange(newValues);
-                  } else {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }
+                  onChange(undefined);
+                  setIsOpen(false);
                 }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
-                  isSelected
-                    ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-[var(--text-primary)] hover:bg-[var(--surface)]'
-                )}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--surface)] transition-colors"
               >
-                {option.color && (
-                  <span
-                    className="w-4 h-4 rounded-full border border-[var(--card-border)] flex-shrink-0"
-                    style={{ backgroundColor: option.color }}
-                  />
-                )}
-                {option.icon}
-                <span className="flex-1 text-left">{option.label}</span>
-                {isSelected && <Check className="w-4 h-4 flex-shrink-0" />}
+                <X className="w-4 h-4" />
+                Effacer la selection
               </button>
-            );
-          })}
+            )}
+
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-[var(--text-muted)] text-center">
+                Aucun resultat
+              </div>
+            ) : (
+              filteredOptions.map((option) => {
+                const isSelected = multiple
+                  ? selectedValues.includes(option.value)
+                  : value === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      if (multiple && onMultiChange) {
+                        const newValues = isSelected
+                          ? selectedValues.filter((v) => v !== option.value)
+                          : [...selectedValues, option.value];
+                        onMultiChange(newValues);
+                      } else {
+                        onChange(option.value);
+                        setIsOpen(false);
+                      }
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+                      isSelected
+                        ? 'bg-mandarin/10 text-mandarin'
+                        : 'text-[var(--text-primary)] hover:bg-[var(--surface)]'
+                    )}
+                  >
+                    {option.color && (
+                      <span
+                        className="w-4 h-4 rounded-full border border-[var(--card-border)] flex-shrink-0"
+                        style={{ backgroundColor: option.color }}
+                      />
+                    )}
+                    {option.icon}
+                    <span className="flex-1 text-left">{option.label}</span>
+                    {isSelected && <Check className="w-4 h-4 flex-shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -306,12 +281,70 @@ interface VehicleFiltersProps {
 
 export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const { filters, setFilters, resetFilters } = useFilterStore();
+  const dongchediFilters = useDongchediFilters();
   const currentYear = new Date().getFullYear();
+
+  // Build options from API data
+  const brandOptions = useMemo(() =>
+    dongchediFilters.brands.map(brand => ({ value: brand, label: brand })),
+    [dongchediFilters.brands]
+  );
+
+  const modelOptions = useMemo(() => {
+    if (!filters.makes || filters.makes.length === 0) return [];
+    const models: string[] = [];
+    for (const make of filters.makes) {
+      const makeModels = dongchediFilters.models[make] || [];
+      models.push(...makeModels);
+    }
+    return [...new Set(models)].sort().map(model => ({ value: model, label: model }));
+  }, [filters.makes, dongchediFilters.models]);
+
+  const transmissionOptions = useMemo(() =>
+    dongchediFilters.transmissionTypes.map(t => ({
+      value: t,
+      label: getFilterLabel('transmission', t),
+    })),
+    [dongchediFilters.transmissionTypes]
+  );
+
+  const bodyTypeOptions = useMemo(() =>
+    dongchediFilters.bodyTypes.map(b => ({
+      value: b,
+      label: getFilterLabel('body', b),
+    })),
+    [dongchediFilters.bodyTypes]
+  );
+
+  const engineTypeOptions = useMemo(() =>
+    dongchediFilters.engineTypes.map(e => ({
+      value: e,
+      label: getFilterLabel('engine', e),
+    })),
+    [dongchediFilters.engineTypes]
+  );
+
+  const driveTypeOptions = useMemo(() =>
+    dongchediFilters.driveTypes.map(d => ({
+      value: d,
+      label: getFilterLabel('drive', d),
+    })),
+    [dongchediFilters.driveTypes]
+  );
+
+  const colorOptions = useMemo(() =>
+    dongchediFilters.colors.map(c => ({
+      value: c,
+      label: getFilterLabel('color', c),
+      color: getColorHex(c),
+    })),
+    [dongchediFilters.colors]
+  );
 
   // Count active filters
   const activeFiltersCount = [
-    filters.source && filters.source !== 'all',
     filters.makes && filters.makes.length > 0,
+    filters.models && filters.models.length > 0,
     filters.yearFrom !== 2015 || filters.yearTo !== currentYear,
     filters.priceFrom !== 0 || filters.priceTo !== 50000,
     filters.mileageMax !== 150000,
@@ -320,73 +353,58 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
     filters.driveType,
     filters.bodyType,
     filters.color,
-    filters.status,
   ].filter(Boolean).length;
 
   // Get active filter badges
   const getActiveFilterBadges = () => {
     const badges: { label: string; onClear: () => void }[] = [];
 
-    if (filters.source && filters.source !== 'all') {
-      const source = SOURCES.find((s) => s.value === filters.source);
-      badges.push({
-        label: source?.flag ? `${source.flag} ${source.label}` : source?.label || '',
-        onClear: () => setFilters({ source: 'all' }),
-      });
-    }
-
     if (filters.makes && filters.makes.length > 0) {
       badges.push({
         label: filters.makes.length === 1 ? filters.makes[0] : `${filters.makes.length} marques`,
-        onClear: () => setFilters({ makes: [] }),
+        onClear: () => setFilters({ makes: [], models: [] }),
+      });
+    }
+
+    if (filters.models && filters.models.length > 0) {
+      badges.push({
+        label: filters.models.length === 1 ? filters.models[0] : `${filters.models.length} modeles`,
+        onClear: () => setFilters({ models: [] }),
       });
     }
 
     if (filters.transmission) {
-      const trans = TRANSMISSIONS.find((t) => t.value === filters.transmission);
       badges.push({
-        label: trans?.label || '',
+        label: getFilterLabel('transmission', filters.transmission),
         onClear: () => setFilters({ transmission: undefined }),
       });
     }
 
     if (filters.fuelType) {
-      const fuel = FUEL_TYPES.find((f) => f.value === filters.fuelType);
       badges.push({
-        label: fuel?.label || '',
+        label: getFilterLabel('engine', filters.fuelType),
         onClear: () => setFilters({ fuelType: undefined }),
       });
     }
 
     if (filters.driveType) {
-      const drive = DRIVE_TYPES.find((d) => d.value === filters.driveType);
       badges.push({
-        label: drive?.label || '',
+        label: getFilterLabel('drive', filters.driveType),
         onClear: () => setFilters({ driveType: undefined }),
       });
     }
 
     if (filters.bodyType) {
-      const body = BODY_TYPES.find((b) => b.value === filters.bodyType);
       badges.push({
-        label: body?.label || '',
+        label: getFilterLabel('body', filters.bodyType),
         onClear: () => setFilters({ bodyType: undefined }),
       });
     }
 
     if (filters.color) {
-      const color = COLORS.find((c) => c.value === filters.color);
       badges.push({
-        label: color?.label || '',
+        label: getFilterLabel('color', filters.color),
         onClear: () => setFilters({ color: undefined }),
-      });
-    }
-
-    if (filters.status) {
-      const status = STATUSES.find((s) => s.value === filters.status);
-      badges.push({
-        label: status?.label || '',
-        onClear: () => setFilters({ status: undefined }),
       });
     }
 
@@ -434,30 +452,34 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
 
       {/* Filters Content */}
       <div className="p-5 space-y-4">
-        {/* Source */}
-        <FilterDropdown
-          label="Origine"
-          icon={<MapPin className="w-4 h-4" />}
-          value={filters.source}
-          placeholder="Toutes origines"
-          options={SOURCES.map((s) => ({
-            value: s.value,
-            label: s.flag ? `${s.flag} ${s.label}` : s.label,
-          }))}
-          onChange={(val) => setFilters({ source: val as VehicleSource | 'all' | undefined })}
-        />
-
         {/* Makes - Multi Select */}
         <FilterDropdown
           label="Marque"
           icon={<Car className="w-4 h-4" />}
           placeholder="Toutes marques"
-          options={MAKES.map((m) => ({ value: m, label: m }))}
+          options={brandOptions}
           onChange={() => {}}
           multiple
           selectedValues={filters.makes || []}
-          onMultiChange={(values) => setFilters({ makes: values })}
+          onMultiChange={(values) => setFilters({ makes: values, models: [] })}
+          isLoading={dongchediFilters.isLoading}
+          searchable
         />
+
+        {/* Models - Multi Select (only if makes are selected) */}
+        {filters.makes && filters.makes.length > 0 && modelOptions.length > 0 && (
+          <FilterDropdown
+            label="Modele"
+            icon={<Car className="w-4 h-4" />}
+            placeholder="Tous modeles"
+            options={modelOptions}
+            onChange={() => {}}
+            multiple
+            selectedValues={filters.models || []}
+            onMultiChange={(values) => setFilters({ models: values })}
+            searchable
+          />
+        )}
 
         {/* Body Type */}
         <FilterDropdown
@@ -465,8 +487,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           icon={<Tag className="w-4 h-4" />}
           value={filters.bodyType}
           placeholder="Tous types"
-          options={BODY_TYPES.map((b) => ({ value: b.value, label: b.label }))}
-          onChange={(val) => setFilters({ bodyType: val as BodyType | undefined })}
+          options={bodyTypeOptions}
+          onChange={(val) => setFilters({ bodyType: val })}
+          isLoading={dongchediFilters.isLoading}
         />
 
         {/* Year Range */}
@@ -480,9 +503,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           formatValue={(val) => val.toString()}
         />
 
-        {/* Price Range */}
+        {/* Price Range (USD) */}
         <RangeFilter
-          label="Prix"
+          label="Prix (USD)"
           icon={<DollarSign className="w-4 h-4" />}
           min={0}
           max={100000}
@@ -510,18 +533,20 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           icon={<Cog className="w-4 h-4" />}
           value={filters.transmission}
           placeholder="Toutes"
-          options={TRANSMISSIONS.map((t) => ({ value: t.value, label: t.label }))}
-          onChange={(val) => setFilters({ transmission: val as 'automatic' | 'manual' | 'cvt' | undefined })}
+          options={transmissionOptions}
+          onChange={(val) => setFilters({ transmission: val })}
+          isLoading={dongchediFilters.isLoading}
         />
 
-        {/* Fuel Type */}
+        {/* Fuel Type (Engine Type) */}
         <FilterDropdown
           label="Carburant"
           icon={<Fuel className="w-4 h-4" />}
           value={filters.fuelType}
           placeholder="Tous"
-          options={FUEL_TYPES.map((f) => ({ value: f.value, label: f.label }))}
-          onChange={(val) => setFilters({ fuelType: val as 'petrol' | 'diesel' | 'hybrid' | 'electric' | undefined })}
+          options={engineTypeOptions}
+          onChange={(val) => setFilters({ fuelType: val })}
+          isLoading={dongchediFilters.isLoading}
         />
 
         {/* Drive Type */}
@@ -530,8 +555,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           icon={<Compass className="w-4 h-4" />}
           value={filters.driveType}
           placeholder="Toutes"
-          options={DRIVE_TYPES.map((d) => ({ value: d.value, label: d.label }))}
-          onChange={(val) => setFilters({ driveType: val as DriveType | undefined })}
+          options={driveTypeOptions}
+          onChange={(val) => setFilters({ driveType: val })}
+          isLoading={dongchediFilters.isLoading}
         />
 
         {/* Color */}
@@ -540,18 +566,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           icon={<Palette className="w-4 h-4" />}
           value={filters.color}
           placeholder="Toutes couleurs"
-          options={COLORS.map((c) => ({ value: c.value, label: c.label, color: c.hex }))}
-          onChange={(val) => setFilters({ color: val as VehicleColor | undefined })}
-        />
-
-        {/* Status */}
-        <FilterDropdown
-          label="Disponibilite"
-          icon={<Check className="w-4 h-4" />}
-          value={filters.status}
-          placeholder="Tous"
-          options={STATUSES.map((s) => ({ value: s.value, label: s.label, color: s.color.replace('bg-', '') }))}
-          onChange={(val) => setFilters({ status: val as VehicleStatus | undefined })}
+          options={colorOptions}
+          onChange={(val) => setFilters({ color: val })}
+          isLoading={dongchediFilters.isLoading}
         />
       </div>
 
