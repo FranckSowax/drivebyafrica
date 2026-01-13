@@ -74,15 +74,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
         <div>
           <Link
             href="/dashboard/orders"
-            className="inline-flex items-center gap-1 text-nobel hover:text-white transition-colors mb-2"
+            className="inline-flex items-center gap-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-2"
           >
             <ChevronLeft className="w-4 h-4" />
             Retour aux commandes
           </Link>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
             Commande #{orderData.id.slice(-6).toUpperCase()}
           </h1>
-          <p className="text-nobel mt-1">Créée le {createdAt}</p>
+          <p className="text-[var(--text-muted)] mt-1">Creee le {createdAt}</p>
         </div>
         <Badge className={status.color}>{status.label}</Badge>
       </div>
@@ -93,7 +93,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
         <div className="lg:col-span-2 space-y-6">
           {/* Vehicle Info */}
           <Card>
-            <h2 className="font-bold text-white mb-4">Véhicule</h2>
+            <h2 className="font-bold text-[var(--text-primary)] mb-4">Véhicule</h2>
             <div className="flex gap-4">
               <div className="relative w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-surface">
                 {vehicleData?.images?.[0] ? (
@@ -105,17 +105,17 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Package className="w-8 h-8 text-nobel" />
+                    <Package className="w-8 h-8 text-[var(--text-muted)]" />
                   </div>
                 )}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">
                   {vehicleData
                     ? `${vehicleData.make} ${vehicleData.model}`
                     : 'Véhicule'}
                 </h3>
-                <p className="text-nobel">
+                <p className="text-[var(--text-muted)]">
                   {vehicleData?.year} • Lot #{vehicleData?.lot_number || '-'}
                 </p>
                 {vehicleData && (
@@ -133,39 +133,39 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
           {/* Tracking Timeline */}
           <Card>
-            <h2 className="font-bold text-white mb-6">Suivi de la commande</h2>
+            <h2 className="font-bold text-[var(--text-primary)] mb-6">Suivi de la commande</h2>
             <OrderTimeline tracking={trackingData} currentStatus={orderData.status} />
           </Card>
 
           {/* Shipping Details */}
           <Card>
-            <h2 className="font-bold text-white mb-4">Détails de livraison</h2>
+            <h2 className="font-bold text-[var(--text-primary)] mb-4">Détails de livraison</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-nobel mb-1">Destination</p>
-                <p className="text-white flex items-center gap-2">
+                <p className="text-xs text-[var(--text-muted)] mb-1">Destination</p>
+                <p className="text-[var(--text-primary)] flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-mandarin" />
                   {orderData.destination_city || orderData.destination_port || '-'}
                   {orderData.destination_country && `, ${orderData.destination_country}`}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-nobel mb-1">Méthode</p>
-                <p className="text-white capitalize">
+                <p className="text-xs text-[var(--text-muted)] mb-1">Méthode</p>
+                <p className="text-[var(--text-primary)] capitalize">
                   {orderData.shipping_method === 'sea' ? 'Maritime' : 'Aérien'}
                   {orderData.container_type && ` (${orderData.container_type})`}
                 </p>
               </div>
               {orderData.tracking_number && (
                 <div>
-                  <p className="text-xs text-nobel mb-1">Numéro de suivi</p>
-                  <p className="text-white font-mono">{orderData.tracking_number}</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Numéro de suivi</p>
+                  <p className="text-[var(--text-primary)] font-mono">{orderData.tracking_number}</p>
                 </div>
               )}
               {orderData.estimated_arrival && (
                 <div>
-                  <p className="text-xs text-nobel mb-1">Arrivée estimée</p>
-                  <p className="text-white flex items-center gap-2">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Arrivée estimée</p>
+                  <p className="text-[var(--text-primary)] flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-mandarin" />
                     {format(new Date(orderData.estimated_arrival), 'd MMMM yyyy', {
                       locale: fr,
@@ -181,7 +181,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
         <div className="space-y-6">
           {/* Price Breakdown */}
           <Card>
-            <h2 className="font-bold text-white mb-4">Récapitulatif</h2>
+            <h2 className="font-bold text-[var(--text-primary)] mb-4">Récapitulatif</h2>
             <div className="space-y-3">
               <PriceRow
                 label="Prix du véhicule"
@@ -201,7 +201,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               />
               <div className="pt-3 border-t border-nobel/20">
                 <div className="flex justify-between items-center">
-                  <span className="text-white font-bold">Total</span>
+                  <span className="text-[var(--text-primary)] font-bold">Total</span>
                   <span className="text-xl font-bold text-mandarin">
                     {orderData.total_price_usd
                       ? formatUsdToLocal(orderData.total_price_usd)
@@ -214,7 +214,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
           {/* Actions */}
           <Card>
-            <h2 className="font-bold text-white mb-4">Actions</h2>
+            <h2 className="font-bold text-[var(--text-primary)] mb-4">Actions</h2>
             <div className="space-y-3">
               {orderData.status === 'pending_payment' && (
                 <Link href={`/dashboard/orders/${orderData.id}/pay`}>
@@ -244,10 +244,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
           {/* Need Help */}
           <Card className="bg-surface/50">
-            <p className="text-sm text-nobel">
+            <p className="text-sm text-[var(--text-muted)]">
               Besoin d&apos;aide avec votre commande?
             </p>
-            <p className="text-sm text-white mt-1">
+            <p className="text-sm text-[var(--text-primary)] mt-1">
               Contactez-nous via WhatsApp pour une assistance rapide.
             </p>
             <a
@@ -275,8 +275,8 @@ function PriceRow({
 }) {
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-nobel">{label}</span>
-      <span className="text-white">
+      <span className="text-[var(--text-muted)]">{label}</span>
+      <span className="text-[var(--text-primary)]">
         {value ? formatUsdToLocal(value) : '-'}
       </span>
     </div>

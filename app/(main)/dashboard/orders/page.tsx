@@ -1,8 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
+import {
+  Package,
+  FileText,
+  ArrowRight,
+  Clock,
+  CheckCircle,
+  Truck,
+  Ship,
+  MapPin,
+} from 'lucide-react';
 import type { Order } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
 
@@ -12,12 +24,27 @@ export default async function OrdersPage() {
 
   if (!user) return null;
 
-  // Fetch orders with vehicle info
+  // Fetch orders
   const { data: orders } = await supabase
     .from('orders')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
+
+  // Fetch pending quotes (using any to bypass type check for quotes table)
+  let pendingQuotes: any[] = [];
+  try {
+    const { data: quotes } = await (supabase as any)
+      .from('quotes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(3);
+    pendingQuotes = quotes || [];
+  } catch (e) {
+    // quotes table may not exist
+  }
 
   const ordersData = (orders || []) as Order[];
 
@@ -26,7 +53,7 @@ export default async function OrdersPage() {
   const { data: vehicles } = await supabase
     .from('vehicles')
     .select('id, make, model, year, images')
-    .in('id', vehicleIds);
+    .in('id', vehicleIds.length > 0 ? vehicleIds : ['']);
 
   const vehiclesMap = new Map(
     ((vehicles || []) as Pick<Vehicle, 'id' | 'make' | 'model' | 'year' | 'images'>[]).map((v) => [v.id, v])
@@ -42,32 +69,76 @@ export default async function OrdersPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Mes commandes</h1>
-        <p className="text-nobel mt-1">
-          Suivez le statut de vos commandes en temps réel
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Mes commandes</h1>
+          <p className="text-[var(--text-muted)] mt-1">
+            Suivez le statut de vos commandes en temps reel
+          </p>
+        </div>
+        <Link href="/dashboard/quotes">
+          <Button variant="outline" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>
+            Voir mes devis
+          </Button>
+        </Link>
       </div>
 
+      {/* Pending Quotes Banner */}
+      {pendingQuotes.length > 0 && (
+        <Card className="bg-mandarin/5 border-mandarin/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-mandarin/10 rounded-lg">
+                <FileText className="w-5 h-5 text-mandarin" />
+              </div>
+              <div>
+                <h3 className="font-medium text-[var(--text-primary)]">
+                  {pendingQuotes.length} devis en attente
+                </h3>
+                <p className="text-sm text-[var(--text-muted)]">
+                  Contactez-nous pour convertir vos devis en commandes
+                </p>
+              </div>
+            </div>
+            <Link href="/dashboard/quotes">
+              <Button variant="primary" size="sm">
+                Voir les devis
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      )}
+
       {/* Status Summary */}
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="warning" className="px-3 py-1.5">
-          {activeOrders.length} En cours
-        </Badge>
-        <Badge variant="success" className="px-3 py-1.5">
-          {completedOrders.length} Livrées
-        </Badge>
-        {cancelledOrders.length > 0 && (
-          <Badge variant="error" className="px-3 py-1.5">
-            {cancelledOrders.length} Annulées
-          </Badge>
-        )}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="text-center p-4">
+          <Clock className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
+          <p className="text-2xl font-bold text-[var(--text-primary)]">{activeOrders.length}</p>
+          <p className="text-xs text-[var(--text-muted)]">En cours</p>
+        </Card>
+        <Card className="text-center p-4">
+          <Ship className="w-6 h-6 text-royal-blue mx-auto mb-2" />
+          <p className="text-2xl font-bold text-[var(--text-primary)]">
+            {ordersData.filter((o) => o.status === 'shipped').length}
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">En transit</p>
+        </Card>
+        <Card className="text-center p-4">
+          <CheckCircle className="w-6 h-6 text-jewel mx-auto mb-2" />
+          <p className="text-2xl font-bold text-[var(--text-primary)]">{completedOrders.length}</p>
+          <p className="text-xs text-[var(--text-muted)]">Livrees</p>
+        </Card>
+        <Card className="text-center p-4">
+          <Package className="w-6 h-6 text-[var(--text-muted)] mx-auto mb-2" />
+          <p className="text-2xl font-bold text-[var(--text-primary)]">{ordersData.length}</p>
+          <p className="text-xs text-[var(--text-muted)]">Total</p>
+        </Card>
       </div>
 
       {/* Active Orders */}
       {activeOrders.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-white mb-4">Commandes en cours</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes en cours</h2>
           <div className="space-y-4">
             {activeOrders.map((order) => {
               const vehicle = vehiclesMap.get(order.vehicle_id);
@@ -89,7 +160,7 @@ export default async function OrdersPage() {
       {/* Completed Orders */}
       {completedOrders.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-white mb-4">Commandes livrées</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes livrees</h2>
           <div className="space-y-4">
             {completedOrders.map((order) => {
               const vehicle = vehiclesMap.get(order.vehicle_id);
@@ -111,7 +182,7 @@ export default async function OrdersPage() {
       {/* Cancelled Orders */}
       {cancelledOrders.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-white mb-4">Commandes annulées</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes annulees</h2>
           <div className="space-y-4">
             {cancelledOrders.map((order) => {
               const vehicle = vehiclesMap.get(order.vehicle_id);
@@ -133,37 +204,73 @@ export default async function OrdersPage() {
       {/* Empty State */}
       {ordersData.length === 0 && (
         <Card className="text-center py-12">
-          <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-nobel"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-bold text-white mb-2">
+          <Package className="w-16 h-16 text-[var(--text-muted)] mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">
             Aucune commande
           </h3>
-          <p className="text-nobel mb-6">
-            Vous n&apos;avez pas encore passé de commande.
-            <br />
-            Explorez notre catalogue pour trouver votre véhicule idéal.
+          <p className="text-[var(--text-muted)] mb-6 max-w-md mx-auto">
+            Vous n&apos;avez pas encore passe de commande.
+            Commencez par demander un devis pour un vehicule.
           </p>
-          <a
-            href="/cars"
-            className="inline-flex items-center justify-center px-6 py-3 bg-mandarin text-white rounded-lg font-medium hover:bg-mandarin/90 transition-colors"
-          >
-            Explorer les véhicules
-          </a>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/cars">
+              <Button variant="primary">
+                Explorer les vehicules
+              </Button>
+            </Link>
+            <Link href="/dashboard/quotes">
+              <Button variant="outline" leftIcon={<FileText className="w-4 h-4" />}>
+                Voir mes devis
+              </Button>
+            </Link>
+          </div>
         </Card>
       )}
+
+      {/* How Orders Work */}
+      <Card className="bg-[var(--surface)]/50">
+        <h3 className="font-bold text-[var(--text-primary)] mb-4">
+          Processus de commande
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-mandarin/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-mandarin">1</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Devis accepte</p>
+              <p className="text-xs text-[var(--text-muted)]">Validation de votre commande</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-mandarin/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-mandarin">2</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Paiement</p>
+              <p className="text-xs text-[var(--text-muted)]">Acompte et solde</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-mandarin/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-mandarin">3</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Expedition</p>
+              <p className="text-xs text-[var(--text-muted)]">Transport maritime</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-jewel/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-4 h-4 text-jewel" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Livraison</p>
+              <p className="text-xs text-[var(--text-muted)]">Reception au port</p>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

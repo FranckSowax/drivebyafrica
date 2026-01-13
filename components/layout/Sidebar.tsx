@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Car,
-  Gavel,
+  FileText,
   Package,
   Heart,
-  Wallet,
+  Calculator,
   MessageSquare,
   Settings,
   HelpCircle,
@@ -22,9 +22,9 @@ const sidebarLinks = [
     icon: LayoutDashboard,
   },
   {
-    label: 'Mes enchères',
-    href: '/dashboard/bids',
-    icon: Gavel,
+    label: 'Mes devis',
+    href: '/dashboard/quotes',
+    icon: FileText,
   },
   {
     label: 'Mes commandes',
@@ -37,9 +37,9 @@ const sidebarLinks = [
     icon: Heart,
   },
   {
-    label: 'Portefeuille',
-    href: '/dashboard/wallet',
-    icon: Wallet,
+    label: 'Calculateur',
+    href: '/calculator',
+    icon: Calculator,
   },
   {
     label: 'Messages',
