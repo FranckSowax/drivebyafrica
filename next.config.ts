@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Prevent double slash issues
+  trailingSlash: false,
   images: {
     remotePatterns: [
       {
