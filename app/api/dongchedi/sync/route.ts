@@ -25,17 +25,22 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Check authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Check if this is a scheduled function call (from Netlify cron)
+    const isScheduledFunction = request.headers.get('x-scheduled-function') === 'true';
 
-    // TODO: Check if user is admin
-    // const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    // if (profile?.role !== 'admin') {
-    //   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    // }
+    if (!isScheduledFunction) {
+      // Check user authentication for manual calls
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      // TODO: Check if user is admin
+      // const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      // if (profile?.role !== 'admin') {
+      //   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      // }
+    }
 
     const body = await request.json().catch(() => ({}));
     const mode = body.mode || 'changes';

@@ -308,23 +308,43 @@ Creer un bucket public dans Supabase Storage:
 
 ---
 
-## Cron job (Vercel)
+## Cron Jobs (Netlify Scheduled Functions)
 
-Ajouter dans `vercel.json`:
+Les fonctions planifiees sont configurees dans `netlify/functions/`:
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/dongchedi/photos/sync",
-      "schedule": "30 6 * * *"
-    },
-    {
-      "path": "/api/dongchedi/sync",
-      "schedule": "0 7 * * *"
-    }
-  ]
-}
+| Fonction | Schedule | Description |
+|----------|----------|-------------|
+| `dongchedi-photos-sync` | `30 6 * * *` (06:30 UTC) | Telecharge et cache les photos |
+| `dongchedi-sync` | `0 7 * * *` (07:00 UTC) | Synchronise les changements quotidiens |
+| `dongchedi-weekly-sync` | `0 4 * * 0` (Dimanche 04:00 UTC) | Synchronisation complete hebdomadaire |
+
+### Fichiers
+
+```
+netlify/functions/
+├── dongchedi-photos-sync.mts    # Sync photos quotidien
+├── dongchedi-sync.mts           # Sync vehicules quotidien
+└── dongchedi-weekly-sync.mts    # Sync complet hebdomadaire
+```
+
+### Tester manuellement
+
+Les fonctions peuvent etre testees via l'interface Netlify:
+1. Aller dans **Functions** > Selectionner la fonction
+2. Cliquer sur **Trigger function**
+
+Ou via curl (necessite authentification):
+
+```bash
+# Sync photos (dry run)
+curl -X POST "https://votre-site.netlify.app/api/dongchedi/photos/sync" \
+  -H "Content-Type: application/json" \
+  -d '{"dryRun": true}'
+
+# Sync vehicules
+curl -X POST "https://votre-site.netlify.app/api/dongchedi/sync" \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "changes", "sinceDays": 1}'
 ```
 
 ---
