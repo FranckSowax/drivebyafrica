@@ -15,6 +15,9 @@ export interface Vehicle extends DbVehicle {
   admin_notes?: string;
 }
 
+export type VehicleColor = 'white' | 'black' | 'silver' | 'gray' | 'red' | 'blue' | 'green' | 'brown' | 'beige' | 'other';
+export type BodyType = 'sedan' | 'suv' | 'hatchback' | 'pickup' | 'van' | 'coupe' | 'wagon' | 'convertible' | 'other';
+
 export interface VehicleFilters {
   source?: VehicleSource | 'all';
   makes?: string[];
@@ -29,7 +32,10 @@ export interface VehicleFilters {
   transmission?: TransmissionType;
   fuelType?: FuelType;
   driveType?: DriveType;
+  color?: VehicleColor;
+  bodyType?: BodyType;
   status?: VehicleStatus;
+  search?: string;
   sortBy?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc';
   notifyNewMatches?: boolean;
 }

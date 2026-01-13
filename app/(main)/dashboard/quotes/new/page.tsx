@@ -601,9 +601,9 @@ export default function NewQuotePage() {
               2
             </span>
             <div>
-              <p className="font-medium text-[var(--text-primary)]">Contactez-nous</p>
+              <p className="font-medium text-[var(--text-primary)]">Versez l&apos;acompte de 1000$</p>
               <p className="text-sm text-[var(--text-muted)]">
-                Notre equipe vous accompagnera dans votre achat
+                Bloquez le vehicule en effectuant le depot initial
               </p>
             </div>
           </li>
@@ -612,9 +612,20 @@ export default function NewQuotePage() {
               3
             </span>
             <div>
-              <p className="font-medium text-[var(--text-primary)]">Validez votre commande</p>
+              <p className="font-medium text-[var(--text-primary)]">Recevez le rapport d&apos;inspection</p>
               <p className="text-sm text-[var(--text-muted)]">
-                Effectuez un acompte pour reserver le vehicule
+                Un rapport professionnel avec photos vous sera envoye par WhatsApp
+              </p>
+            </div>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 w-6 h-6 bg-[var(--surface)] text-[var(--text-muted)] rounded-full flex items-center justify-center text-sm font-medium">
+              4
+            </span>
+            <div>
+              <p className="font-medium text-[var(--text-primary)]">Reglez le solde</p>
+              <p className="text-sm text-[var(--text-muted)]">
+                Le paiement integral declenche le processus de livraison
               </p>
             </div>
           </li>
@@ -625,7 +636,7 @@ export default function NewQuotePage() {
             variant="secondary"
             className="w-full"
             leftIcon={<FileText className="w-4 h-4" />}
-            onClick={() => window.open('https://wa.me/241XXXXXXXX?text=Bonjour, je souhaite des informations sur le devis ' + quoteNumber, '_blank')}
+            onClick={() => window.open('https://wa.me/24177000000?text=Bonjour, je souhaite des informations sur le devis ' + quoteNumber, '_blank')}
           >
             Nous contacter par WhatsApp
           </Button>

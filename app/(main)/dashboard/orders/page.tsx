@@ -119,7 +119,7 @@ export default async function OrdersPage() {
         <Card className="text-center p-4">
           <Ship className="w-6 h-6 text-royal-blue mx-auto mb-2" />
           <p className="text-2xl font-bold text-[var(--text-primary)]">
-            {ordersData.filter((o) => o.status === 'shipped').length}
+            {ordersData.filter((o) => o.status === 'shipped' || o.status === 'in_transit').length}
           </p>
           <p className="text-xs text-[var(--text-muted)]">En transit</p>
         </Card>
@@ -232,14 +232,14 @@ export default async function OrdersPage() {
         <h3 className="font-bold text-[var(--text-primary)] mb-4">
           Processus de commande
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-mandarin/10 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-sm font-bold text-mandarin">1</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">Devis accepte</p>
-              <p className="text-xs text-[var(--text-muted)]">Validation de votre commande</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Devis obtenu</p>
+              <p className="text-xs text-[var(--text-muted)]">Estimation complete</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -247,8 +247,8 @@ export default async function OrdersPage() {
               <span className="text-sm font-bold text-mandarin">2</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">Paiement</p>
-              <p className="text-xs text-[var(--text-muted)]">Acompte et solde</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Acompte 1000$</p>
+              <p className="text-xs text-[var(--text-muted)]">Blocage du vehicule</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -256,8 +256,17 @@ export default async function OrdersPage() {
               <span className="text-sm font-bold text-mandarin">3</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">Expedition</p>
-              <p className="text-xs text-[var(--text-muted)]">Transport maritime</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Inspection</p>
+              <p className="text-xs text-[var(--text-muted)]">Rapport professionnel</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-mandarin/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-mandarin">4</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Paiement integral</p>
+              <p className="text-xs text-[var(--text-muted)]">Solde de la commande</p>
             </div>
           </div>
           <div className="flex items-start gap-3">

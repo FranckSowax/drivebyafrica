@@ -77,8 +77,26 @@ export function useVehicles({
         query = query.eq('fuel_type', filters.fuelType);
       }
 
+      if (filters?.driveType) {
+        query = query.eq('drive_type', filters.driveType);
+      }
+
+      if (filters?.color) {
+        query = query.ilike('color', `%${filters.color}%`);
+      }
+
+      if (filters?.bodyType) {
+        query = query.eq('body_type', filters.bodyType);
+      }
+
       if (filters?.status) {
         query = query.eq('status', filters.status);
+      }
+
+      // Apply search (searches make and model)
+      if (filters?.search && filters.search.trim()) {
+        const searchTerm = filters.search.trim().toLowerCase();
+        query = query.or(`make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
       }
 
       // Apply sorting

@@ -112,7 +112,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
           destination_city: params.destinationCity || null,
           shipping_method: params.shippingMethod || 'sea',
           container_type: params.containerType || 'shared',
-          status: 'pending_payment',
+          status: 'deposit_pending',
           documents: {},
         })
         .select()
@@ -124,11 +124,11 @@ export function useOrders(options: UseOrdersOptions = {}) {
       await supabase.from('order_tracking').insert({
         order_id: data.id,
         status: 'created',
-        title: 'Commande créée',
-        description: 'Votre commande a été créée avec succès',
+        title: 'Commande creee',
+        description: 'Votre commande a ete creee. Versez l\'acompte de 1000$ pour bloquer le vehicule.',
       });
 
-      toast.success('Commande créée!', 'Procédez au paiement pour confirmer');
+      toast.success('Commande creee!', 'Versez l\'acompte de 1000$ pour bloquer le vehicule');
       await fetchOrders();
       return { success: true, data: data as Order };
     } catch (err) {
@@ -292,47 +292,74 @@ export function useOrderTracking(orderId: string) {
   };
 }
 
-// Order status helpers
+// Order status helpers - New workflow:
+// 1. Quote obtained -> 2. $1000 deposit -> 3. Inspection report -> 4. Full payment -> 5. Delivery
 export const ORDER_STATUSES = {
+  deposit_pending: {
+    label: 'En attente de l\'acompte',
+    color: 'bg-yellow-500',
+    step: 1,
+  },
+  deposit_received: {
+    label: 'Vehicule bloque',
+    color: 'bg-blue-500',
+    step: 2,
+  },
+  inspection_pending: {
+    label: 'Inspection en cours',
+    color: 'bg-purple-500',
+    step: 3,
+  },
+  inspection_complete: {
+    label: 'Rapport d\'inspection envoye',
+    color: 'bg-indigo-500',
+    step: 4,
+  },
+  payment_pending: {
+    label: 'En attente du paiement',
+    color: 'bg-yellow-500',
+    step: 5,
+  },
+  payment_received: {
+    label: 'Paiement recu',
+    color: 'bg-green-500',
+    step: 6,
+  },
+  preparing_export: {
+    label: 'Preparation export',
+    color: 'bg-purple-500',
+    step: 7,
+  },
+  shipped: {
+    label: 'En transit',
+    color: 'bg-orange-500',
+    step: 8,
+  },
+  customs_clearance: {
+    label: 'Dedouanement',
+    color: 'bg-indigo-500',
+    step: 9,
+  },
+  delivered: {
+    label: 'Livre',
+    color: 'bg-green-600',
+    step: 10,
+  },
+  cancelled: {
+    label: 'Annule',
+    color: 'bg-red-500',
+    step: 0,
+  },
+  // Legacy statuses for backwards compatibility
   pending_payment: {
     label: 'En attente de paiement',
     color: 'bg-yellow-500',
     step: 1,
   },
-  payment_received: {
-    label: 'Paiement reçu',
-    color: 'bg-blue-500',
-    step: 2,
-  },
-  auction_won: {
-    label: 'Enchère gagnée',
-    color: 'bg-green-500',
-    step: 3,
-  },
-  preparing_export: {
-    label: 'Préparation export',
-    color: 'bg-purple-500',
-    step: 4,
-  },
   in_transit: {
     label: 'En transit',
     color: 'bg-orange-500',
-    step: 5,
-  },
-  customs_clearance: {
-    label: 'Dédouanement',
-    color: 'bg-indigo-500',
-    step: 6,
-  },
-  delivered: {
-    label: 'Livré',
-    color: 'bg-green-600',
-    step: 7,
-  },
-  cancelled: {
-    label: 'Annulé',
-    color: 'bg-red-500',
-    step: 0,
+    step: 8,
   },
 } as const;
 

@@ -83,7 +83,6 @@ export default async function HomePage() {
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface)] via-[var(--background)] to-mandarin/10" />
-        <div className="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-5" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">

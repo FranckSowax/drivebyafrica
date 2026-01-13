@@ -204,30 +204,36 @@ export default async function DashboardPage() {
       {/* How it Works */}
       <Card className="bg-gradient-to-r from-mandarin/5 to-transparent border-mandarin/20">
         <h2 className="text-lg font-bold text-[var(--text-primary)] mb-6">Comment ca marche</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <WorkflowStep
             number={1}
-            icon={Car}
-            title="Choisissez"
-            description="Selectionnez un vehicule dans notre catalogue"
+            icon={FileText}
+            title="Devis"
+            description="Obtenez votre devis gratuit pour le vehicule choisi"
           />
           <WorkflowStep
             number={2}
-            icon={FileText}
-            title="Demandez un devis"
-            description="Obtenez une estimation complete avec frais de livraison"
+            icon={CheckCircle}
+            title="Acompte 1000$"
+            description="Versez l'acompte pour bloquer le vehicule"
           />
           <WorkflowStep
             number={3}
-            icon={CheckCircle}
-            title="Confirmez"
-            description="Validez votre commande et effectuez le paiement"
+            icon={Car}
+            title="Inspection"
+            description="Recevez le rapport d'inspection professionnel"
           />
           <WorkflowStep
             number={4}
+            icon={TrendingUp}
+            title="Paiement"
+            description="Reglez le solde pour lancer la livraison"
+          />
+          <WorkflowStep
+            number={5}
             icon={Ship}
-            title="Recevez"
-            description="Suivez votre vehicule jusqu'a la livraison"
+            title="Livraison"
+            description="Suivez votre vehicule jusqu'a destination"
           />
         </div>
       </Card>

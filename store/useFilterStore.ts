@@ -23,6 +23,12 @@ const defaultFilters: VehicleFilters = {
   mileageMax: 150000,
   sortBy: 'price_asc',
   notifyNewMatches: false,
+  // New filters
+  driveType: undefined,
+  color: undefined,
+  bodyType: undefined,
+  status: undefined,
+  search: undefined,
 };
 
 export const useFilterStore = create<FilterState>()(

@@ -22,7 +22,7 @@ const SORT_OPTIONS = [
 
 export default function CarsPage() {
   const { filters, setFilters } = useFilterStore();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -39,10 +39,19 @@ export default function CarsPage() {
     setPage(1);
   }, [filters]);
 
+  // Sync search query with filters
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (searchQuery !== filters.search) {
+        setFilters({ search: searchQuery || undefined });
+      }
+    }, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, filters.search, setFilters]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement search logic
-    refetch();
+    setFilters({ search: searchQuery || undefined });
   };
 
   return (
