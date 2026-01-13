@@ -17,75 +17,84 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
 
   try {
-    // Get vehicle counts by status
-    // Note: status, is_visible columns are added by migration 00003
-    const { data: vehicles, error: vehiclesError } = await supabase
+    // Get total count
+    const { count: totalCount, error: totalError } = await supabase
       .from('vehicles')
-      .select('source, auction_status, start_price_usd');
+      .select('*', { count: 'exact', head: true });
 
-    if (vehiclesError) {
-      return NextResponse.json({ error: vehiclesError.message }, { status: 500 });
+    if (totalError) {
+      return NextResponse.json({ error: totalError.message }, { status: 500 });
     }
 
-    // Type for vehicle row data
-    type VehicleRow = {
-      source: string;
-      auction_status?: string;
-      start_price_usd?: number;
-      status?: string;
-      is_visible?: boolean;
-    };
-    const vehicleRows = (vehicles || []) as VehicleRow[];
+    // Get counts by source
+    const { count: koreaCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('source', 'korea');
+
+    const { count: chinaCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('source', 'china');
+
+    const { count: dubaiCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('source', 'dubai');
+
+    // Get counts by status
+    const { count: ongoingCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('auction_status', 'ongoing');
+
+    const { count: soldCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('auction_status', 'sold');
+
+    const { count: upcomingCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('auction_status', 'upcoming');
+
+    const { count: endedCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('auction_status', 'ended');
+
+    // Get average price using a sample (to avoid fetching all rows)
+    const { data: priceData } = await supabase
+      .from('vehicles')
+      .select('start_price_usd')
+      .not('start_price_usd', 'is', null)
+      .limit(1000);
+
+    let avgPrice = 0;
+    if (priceData && priceData.length > 0) {
+      const total = priceData.reduce((sum, v) => sum + (v.start_price_usd || 0), 0);
+      avgPrice = Math.round(total / priceData.length);
+    }
 
     // Calculate stats
     const stats = {
-      total: vehicleRows?.length || 0,
+      total: totalCount || 0,
       byStatus: {
-        available: 0,
+        available: ongoingCount || 0,
         reserved: 0,
-        sold: 0,
-        pending: 0,
+        sold: soldCount || 0,
+        pending: upcomingCount || 0,
+        ended: endedCount || 0,
       },
       bySource: {
-        korea: 0,
-        china: 0,
-        dubai: 0,
+        korea: koreaCount || 0,
+        china: chinaCount || 0,
+        dubai: dubaiCount || 0,
       },
       hidden: 0,
-      visible: 0,
-      avgPrice: 0,
+      visible: totalCount || 0,
+      avgPrice,
     };
-
-    let totalPrice = 0;
-    let priceCount = 0;
-
-    vehicleRows?.forEach((v) => {
-      // By status - use status column if available, fallback to auction_status
-      const status = v.status || (v.auction_status === 'sold' ? 'sold' : 'available');
-      if (status in stats.byStatus) {
-        stats.byStatus[status as keyof typeof stats.byStatus]++;
-      }
-
-      // By source
-      if (v.source in stats.bySource) {
-        stats.bySource[v.source as keyof typeof stats.bySource]++;
-      }
-
-      // Visibility - default to visible if column doesn't exist
-      if (v.is_visible === false) {
-        stats.hidden++;
-      } else {
-        stats.visible++;
-      }
-
-      // Price
-      if (v.start_price_usd) {
-        totalPrice += v.start_price_usd;
-        priceCount++;
-      }
-    });
-
-    stats.avgPrice = priceCount > 0 ? Math.round(totalPrice / priceCount) : 0;
 
     // Get sync config
     const { data: syncConfig } = await supabase
