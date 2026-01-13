@@ -26,9 +26,9 @@ export function VehicleGrid({
   if (vehicles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-24 h-24 bg-surface rounded-full flex items-center justify-center mb-4">
+        <div className="w-24 h-24 bg-[var(--surface)] rounded-full flex items-center justify-center mb-4">
           <svg
-            className="w-12 h-12 text-nobel"
+            className="w-12 h-12 text-[var(--text-muted)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -41,8 +41,8 @@ export function VehicleGrid({
             />
           </svg>
         </div>
-        <p className="text-nobel text-lg">{emptyMessage}</p>
-        <p className="text-nobel/60 text-sm mt-1">
+        <p className="text-[var(--text-muted)] text-lg">{emptyMessage}</p>
+        <p className="text-[var(--text-muted)] opacity-60 text-sm mt-1">
           Essayez de modifier vos filtres de recherche
         </p>
       </div>

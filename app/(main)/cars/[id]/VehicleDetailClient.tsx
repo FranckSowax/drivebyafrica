@@ -90,12 +90,12 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-cod-gray pb-24 lg:pb-12">
+    <div className="min-h-screen bg-[var(--background)] pb-24 lg:pb-12">
       {/* Back Button */}
       <div className="container mx-auto px-4 py-4">
         <Link
           href="/cars"
-          className="inline-flex items-center gap-2 text-nobel hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
           Retour aux véhicules
@@ -107,7 +107,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
           {/* Left Column - Images & Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-surface">
+            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[var(--surface)]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentImageIndex}
@@ -182,55 +182,55 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
 
             {/* Specifications */}
             <Card>
-              <h2 className="text-xl font-bold text-white mb-4">Spécifications</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Spécifications</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {specs.map((spec) => (
                   <div key={spec.label} className="flex items-start gap-3">
-                    <div className="p-2 bg-surface rounded-lg">
+                    <div className="p-2 bg-[var(--surface)] rounded-lg">
                       <spec.icon className="w-5 h-5 text-mandarin" />
                     </div>
                     <div>
-                      <p className="text-xs text-nobel">{spec.label}</p>
-                      <p className="text-white font-medium">{spec.value}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{spec.label}</p>
+                      <p className="text-[var(--text-primary)] font-medium">{spec.value}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Additional Info */}
-              <div className="mt-6 pt-6 border-t border-nobel/20 grid grid-cols-2 gap-4">
+              <div className="mt-6 pt-6 border-t border-[var(--card-border)] grid grid-cols-2 gap-4">
                 {vehicle.color && (
                   <div>
-                    <p className="text-xs text-nobel">Couleur</p>
-                    <p className="text-white">{vehicle.color}</p>
+                    <p className="text-xs text-[var(--text-muted)]">Couleur</p>
+                    <p className="text-[var(--text-primary)]">{vehicle.color}</p>
                   </div>
                 )}
                 {vehicle.body_type && (
                   <div>
-                    <p className="text-xs text-nobel">Carrosserie</p>
-                    <p className="text-white">{vehicle.body_type}</p>
+                    <p className="text-xs text-[var(--text-muted)]">Carrosserie</p>
+                    <p className="text-[var(--text-primary)]">{vehicle.body_type}</p>
                   </div>
                 )}
                 {vehicle.drive_type && (
                   <div>
-                    <p className="text-xs text-nobel">Transmission</p>
-                    <p className="text-white">{vehicle.drive_type}</p>
+                    <p className="text-xs text-[var(--text-muted)]">Transmission</p>
+                    <p className="text-[var(--text-primary)]">{vehicle.drive_type}</p>
                   </div>
                 )}
                 {vehicle.grade && (
                   <div>
-                    <p className="text-xs text-nobel">Note d&apos;enchère</p>
+                    <p className="text-xs text-[var(--text-muted)]">Note d&apos;inspection</p>
                     <p className="text-jewel font-bold">{vehicle.grade}</p>
                   </div>
                 )}
               </div>
             </Card>
 
-            {/* Auction Sheet */}
+            {/* Inspection Sheet */}
             {vehicle.auction_sheet_url && (
               <Card>
-                <h2 className="text-xl font-bold text-white mb-4">
-                  Fiche d&apos;enchère
+                <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
+                  Fiche d&apos;inspection
                 </h2>
                 <a
                   href={vehicle.auction_sheet_url}
@@ -239,7 +239,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   className="flex items-center gap-2 text-mandarin hover:underline"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Voir la fiche d&apos;enchère originale
+                  Voir la fiche d&apos;inspection originale
                 </a>
               </Card>
             )}
@@ -253,68 +253,34 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <span className="text-2xl mr-2">{SOURCE_FLAGS[source]}</span>
-                  <h1 className="text-2xl font-bold text-white inline">
+                  <h1 className="text-2xl font-bold text-[var(--text-primary)] inline">
                     {vehicle.make} {vehicle.model}
                   </h1>
-                  <p className="text-nobel mt-1">
-                    {vehicle.year} • {vehicle.lot_number && `Lot #${vehicle.lot_number}`}
+                  <p className="text-[var(--text-muted)] mt-1">
+                    {vehicle.year} • {vehicle.lot_number && `Réf. #${vehicle.lot_number}`}
                   </p>
                 </div>
               </div>
 
               {/* Price */}
-              <div className="bg-surface rounded-lg p-4 mb-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-nobel">Prix de départ</p>
-                    <p className="text-2xl font-bold text-mandarin">
-                      {vehicle.start_price_usd
-                        ? formatUsdToLocal(vehicle.start_price_usd)
-                        : '-'}
-                    </p>
-                  </div>
-                  {vehicle.current_price_usd &&
-                    vehicle.current_price_usd > (vehicle.start_price_usd || 0) && (
-                      <div className="text-right">
-                        <p className="text-xs text-nobel">Enchère actuelle</p>
-                        <p className="text-xl font-bold text-jewel">
-                          {formatUsdToLocal(vehicle.current_price_usd)}
-                        </p>
-                      </div>
-                    )}
+              <div className="bg-[var(--surface)] rounded-lg p-4 mb-4">
+                <div>
+                  <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
+                  <p className="text-2xl font-bold text-mandarin">
+                    {vehicle.start_price_usd
+                      ? formatUsdToLocal(vehicle.start_price_usd)
+                      : 'Sur demande'}
+                  </p>
                 </div>
-
-                {vehicle.buy_now_price_usd && (
-                  <div className="mt-3 pt-3 border-t border-nobel/20">
-                    <p className="text-xs text-nobel">Achat immédiat</p>
-                    <p className="text-lg font-bold text-royal-blue">
-                      {formatUsdToLocal(vehicle.buy_now_price_usd)}
-                    </p>
-                  </div>
-                )}
               </div>
-
-              {/* Auction Info */}
-              {vehicle.auction_date && (
-                <div className="flex items-center gap-2 mb-4 text-nobel">
-                  <Calendar className="w-4 h-4" />
-                  <span>Enchère le {formatDate(vehicle.auction_date)}</span>
-                </div>
-              )}
 
               {/* Actions */}
               <div className="space-y-3">
-                {vehicle.auction_status === 'ongoing' ? (
-                  <Link href={`/auctions/${vehicle.id}`}>
-                    <Button variant="primary" className="w-full" size="lg">
-                      Participer à l&apos;enchère
-                    </Button>
-                  </Link>
-                ) : vehicle.auction_status === 'upcoming' ? (
+                <Link href="/calculator">
                   <Button variant="primary" className="w-full" size="lg">
-                    M&apos;alerter pour cette enchère
+                    Estimer les frais de livraison
                   </Button>
-                ) : null}
+                </Link>
 
                 <div className="flex gap-3">
                   <Button
@@ -344,10 +310,10 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               </div>
 
               {/* Platform Info */}
-              <div className="mt-4 pt-4 border-t border-nobel/20 text-sm text-nobel">
+              <div className="mt-4 pt-4 border-t border-[var(--card-border)] text-sm text-[var(--text-muted)]">
                 <p>
-                  Plateforme:{' '}
-                  <span className="text-white">{vehicle.auction_platform || '-'}</span>
+                  Source:{' '}
+                  <span className="text-[var(--text-primary)]">{vehicle.auction_platform || SOURCE_NAMES[source]}</span>
                 </p>
                 {vehicle.source_url && (
                   <a
@@ -365,13 +331,15 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
 
             {/* Price Calculator Placeholder */}
             <Card>
-              <h3 className="font-bold text-white mb-3">Estimation totale</h3>
-              <p className="text-sm text-nobel mb-4">
+              <h3 className="font-bold text-[var(--text-primary)] mb-3">Estimation totale</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-4">
                 Calculez le coût total incluant le transport et les frais de douane.
               </p>
-              <Button variant="secondary" className="w-full">
-                Calculer le prix total
-              </Button>
+              <Link href="/calculator">
+                <Button variant="secondary" className="w-full">
+                  Calculer le prix total
+                </Button>
+              </Link>
             </Card>
           </div>
         </div>
