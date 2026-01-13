@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       inner_id: string;
       images: string;
       synced_at: string;
+      [key: string]: string;
     }
     const rows = parseCsv<PhotoRow>(csvContent, '|');
 
@@ -198,6 +199,7 @@ export async function GET(request: NextRequest) {
       inner_id: string;
       images: string;
       synced_at: string;
+      [key: string]: string;
     }
     const rows = parseCsv<PhotoRow>(csvContent, '|');
 

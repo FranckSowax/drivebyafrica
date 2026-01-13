@@ -90,7 +90,7 @@ export async function getFilters(): Promise<DongchediFiltersResponse> {
  * Get paginated offers with optional filters
  */
 export async function getOffers(params: DongchediOffersParams): Promise<DongchediOffersResponse> {
-  const url = buildApiUrl(DONGCHEDI_ENDPOINTS.OFFERS, params as Record<string, string | number>);
+  const url = buildApiUrl(DONGCHEDI_ENDPOINTS.OFFERS, params as unknown as Record<string, string | number>);
   return fetchApi<DongchediOffersResponse>(url);
 }
 
@@ -133,7 +133,7 @@ export async function getAllOffers(
  * Get single offer by inner_id
  */
 export async function getOffer(params: DongchediOfferParams): Promise<DongchediOffer> {
-  const url = buildApiUrl(DONGCHEDI_ENDPOINTS.OFFER, params as Record<string, string>);
+  const url = buildApiUrl(DONGCHEDI_ENDPOINTS.OFFER, params as unknown as Record<string, string>);
   return fetchApi<DongchediOffer>(url);
 }
 
@@ -149,7 +149,7 @@ export async function getChangeId(date: string): Promise<DongchediChangeIdRespon
  * Get changes since a specific change_id
  */
 export async function getChanges(params: DongchediChangesParams): Promise<DongchediChangesResponse> {
-  const url = buildApiUrl(DONGCHEDI_ENDPOINTS.CHANGES, params as Record<string, number>);
+  const url = buildApiUrl(DONGCHEDI_ENDPOINTS.CHANGES, params as unknown as Record<string, number>);
   return fetchApi<DongchediChangesResponse>(url);
 }
 
@@ -336,7 +336,7 @@ export async function getValidPhotoLinks(
   date?: string
 ): Promise<Map<string, string[]>> {
   const csv = await downloadActiveOffersCsv(date);
-  const rows = parseCsv<{ inner_id: string; images: string; synced_at: string }>(csv);
+  const rows = parseCsv<{ inner_id: string; images: string; synced_at: string; [key: string]: string }>(csv);
 
   const validLinks = new Map<string, string[]>();
 
