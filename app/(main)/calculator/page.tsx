@@ -13,15 +13,66 @@ const USD_TO_XAF = 640;
 const INSURANCE_RATE = 0.025; // 2.5% assurance
 const INSPECTION_FEE_XAF = 225000; // 225 000 FCFA pour inspection et documents
 
+// Destinations africaines avec coûts de transport (estimations en USD)
 const destinations = [
-  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 1800, china: 2100, dubai: 1600 } },
-  { id: 'port-gentil', name: 'Port-Gentil', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 1850, china: 2150, dubai: 1650 } },
-  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 1700, china: 2000, dubai: 1500 } },
-  { id: 'pointe-noire', name: 'Pointe-Noire', country: 'Congo', flag: '🇨🇬', shippingCost: { korea: 1900, china: 2200, dubai: 1700 } },
-  { id: 'abidjan', name: 'Abidjan', country: "Côte d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 2100, china: 2400, dubai: 1900 } },
+  // Afrique de l'Ouest
   { id: 'dakar', name: 'Dakar', country: 'Sénégal', flag: '🇸🇳', shippingCost: { korea: 2300, china: 2600, dubai: 2100 } },
+  { id: 'banjul', name: 'Banjul', country: 'Gambie', flag: '🇬🇲', shippingCost: { korea: 2350, china: 2650, dubai: 2150 } },
+  { id: 'bissau', name: 'Bissau', country: 'Guinée-Bissau', flag: '🇬🇼', shippingCost: { korea: 2400, china: 2700, dubai: 2200 } },
+  { id: 'conakry', name: 'Conakry', country: 'Guinée', flag: '🇬🇳', shippingCost: { korea: 2250, china: 2550, dubai: 2050 } },
+  { id: 'freetown', name: 'Freetown', country: 'Sierra Leone', flag: '🇸🇱', shippingCost: { korea: 2200, china: 2500, dubai: 2000 } },
+  { id: 'monrovia', name: 'Monrovia', country: 'Liberia', flag: '🇱🇷', shippingCost: { korea: 2150, china: 2450, dubai: 1950 } },
+  { id: 'abidjan', name: 'Abidjan', country: "Côte d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 2100, china: 2400, dubai: 1900 } },
+  { id: 'accra', name: 'Tema/Accra', country: 'Ghana', flag: '🇬🇭', shippingCost: { korea: 2050, china: 2350, dubai: 1850 } },
   { id: 'lome', name: 'Lomé', country: 'Togo', flag: '🇹🇬', shippingCost: { korea: 2000, china: 2300, dubai: 1800 } },
   { id: 'cotonou', name: 'Cotonou', country: 'Bénin', flag: '🇧🇯', shippingCost: { korea: 2050, china: 2350, dubai: 1850 } },
+  { id: 'lagos', name: 'Lagos', country: 'Nigeria', flag: '🇳🇬', shippingCost: { korea: 1950, china: 2250, dubai: 1750 } },
+  { id: 'port-harcourt', name: 'Port Harcourt', country: 'Nigeria', flag: '🇳🇬', shippingCost: { korea: 2000, china: 2300, dubai: 1800 } },
+  { id: 'nouakchott', name: 'Nouakchott', country: 'Mauritanie', flag: '🇲🇷', shippingCost: { korea: 2500, china: 2800, dubai: 2300 } },
+  { id: 'praia', name: 'Praia', country: 'Cap-Vert', flag: '🇨🇻', shippingCost: { korea: 2600, china: 2900, dubai: 2400 } },
+  // Afrique Centrale
+  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 1700, china: 2000, dubai: 1500 } },
+  { id: 'kribi', name: 'Kribi', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 1750, china: 2050, dubai: 1550 } },
+  { id: 'malabo', name: 'Malabo', country: 'Guinée équatoriale', flag: '🇬🇶', shippingCost: { korea: 1800, china: 2100, dubai: 1600 } },
+  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 1800, china: 2100, dubai: 1600 } },
+  { id: 'port-gentil', name: 'Port-Gentil', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 1850, china: 2150, dubai: 1650 } },
+  { id: 'pointe-noire', name: 'Pointe-Noire', country: 'Congo', flag: '🇨🇬', shippingCost: { korea: 1900, china: 2200, dubai: 1700 } },
+  { id: 'matadi', name: 'Matadi', country: 'RD Congo', flag: '🇨🇩', shippingCost: { korea: 1950, china: 2250, dubai: 1750 } },
+  { id: 'luanda', name: 'Luanda', country: 'Angola', flag: '🇦🇴', shippingCost: { korea: 2000, china: 2300, dubai: 1800 } },
+  { id: 'lobito', name: 'Lobito', country: 'Angola', flag: '🇦🇴', shippingCost: { korea: 2050, china: 2350, dubai: 1850 } },
+  { id: 'sao-tome', name: 'São Tomé', country: 'São Tomé-et-Príncipe', flag: '🇸🇹', shippingCost: { korea: 2100, china: 2400, dubai: 1900 } },
+  // Afrique de l'Est
+  { id: 'mombasa', name: 'Mombasa', country: 'Kenya', flag: '🇰🇪', shippingCost: { korea: 1600, china: 1900, dubai: 1400 } },
+  { id: 'dar-es-salaam', name: 'Dar es Salaam', country: 'Tanzanie', flag: '🇹🇿', shippingCost: { korea: 1650, china: 1950, dubai: 1450 } },
+  { id: 'zanzibar', name: 'Zanzibar', country: 'Tanzanie', flag: '🇹🇿', shippingCost: { korea: 1700, china: 2000, dubai: 1500 } },
+  { id: 'maputo', name: 'Maputo', country: 'Mozambique', flag: '🇲🇿', shippingCost: { korea: 1750, china: 2050, dubai: 1550 } },
+  { id: 'beira', name: 'Beira', country: 'Mozambique', flag: '🇲🇿', shippingCost: { korea: 1800, china: 2100, dubai: 1600 } },
+  { id: 'djibouti', name: 'Djibouti', country: 'Djibouti', flag: '🇩🇯', shippingCost: { korea: 1500, china: 1800, dubai: 1200 } },
+  { id: 'port-sudan', name: 'Port-Soudan', country: 'Soudan', flag: '🇸🇩', shippingCost: { korea: 1550, china: 1850, dubai: 1250 } },
+  { id: 'massawa', name: 'Massawa', country: 'Érythrée', flag: '🇪🇷', shippingCost: { korea: 1600, china: 1900, dubai: 1300 } },
+  { id: 'mogadiscio', name: 'Mogadiscio', country: 'Somalie', flag: '🇸🇴', shippingCost: { korea: 1650, china: 1950, dubai: 1350 } },
+  { id: 'port-louis', name: 'Port-Louis', country: 'Maurice', flag: '🇲🇺', shippingCost: { korea: 1900, china: 2200, dubai: 1700 } },
+  { id: 'toamasina', name: 'Toamasina', country: 'Madagascar', flag: '🇲🇬', shippingCost: { korea: 1850, china: 2150, dubai: 1650 } },
+  { id: 'moroni', name: 'Moroni', country: 'Comores', flag: '🇰🇲', shippingCost: { korea: 1950, china: 2250, dubai: 1750 } },
+  { id: 'victoria', name: 'Victoria', country: 'Seychelles', flag: '🇸🇨', shippingCost: { korea: 2000, china: 2300, dubai: 1800 } },
+  // Afrique Australe
+  { id: 'durban', name: 'Durban', country: 'Afrique du Sud', flag: '🇿🇦', shippingCost: { korea: 1800, china: 2100, dubai: 1600 } },
+  { id: 'cape-town', name: 'Le Cap', country: 'Afrique du Sud', flag: '🇿🇦', shippingCost: { korea: 1900, china: 2200, dubai: 1700 } },
+  { id: 'walvis-bay', name: 'Walvis Bay', country: 'Namibie', flag: '🇳🇦', shippingCost: { korea: 2000, china: 2300, dubai: 1800 } },
+  { id: 'gaborone', name: 'Gaborone', country: 'Botswana', flag: '🇧🇼', shippingCost: { korea: 2100, china: 2400, dubai: 1900 } },
+  { id: 'harare', name: 'Harare', country: 'Zimbabwe', flag: '🇿🇼', shippingCost: { korea: 2050, china: 2350, dubai: 1850 } },
+  { id: 'lusaka', name: 'Lusaka', country: 'Zambie', flag: '🇿🇲', shippingCost: { korea: 2100, china: 2400, dubai: 1900 } },
+  { id: 'lilongwe', name: 'Lilongwe', country: 'Malawi', flag: '🇲🇼', shippingCost: { korea: 2150, china: 2450, dubai: 1950 } },
+  { id: 'mbabane', name: 'Mbabane', country: 'Eswatini', flag: '🇸🇿', shippingCost: { korea: 1950, china: 2250, dubai: 1750 } },
+  { id: 'maseru', name: 'Maseru', country: 'Lesotho', flag: '🇱🇸', shippingCost: { korea: 2000, china: 2300, dubai: 1800 } },
+  // Afrique du Nord
+  { id: 'alexandrie', name: 'Alexandrie', country: 'Égypte', flag: '🇪🇬', shippingCost: { korea: 1700, china: 2000, dubai: 1300 } },
+  { id: 'port-said', name: 'Port-Saïd', country: 'Égypte', flag: '🇪🇬', shippingCost: { korea: 1650, china: 1950, dubai: 1250 } },
+  { id: 'tripoli', name: 'Tripoli', country: 'Libye', flag: '🇱🇾', shippingCost: { korea: 1900, china: 2200, dubai: 1500 } },
+  { id: 'tunis', name: 'Tunis', country: 'Tunisie', flag: '🇹🇳', shippingCost: { korea: 2000, china: 2300, dubai: 1600 } },
+  { id: 'alger', name: 'Alger', country: 'Algérie', flag: '🇩🇿', shippingCost: { korea: 2100, china: 2400, dubai: 1700 } },
+  { id: 'casablanca', name: 'Casablanca', country: 'Maroc', flag: '🇲🇦', shippingCost: { korea: 2200, china: 2500, dubai: 1800 } },
+  { id: 'tanger', name: 'Tanger', country: 'Maroc', flag: '🇲🇦', shippingCost: { korea: 2250, china: 2550, dubai: 1850 } },
 ];
 
 const sources = [
