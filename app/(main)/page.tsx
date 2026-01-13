@@ -256,39 +256,53 @@ export default async function HomePage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="relative overflow-hidden bg-gradient-to-r from-mandarin to-orange-600 rounded-2xl p-8 lg:p-12">
-            <div className="relative z-10 max-w-xl">
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                Prêt à importer votre prochain véhicule?
-              </h2>
-              <p className="text-white/80 mb-8">
-                Créez votre compte gratuitement, explorez notre catalogue et obtenez
-                un devis personnalisé pour votre importation.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/register">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="bg-white text-mandarin hover:bg-white/90"
-                  >
-                    Créer un compte gratuit
-                  </Button>
-                </Link>
-                <Link href="/cars">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-white text-white hover:bg-white/10"
-                  >
-                    Explorer les véhicules
-                  </Button>
-                </Link>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              {/* Text Content */}
+              <div className="relative z-10">
+                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+                  Prêt à importer votre prochain véhicule?
+                </h2>
+                <p className="text-white/80 mb-8">
+                  Créez votre compte gratuitement, explorez notre catalogue et obtenez
+                  un devis personnalisé pour votre importation.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link href="/register">
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      className="bg-white text-mandarin hover:bg-white/90"
+                    >
+                      Créer un compte gratuit
+                    </Button>
+                  </Link>
+                  <Link href="/cars">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="border-white text-white hover:bg-white/10"
+                    >
+                      Explorer les véhicules
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Vehicle Image */}
+              <div className="hidden lg:flex justify-center items-center relative z-10">
+                <Image
+                  src="/imgi_88_yu7-steel-550x350.png"
+                  alt="Véhicule premium disponible"
+                  width={550}
+                  height={350}
+                  className="object-contain drop-shadow-2xl"
+                />
               </div>
             </div>
 
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-white/10 rounded-full translate-y-1/2" />
+            <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/10 rounded-full translate-y-1/2" />
           </div>
         </div>
       </section>
