@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   Trash2,
-  Edit,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
@@ -276,7 +275,20 @@ export function VehicleTable({
                     </p>
                   </td>
                   <td className="p-3">
-                    <span className="text-xl">{SOURCE_FLAGS[vehicle.source] || '?'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{SOURCE_FLAGS[vehicle.source] || '?'}</span>
+                      {vehicle.source_url && (
+                        <a
+                          href={vehicle.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-royal-blue hover:text-mandarin transition-colors"
+                          title="Voir sur le site source"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3">
                     <p className="font-medium text-mandarin">
