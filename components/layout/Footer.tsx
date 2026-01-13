@@ -16,7 +16,7 @@ const footerLinks = {
     { label: 'Véhicules', href: '/cars' },
     { label: 'Estimation des frais', href: '/calculator' },
     { label: 'Suivi de commande', href: '/dashboard/orders' },
-    { label: 'Demander un devis', href: '/quote' },
+    { label: 'Demander un devis', href: '/cars' },
   ],
   support: [
     { label: 'FAQ', href: '/faq' },
