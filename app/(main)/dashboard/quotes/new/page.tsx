@@ -81,15 +81,14 @@ export default function NewQuotePage() {
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       setQuoteNumber(`DBA-${timestamp}-${random}`);
+      // Preload logo
+      loadLogo();
     } else {
-      // No quote data, redirect back
-      toast.error('Aucune donnee de devis trouvee');
-      router.push('/cars');
+      // No quote data, redirect silently back to cars page
+      // Don't show toast as this can be triggered by page prefetch
+      router.replace('/cars');
     }
-
-    // Preload logo
-    loadLogo();
-  }, [router, toast]);
+  }, [router]);
 
   const loadLogo = async () => {
     try {
