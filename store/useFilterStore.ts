@@ -21,7 +21,7 @@ const defaultFilters: VehicleFilters = {
   priceFrom: 0,
   priceTo: 50000,
   mileageMax: 150000,
-  sortBy: 'date_asc',
+  sortBy: 'price_asc',
   notifyNewMatches: false,
 };
 

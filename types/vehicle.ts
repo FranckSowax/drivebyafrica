@@ -2,6 +2,7 @@ import type { DbVehicle } from './database';
 
 export type VehicleSource = 'korea' | 'china' | 'dubai';
 export type AuctionStatus = 'upcoming' | 'ongoing' | 'sold' | 'ended';
+export type VehicleStatus = 'available' | 'reserved' | 'sold' | 'pending';
 export type TransmissionType = 'automatic' | 'manual' | 'cvt';
 export type FuelType = 'petrol' | 'diesel' | 'hybrid' | 'electric' | 'lpg';
 export type DriveType = 'FWD' | 'RWD' | 'AWD' | '4WD';
@@ -9,6 +10,7 @@ export type DriveType = 'FWD' | 'RWD' | 'AWD' | '4WD';
 export interface Vehicle extends DbVehicle {
   source: VehicleSource;
   auction_status: AuctionStatus;
+  status?: VehicleStatus;
 }
 
 export interface VehicleFilters {
@@ -25,8 +27,8 @@ export interface VehicleFilters {
   transmission?: TransmissionType;
   fuelType?: FuelType;
   driveType?: DriveType;
-  auctionStatus?: AuctionStatus;
-  sortBy?: 'date_asc' | 'date_desc' | 'price_asc' | 'price_desc' | 'year_desc' | 'mileage_asc';
+  status?: VehicleStatus;
+  sortBy?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc';
   notifyNewMatches?: boolean;
 }
 

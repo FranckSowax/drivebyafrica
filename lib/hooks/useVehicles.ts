@@ -77,30 +77,32 @@ export function useVehicles({
         query = query.eq('fuel_type', filters.fuelType);
       }
 
-      if (filters?.auctionStatus) {
-        query = query.eq('auction_status', filters.auctionStatus);
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
       }
 
       // Apply sorting
       switch (filters?.sortBy) {
         case 'price_asc':
-          query = query.order('current_price_usd', { ascending: true, nullsFirst: false });
+          query = query.order('start_price_usd', { ascending: true, nullsFirst: false });
           break;
         case 'price_desc':
-          query = query.order('current_price_usd', { ascending: false, nullsFirst: false });
+          query = query.order('start_price_usd', { ascending: false, nullsFirst: false });
           break;
         case 'year_desc':
           query = query.order('year', { ascending: false, nullsFirst: false });
           break;
+        case 'year_asc':
+          query = query.order('year', { ascending: true, nullsFirst: false });
+          break;
         case 'mileage_asc':
           query = query.order('mileage', { ascending: true, nullsFirst: false });
           break;
-        case 'date_desc':
-          query = query.order('auction_date', { ascending: false, nullsFirst: false });
+        case 'mileage_desc':
+          query = query.order('mileage', { ascending: false, nullsFirst: false });
           break;
-        case 'date_asc':
         default:
-          query = query.order('auction_date', { ascending: true, nullsFirst: false });
+          query = query.order('created_at', { ascending: false, nullsFirst: false });
           break;
       }
 
