@@ -30,6 +30,12 @@ interface VehicleDetailClientProps {
   vehicle: Vehicle;
 }
 
+const SOURCE_FLAGS: Record<VehicleSource, string> = {
+  korea: '🇰🇷',
+  china: '🇨🇳',
+  dubai: '🇦🇪',
+};
+
 const STATUS_STYLES: Record<AuctionStatus, { bg: string; label: string }> = {
   upcoming: { bg: 'bg-royal-blue', label: 'À venir' },
   ongoing: { bg: 'bg-mandarin animate-pulse', label: 'En cours' },
@@ -239,9 +245,12 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               {/* Title */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                    {vehicle.make} {vehicle.model}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{SOURCE_FLAGS[source]}</span>
+                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                      {vehicle.make} {vehicle.model}
+                    </h1>
+                  </div>
                   <p className="text-[var(--text-muted)] mt-1">
                     {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
                   </p>
