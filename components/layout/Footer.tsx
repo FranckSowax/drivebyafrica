@@ -29,7 +29,12 @@ const footerLinks = {
 const destinations = ['Gabon', 'Cameroun', 'Congo', "Côte d'Ivoire", 'Sénégal'];
 
 export function Footer() {
-  const { theme } = useTheme();
+  const { theme, mounted } = useTheme();
+
+  // Use dark logo as default during SSR to prevent flash
+  const logoSrc = mounted
+    ? (theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png')
+    : '/logo-driveby-africa-dark.png';
 
   return (
     <footer className="bg-[var(--surface)] border-t border-[var(--card-border)]">
@@ -39,7 +44,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link href="/" className="inline-block mb-4">
               <Image
-                src={theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png'}
+                src={logoSrc}
                 alt="Driveby Africa"
                 width={320}
                 height={90}

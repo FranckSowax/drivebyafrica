@@ -9,7 +9,10 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, mounted } = useTheme();
+
+  // Use light as default during SSR for consistent rendering
+  const currentTheme = mounted ? theme : 'light';
 
   return (
     <button
@@ -20,19 +23,17 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         'hover:border-mandarin/50',
         className
       )}
-      aria-label={theme === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}
+      aria-label={currentTheme === 'light' ? 'Activer le mode sombre' : 'Activer le mode clair'}
     >
       {/* Toggle circle */}
       <div
         className={cn(
           'absolute top-0.5 w-6 h-6 rounded-full transition-all duration-300',
-          'flex items-center justify-center',
-          theme === 'light'
-            ? 'left-0.5 bg-mandarin text-white'
-            : 'left-7 bg-mandarin text-white'
+          'flex items-center justify-center bg-mandarin text-white',
+          currentTheme === 'light' ? 'left-0.5' : 'left-7'
         )}
       >
-        {theme === 'light' ? (
+        {currentTheme === 'light' ? (
           <Sun className="w-4 h-4" />
         ) : (
           <Moon className="w-4 h-4" />

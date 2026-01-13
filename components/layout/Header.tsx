@@ -44,9 +44,15 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, profile, signOut } = useAuthStore();
-  const { theme } = useTheme();
+  const { theme, mounted } = useTheme();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+
+  // Use dark logo as default during SSR to prevent flash
+  // The inline script sets the correct theme before React hydrates
+  const logoSrc = mounted
+    ? (theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png')
+    : '/logo-driveby-africa-dark.png';
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
@@ -55,7 +61,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src={theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png'}
+              src={logoSrc}
               alt="Driveby Africa"
               width={300}
               height={80}
