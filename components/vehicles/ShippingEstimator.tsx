@@ -105,7 +105,6 @@ export function ShippingEstimator({
 }: ShippingEstimatorProps) {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<typeof destinations[0] | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isRequestingQuote, setIsRequestingQuote] = useState(false);
@@ -176,208 +175,185 @@ export function ShippingEstimator({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Toggle Button */}
-      <Button
-        variant="primary"
-        className="w-full"
-        size="lg"
-        onClick={() => setIsOpen(!isOpen)}
-        rightIcon={
-          <ChevronDown
-            className={cn(
-              'w-5 h-5 transition-transform',
-              isOpen && 'rotate-180'
-            )}
-          />
-        }
-      >
+    <div className="bg-[var(--surface)] rounded-xl p-4 space-y-4">
+      {/* Header */}
+      <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+        <Ship className="w-5 h-5 text-mandarin" />
         Estimer les frais de livraison
-      </Button>
+      </h3>
 
-      {/* Expanded Content */}
+      {/* Destination Selector */}
+      <div>
+        <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+          <MapPin className="w-4 h-4 inline mr-1" />
+          Sélectionnez votre destination
+        </label>
+        <div className="relative">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className={cn(
+              'w-full px-4 py-3 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl',
+              'text-left flex items-center justify-between',
+              'hover:border-mandarin/50 transition-colors',
+              'text-[var(--text-primary)]'
+            )}
+          >
+            {selectedDestination ? (
+              <span className="flex items-center gap-2">
+                <span className="text-xl">{selectedDestination.flag}</span>
+                <span>{selectedDestination.name}, {selectedDestination.country}</span>
+              </span>
+            ) : (
+              <span className="text-[var(--text-muted)]">Choisir un pays africain</span>
+            )}
+            <ChevronDown
+              className={cn(
+                'w-5 h-5 text-[var(--text-muted)] transition-transform',
+                isDropdownOpen && 'rotate-180'
+              )}
+            />
+          </button>
+
+          {/* Dropdown */}
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-10 top-full left-0 right-0 mt-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-lg overflow-hidden"
+              >
+                {/* Search Input */}
+                <div className="p-2 border-b border-[var(--card-border)]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher un pays ou une ville..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-mandarin"
+                    />
+                  </div>
+                </div>
+                {/* Destinations List */}
+                <div className="max-h-64 overflow-y-auto">
+                  {filteredDestinations.length > 0 ? (
+                    filteredDestinations.map((dest) => (
+                      <button
+                        key={dest.id}
+                        onClick={() => {
+                          setSelectedDestination(dest);
+                          setIsDropdownOpen(false);
+                          setSearchQuery('');
+                        }}
+                        className={cn(
+                          'w-full px-4 py-3 text-left flex items-center gap-3',
+                          'hover:bg-mandarin/10 transition-colors',
+                          selectedDestination?.id === dest.id && 'bg-mandarin/10'
+                        )}
+                      >
+                        <span className="text-xl">{dest.flag}</span>
+                        <div>
+                          <span className="text-[var(--text-primary)] font-medium">{dest.name}</span>
+                          <span className="text-[var(--text-muted)] text-sm ml-1">({dest.country})</span>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-6 text-center text-[var(--text-muted)]">
+                      Aucune destination trouvée
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Cost Breakdown - appears after selecting a destination */}
       <AnimatePresence>
-        {isOpen && (
+        {selectedDestination && calculations && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            className="space-y-3 pt-4 border-t border-[var(--card-border)]"
           >
-            <div className="bg-[var(--surface)] rounded-xl p-4 space-y-4">
-              {/* Destination Selector */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  Pays de destination
-                </label>
-                <div className="relative">
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className={cn(
-                      'w-full px-4 py-3 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl',
-                      'text-left flex items-center justify-between',
-                      'hover:border-mandarin/50 transition-colors',
-                      'text-[var(--text-primary)]'
-                    )}
-                  >
-                    {selectedDestination ? (
-                      <span className="flex items-center gap-2">
-                        <span className="text-xl">{selectedDestination.flag}</span>
-                        <span>{selectedDestination.name}, {selectedDestination.country}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[var(--text-muted)]">Sélectionnez une destination</span>
-                    )}
-                    <ChevronDown
-                      className={cn(
-                        'w-5 h-5 text-[var(--text-muted)] transition-transform',
-                        isDropdownOpen && 'rotate-180'
-                      )}
-                    />
-                  </button>
+            <h4 className="font-semibold text-[var(--text-primary)]">Estimation des coûts</h4>
 
-                  {/* Dropdown */}
-                  <AnimatePresence>
-                    {isDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-10 top-full left-0 right-0 mt-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-lg overflow-hidden"
-                      >
-                        {/* Search Input */}
-                        <div className="p-2 border-b border-[var(--card-border)]">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                            <input
-                              type="text"
-                              placeholder="Rechercher un pays ou une ville..."
-                              value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-mandarin"
-                            />
-                          </div>
-                        </div>
-                        {/* Destinations List */}
-                        <div className="max-h-64 overflow-y-auto">
-                          {filteredDestinations.length > 0 ? (
-                            filteredDestinations.map((dest) => (
-                              <button
-                                key={dest.id}
-                                onClick={() => {
-                                  setSelectedDestination(dest);
-                                  setIsDropdownOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className={cn(
-                                  'w-full px-4 py-3 text-left flex items-center gap-3',
-                                  'hover:bg-mandarin/10 transition-colors',
-                                  selectedDestination?.id === dest.id && 'bg-mandarin/10'
-                                )}
-                              >
-                                <span className="text-xl">{dest.flag}</span>
-                                <div>
-                                  <span className="text-[var(--text-primary)] font-medium">{dest.name}</span>
-                                  <span className="text-[var(--text-muted)] text-sm ml-1">({dest.country})</span>
-                                </div>
-                              </button>
-                            ))
-                          ) : (
-                            <div className="px-4 py-6 text-center text-[var(--text-muted)]">
-                              Aucune destination trouvée
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Cost Breakdown */}
-              {selectedDestination && calculations && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-3 pt-4 border-t border-[var(--card-border)]"
-                >
-                  <h4 className="font-semibold text-[var(--text-primary)]">Estimation des coûts</h4>
-
-                  {/* Vehicle Price */}
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-[var(--text-muted)]">Prix du véhicule (FOB)</span>
-                    <span className="text-[var(--text-primary)] font-medium">
-                      {formatCurrency(calculations.vehiclePrice)}
-                    </span>
-                  </div>
-
-                  {/* Shipping */}
-                  <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
-                    <div className="flex items-center gap-2">
-                      <Ship className="w-4 h-4 text-royal-blue" />
-                      <span className="text-[var(--text-muted)]">Transport maritime</span>
-                    </div>
-                    <span className="text-[var(--text-primary)] font-medium">
-                      {formatCurrency(calculations.shippingCost)}
-                    </span>
-                  </div>
-
-                  {/* Insurance */}
-                  <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-jewel" />
-                      <span className="text-[var(--text-muted)]">Assurance (2.5%)</span>
-                    </div>
-                    <span className="text-[var(--text-primary)] font-medium">
-                      {formatCurrency(calculations.insuranceCost)}
-                    </span>
-                  </div>
-
-                  {/* Inspection & Documents */}
-                  <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
-                    <div className="flex items-center gap-2">
-                      <FileCheck className="w-4 h-4 text-mandarin" />
-                      <span className="text-[var(--text-muted)]">Inspection & Documents</span>
-                    </div>
-                    <span className="text-[var(--text-primary)] font-medium">
-                      {formatCurrency(calculations.inspectionFee)}
-                    </span>
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex justify-between items-center py-3 bg-mandarin/10 -mx-4 px-4 rounded-lg mt-2">
-                    <span className="font-bold text-[var(--text-primary)]">Coût total estimé</span>
-                    <span className="text-xl font-bold text-mandarin">
-                      {formatCurrency(calculations.total)}
-                    </span>
-                  </div>
-
-                  {/* Note */}
-                  <p className="text-xs text-[var(--text-muted)] mt-2">
-                    * Cette estimation n'inclut pas les frais de dédouanement qui varient selon la réglementation locale.
-                  </p>
-
-                  {/* Get Quote Button */}
-                  <Button
-                    variant="secondary"
-                    className="w-full mt-4"
-                    onClick={handleRequestQuote}
-                    disabled={isRequestingQuote}
-                    leftIcon={
-                      isRequestingQuote ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <FileText className="w-4 h-4" />
-                      )
-                    }
-                  >
-                    {isRequestingQuote ? 'Chargement...' : 'Obtenir un devis PDF'}
-                  </Button>
-                </motion.div>
-              )}
+            {/* Vehicle Price */}
+            <div className="flex justify-between items-center py-2">
+              <span className="text-[var(--text-muted)]">Prix du véhicule (FOB)</span>
+              <span className="text-[var(--text-primary)] font-medium">
+                {formatCurrency(calculations.vehiclePrice)}
+              </span>
             </div>
+
+            {/* Shipping */}
+            <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
+              <div className="flex items-center gap-2">
+                <Ship className="w-4 h-4 text-royal-blue" />
+                <span className="text-[var(--text-muted)]">Transport maritime</span>
+              </div>
+              <span className="text-[var(--text-primary)] font-medium">
+                {formatCurrency(calculations.shippingCost)}
+              </span>
+            </div>
+
+            {/* Insurance */}
+            <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-jewel" />
+                <span className="text-[var(--text-muted)]">Assurance (2.5%)</span>
+              </div>
+              <span className="text-[var(--text-primary)] font-medium">
+                {formatCurrency(calculations.insuranceCost)}
+              </span>
+            </div>
+
+            {/* Inspection & Documents */}
+            <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-mandarin" />
+                <span className="text-[var(--text-muted)]">Inspection & Documents</span>
+              </div>
+              <span className="text-[var(--text-primary)] font-medium">
+                {formatCurrency(calculations.inspectionFee)}
+              </span>
+            </div>
+
+            {/* Total */}
+            <div className="flex justify-between items-center py-3 bg-mandarin/10 -mx-4 px-4 rounded-lg mt-2">
+              <span className="font-bold text-[var(--text-primary)]">Coût total estimé</span>
+              <span className="text-xl font-bold text-mandarin">
+                {formatCurrency(calculations.total)}
+              </span>
+            </div>
+
+            {/* Note */}
+            <p className="text-xs text-[var(--text-muted)] mt-2">
+              * Cette estimation n'inclut pas les frais de dédouanement qui varient selon la réglementation locale.
+            </p>
+
+            {/* Get Quote Button */}
+            <Button
+              variant="primary"
+              className="w-full mt-4"
+              onClick={handleRequestQuote}
+              disabled={isRequestingQuote}
+              leftIcon={
+                isRequestingQuote ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileText className="w-4 h-4" />
+                )
+              }
+            >
+              {isRequestingQuote ? 'Chargement...' : 'Obtenir un devis PDF'}
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>

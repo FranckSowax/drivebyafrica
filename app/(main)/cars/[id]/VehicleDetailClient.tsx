@@ -10,7 +10,6 @@ import {
   Gauge,
   Fuel,
   Settings,
-  MapPin,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
@@ -30,18 +29,6 @@ import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
 interface VehicleDetailClientProps {
   vehicle: Vehicle;
 }
-
-const SOURCE_FLAGS: Record<VehicleSource, string> = {
-  korea: '🇰🇷',
-  china: '🇨🇳',
-  dubai: '🇦🇪',
-};
-
-const SOURCE_NAMES: Record<VehicleSource, string> = {
-  korea: 'Corée du Sud',
-  china: 'Chine',
-  dubai: 'Dubaï',
-};
 
 const STATUS_STYLES: Record<AuctionStatus, { bg: string; label: string }> = {
   upcoming: { bg: 'bg-royal-blue', label: 'À venir' },
@@ -87,7 +74,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
     { icon: Settings, label: 'Transmission', value: vehicle.transmission || '-' },
     { icon: Fuel, label: 'Carburant', value: vehicle.fuel_type || '-' },
     { icon: Settings, label: 'Cylindrée', value: formatEngineSize(vehicle.engine_cc) },
-    { icon: MapPin, label: 'Origine', value: SOURCE_NAMES[source] || '-' },
   ];
 
   return (
@@ -253,12 +239,11 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               {/* Title */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <span className="text-2xl mr-2">{SOURCE_FLAGS[source]}</span>
-                  <h1 className="text-2xl font-bold text-[var(--text-primary)] inline">
+                  <h1 className="text-2xl font-bold text-[var(--text-primary)]">
                     {vehicle.make} {vehicle.model}
                   </h1>
                   <p className="text-[var(--text-muted)] mt-1">
-                    {vehicle.year} • {vehicle.lot_number && `Réf. #${vehicle.lot_number}`}
+                    {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
                   </p>
                 </div>
               </div>
@@ -314,25 +299,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     Partager
                   </Button>
                 </div>
-              </div>
-
-              {/* Platform Info */}
-              <div className="mt-4 pt-4 border-t border-[var(--card-border)] text-sm text-[var(--text-muted)]">
-                <p>
-                  Source:{' '}
-                  <span className="text-[var(--text-primary)]">{vehicle.auction_platform || SOURCE_NAMES[source]}</span>
-                </p>
-                {vehicle.source_url && (
-                  <a
-                    href={vehicle.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-mandarin hover:underline mt-1"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Voir sur la source
-                  </a>
-                )}
               </div>
             </Card>
 
