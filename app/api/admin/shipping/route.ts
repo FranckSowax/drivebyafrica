@@ -47,7 +47,8 @@ export async function GET() {
 
     if (error) {
       // If table doesn't exist, return defaults
-      if (error.code === '42P01') {
+      // PostgreSQL error 42P01 or PostgREST error PGRST205
+      if (error.code === '42P01' || error.code === 'PGRST205') {
         return NextResponse.json({ routes: DEFAULT_ROUTES });
       }
       throw error;
@@ -88,7 +89,8 @@ export async function PUT(request: Request) {
 
     if (error) {
       // If table doesn't exist, return success anyway (using in-memory defaults)
-      if (error.code === '42P01') {
+      // PostgreSQL error 42P01 or PostgREST error PGRST205
+      if (error.code === '42P01' || error.code === 'PGRST205') {
         return NextResponse.json({
           success: true,
           message: 'Shipping routes table not set up yet. Using defaults.'
