@@ -58,27 +58,38 @@ async function main() {
   let isFirstLine = true;
   let innerIdIndex = -1;
   let imagesIndex = -1;
+  let syncedAtIndex = -1;
   let lineCount = 0;
+  let validCount = 0;
 
   for await (const line of rl) {
     if (isFirstLine) {
       const header = line.split('|');
       innerIdIndex = header.indexOf('inner_id');
       imagesIndex = header.indexOf('images');
+      syncedAtIndex = header.indexOf('synced_at');
       isFirstLine = false;
       continue;
     }
 
     lineCount++;
     if (lineCount % 50000 === 0) {
-      console.log(`  Parsed ${lineCount} lines...`);
+      console.log(`  Parsed ${lineCount} lines, valid: ${validCount}...`);
     }
 
     const columns = line.split('|');
     const sourceId = columns[innerIdIndex]?.trim();
+    const syncedAt = columns[syncedAtIndex]?.trim();
     let imagesJson = columns[imagesIndex]?.trim();
 
     if (!sourceId || !imagesJson) continue;
+
+    // Check if synced_at < 6 days (photos expire after 6 days)
+    if (syncedAt) {
+      const syncDate = new Date(syncedAt);
+      const diffDays = (Date.now() - syncDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 6) continue; // Skip expired photos
+    }
 
     // Parse images JSON - handle escaped quotes
     // CSV format: "[""url1"", ""url2""]" -> need to convert "" to "
@@ -89,6 +100,7 @@ async function main() {
       const images = JSON.parse(imagesJson);
       if (Array.isArray(images) && images.length > 0) {
         photoMap.set(sourceId, images);
+        validCount++;
       }
     } catch (e) {
       // Skip malformed JSON - log first few errors
