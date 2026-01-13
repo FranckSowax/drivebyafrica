@@ -7,7 +7,7 @@ import {
   getChangeId,
   getAllChangesSince,
 } from '@/lib/api/dongchedi';
-import type { DongchediOffer } from '@/lib/api/dongchedi';
+import type { DongchediOffer, DongchediOffersParams } from '@/lib/api/dongchedi';
 
 // Extend timeout for this route (Netlify/Vercel)
 export const maxDuration = 60; // 60 seconds
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
         while (hasMore && page <= maxPages) {
           try {
-            const params: Record<string, string | number> = {
+            const params: DongchediOffersParams = {
               page,
               mark,
             };
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
             if (filters.km_age_from) params.km_age_from = filters.km_age_from;
             if (filters.km_age_to) params.km_age_to = filters.km_age_to;
 
-            const response = await getOffers(params as Parameters<typeof getOffers>[0]);
+            const response = await getOffers(params);
             const vehiclesToSync: DongchediOffer[] = [];
 
             for (const change of response.result) {
