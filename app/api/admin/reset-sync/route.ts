@@ -7,6 +7,16 @@ import {
 } from '@/lib/api/dongchedi';
 import type { DongchediOffer } from '@/lib/api/dongchedi';
 
+// Helper to format array for PostgreSQL TEXT[] column
+function formatPgArray(arr: string[] | undefined | null): string {
+  if (!arr || !Array.isArray(arr) || arr.length === 0) return '{}';
+  const escaped = arr.map((s) => {
+    if (typeof s !== 'string') return '""';
+    return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  });
+  return `{${escaped.join(',')}}`;
+}
+
 /**
  * POST /api/admin/reset-sync
  *
@@ -106,8 +116,8 @@ export async function POST(request: NextRequest) {
                   grade: vehicle.grade,
                   start_price_usd: vehicle.start_price_usd,
                   current_price_usd: vehicle.current_price_usd,
-                  auction_status: 'available',
-                  images: vehicle.images,
+                  auction_status: 'ongoing',
+                  images: formatPgArray(vehicle.images),
                   updated_at: new Date().toISOString(),
                 },
                 {
