@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 
 const navLinks = [
@@ -43,6 +44,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, profile, signOut } = useAuthStore();
+  const { theme } = useTheme();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
@@ -52,16 +54,14 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <div className="bg-gray-900 rounded-lg px-3 py-1.5">
-              <Image
-                src="/logo-driveby-africa.png"
-                alt="Driveby Africa"
-                width={150}
-                height={40}
-                className="h-8 w-auto"
-                priority
-              />
-            </div>
+            <Image
+              src={theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png'}
+              alt="Driveby Africa"
+              width={150}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}

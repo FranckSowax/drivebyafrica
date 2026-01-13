@@ -1,6 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { useTheme } from '@/components/providers/ThemeProvider';
 
 const footerLinks = {
   company: [
@@ -26,6 +29,8 @@ const footerLinks = {
 const destinations = ['Gabon', 'Cameroun', 'Congo', "Côte d'Ivoire", 'Sénégal'];
 
 export function Footer() {
+  const { theme } = useTheme();
+
   return (
     <footer className="bg-[var(--surface)] border-t border-[var(--card-border)]">
       <div className="container mx-auto px-4 py-12">
@@ -33,15 +38,13 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-block mb-4">
-              <div className="bg-gray-900 rounded-lg px-3 py-2 inline-block">
-                <Image
-                  src="/logo-driveby-africa.png"
-                  alt="Driveby Africa"
-                  width={160}
-                  height={45}
-                  className="h-10 w-auto"
-                />
-              </div>
+              <Image
+                src={theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png'}
+                alt="Driveby Africa"
+                width={160}
+                height={45}
+                className="h-10 w-auto"
+              />
             </Link>
             <p className="text-[var(--text-muted)] text-sm mb-6 max-w-sm">
               Votre partenaire de confiance pour l&apos;importation de véhicules
