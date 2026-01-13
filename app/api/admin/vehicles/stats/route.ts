@@ -102,6 +102,10 @@ export async function GET() {
       .limit(10);
 
     return NextResponse.json({
+      // Return flat structure for admin API page
+      total: stats.total,
+      bySource: stats.bySource,
+      // Also include detailed stats for other pages
       stats,
       syncConfig,
       syncLogs,
