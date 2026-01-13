@@ -1,0 +1,58 @@
+name: Dongchedi Daily Sync
+
+on:
+  # Run daily at 6:00 AM UTC (7:00 AM WAT)
+  schedule:
+    - cron: '0 6 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      max_pages:
+        description: 'Maximum pages to fetch (20 vehicles/page)'
+        required: false
+        default: '500'
+      remove_expired:
+        description: 'Remove vehicles with expired photos'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  DONGCHEDI_API_KEY: ${{ secrets.DONGCHEDI_API_KEY }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 hours max
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Dongchedi CSV (fresh photos)
+        run: |
+          echo "Downloading active offers CSV..."
+          curl -L "https://api1.auto-api.com/api/v2/dongchedi/export/active_offer.csv?api_key=${{ secrets.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU' }}" -o /tmp/active_offer.csv
+          echo "CSV downloaded: $(wc -l < /tmp/active_offer.csv) lines"
+
+      - name: Run Dongchedi sync
+        run: |
+          npx tsx scripts/sync-dongchedi-ci.ts \
+            --max-pages=${{ github.event.inputs.max_pages || '500' }} \
+            --remove-expired=${{ github.event.inputs.remove_expired || 'true' }}
+
+      - name: Summary
+        run: |
+          echo "Sync completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
