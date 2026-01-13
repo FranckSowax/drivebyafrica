@@ -72,14 +72,14 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-cod-gray border-r border-nobel/20">
+    <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-[var(--card-bg)] border-r border-[var(--card-border)]">
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-nobel/20">
+      <div className="h-16 flex items-center px-6 border-b border-[var(--card-border)]">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-mandarin rounded-lg flex items-center justify-center">
             <Car className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg text-white">
+          <span className="font-bold text-lg text-[var(--text-primary)]">
             Driveby<span className="text-mandarin">Africa</span>
           </span>
         </Link>
@@ -96,7 +96,7 @@ export function Sidebar() {
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive(link.href)
                     ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-nobel hover:text-white hover:bg-surface-hover'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
                 )}
               >
                 <link.icon className="w-5 h-5" />
@@ -108,7 +108,7 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Links */}
-      <div className="px-3 py-4 border-t border-nobel/20">
+      <div className="px-3 py-4 border-t border-[var(--card-border)]">
         <ul className="space-y-1">
           {bottomLinks.map((link) => (
             <li key={link.href}>
@@ -118,7 +118,7 @@ export function Sidebar() {
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive(link.href)
                     ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-nobel hover:text-white hover:bg-surface-hover'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
                 )}
               >
                 <link.icon className="w-5 h-5" />
