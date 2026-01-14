@@ -82,66 +82,66 @@ export default async function HomePage() {
     <div className="min-h-screen bg-[var(--background)]">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface)] via-[var(--background)] to-mandarin/10" />
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/banner driveby.jpg"
+            alt="Driveby Africa Banner"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
+        </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-mandarin/10 rounded-full border border-mandarin/20 mb-6">
-              <span className="text-mandarin font-medium text-sm">
-                Nouveau: Importation directe depuis la Corée du Sud
-              </span>
-            </div>
+          <div className="flex justify-end">
+            <div className="max-w-2xl text-right">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-mandarin/20 backdrop-blur-sm rounded-full border border-mandarin/30 mb-6">
+                <span className="text-mandarin font-medium text-sm">
+                  Nouveau: Importation directe depuis la Corée du Sud
+                </span>
+              </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[var(--text-primary)] leading-tight mb-6">
-              Importez votre véhicule depuis{' '}
-              <span className="text-mandarin">le monde entier</span>
-            </h1>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+                Importez votre véhicule depuis{' '}
+                <span className="text-mandarin">la Chine, la Corée et Dubaï</span>
+              </h1>
 
-            <p className="text-lg text-[var(--text-muted)] mb-8 max-w-xl">
-              Accédez à des milliers de véhicules depuis la Corée du Sud, la Chine et Dubaï.
-              Estimation gratuite et livraison jusqu&apos;à votre port en Afrique.
-            </p>
+              <p className="text-lg text-white/80 mb-8 max-w-xl ml-auto">
+                Accédez à des milliers de véhicules depuis la Corée du Sud, la Chine et Dubaï.
+                Estimation gratuite et livraison jusqu&apos;à votre port en Afrique.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/cars">
-                <Button variant="primary" size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
-                  Explorer les véhicules
-                </Button>
-              </Link>
-            </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                <Link href="/cars">
+                  <Button variant="primary" size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
+                    Explorer les véhicules
+                  </Button>
+                </Link>
+              </div>
 
-            {/* Source Badges */}
-            <div className="flex items-center gap-6 mt-12">
-              <p className="text-sm text-[var(--text-muted)]">Sources:</p>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--surface)] rounded-full">
-                  <span className="text-xl">🇰🇷</span>
-                  <span className="text-sm text-[var(--text-secondary)]">Corée</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--surface)] rounded-full">
-                  <span className="text-xl">🇨🇳</span>
-                  <span className="text-sm text-[var(--text-secondary)]">Chine</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--surface)] rounded-full">
-                  <span className="text-xl">🇦🇪</span>
-                  <span className="text-sm text-[var(--text-secondary)]">Dubaï</span>
+              {/* Source Badges */}
+              <div className="flex items-center gap-6 mt-12 justify-end">
+                <p className="text-sm text-white/60">Sources:</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                    <span className="text-xl">🇰🇷</span>
+                    <span className="text-sm text-white">Corée</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                    <span className="text-xl">🇨🇳</span>
+                    <span className="text-sm text-white">Chine</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                    <span className="text-xl">🇦🇪</span>
+                    <span className="text-sm text-white">Dubaï</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Hero Car Image */}
-        <div className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-[55%] h-auto">
-          <Image
-            src="/imgi_62_image.png"
-            alt="Véhicules disponibles"
-            width={1200}
-            height={600}
-            className="object-contain w-full h-auto"
-            priority
-          />
         </div>
       </section>
 
