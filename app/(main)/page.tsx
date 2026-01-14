@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Car, Shield, Truck, Headphones, Calculator, FileText } from 'lucide-react';
+import { ArrowRight, Car, Shield, Truck, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { createClient } from '@/lib/supabase/server';
 import { VehicleCard } from '@/components/vehicles/VehicleCard';
+import { SearchFilterBar } from '@/components/home/SearchFilterBar';
 import type { Vehicle } from '@/types/vehicle';
 
 const features = [
@@ -108,11 +109,6 @@ export default async function HomePage() {
                   Explorer les véhicules
                 </Button>
               </Link>
-              <Link href="/calculator">
-                <Button variant="outline" size="lg" leftIcon={<Calculator className="w-5 h-5" />}>
-                  Estimer les frais
-                </Button>
-              </Link>
             </div>
 
             {/* Source Badges */}
@@ -146,6 +142,13 @@ export default async function HomePage() {
             className="object-contain w-full h-auto"
             priority
           />
+        </div>
+      </section>
+
+      {/* Search Filter Bar */}
+      <section className="relative z-20 -mt-8 mb-8">
+        <div className="container mx-auto px-4">
+          <SearchFilterBar />
         </div>
       </section>
 

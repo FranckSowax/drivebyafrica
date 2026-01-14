@@ -3,32 +3,20 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu,
-  X,
-  Car,
   Heart,
   User,
-  Bell,
   LogOut,
   Settings,
   Package,
   Wallet,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAuthStore } from '@/store/useAuthStore';
-
-const navLinks = [
-  { href: '/cars', label: 'Véhicules', icon: Car },
-  { href: '/calculator', label: 'Estimation', icon: null },
-  { href: '/how-it-works', label: 'Comment ça marche', icon: null },
-];
 
 const userMenuLinks = [
   { href: '/dashboard', label: 'Tableau de bord', icon: User },
@@ -39,13 +27,9 @@ const userMenuLinks = [
 ];
 
 export function Header() {
-  const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, profile, signOut } = useAuthStore();
   const { theme, mounted } = useTheme();
-
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   // Use dark logo as default during SSR to prevent flash
   // The inline script sets the correct theme before React hydrates
@@ -69,27 +53,6 @@ export function Header() {
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                  isActive(link.href)
-                    ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface)]'
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {link.icon && <link.icon className="w-4 h-4" />}
-                  {link.label}
-                </span>
-              </Link>
-            ))}
-          </nav>
-
           {/* Right Side */}
           <div className="flex items-center gap-3">
             {/* Theme Toggle */}
@@ -97,11 +60,13 @@ export function Header() {
 
             {user ? (
               <>
-                {/* Notifications */}
-                <button className="relative p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-mandarin rounded-full" />
-                </button>
+                {/* Favorites */}
+                <Link
+                  href="/dashboard/favorites"
+                  className="relative p-2 text-[var(--text-muted)] hover:text-mandarin transition-colors"
+                >
+                  <Heart className="w-5 h-5" />
+                </Link>
 
                 {/* User Menu */}
                 <div className="relative">
@@ -169,7 +134,7 @@ export function Header() {
                 </div>
               </>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Link href="/login">
                   <Button variant="ghost" size="sm">
                     Connexion
@@ -182,66 +147,9 @@ export function Header() {
                 </Link>
               </div>
             )}
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-[var(--text-primary)]"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
           </div>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-[var(--card-border)] bg-[var(--card-bg)]"
-          >
-            <nav className="container mx-auto px-4 py-4 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                    isActive(link.href)
-                      ? 'bg-mandarin/10 text-mandarin'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--surface)]'
-                  )}
-                >
-                  {link.icon && <link.icon className="w-5 h-5" />}
-                  {link.label}
-                </Link>
-              ))}
-              {!user && (
-                <div className="pt-4 space-y-2">
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">
-                      Connexion
-                    </Button>
-                  </Link>
-                  <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="primary" className="w-full">
-                      Inscription
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
   );
 }
