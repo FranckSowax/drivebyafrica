@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   X,
   ChevronDown,
+  ChevronUp,
   Check,
   RotateCcw,
   Car,
@@ -21,7 +22,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
 import { useFilterStore } from '@/store/useFilterStore';
-import { useDongchediFilters, getFilterLabel, getColorHex } from '@/lib/hooks/useDongchediFilters';
+import { useVehicleFilters, translateFilter, getColorHex } from '@/lib/hooks/useVehicleFilters';
 import { formatUsdToFcfaShort } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
 
@@ -38,13 +39,14 @@ interface DropdownProps {
   onMultiChange?: (values: string[]) => void;
   isLoading?: boolean;
   searchable?: boolean;
+  openUpward?: boolean;
 }
 
 function FilterDropdown({
   label,
   icon,
   value,
-  placeholder = 'Selectionner',
+  placeholder = 'Sélectionner',
   options,
   onChange,
   multiple = false,
@@ -52,6 +54,7 @@ function FilterDropdown({
   onMultiChange,
   isLoading = false,
   searchable = false,
+  openUpward = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,7 +85,7 @@ function FilterDropdown({
 
   const displayValue = multiple
     ? selectedValues.length > 0
-      ? `${selectedValues.length} selectionne${selectedValues.length > 1 ? 's' : ''}`
+      ? `${selectedValues.length} sélectionné${selectedValues.length > 1 ? 's' : ''}`
       : placeholder
     : selectedOption?.label || placeholder;
 
@@ -118,17 +121,31 @@ function FilterDropdown({
             {displayValue}
           </p>
         </div>
-        <ChevronDown
-          className={cn(
-            'w-4 h-4 text-[var(--text-muted)] transition-transform duration-200',
-            isOpen && 'rotate-180'
-          )}
-        />
+        {openUpward ? (
+          <ChevronUp
+            className={cn(
+              'w-4 h-4 text-[var(--text-muted)] transition-transform duration-200',
+              isOpen && 'rotate-180'
+            )}
+          />
+        ) : (
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-[var(--text-muted)] transition-transform duration-200',
+              isOpen && 'rotate-180'
+            )}
+          />
+        )}
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 py-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-72 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className={cn(
+          'absolute z-50 w-full py-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-72 overflow-hidden',
+          openUpward
+            ? 'bottom-full mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200'
+            : 'top-full mt-2 animate-in fade-in slide-in-from-top-2 duration-200'
+        )}>
           {/* Search input for searchable dropdowns */}
           {searchable && options.length > 10 && (
             <div className="px-3 pb-2 border-b border-[var(--card-border)]">
@@ -154,13 +171,13 @@ function FilterDropdown({
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--surface)] transition-colors"
               >
                 <X className="w-4 h-4" />
-                Effacer la selection
+                Effacer la sélection
               </button>
             )}
 
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-sm text-[var(--text-muted)] text-center">
-                Aucun resultat
+                Aucun résultat
               </div>
             ) : (
               filteredOptions.map((option) => {
@@ -223,7 +240,6 @@ interface RangeFilterProps {
 }
 
 function RangeFilter({ label, icon, min, max, step = 1, value, onChange, formatValue }: RangeFilterProps) {
-  // Track if we have a custom range (for styling) - memoized to prevent recalculation
   const hasCustomRange = useMemo(() =>
     value[0] !== min || value[1] !== max,
     [value, min, max]
@@ -285,64 +301,64 @@ interface VehicleFiltersProps {
 
 export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const { filters, setFilters, resetFilters } = useFilterStore();
-  const dongchediFilters = useDongchediFilters();
+  const vehicleFilters = useVehicleFilters();
   const currentYear = new Date().getFullYear();
 
-  // Build options from API data
+  // Build options from Supabase data
   const brandOptions = useMemo(() =>
-    dongchediFilters.brands.map(brand => ({ value: brand, label: brand })),
-    [dongchediFilters.brands]
+    vehicleFilters.brands.map(brand => ({ value: brand, label: brand })),
+    [vehicleFilters.brands]
   );
 
   const modelOptions = useMemo(() => {
     if (!filters.makes || filters.makes.length === 0) return [];
     const models: string[] = [];
     for (const make of filters.makes) {
-      const makeModels = dongchediFilters.models[make] || [];
+      const makeModels = vehicleFilters.models[make] || [];
       models.push(...makeModels);
     }
     return [...new Set(models)].sort().map(model => ({ value: model, label: model }));
-  }, [filters.makes, dongchediFilters.models]);
+  }, [filters.makes, vehicleFilters.models]);
 
   const transmissionOptions = useMemo(() =>
-    dongchediFilters.transmissionTypes.map(t => ({
+    vehicleFilters.transmissionTypes.map(t => ({
       value: t,
-      label: getFilterLabel('transmission', t),
+      label: translateFilter('transmission', t),
     })),
-    [dongchediFilters.transmissionTypes]
+    [vehicleFilters.transmissionTypes]
   );
 
   const bodyTypeOptions = useMemo(() =>
-    dongchediFilters.bodyTypes.map(b => ({
+    vehicleFilters.bodyTypes.map(b => ({
       value: b,
-      label: getFilterLabel('body', b),
+      label: translateFilter('body', b),
     })),
-    [dongchediFilters.bodyTypes]
+    [vehicleFilters.bodyTypes]
   );
 
-  const engineTypeOptions = useMemo(() =>
-    dongchediFilters.engineTypes.map(e => ({
-      value: e,
-      label: getFilterLabel('engine', e),
+  const fuelTypeOptions = useMemo(() =>
+    vehicleFilters.fuelTypes.map(f => ({
+      value: f,
+      label: translateFilter('fuel', f),
     })),
-    [dongchediFilters.engineTypes]
+    [vehicleFilters.fuelTypes]
   );
 
   const driveTypeOptions = useMemo(() =>
-    dongchediFilters.driveTypes.map(d => ({
+    vehicleFilters.driveTypes.map(d => ({
       value: d,
-      label: getFilterLabel('drive', d),
+      label: translateFilter('drive', d),
     })),
-    [dongchediFilters.driveTypes]
+    [vehicleFilters.driveTypes]
   );
 
   const colorOptions = useMemo(() =>
-    dongchediFilters.colors.map(c => ({
+    vehicleFilters.colors.map(c => ({
       value: c,
-      label: getFilterLabel('color', c),
+      label: translateFilter('color', c),
       color: getColorHex(c),
     })),
-    [dongchediFilters.colors]
+    [vehicleFilters.colors]
   );
 
   // Count active filters
@@ -372,42 +388,42 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
 
     if (filters.models && filters.models.length > 0) {
       badges.push({
-        label: filters.models.length === 1 ? filters.models[0] : `${filters.models.length} modeles`,
+        label: filters.models.length === 1 ? filters.models[0] : `${filters.models.length} modèles`,
         onClear: () => setFilters({ models: [] }),
       });
     }
 
     if (filters.transmission) {
       badges.push({
-        label: getFilterLabel('transmission', filters.transmission),
+        label: translateFilter('transmission', filters.transmission),
         onClear: () => setFilters({ transmission: undefined }),
       });
     }
 
     if (filters.fuelType) {
       badges.push({
-        label: getFilterLabel('engine', filters.fuelType),
+        label: translateFilter('fuel', filters.fuelType),
         onClear: () => setFilters({ fuelType: undefined }),
       });
     }
 
     if (filters.driveType) {
       badges.push({
-        label: getFilterLabel('drive', filters.driveType),
+        label: translateFilter('drive', filters.driveType),
         onClear: () => setFilters({ driveType: undefined }),
       });
     }
 
     if (filters.bodyType) {
       badges.push({
-        label: getFilterLabel('body', filters.bodyType),
+        label: translateFilter('body', filters.bodyType),
         onClear: () => setFilters({ bodyType: undefined }),
       });
     }
 
     if (filters.color) {
       badges.push({
-        label: getFilterLabel('color', filters.color),
+        label: translateFilter('color', filters.color),
         onClear: () => setFilters({ color: undefined }),
       });
     }
@@ -439,7 +455,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-muted)] hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
-              Reinitialiser
+              Réinitialiser
             </button>
           )}
         </div>
@@ -466,16 +482,16 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           multiple
           selectedValues={filters.makes || []}
           onMultiChange={(values) => setFilters({ makes: values, models: [] })}
-          isLoading={dongchediFilters.isLoading}
+          isLoading={vehicleFilters.isLoading}
           searchable
         />
 
         {/* Models - Multi Select (only if makes are selected) */}
         {filters.makes && filters.makes.length > 0 && modelOptions.length > 0 && (
           <FilterDropdown
-            label="Modele"
+            label="Modèle"
             icon={<Car className="w-4 h-4" />}
-            placeholder="Tous modeles"
+            placeholder="Tous modèles"
             options={modelOptions}
             onChange={() => {}}
             multiple
@@ -493,12 +509,12 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           placeholder="Tous types"
           options={bodyTypeOptions}
           onChange={(val) => setFilters({ bodyType: val })}
-          isLoading={dongchediFilters.isLoading}
+          isLoading={vehicleFilters.isLoading}
         />
 
         {/* Year Range */}
         <RangeFilter
-          label="Annee"
+          label="Année"
           icon={<Calendar className="w-4 h-4" />}
           min={2000}
           max={currentYear}
@@ -521,7 +537,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
 
         {/* Mileage Range */}
         <RangeFilter
-          label="Kilometrage"
+          label="Kilométrage"
           icon={<Gauge className="w-4 h-4" />}
           min={0}
           max={200000}
@@ -533,24 +549,24 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
 
         {/* Transmission */}
         <FilterDropdown
-          label="Boite de vitesse"
+          label="Boîte de vitesse"
           icon={<Cog className="w-4 h-4" />}
           value={filters.transmission}
           placeholder="Toutes"
           options={transmissionOptions}
           onChange={(val) => setFilters({ transmission: val })}
-          isLoading={dongchediFilters.isLoading}
+          isLoading={vehicleFilters.isLoading}
         />
 
-        {/* Fuel Type (Engine Type) */}
+        {/* Fuel Type */}
         <FilterDropdown
           label="Carburant"
           icon={<Fuel className="w-4 h-4" />}
           value={filters.fuelType}
           placeholder="Tous"
-          options={engineTypeOptions}
+          options={fuelTypeOptions}
           onChange={(val) => setFilters({ fuelType: val })}
-          isLoading={dongchediFilters.isLoading}
+          isLoading={vehicleFilters.isLoading}
         />
 
         {/* Drive Type */}
@@ -561,10 +577,10 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           placeholder="Toutes"
           options={driveTypeOptions}
           onChange={(val) => setFilters({ driveType: val })}
-          isLoading={dongchediFilters.isLoading}
+          isLoading={vehicleFilters.isLoading}
         />
 
-        {/* Color */}
+        {/* Color - opens upward */}
         <FilterDropdown
           label="Couleur"
           icon={<Palette className="w-4 h-4" />}
@@ -572,7 +588,8 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           placeholder="Toutes couleurs"
           options={colorOptions}
           onChange={(val) => setFilters({ color: val })}
-          isLoading={dongchediFilters.isLoading}
+          isLoading={vehicleFilters.isLoading}
+          openUpward
         />
       </div>
 
