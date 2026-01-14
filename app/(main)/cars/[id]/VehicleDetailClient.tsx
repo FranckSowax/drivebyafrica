@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Heart,
   Share2,
@@ -44,9 +45,14 @@ const STATUS_STYLES: Record<AuctionStatus, { bg: string; label: string }> = {
 };
 
 export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
+  const searchParams = useSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
+
+  // Check if we should auto-open the quote modal (after login redirect)
+  const actionParam = searchParams.get('action');
+  const shouldAutoOpenQuote = actionParam === 'quote';
 
   const images = vehicle.images || ['/images/placeholder-car.jpg'];
   const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
@@ -285,6 +291,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     vehicleMake={vehicle.make || 'Unknown'}
                     vehicleModel={vehicle.model || 'Unknown'}
                     vehicleYear={vehicle.year || new Date().getFullYear()}
+                    autoOpenQuote={shouldAutoOpenQuote}
                   />
                 )}
 

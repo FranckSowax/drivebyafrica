@@ -118,6 +118,7 @@ interface ShippingEstimatorProps {
   vehicleMake: string;
   vehicleModel: string;
   vehicleYear: number;
+  autoOpenQuote?: boolean;
 }
 
 export function ShippingEstimator({
@@ -127,6 +128,7 @@ export function ShippingEstimator({
   vehicleMake,
   vehicleModel,
   vehicleYear,
+  autoOpenQuote = false,
 }: ShippingEstimatorProps) {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -136,6 +138,7 @@ export function ShippingEstimator({
   const [isShippingTypeOpen, setIsShippingTypeOpen] = useState(false);
   const [isRequestingQuote, setIsRequestingQuote] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -195,6 +198,24 @@ export function ShippingEstimator({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isDropdownOpen, isShippingTypeOpen]);
+
+  // Auto-open quote modal when coming back from login with action=quote
+  useEffect(() => {
+    if (autoOpenQuote && user && !hasAutoOpened) {
+      // Set default destination (Libreville, Gabon) if not selected
+      if (!selectedDestination) {
+        const defaultDest = destinations.find(d => d.id === 'libreville');
+        if (defaultDest) {
+          setSelectedDestination(defaultDest);
+        }
+      }
+      // Open the modal after a short delay to ensure state is set
+      setTimeout(() => {
+        setIsQuoteModalOpen(true);
+        setHasAutoOpened(true);
+      }, 300);
+    }
+  }, [autoOpenQuote, user, hasAutoOpened, selectedDestination]);
 
   // Filter destinations based on search query
   const filteredDestinations = destinations.filter(
