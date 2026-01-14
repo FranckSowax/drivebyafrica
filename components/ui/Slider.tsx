@@ -24,6 +24,15 @@ export function Slider({
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState<'start' | 'end' | null>(null);
+  // Local state for smooth dragging - only update parent on mouse up
+  const [localValue, setLocalValue] = useState<[number, number]>(value);
+
+  // Sync local value with prop when not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalValue(value);
+    }
+  }, [value, isDragging]);
 
   const getPercentage = (val: number) => ((val - min) / (max - min)) * 100;
 
@@ -48,18 +57,25 @@ export function Slider({
       if (!isDragging) return;
       const newValue = getValueFromPosition(e.clientX);
 
-      if (isDragging === 'start') {
-        onValueChange([Math.min(newValue, value[1] - step), value[1]]);
-      } else {
-        onValueChange([value[0], Math.max(newValue, value[0] + step)]);
-      }
+      // Update local state only during drag (smooth UI, no re-renders of parent)
+      setLocalValue(prev => {
+        if (isDragging === 'start') {
+          return [Math.min(newValue, prev[1] - step), prev[1]];
+        } else {
+          return [prev[0], Math.max(newValue, prev[0] + step)];
+        }
+      });
     },
-    [isDragging, getValueFromPosition, onValueChange, value, step]
+    [isDragging, getValueFromPosition, step]
   );
 
   const handleMouseUp = useCallback(() => {
+    if (isDragging) {
+      // Only update parent state when drag ends - prevents flickering
+      onValueChange(localValue);
+    }
     setIsDragging(null);
-  }, []);
+  }, [isDragging, localValue, onValueChange]);
 
   useEffect(() => {
     if (isDragging) {
@@ -73,6 +89,9 @@ export function Slider({
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // Use local value for display (smooth during drag)
+  const displayValue = localValue;
+
   return (
     <div className={cn('w-full', className)}>
       <div
@@ -83,8 +102,8 @@ export function Slider({
         <div
           className="absolute h-full bg-mandarin rounded-full"
           style={{
-            left: `${getPercentage(value[0])}%`,
-            width: `${getPercentage(value[1]) - getPercentage(value[0])}%`,
+            left: `${getPercentage(displayValue[0])}%`,
+            width: `${getPercentage(displayValue[1]) - getPercentage(displayValue[0])}%`,
           }}
         />
 
@@ -94,7 +113,7 @@ export function Slider({
             'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white rounded-full shadow-md cursor-grab border-2 border-mandarin transition-transform',
             isDragging === 'start' && 'scale-110 cursor-grabbing'
           )}
-          style={{ left: `${getPercentage(value[0])}%` }}
+          style={{ left: `${getPercentage(displayValue[0])}%` }}
           onMouseDown={handleMouseDown('start')}
         />
 
@@ -104,7 +123,7 @@ export function Slider({
             'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white rounded-full shadow-md cursor-grab border-2 border-mandarin transition-transform',
             isDragging === 'end' && 'scale-110 cursor-grabbing'
           )}
-          style={{ left: `${getPercentage(value[1])}%` }}
+          style={{ left: `${getPercentage(displayValue[1])}%` }}
           onMouseDown={handleMouseDown('end')}
         />
       </div>
@@ -112,8 +131,8 @@ export function Slider({
       {/* Value labels */}
       {formatValue && (
         <div className="flex justify-between mt-2 text-xs text-nobel">
-          <span>{formatValue(value[0])}</span>
-          <span>{formatValue(value[1])}</span>
+          <span>{formatValue(displayValue[0])}</span>
+          <span>{formatValue(displayValue[1])}</span>
         </div>
       )}
     </div>

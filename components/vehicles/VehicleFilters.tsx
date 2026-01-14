@@ -222,11 +222,15 @@ interface RangeFilterProps {
 }
 
 function RangeFilter({ label, icon, min, max, step = 1, value, onChange, formatValue }: RangeFilterProps) {
-  const hasCustomRange = value[0] !== min || value[1] !== max;
+  // Track if we have a custom range (for styling) - memoized to prevent recalculation
+  const hasCustomRange = useMemo(() =>
+    value[0] !== min || value[1] !== max,
+    [value, min, max]
+  );
 
   return (
     <div className={cn(
-      'p-4 rounded-xl border transition-colors',
+      'p-4 rounded-xl border',
       hasCustomRange
         ? 'bg-mandarin/5 border-mandarin/30'
         : 'bg-[var(--surface)] border-[var(--card-border)]'
@@ -251,7 +255,6 @@ function RangeFilter({ label, icon, min, max, step = 1, value, onChange, formatV
         step={step}
         value={value}
         onValueChange={onChange}
-        formatValue={formatValue}
       />
     </div>
   );
