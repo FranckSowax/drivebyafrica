@@ -200,7 +200,7 @@ const SOURCE_OPTIONS = [
   { value: 'dubai', label: 'Dubaï' },
 ];
 
-// Price options
+// Price options - extended range
 const PRICE_OPTIONS = [
   { value: '5000', label: '5 000 USD' },
   { value: '10000', label: '10 000 USD' },
@@ -208,20 +208,22 @@ const PRICE_OPTIONS = [
   { value: '20000', label: '20 000 USD' },
   { value: '30000', label: '30 000 USD' },
   { value: '50000', label: '50 000 USD' },
+  { value: '75000', label: '75 000 USD' },
   { value: '100000', label: '100 000 USD' },
+  { value: '150000', label: '150 000 USD' },
+  { value: '200000', label: '200 000 USD' },
 ];
 
-// Year options
+// Year options - from oldest to newest (2000 to 2026)
 const YEAR_OPTIONS = (() => {
-  const currentYear = new Date().getFullYear();
   const years = [];
-  for (let year = currentYear; year >= 2010; year--) {
+  for (let year = 2026; year >= 2000; year--) {
     years.push({ value: year.toString(), label: year.toString() });
   }
   return years;
 })();
 
-// Mileage options
+// Mileage options - extended range
 const MILEAGE_OPTIONS = [
   { value: '10000', label: '10 000 km' },
   { value: '30000', label: '30 000 km' },
@@ -230,6 +232,8 @@ const MILEAGE_OPTIONS = [
   { value: '100000', label: '100 000 km' },
   { value: '150000', label: '150 000 km' },
   { value: '200000', label: '200 000 km' },
+  { value: '300000', label: '300 000 km' },
+  { value: '500000', label: '500 000 km' },
 ];
 
 // Empty filters for total count
@@ -306,11 +310,11 @@ export function SearchFilterBar() {
   // Check if any filters are active
   const hasActiveFilters = !!(
     (filters.makes && filters.makes.length > 0) ||
-    filters.priceTo !== 50000 ||
-    filters.yearFrom !== 2015 ||
-    filters.mileageMax !== 150000 ||
+    filters.priceTo !== undefined ||
+    filters.yearFrom !== undefined ||
+    filters.mileageMax !== undefined ||
     filters.transmission ||
-    filters.source !== 'all'
+    (filters.source && filters.source !== 'all')
   );
 
   // Format count for display
@@ -371,7 +375,7 @@ export function SearchFilterBar() {
               value={filters.priceTo?.toString()}
               placeholder="Tous"
               options={PRICE_OPTIONS}
-              onChange={(val) => setFilters({ priceTo: val ? parseInt(val) : 50000 })}
+              onChange={(val) => setFilters({ priceTo: val ? parseInt(val) : undefined })}
             />
 
             {/* Min Year */}
@@ -380,7 +384,7 @@ export function SearchFilterBar() {
               value={filters.yearFrom?.toString()}
               placeholder="Toutes"
               options={YEAR_OPTIONS}
-              onChange={(val) => setFilters({ yearFrom: val ? parseInt(val) : 2015 })}
+              onChange={(val) => setFilters({ yearFrom: val ? parseInt(val) : undefined })}
             />
 
             {/* Max Mileage */}
@@ -389,7 +393,7 @@ export function SearchFilterBar() {
               value={filters.mileageMax?.toString()}
               placeholder="Tous"
               options={MILEAGE_OPTIONS}
-              onChange={(val) => setFilters({ mileageMax: val ? parseInt(val) : 150000 })}
+              onChange={(val) => setFilters({ mileageMax: val ? parseInt(val) : undefined })}
             />
 
             {/* Transmission */}

@@ -365,9 +365,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const activeFiltersCount = [
     filters.makes && filters.makes.length > 0,
     filters.models && filters.models.length > 0,
-    filters.yearFrom !== 2015 || filters.yearTo !== currentYear,
-    filters.priceFrom !== 0 || filters.priceTo !== 50000,
-    filters.mileageMax !== 150000,
+    filters.yearFrom !== undefined || filters.yearTo !== undefined,
+    filters.priceFrom !== undefined || filters.priceTo !== undefined,
+    filters.mileageMax !== undefined,
     filters.transmission,
     filters.fuelType,
     filters.driveType,
@@ -518,7 +518,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           icon={<Calendar className="w-4 h-4" />}
           min={2000}
           max={currentYear}
-          value={[filters.yearFrom || 2015, filters.yearTo || currentYear]}
+          value={[filters.yearFrom || 2000, filters.yearTo || currentYear]}
           onChange={([from, to]) => setFilters({ yearFrom: from, yearTo: to })}
           formatValue={(val) => val.toString()}
         />
@@ -528,9 +528,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           label="Prix (FCFA)"
           icon={<DollarSign className="w-4 h-4" />}
           min={0}
-          max={100000}
+          max={200000}
           step={1000}
-          value={[filters.priceFrom || 0, filters.priceTo || 50000]}
+          value={[filters.priceFrom || 0, filters.priceTo || 200000]}
           onChange={([from, to]) => setFilters({ priceFrom: from, priceTo: to })}
           formatValue={(val) => formatUsdToFcfaShort(val)}
         />
@@ -540,9 +540,9 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           label="Kilométrage"
           icon={<Gauge className="w-4 h-4" />}
           min={0}
-          max={200000}
+          max={500000}
           step={5000}
-          value={[0, filters.mileageMax || 150000]}
+          value={[0, filters.mileageMax || 500000]}
           onChange={([, max]) => setFilters({ mileageMax: max })}
           formatValue={(val) => `${val.toLocaleString()} km`}
         />

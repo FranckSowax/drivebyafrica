@@ -16,19 +16,20 @@ const defaultFilters: VehicleFilters = {
   source: 'all',
   makes: [],
   models: [],
-  yearFrom: 2015,
-  yearTo: new Date().getFullYear(),
-  priceFrom: 0,
-  priceTo: 50000,
-  mileageMax: 150000,
+  yearFrom: undefined,
+  yearTo: undefined,
+  priceFrom: undefined,
+  priceTo: undefined,
+  mileageMax: undefined,
   sortBy: 'price_asc',
   notifyNewMatches: false,
-  // New filters
   driveType: undefined,
   color: undefined,
   bodyType: undefined,
   status: undefined,
   search: undefined,
+  transmission: undefined,
+  fuelType: undefined,
 };
 
 export const useFilterStore = create<FilterState>()(
