@@ -5,6 +5,7 @@
 /* Light Theme (Default) */
 :root,
 [data-theme="light"] {
+  color-scheme: light;
   /* Primary Colors */
   --cod-gray: #FFFFFF;
   --cod-gray-dark: #04090C;
@@ -44,6 +45,8 @@
 
 /* Dark Theme */
 [data-theme="dark"] {
+  color-scheme: dark;
+
   /* Primary Colors */
   --cod-gray: #0A0F14;
   --cod-gray-dark: #04090C;

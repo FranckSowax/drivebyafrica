@@ -54,17 +54,17 @@ export function Header() {
     : '/logo-driveby-africa-dark.png';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+    <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
+      <div className="container mx-auto px-4 h-full">
+        <div className="flex items-center justify-between h-full">
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
               src={logoSrc}
               alt="Driveby Africa"
-              width={300}
-              height={80}
-              className="h-16 w-auto"
+              width={200}
+              height={50}
+              className="h-10 w-auto"
               priority
             />
           </Link>

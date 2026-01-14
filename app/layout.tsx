@@ -30,16 +30,22 @@ export const metadata: Metadata = {
   },
 };
 
-// Script to prevent flash of incorrect theme
+// Blocking script to prevent flash of incorrect theme
+// This runs before React hydrates
 const themeScript = `
   (function() {
     try {
-      var theme = localStorage.getItem('theme');
-      if (!theme) {
+      var theme = localStorage.getItem('driveby-theme');
+      if (theme !== 'light' && theme !== 'dark') {
         theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        localStorage.setItem('driveby-theme', theme);
       }
       document.documentElement.setAttribute('data-theme', theme);
-    } catch (e) {}
+      document.documentElement.style.colorScheme = theme;
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
+    }
   })();
 `;
 

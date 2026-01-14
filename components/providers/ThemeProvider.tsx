@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -13,46 +13,78 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Get initial theme from document attribute (set by inline script in layout)
-function getInitialTheme(): Theme {
-  if (typeof window !== 'undefined') {
-    const docTheme = document.documentElement.getAttribute('data-theme') as Theme;
-    if (docTheme) return docTheme;
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    if (savedTheme) return savedTheme;
-  }
-  return 'light';
-}
+// Storage key for consistency
+const THEME_STORAGE_KEY = 'driveby-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  // Initialize from DOM attribute which was set by inline script
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      // First check DOM attribute (set by blocking script)
+      const domTheme = document.documentElement.getAttribute('data-theme') as Theme | null;
+      if (domTheme === 'light' || domTheme === 'dark') {
+        return domTheme;
+      }
+      // Fallback to localStorage
+      try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+        if (stored === 'light' || stored === 'dark') {
+          return stored;
+        }
+      } catch {
+        // localStorage not available
+      }
+    }
+    return 'light';
+  });
   const [mounted, setMounted] = useState(false);
 
+  // Sync with DOM on mount and apply theme
   useEffect(() => {
-    // Sync state with the document attribute (already set by inline script)
-    const currentTheme = getInitialTheme();
-    setThemeState(currentTheme);
+    // Read the actual theme from DOM (set by blocking script before React)
+    const domTheme = document.documentElement.getAttribute('data-theme') as Theme | null;
+
+    if (domTheme === 'light' || domTheme === 'dark') {
+      setThemeState(domTheme);
+    } else {
+      // No theme set yet, apply from localStorage or default
+      try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+        const finalTheme = stored === 'dark' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', finalTheme);
+        setThemeState(finalTheme);
+      } catch {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    }
+
     setMounted(true);
   }, []);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
+    // Update state
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-  };
+    // Update DOM immediately
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    // Persist to localStorage
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    } catch {
+      // localStorage not available
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  }, [theme, setTheme]);
 
   const value = useMemo(
     () => ({ theme, toggleTheme, setTheme, mounted }),
-    [theme, mounted]
+    [theme, toggleTheme, setTheme, mounted]
   );
 
-  // Render children immediately - theme is already set by inline script
-  // This prevents layout shift and flash
   return (
     <ThemeContext.Provider value={value}>
       {children}
