@@ -92,7 +92,7 @@ export default async function HomePage() {
             priority
           />
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/50 to-transparent" />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
