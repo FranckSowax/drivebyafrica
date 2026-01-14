@@ -12,6 +12,9 @@ import {
   Loader2,
   Search,
   X,
+  Container,
+  Users,
+  Info,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +27,26 @@ const USD_TO_XAF = 640;
 // Frais fixes
 const INSURANCE_RATE = 0.025; // 2.5% assurance
 const INSPECTION_FEE_XAF = 225000; // 225 000 FCFA pour inspection et documents
+
+// Types d'expédition
+type ShippingType = 'container' | 'groupage';
+
+const shippingTypes = [
+  {
+    id: 'container' as ShippingType,
+    name: 'Container seul 20HQ',
+    description: 'Expédition exclusive dans un container dédié',
+    icon: Container,
+    multiplier: 1, // Prix complet
+  },
+  {
+    id: 'groupage' as ShippingType,
+    name: 'Groupage maritime',
+    description: 'Partage du container avec d\'autres commandes',
+    icon: Users,
+    multiplier: 0.5, // Prix divisé par 2
+  },
+];
 
 // Destinations africaines avec drapeaux et coûts de transport (estimations en USD)
 const destinations = [
@@ -107,12 +130,15 @@ export function ShippingEstimator({
   const router = useRouter();
   const { user } = useAuthStore();
   const [selectedDestination, setSelectedDestination] = useState<typeof destinations[0] | null>(null);
+  const [selectedShippingType, setSelectedShippingType] = useState<ShippingType>('container');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isShippingTypeOpen, setIsShippingTypeOpen] = useState(false);
   const [isRequestingQuote, setIsRequestingQuote] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const shippingTypeRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate dropdown position based on available space
@@ -150,16 +176,23 @@ export function ShippingEstimator({
         setIsDropdownOpen(false);
         setSearchQuery('');
       }
+      // Close shipping type dropdown
+      if (
+        shippingTypeRef.current &&
+        !shippingTypeRef.current.contains(event.target as Node)
+      ) {
+        setIsShippingTypeOpen(false);
+      }
     };
 
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isShippingTypeOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isShippingTypeOpen]);
 
   // Filter destinations based on search query
   const filteredDestinations = destinations.filter(
@@ -173,7 +206,12 @@ export function ShippingEstimator({
 
     const vehiclePriceXAF = vehiclePriceUSD * USD_TO_XAF;
     const shippingCostUSD = selectedDestination.shippingCost[vehicleSource];
-    const shippingCostXAF = shippingCostUSD * USD_TO_XAF;
+
+    // Appliquer le multiplicateur selon le type d'expédition
+    const shippingTypeConfig = shippingTypes.find(t => t.id === selectedShippingType);
+    const adjustedShippingCostUSD = shippingCostUSD * (shippingTypeConfig?.multiplier || 1);
+    const shippingCostXAF = adjustedShippingCostUSD * USD_TO_XAF;
+
     const insuranceCostXAF = vehiclePriceXAF * INSURANCE_RATE;
     const inspectionFeeXAF = INSPECTION_FEE_XAF;
 
@@ -185,8 +223,9 @@ export function ShippingEstimator({
       insuranceCost: Math.round(insuranceCostXAF),
       inspectionFee: Math.round(inspectionFeeXAF),
       total: Math.round(totalXAF),
+      isGroupage: selectedShippingType === 'groupage',
     };
-  }, [vehiclePriceUSD, vehicleSource, selectedDestination]);
+  }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -213,6 +252,8 @@ export function ShippingEstimator({
       vehiclePriceUSD,
       vehicleSource,
       destination: selectedDestination,
+      shippingType: selectedShippingType,
+      shippingTypeName: shippingTypes.find(t => t.id === selectedShippingType)?.name,
       calculations,
       userId: user.id,
       userEmail: user.email,
@@ -349,6 +390,120 @@ export function ShippingEstimator({
         </div>
       </div>
 
+      {/* Shipping Type Selector - appears after selecting destination */}
+      <AnimatePresence>
+        {selectedDestination && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+              <Ship className="w-4 h-4 inline mr-1" />
+              Type d'expédition
+            </label>
+            <div className="relative" ref={shippingTypeRef}>
+              <button
+                onClick={() => setIsShippingTypeOpen(!isShippingTypeOpen)}
+                className={cn(
+                  'w-full px-4 py-3 bg-[var(--card-bg)] border rounded-xl',
+                  'text-left flex items-center justify-between',
+                  'transition-colors',
+                  'text-[var(--text-primary)]',
+                  isShippingTypeOpen
+                    ? 'border-mandarin ring-2 ring-mandarin/20'
+                    : 'border-[var(--card-border)] hover:border-mandarin/50'
+                )}
+              >
+                {(() => {
+                  const selected = shippingTypes.find(t => t.id === selectedShippingType);
+                  const IconComponent = selected?.icon || Container;
+                  return (
+                    <span className="flex items-center gap-3">
+                      <IconComponent className="w-5 h-5 text-mandarin" />
+                      <div>
+                        <span className="font-medium block">{selected?.name}</span>
+                        <span className="text-xs text-[var(--text-muted)]">{selected?.description}</span>
+                      </div>
+                    </span>
+                  );
+                })()}
+                <ChevronDown
+                  className={cn(
+                    'w-5 h-5 text-[var(--text-muted)] transition-transform duration-200',
+                    isShippingTypeOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {/* Shipping Type Dropdown */}
+              <AnimatePresence>
+                {isShippingTypeOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute z-50 left-0 right-0 top-full mt-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl overflow-hidden"
+                  >
+                    {shippingTypes.map((type) => {
+                      const IconComponent = type.icon;
+                      return (
+                        <button
+                          key={type.id}
+                          onClick={() => {
+                            setSelectedShippingType(type.id);
+                            setIsShippingTypeOpen(false);
+                          }}
+                          className={cn(
+                            'w-full px-4 py-3 text-left flex items-center gap-3',
+                            'hover:bg-mandarin/10 transition-colors',
+                            'border-b border-[var(--card-border)]/30 last:border-b-0',
+                            selectedShippingType === type.id && 'bg-mandarin/10'
+                          )}
+                        >
+                          <IconComponent className={cn(
+                            'w-5 h-5',
+                            selectedShippingType === type.id ? 'text-mandarin' : 'text-[var(--text-muted)]'
+                          )} />
+                          <div className="flex-1">
+                            <span className="text-[var(--text-primary)] font-medium block">{type.name}</span>
+                            <span className="text-[var(--text-muted)] text-xs">{type.description}</span>
+                          </div>
+                          {selectedShippingType === type.id && (
+                            <div className="w-2 h-2 rounded-full bg-mandarin" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Groupage Notice */}
+            {selectedShippingType === 'groupage' && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 p-3 bg-royal-blue/10 border border-royal-blue/30 rounded-lg"
+              >
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-royal-blue flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-[var(--text-primary)]">
+                    <p className="font-medium text-royal-blue">Groupage maritime</p>
+                    <p className="mt-1 text-[var(--text-muted)]">
+                      La date de départ sera soumise au chargement complet du container ou aux commandes groupées pour la même destination.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Cost Breakdown - appears after selecting a destination */}
       <AnimatePresence>
         {selectedDestination && calculations && (
@@ -373,7 +528,12 @@ export function ShippingEstimator({
             <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
               <div className="flex items-center gap-2">
                 <Ship className="w-4 h-4 text-royal-blue" />
-                <span className="text-[var(--text-muted)]">Transport maritime</span>
+                <div>
+                  <span className="text-[var(--text-muted)] block">Transport maritime</span>
+                  <span className="text-xs text-royal-blue">
+                    {selectedShippingType === 'container' ? 'Container 20HQ' : 'Groupage'}
+                  </span>
+                </div>
               </div>
               <span className="text-[var(--text-primary)] font-medium">
                 {formatCurrency(calculations.shippingCost)}
