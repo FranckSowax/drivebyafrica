@@ -2,16 +2,16 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-// Default shipping routes (used if database table doesn't exist)
+// Default shipping routes (used if database table doesn't exist) - prices doubled
 const DEFAULT_ROUTES = [
-  { id: '1', destination_id: 'libreville', destination_name: 'Libreville', destination_country: 'Gabon', destination_flag: '🇬🇦', korea_cost_usd: 1800, china_cost_usd: 2100, dubai_cost_usd: 1600, is_active: true },
-  { id: '2', destination_id: 'port-gentil', destination_name: 'Port-Gentil', destination_country: 'Gabon', destination_flag: '🇬🇦', korea_cost_usd: 1850, china_cost_usd: 2150, dubai_cost_usd: 1650, is_active: true },
-  { id: '3', destination_id: 'douala', destination_name: 'Douala', destination_country: 'Cameroun', destination_flag: '🇨🇲', korea_cost_usd: 1700, china_cost_usd: 2000, dubai_cost_usd: 1500, is_active: true },
-  { id: '4', destination_id: 'pointe-noire', destination_name: 'Pointe-Noire', destination_country: 'Congo', destination_flag: '🇨🇬', korea_cost_usd: 1900, china_cost_usd: 2200, dubai_cost_usd: 1700, is_active: true },
-  { id: '5', destination_id: 'abidjan', destination_name: 'Abidjan', destination_country: "Côte d'Ivoire", destination_flag: '🇨🇮', korea_cost_usd: 2100, china_cost_usd: 2400, dubai_cost_usd: 1900, is_active: true },
-  { id: '6', destination_id: 'dakar', destination_name: 'Dakar', destination_country: 'Sénégal', destination_flag: '🇸🇳', korea_cost_usd: 2300, china_cost_usd: 2600, dubai_cost_usd: 2100, is_active: true },
-  { id: '7', destination_id: 'lome', destination_name: 'Lomé', destination_country: 'Togo', destination_flag: '🇹🇬', korea_cost_usd: 2000, china_cost_usd: 2300, dubai_cost_usd: 1800, is_active: true },
-  { id: '8', destination_id: 'cotonou', destination_name: 'Cotonou', destination_country: 'Bénin', destination_flag: '🇧🇯', korea_cost_usd: 2050, china_cost_usd: 2350, dubai_cost_usd: 1850, is_active: true },
+  { id: '1', destination_id: 'libreville', destination_name: 'Libreville', destination_country: 'Gabon', destination_flag: '🇬🇦', korea_cost_usd: 3600, china_cost_usd: 4200, dubai_cost_usd: 3200, is_active: true },
+  { id: '2', destination_id: 'port-gentil', destination_name: 'Port-Gentil', destination_country: 'Gabon', destination_flag: '🇬🇦', korea_cost_usd: 3700, china_cost_usd: 4300, dubai_cost_usd: 3300, is_active: true },
+  { id: '3', destination_id: 'douala', destination_name: 'Douala', destination_country: 'Cameroun', destination_flag: '🇨🇲', korea_cost_usd: 3400, china_cost_usd: 4000, dubai_cost_usd: 3000, is_active: true },
+  { id: '4', destination_id: 'pointe-noire', destination_name: 'Pointe-Noire', destination_country: 'Congo', destination_flag: '🇨🇬', korea_cost_usd: 3800, china_cost_usd: 4400, dubai_cost_usd: 3400, is_active: true },
+  { id: '5', destination_id: 'abidjan', destination_name: 'Abidjan', destination_country: "Côte d'Ivoire", destination_flag: '🇨🇮', korea_cost_usd: 4200, china_cost_usd: 4800, dubai_cost_usd: 3800, is_active: true },
+  { id: '6', destination_id: 'dakar', destination_name: 'Dakar', destination_country: 'Sénégal', destination_flag: '🇸🇳', korea_cost_usd: 4600, china_cost_usd: 5200, dubai_cost_usd: 4200, is_active: true },
+  { id: '7', destination_id: 'lome', destination_name: 'Lomé', destination_country: 'Togo', destination_flag: '🇹🇬', korea_cost_usd: 4000, china_cost_usd: 4600, dubai_cost_usd: 3600, is_active: true },
+  { id: '8', destination_id: 'cotonou', destination_name: 'Cotonou', destination_country: 'Bénin', destination_flag: '🇧🇯', korea_cost_usd: 4100, china_cost_usd: 4700, dubai_cost_usd: 3700, is_active: true },
 ];
 
 // Create untyped Supabase client for tables not in Database type

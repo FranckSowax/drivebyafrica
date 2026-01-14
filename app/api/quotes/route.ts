@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       destination_id: body.destination_id,
       destination_name: body.destination_name,
       destination_country: body.destination_country,
+      shipping_type: body.shipping_type || 'container',
       shipping_cost_xaf: body.shipping_cost_xaf,
       insurance_cost_xaf: body.insurance_cost_xaf,
       inspection_fee_xaf: body.inspection_fee_xaf,

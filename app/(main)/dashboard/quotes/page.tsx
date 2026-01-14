@@ -16,13 +16,14 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Filter,
+  Ban,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/components/ui/Toast';
+import { QuotePDFModal } from '@/components/vehicles/QuotePDFModal';
 
 interface Quote {
   id: string;
@@ -32,10 +33,11 @@ interface Quote {
   vehicle_model: string;
   vehicle_year: number;
   vehicle_price_usd: number;
-  vehicle_source: string;
+  vehicle_source: 'korea' | 'china' | 'dubai';
   destination_id: string;
   destination_name: string;
   destination_country: string;
+  shipping_type?: 'container' | 'groupage';
   shipping_cost_xaf: number;
   insurance_cost_xaf: number;
   inspection_fee_xaf: number;
@@ -97,6 +99,8 @@ export default function QuotesPage() {
   const [generatingPDF, setGeneratingPDF] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchQuotes();
@@ -155,6 +159,51 @@ export default function QuotesPage() {
 
   const isExpired = (validUntil: string) => {
     return new Date(validUntil) < new Date();
+  };
+
+  const handleOpenQuote = (quote: Quote) => {
+    if (isExpired(quote.valid_until)) {
+      toast.error('Ce devis a expire. Veuillez en generer un nouveau.');
+      return;
+    }
+    setSelectedQuote(quote);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedQuote(null);
+  };
+
+  // Convert Quote to QuoteData format for the modal
+  const getQuoteDataForModal = (quote: Quote) => {
+    if (!quote) return null;
+    const vehiclePriceXAF = quote.vehicle_price_usd * 600;
+    return {
+      vehicleId: quote.vehicle_id,
+      vehicleMake: quote.vehicle_make,
+      vehicleModel: quote.vehicle_model,
+      vehicleYear: quote.vehicle_year,
+      vehiclePriceUSD: quote.vehicle_price_usd,
+      vehicleSource: quote.vehicle_source,
+      destination: {
+        id: quote.destination_id,
+        name: quote.destination_name,
+        country: quote.destination_country,
+        flag: '', // Will be displayed without flag
+      },
+      shippingType: (quote.shipping_type || 'container') as 'container' | 'groupage',
+      shippingTypeName: quote.shipping_type === 'groupage' ? 'Groupage' : 'Container 20HQ',
+      calculations: {
+        vehiclePrice: vehiclePriceXAF,
+        shippingCost: quote.shipping_cost_xaf,
+        insuranceCost: quote.insurance_cost_xaf,
+        inspectionFee: quote.inspection_fee_xaf,
+        total: quote.total_cost_xaf,
+      },
+      userId: user?.id || '',
+      userEmail: user?.email || '',
+    };
   };
 
   const generatePDF = async (quote: Quote) => {
@@ -573,11 +622,26 @@ export default function QuotesPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Link href={`/cars/${quote.vehicle_id}`}>
-                        <Button variant="ghost" size="sm" leftIcon={<Eye className="w-4 h-4" />}>
-                          Voir
+                      {expired ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          leftIcon={<Ban className="w-4 h-4" />}
+                          className="text-[var(--text-muted)]"
+                        >
+                          Expire
                         </Button>
-                      </Link>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenQuote(quote)}
+                          leftIcon={<Eye className="w-4 h-4" />}
+                        >
+                          Ouvrir
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -593,6 +657,11 @@ export default function QuotesPage() {
                       >
                         PDF
                       </Button>
+                      <Link href={`/cars/${quote.vehicle_id}`}>
+                        <Button variant="ghost" size="sm" leftIcon={<Car className="w-4 h-4" />}>
+                          Vehicule
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -620,6 +689,14 @@ export default function QuotesPage() {
           </div>
         </div>
       </Card>
+
+      {/* Quote PDF Modal */}
+      <QuotePDFModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        quoteData={selectedQuote ? getQuoteDataForModal(selectedQuote) : null}
+        user={user}
+      />
     </div>
   );
 }

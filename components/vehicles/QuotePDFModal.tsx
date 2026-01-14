@@ -7,14 +7,8 @@ import {
   Download,
   Share2,
   Printer,
-  Save,
   Loader2,
   CheckCircle,
-  Car,
-  MapPin,
-  Ship,
-  Shield,
-  FileCheck,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -74,9 +68,8 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [quoteSaved, setQuoteSaved] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -89,7 +82,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       setQuoteNumber(`DBA-${timestamp}-${random}`);
-      setIsSaved(false);
+      setQuoteSaved(false);
     }
   }, [isOpen, quoteData]);
 
@@ -414,13 +407,54 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
       const blob = doc.output('blob');
       setPdfBlob(blob);
       setPdfUrl(URL.createObjectURL(blob));
+
+      // Auto-save quote to database
+      if (!quoteSaved) {
+        saveQuoteToDatabase();
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Erreur lors de la generation du PDF');
     } finally {
       setIsGenerating(false);
     }
-  }, [quoteData, user, quoteNumber, toast]);
+  }, [quoteData, user, quoteNumber, toast, quoteSaved]);
+
+  // Save quote to database automatically
+  const saveQuoteToDatabase = async () => {
+    if (!quoteData || !user || quoteSaved) return;
+
+    try {
+      const response = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quote_number: quoteNumber,
+          user_id: user.id,
+          vehicle_id: quoteData.vehicleId,
+          vehicle_make: quoteData.vehicleMake,
+          vehicle_model: quoteData.vehicleModel,
+          vehicle_year: quoteData.vehicleYear,
+          vehicle_price_usd: quoteData.vehiclePriceUSD,
+          vehicle_source: quoteData.vehicleSource,
+          destination_id: quoteData.destination.id,
+          destination_name: quoteData.destination.name,
+          destination_country: quoteData.destination.country,
+          shipping_type: quoteData.shippingType,
+          shipping_cost_xaf: quoteData.calculations.shippingCost,
+          insurance_cost_xaf: quoteData.calculations.insuranceCost,
+          inspection_fee_xaf: quoteData.calculations.inspectionFee,
+          total_cost_xaf: quoteData.calculations.total,
+        }),
+      });
+
+      if (response.ok) {
+        setQuoteSaved(true);
+      }
+    } catch (error) {
+      console.error('Error saving quote:', error);
+    }
+  };
 
   const handleDownload = () => {
     if (pdfBlob) {
@@ -464,47 +498,6 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
           toast.error('Erreur lors du partage');
         }
       }
-    }
-  };
-
-  const handleSave = async () => {
-    if (!quoteData || !user || isSaved) return;
-
-    setIsSaving(true);
-    try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quote_number: quoteNumber,
-          user_id: user.id,
-          vehicle_id: quoteData.vehicleId,
-          vehicle_make: quoteData.vehicleMake,
-          vehicle_model: quoteData.vehicleModel,
-          vehicle_year: quoteData.vehicleYear,
-          vehicle_price_usd: quoteData.vehiclePriceUSD,
-          vehicle_source: quoteData.vehicleSource,
-          destination_id: quoteData.destination.id,
-          destination_name: quoteData.destination.name,
-          destination_country: quoteData.destination.country,
-          shipping_type: quoteData.shippingType,
-          shipping_cost_xaf: quoteData.calculations.shippingCost,
-          insurance_cost_xaf: quoteData.calculations.insuranceCost,
-          inspection_fee_xaf: quoteData.calculations.inspectionFee,
-          total_cost_xaf: quoteData.calculations.total,
-        }),
-      });
-
-      if (response.ok) {
-        setIsSaved(true);
-        toast.success('Devis enregistre dans votre profil');
-      } else {
-        throw new Error('Failed to save');
-      }
-    } catch (error) {
-      toast.error('Erreur lors de l\'enregistrement');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -596,24 +589,6 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="primary"
-                  onClick={handleSave}
-                  disabled={isSaving || isSaved || isGenerating}
-                  leftIcon={
-                    isSaving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isSaved ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )
-                  }
-                  className="flex-1 min-w-[140px]"
-                >
-                  {isSaved ? 'Enregistre' : 'Enregistrer'}
-                </Button>
-
-                <Button
-                  variant="secondary"
                   onClick={handleDownload}
                   disabled={isGenerating || !pdfBlob}
                   leftIcon={<Download className="w-4 h-4" />}
