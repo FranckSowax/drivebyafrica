@@ -18,6 +18,7 @@ import {
   Tag,
   Filter,
   Loader2,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
@@ -25,6 +26,14 @@ import { useFilterStore } from '@/store/useFilterStore';
 import { useVehicleFilters, translateFilter, getColorHex } from '@/lib/hooks/useVehicleFilters';
 import { formatUsdToFcfaShort } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
+import type { VehicleSource } from '@/types/vehicle';
+
+// Source/Country options
+const SOURCE_OPTIONS = [
+  { value: 'korea', label: 'Corée du Sud', icon: <span className="text-base">🇰🇷</span> },
+  { value: 'china', label: 'Chine', icon: <span className="text-base">🇨🇳</span> },
+  { value: 'dubai', label: 'Dubaï', icon: <span className="text-base">🇦🇪</span> },
+];
 
 // Modern Dropdown Component
 interface DropdownProps {
@@ -365,6 +374,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const activeFiltersCount = [
     filters.makes && filters.makes.length > 0,
     filters.models && filters.models.length > 0,
+    filters.source && filters.source !== 'all',
     filters.yearFrom !== undefined || filters.yearTo !== undefined,
     filters.priceFrom !== undefined || filters.priceTo !== undefined,
     filters.mileageMax !== undefined,
@@ -390,6 +400,18 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
       badges.push({
         label: filters.models.length === 1 ? filters.models[0] : `${filters.models.length} modèles`,
         onClear: () => setFilters({ models: [] }),
+      });
+    }
+
+    if (filters.source && filters.source !== 'all') {
+      const sourceLabels: Record<string, string> = {
+        korea: 'Corée du Sud',
+        china: 'Chine',
+        dubai: 'Dubaï',
+      };
+      badges.push({
+        label: sourceLabels[filters.source] || filters.source,
+        onClear: () => setFilters({ source: 'all' }),
       });
     }
 
@@ -500,6 +522,16 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
             searchable
           />
         )}
+
+        {/* Source/Country */}
+        <FilterDropdown
+          label="Pays d'origine"
+          icon={<Globe className="w-4 h-4" />}
+          value={filters.source === 'all' ? undefined : filters.source}
+          placeholder="Tous pays"
+          options={SOURCE_OPTIONS}
+          onChange={(val) => setFilters({ source: (val as VehicleSource) || 'all' })}
+        />
 
         {/* Body Type */}
         <FilterDropdown
