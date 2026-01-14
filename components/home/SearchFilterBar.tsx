@@ -8,12 +8,13 @@ import {
   Check,
   RotateCcw,
   SlidersHorizontal,
-  Zap,
   X,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useFilterStore } from '@/store/useFilterStore';
 import { useVehicleFilters, translateFilter } from '@/lib/hooks/useVehicleFilters';
+import { useVehicles } from '@/lib/hooks/useVehicles';
 import { cn } from '@/lib/utils';
 import type { VehicleSource } from '@/types/vehicle';
 
@@ -57,7 +58,7 @@ function FilterDropdown({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center justify-between gap-2 px-4 py-3 rounded-xl border transition-all duration-200 min-w-[140px]',
+          'flex items-center justify-between gap-2 px-4 py-3 rounded-xl border transition-all duration-200 min-w-[140px] w-full',
           'bg-[var(--surface)] hover:bg-[var(--surface-hover)]',
           isOpen
             ? 'border-mandarin ring-2 ring-mandarin/20'
@@ -83,9 +84,9 @@ function FilterDropdown({
         />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - Opens upward */}
       {isOpen && (
-        <div className="absolute z-50 w-full min-w-[180px] py-2 mt-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute z-50 w-full min-w-[180px] py-2 bottom-full mb-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-200">
           {/* Clear option */}
           {value && (
             <button
@@ -173,7 +174,9 @@ export function SearchFilterBar() {
   const router = useRouter();
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
-  const [electricOnly, setElectricOnly] = useState(filters.fuelType === 'electric');
+
+  // Get vehicle count based on current filters
+  const { totalCount, isLoading } = useVehicles({ filters, page: 1, limit: 1 });
 
   // Build brand options from Supabase data
   const brandOptions = useMemo(() =>
@@ -190,13 +193,6 @@ export function SearchFilterBar() {
     [vehicleFilters.transmissionTypes]
   );
 
-  // Handle electric toggle
-  const handleElectricToggle = () => {
-    const newValue = !electricOnly;
-    setElectricOnly(newValue);
-    setFilters({ fuelType: newValue ? 'electric' : undefined });
-  };
-
   // Handle search
   const handleSearch = () => {
     router.push('/cars');
@@ -205,7 +201,6 @@ export function SearchFilterBar() {
   // Handle reset
   const handleReset = () => {
     resetFilters();
-    setElectricOnly(false);
   };
 
   // Check if any filters are active
@@ -215,12 +210,19 @@ export function SearchFilterBar() {
     filters.yearFrom !== 2015 ||
     filters.mileageMax !== 150000 ||
     filters.transmission ||
-    filters.source !== 'all' ||
-    electricOnly
+    filters.source !== 'all'
   );
 
+  // Format count for display
+  const formatCount = (count: number) => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1).replace('.0', '')}k`;
+    }
+    return count.toLocaleString('fr-FR');
+  };
+
   return (
-    <div className="w-full bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl shadow-lg overflow-hidden">
+    <div className="w-full bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl shadow-lg overflow-visible">
       {/* Main Filter Row */}
       <div className="p-4 lg:p-6">
         <div className="flex flex-wrap items-end gap-3">
@@ -284,36 +286,30 @@ export function SearchFilterBar() {
             className="flex-1 min-w-[140px]"
           />
 
-          {/* Search Button */}
+          {/* Search Button with count */}
           <Button
             variant="primary"
             size="lg"
             onClick={handleSearch}
-            className="h-[62px] px-8"
+            className="h-[62px] px-6"
           >
-            <Search className="w-5 h-5 mr-2" />
-            Rechercher
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <Search className="w-5 h-5 mr-2" />
+            )}
+            <span>Rechercher</span>
+            {!isLoading && totalCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold">
+                {formatCount(totalCount)}
+              </span>
+            )}
           </Button>
         </div>
       </div>
 
       {/* Secondary Row */}
-      <div className="px-4 lg:px-6 pb-4 flex flex-wrap items-center justify-between gap-4 border-t border-[var(--card-border)] pt-4">
-        {/* Left Side: Electric Toggle */}
-        <button
-          type="button"
-          onClick={handleElectricToggle}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200',
-            electricOnly
-              ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
-              : 'bg-[var(--surface)] border-[var(--card-border)] text-[var(--text-secondary)] hover:border-green-500/50'
-          )}
-        >
-          <Zap className={cn('w-4 h-4', electricOnly && 'fill-current')} />
-          <span className="text-sm font-medium">Voitures électriques</span>
-        </button>
-
+      <div className="px-4 lg:px-6 pb-4 flex flex-wrap items-center justify-end gap-4 border-t border-[var(--card-border)] pt-4">
         {/* Right Side: Reset and More Filters */}
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
