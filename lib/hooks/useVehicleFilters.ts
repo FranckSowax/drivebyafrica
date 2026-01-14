@@ -20,14 +20,20 @@ export interface VehicleFiltersData {
   error: string | null;
 }
 
-// French translations
+// French translations - keys must match exact values from Supabase
 const TRANSMISSION_FR: Record<string, string> = {
-  // English
-  'Automatic': 'Automatique',
-  'Manual': 'Manuelle',
+  // Lowercase (actual Supabase values)
+  'automatic': 'Automatique',
+  'manual': 'Manuelle',
+  'single-speed': 'Vitesse unique',
+  'wet DCT': 'Double embrayage humide',
+  // Uppercase variants
   'CVT': 'CVT',
   'DCT': 'Double embrayage',
+  'E-CVT': 'E-CVT',
+  'DHT': 'DHT',
   'AMT': 'Robotisée',
+  '-': '-',
   // Chinese/Dongchedi values
   '自动': 'Automatique',
   '手动': 'Manuelle',
@@ -40,13 +46,20 @@ const TRANSMISSION_FR: Record<string, string> = {
 };
 
 const FUEL_TYPE_FR: Record<string, string> = {
-  // English
+  // Lowercase (actual Supabase values)
+  'petrol': 'Essence',
+  'diesel': 'Diesel',
+  'electric': 'Électrique',
+  'hybrid': 'Hybride',
+  'PHEV': 'Hybride rechargeable',
+  'EREV': 'Électrique prolongée',
+  '-': '-',
+  // Uppercase variants
   'Petrol': 'Essence',
   'Gasoline': 'Essence',
   'Diesel': 'Diesel',
   'Electric': 'Électrique',
   'Hybrid': 'Hybride',
-  'PHEV': 'Hybride rechargeable',
   'LPG': 'GPL',
   // Chinese values
   '汽油': 'Essence',
@@ -79,7 +92,22 @@ const DRIVE_TYPE_FR: Record<string, string> = {
 };
 
 const BODY_TYPE_FR: Record<string, string> = {
-  // English
+  // Lowercase (actual Supabase values)
+  'sedan': 'Berline',
+  'hatchback': 'Compacte',
+  'wagon': 'Break',
+  'coupe': 'Coupé',
+  'convertible': 'Cabriolet',
+  'pickup': 'Pick-up',
+  'minivan': 'Monospace',
+  'liftback': 'Liftback',
+  'bus': 'Bus',
+  'light commercial': 'Utilitaire léger',
+  'motorhome': 'Camping-car',
+  'double cab': 'Double cabine',
+  'sports car': 'Voiture de sport',
+  'microvan': 'Microvan',
+  // Uppercase variants
   'SUV': 'SUV',
   'Sedan': 'Berline',
   'Hatchback': 'Compacte',
@@ -107,6 +135,21 @@ const BODY_TYPE_FR: Record<string, string> = {
 };
 
 const COLOR_FR: Record<string, string> = {
+  // Lowercase (actual Supabase values)
+  'white': 'Blanc',
+  'black': 'Noir',
+  'silver': 'Argent',
+  'dark gray': 'Gris foncé',
+  'red': 'Rouge',
+  'blue': 'Bleu',
+  'green': 'Vert',
+  'brown': 'Marron',
+  'orange': 'Orange',
+  'yellow': 'Jaune',
+  'purple': 'Violet',
+  'champagne': 'Champagne',
+  'other': 'Autre',
+  // Uppercase variants
   'White': 'Blanc',
   'Black': 'Noir',
   'Silver': 'Argent',
@@ -149,11 +192,12 @@ const COLOR_FR: Record<string, string> = {
 
 // Color hex mapping
 const COLOR_HEX: Record<string, string> = {
-  // French
+  // French translations
   'Blanc': '#FFFFFF',
   'Noir': '#1a1a1a',
   'Argent': '#C0C0C0',
   'Gris': '#6B7280',
+  'Gris foncé': '#4B5563',
   'Rouge': '#DC2626',
   'Bleu': '#2563EB',
   'Vert': '#16A34A',
@@ -164,7 +208,23 @@ const COLOR_HEX: Record<string, string> = {
   'Jaune': '#EAB308',
   'Violet': '#7C3AED',
   'Rose': '#EC4899',
-  // English fallback
+  'Champagne': '#F7E7CE',
+  'Autre': '#808080',
+  // Lowercase (actual Supabase values - for direct lookup)
+  'white': '#FFFFFF',
+  'black': '#1a1a1a',
+  'silver': '#C0C0C0',
+  'dark gray': '#4B5563',
+  'red': '#DC2626',
+  'blue': '#2563EB',
+  'green': '#16A34A',
+  'brown': '#78350F',
+  'orange': '#F97316',
+  'yellow': '#EAB308',
+  'purple': '#7C3AED',
+  'champagne': '#F7E7CE',
+  'other': '#808080',
+  // Uppercase fallback
   'White': '#FFFFFF',
   'Black': '#1a1a1a',
   'Silver': '#C0C0C0',
