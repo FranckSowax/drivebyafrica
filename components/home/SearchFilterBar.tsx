@@ -10,6 +10,8 @@ import {
   SlidersHorizontal,
   X,
   Loader2,
+  Car,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useFilterStore } from '@/store/useFilterStore';
@@ -17,6 +19,19 @@ import { useVehicleFilters, translateFilter } from '@/lib/hooks/useVehicleFilter
 import { useVehicles } from '@/lib/hooks/useVehicles';
 import { cn } from '@/lib/utils';
 import type { VehicleSource } from '@/types/vehicle';
+
+// Fallback brands (most popular)
+const FALLBACK_BRANDS = [
+  'Toyota', 'Hyundai', 'Kia', 'Mercedes-Benz', 'BMW', 'Audi',
+  'Volkswagen', 'Honda', 'Nissan', 'Mazda', 'Lexus', 'Porsche',
+  'Land Rover', 'Jeep', 'Ford', 'Chevrolet', 'Peugeot', 'Renault'
+];
+
+// Fallback transmissions
+const FALLBACK_TRANSMISSIONS = [
+  { value: 'automatic', label: 'Automatique' },
+  { value: 'manual', label: 'Manuelle' },
+];
 
 // Dropdown Component for Filter Bar
 interface FilterDropdownProps {
@@ -26,6 +41,7 @@ interface FilterDropdownProps {
   options: { value: string; label: string }[];
   onChange: (value: string | undefined) => void;
   className?: string;
+  isLoading?: boolean;
 }
 
 function FilterDropdown({
@@ -35,96 +51,137 @@ function FilterDropdown({
   options,
   onChange,
   className,
+  isLoading = false,
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearchTerm('');
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm) return options;
+    return options.filter(opt =>
+      opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [options, searchTerm]);
+
   const selectedOption = options.find((opt) => opt.value === value);
   const displayValue = selectedOption?.label || placeholder;
+  const showSearch = options.length > 8;
 
   return (
     <div ref={dropdownRef} className={cn('relative', className)}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !isLoading && setIsOpen(!isOpen)}
+        disabled={isLoading}
         className={cn(
-          'flex items-center justify-between gap-2 px-4 py-3 rounded-xl border transition-all duration-200 min-w-[140px] w-full',
-          'bg-[var(--surface)] hover:bg-[var(--surface-hover)]',
+          'flex items-center justify-between gap-2 px-4 py-3.5 rounded-xl border transition-all duration-200 min-w-[140px] w-full h-[58px]',
+          'bg-white dark:bg-[var(--surface)] hover:shadow-md',
+          isLoading && 'opacity-60 cursor-wait',
           isOpen
-            ? 'border-mandarin ring-2 ring-mandarin/20'
+            ? 'border-mandarin shadow-lg shadow-mandarin/10'
             : value
-            ? 'border-mandarin/50'
-            : 'border-[var(--card-border)]'
+            ? 'border-mandarin/50 shadow-sm'
+            : 'border-gray-200 dark:border-[var(--card-border)] shadow-sm'
         )}
       >
-        <div className="text-left">
-          <p className="text-xs text-[var(--text-muted)]">{label}</p>
+        <div className="text-left flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-[var(--text-muted)] font-medium">{label}</p>
           <p className={cn(
-            'text-sm font-medium truncate',
-            value ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
+            'text-sm font-semibold truncate',
+            value ? 'text-gray-900 dark:text-[var(--text-primary)]' : 'text-gray-400 dark:text-[var(--text-muted)]'
           )}>
-            {displayValue}
+            {isLoading ? 'Chargement...' : displayValue}
           </p>
         </div>
-        <ChevronDown
-          className={cn(
-            'w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 flex-shrink-0',
-            isOpen && 'rotate-180'
-          )}
-        />
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 text-gray-400 animate-spin flex-shrink-0" />
+        ) : (
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0',
+              isOpen && 'rotate-180 text-mandarin'
+            )}
+          />
+        )}
       </button>
 
       {/* Dropdown Menu - Opens upward */}
-      {isOpen && (
-        <div className="absolute z-50 w-full min-w-[180px] py-2 bottom-full mb-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-200">
-          {/* Clear option */}
-          {value && (
-            <button
-              type="button"
-              onClick={() => {
-                onChange(undefined);
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--surface)] transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Effacer
-            </button>
+      {isOpen && !isLoading && (
+        <div className="absolute z-50 w-full min-w-[200px] py-2 bottom-full mb-2 bg-white dark:bg-[var(--card-bg)] border border-gray-200 dark:border-[var(--card-border)] rounded-xl shadow-2xl max-h-72 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+          {/* Search input */}
+          {showSearch && (
+            <div className="px-3 pb-2 border-b border-gray-100 dark:border-[var(--card-border)]">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher..."
+                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-[var(--surface)] border border-gray-200 dark:border-[var(--card-border)] rounded-lg focus:outline-none focus:border-mandarin focus:ring-2 focus:ring-mandarin/20"
+                autoFocus
+              />
+            </div>
           )}
 
-          {options.map((option) => {
-            const isSelected = value === option.value;
-
-            return (
+          <div className="overflow-y-auto max-h-56">
+            {/* Clear option */}
+            {value && (
               <button
-                key={option.value}
                 type="button"
                 onClick={() => {
-                  onChange(option.value);
+                  onChange(undefined);
                   setIsOpen(false);
+                  setSearchTerm('');
                 }}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
-                  isSelected
-                    ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-[var(--text-primary)] hover:bg-[var(--surface)]'
-                )}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-[var(--surface)] transition-colors"
               >
-                <span className="flex-1 text-left">{option.label}</span>
-                {isSelected && <Check className="w-4 h-4 flex-shrink-0" />}
+                <X className="w-4 h-4" />
+                Effacer
               </button>
-            );
-          })}
+            )}
+
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                Aucun résultat
+              </div>
+            ) : (
+              filteredOptions.map((option) => {
+                const isSelected = value === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                      setSearchTerm('');
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+                      isSelected
+                        ? 'bg-mandarin/10 text-mandarin font-medium'
+                        : 'text-gray-700 dark:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-[var(--surface)]'
+                    )}
+                  >
+                    <span className="flex-1 text-left">{option.label}</span>
+                    {isSelected && <Check className="w-4 h-4 flex-shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -176,25 +233,35 @@ export function SearchFilterBar() {
   const vehicleFilters = useVehicleFilters();
 
   // Get vehicle count based on current filters
-  const { totalCount, isLoading } = useVehicles({ filters, page: 1, limit: 1 });
+  const { totalCount, isLoading: isCountLoading } = useVehicles({ filters, page: 1, limit: 1 });
 
-  // Build brand options from Supabase data
-  const brandOptions = useMemo(() =>
-    vehicleFilters.brands.map(brand => ({ value: brand, label: brand })),
-    [vehicleFilters.brands]
-  );
+  // Build brand options from Supabase data with fallback
+  const brandOptions = useMemo(() => {
+    if (vehicleFilters.brands.length > 0) {
+      return vehicleFilters.brands.map(brand => ({ value: brand, label: brand }));
+    }
+    return FALLBACK_BRANDS.map(brand => ({ value: brand, label: brand }));
+  }, [vehicleFilters.brands]);
 
-  // Build transmission options
-  const transmissionOptions = useMemo(() =>
-    vehicleFilters.transmissionTypes.map(t => ({
-      value: t,
-      label: translateFilter('transmission', t),
-    })),
-    [vehicleFilters.transmissionTypes]
-  );
+  // Build transmission options with fallback
+  const transmissionOptions = useMemo(() => {
+    if (vehicleFilters.transmissionTypes.length > 0) {
+      return vehicleFilters.transmissionTypes.map(t => ({
+        value: t,
+        label: translateFilter('transmission', t),
+      }));
+    }
+    return FALLBACK_TRANSMISSIONS;
+  }, [vehicleFilters.transmissionTypes]);
 
   // Handle search
   const handleSearch = () => {
+    router.push('/cars');
+  };
+
+  // Handle view all
+  const handleViewAll = () => {
+    resetFilters();
     router.push('/cars');
   };
 
@@ -222,114 +289,142 @@ export function SearchFilterBar() {
   };
 
   return (
-    <div className="w-full bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl shadow-lg overflow-visible">
-      {/* Main Filter Row */}
-      <div className="p-4 lg:p-6">
-        <div className="flex flex-wrap items-end gap-3">
-          {/* Brand */}
-          <FilterDropdown
-            label="Marque"
-            value={filters.makes?.[0]}
-            placeholder="Toutes"
-            options={brandOptions}
-            onChange={(val) => setFilters({ makes: val ? [val] : [] })}
-            className="flex-1 min-w-[140px]"
-          />
-
-          {/* Max Price */}
-          <FilterDropdown
-            label="Prix max"
-            value={filters.priceTo?.toString()}
-            placeholder="Tous"
-            options={PRICE_OPTIONS}
-            onChange={(val) => setFilters({ priceTo: val ? parseInt(val) : 50000 })}
-            className="flex-1 min-w-[140px]"
-          />
-
-          {/* Min Year */}
-          <FilterDropdown
-            label="Année min"
-            value={filters.yearFrom?.toString()}
-            placeholder="Toutes"
-            options={YEAR_OPTIONS}
-            onChange={(val) => setFilters({ yearFrom: val ? parseInt(val) : 2015 })}
-            className="flex-1 min-w-[120px]"
-          />
-
-          {/* Max Mileage */}
-          <FilterDropdown
-            label="Km max"
-            value={filters.mileageMax?.toString()}
-            placeholder="Tous"
-            options={MILEAGE_OPTIONS}
-            onChange={(val) => setFilters({ mileageMax: val ? parseInt(val) : 150000 })}
-            className="flex-1 min-w-[120px]"
-          />
-
-          {/* Transmission */}
-          <FilterDropdown
-            label="Transmission"
-            value={filters.transmission}
-            placeholder="Toutes"
-            options={transmissionOptions}
-            onChange={(val) => setFilters({ transmission: val })}
-            className="flex-1 min-w-[140px]"
-          />
-
-          {/* Source/Country */}
-          <FilterDropdown
-            label="Pays"
-            value={filters.source === 'all' ? undefined : filters.source}
-            placeholder="Tous"
-            options={SOURCE_OPTIONS}
-            onChange={(val) => setFilters({ source: (val as VehicleSource) || 'all' })}
-            className="flex-1 min-w-[140px]"
-          />
-
-          {/* Search Button with count */}
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleSearch}
-            className="h-[62px] px-6"
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            ) : (
-              <Search className="w-5 h-5 mr-2" />
+    <div className="w-full">
+      {/* Main Filter Card */}
+      <div className="bg-white dark:bg-[var(--card-bg)] border border-gray-200 dark:border-[var(--card-border)] rounded-2xl shadow-xl overflow-visible">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-[var(--card-border)] bg-gradient-to-r from-gray-50 to-white dark:from-[var(--surface)] dark:to-[var(--card-bg)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-mandarin/10 flex items-center justify-center">
+                <Search className="w-5 h-5 text-mandarin" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-[var(--text-primary)]">Recherche rapide</h3>
+                <p className="text-xs text-gray-500 dark:text-[var(--text-muted)]">
+                  {isCountLoading ? 'Chargement...' : `${formatCount(totalCount)} véhicules disponibles`}
+                </p>
+              </div>
+            </div>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Réinitialiser
+              </button>
             )}
-            <span>Rechercher</span>
-            {!isLoading && totalCount > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold">
-                {formatCount(totalCount)}
-              </span>
-            )}
-          </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Secondary Row */}
-      <div className="px-4 lg:px-6 pb-4 flex flex-wrap items-center justify-end gap-4 border-t border-[var(--card-border)] pt-4">
-        {/* Right Side: Reset and More Filters */}
-        <div className="flex items-center gap-3">
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-muted)] hover:text-mandarin transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Réinitialiser
-            </button>
-          )}
+        {/* Filter Row */}
+        <div className="p-4 lg:p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* Brand */}
+            <FilterDropdown
+              label="Marque"
+              value={filters.makes?.[0]}
+              placeholder="Toutes"
+              options={brandOptions}
+              onChange={(val) => setFilters({ makes: val ? [val] : [] })}
+              isLoading={vehicleFilters.isLoading}
+            />
+
+            {/* Max Price */}
+            <FilterDropdown
+              label="Budget max"
+              value={filters.priceTo?.toString()}
+              placeholder="Tous"
+              options={PRICE_OPTIONS}
+              onChange={(val) => setFilters({ priceTo: val ? parseInt(val) : 50000 })}
+            />
+
+            {/* Min Year */}
+            <FilterDropdown
+              label="Année min"
+              value={filters.yearFrom?.toString()}
+              placeholder="Toutes"
+              options={YEAR_OPTIONS}
+              onChange={(val) => setFilters({ yearFrom: val ? parseInt(val) : 2015 })}
+            />
+
+            {/* Max Mileage */}
+            <FilterDropdown
+              label="Km max"
+              value={filters.mileageMax?.toString()}
+              placeholder="Tous"
+              options={MILEAGE_OPTIONS}
+              onChange={(val) => setFilters({ mileageMax: val ? parseInt(val) : 150000 })}
+            />
+
+            {/* Transmission */}
+            <FilterDropdown
+              label="Boîte"
+              value={filters.transmission}
+              placeholder="Toutes"
+              options={transmissionOptions}
+              onChange={(val) => setFilters({ transmission: val })}
+              isLoading={vehicleFilters.isLoading}
+            />
+
+            {/* Source/Country */}
+            <FilterDropdown
+              label="Origine"
+              value={filters.source === 'all' ? undefined : filters.source}
+              placeholder="Tous"
+              options={SOURCE_OPTIONS}
+              onChange={(val) => setFilters({ source: (val as VehicleSource) || 'all' })}
+            />
+          </div>
+        </div>
+
+        {/* Action Row */}
+        <div className="px-4 lg:px-5 pb-4 lg:pb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* View All Toggle */}
           <button
             type="button"
-            onClick={() => router.push('/cars')}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-mandarin border border-[var(--card-border)] rounded-full hover:border-mandarin/50 transition-colors"
+            onClick={handleViewAll}
+            className="group flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-mandarin to-orange-500 hover:from-orange-500 hover:to-mandarin text-white font-semibold rounded-xl shadow-lg shadow-mandarin/25 hover:shadow-xl hover:shadow-mandarin/30 transition-all duration-300"
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            Plus de filtres
+            <Car className="w-5 h-5" />
+            <span>Voir tous les véhicules</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
+
+          {/* Search and More Filters */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.push('/cars')}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 dark:text-[var(--text-secondary)] hover:text-mandarin border border-gray-200 dark:border-[var(--card-border)] rounded-xl hover:border-mandarin/50 hover:bg-mandarin/5 transition-all"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Plus de filtres
+            </button>
+
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleSearch}
+              className="h-[50px] px-6 shadow-lg shadow-mandarin/25"
+            >
+              {isCountLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Search className="w-5 h-5 mr-2" />
+                  <span>Rechercher</span>
+                  {totalCount > 0 && (
+                    <span className="ml-2 px-2.5 py-0.5 bg-white/20 rounded-full text-xs font-bold">
+                      {formatCount(totalCount)}
+                    </span>
+                  )}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
