@@ -19,7 +19,8 @@ on:
         type: boolean
 
 env:
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
   DONGCHEDI_API_KEY: ${{ secrets.DONGCHEDI_API_KEY }}
 
@@ -44,7 +45,11 @@ jobs:
       - name: Download Dongchedi CSV (fresh photos)
         run: |
           echo "Downloading active offers CSV..."
-          curl -L "https://api1.auto-api.com/api/v2/dongchedi/export/active_offer.csv?api_key=${{ secrets.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU' }}" -o /tmp/active_offer.csv
+          YESTERDAY=$(date -d "yesterday" '+%Y-%m-%d' 2>/dev/null || date -v-1d '+%Y-%m-%d')
+          echo "Using date: $YESTERDAY"
+          curl -L -u "ewing:iT6g1fVqqGRAHeYkPFtU" \
+            "https://autobase-perez.auto-api.com/dongchedi/${YESTERDAY}/active_offer.csv" \
+            -o /tmp/active_offer.csv
           echo "CSV downloaded: $(wc -l < /tmp/active_offer.csv) lines"
 
       - name: Run Dongchedi sync

@@ -15,7 +15,8 @@ import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as readline from 'readline';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+// Accept both SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dongchedi';
@@ -23,7 +24,8 @@ const API_KEY = process.env.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
 const CNY_TO_USD = 0.14;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  console.error('Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY');
+  console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('SUPABASE')).join(', '));
   process.exit(1);
 }
 
