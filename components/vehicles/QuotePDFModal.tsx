@@ -321,7 +321,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
       y += 18;
 
       // ========== DEPOSIT BOX ==========
-      drawBox(margin, y, contentWidth, 32, '#ECFDF5', jewel);
+      drawBox(margin, y, contentWidth, 28, '#ECFDF5', jewel);
       doc.setFontSize(10);
       doc.setTextColor(jewel);
       doc.setFont('helvetica', 'bold');
@@ -329,14 +329,11 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
       doc.setFontSize(16);
       doc.setTextColor(darkGray);
       doc.text('1 000 USD', margin + 5, y + 18);
-      doc.setFontSize(10);
-      doc.setTextColor(mediumGray);
-      doc.text('soit environ 640 000 FCFA', margin + 45, y + 18);
       doc.setFontSize(8);
       doc.setTextColor(jewel);
       doc.setFont('helvetica', 'normal');
-      doc.text("Cet acompte declenche le rapport d'inspection detaille du vehicule", margin + 5, y + 26);
-      y += 38;
+      doc.text("Cet acompte declenche le rapport d'inspection detaille du vehicule", margin + 5, y + 24);
+      y += 34;
 
       // ========== NEXT STEPS ==========
       doc.setFontSize(10);
@@ -556,7 +553,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
                   <CheckCircle className="w-5 h-5 text-jewel flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-[var(--text-primary)]">
-                      Acompte: <span className="text-jewel">1 000 USD</span> (640 000 FCFA)
+                      Acompte: <span className="text-jewel">1 000 USD</span>
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
                       Pour bloquer le vehicule et recevoir le rapport d'inspection
