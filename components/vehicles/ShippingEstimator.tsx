@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
+import { QuotePDFModal } from './QuotePDFModal';
 
 // Taux de conversion: 1 USD = 640 FCFA
 const USD_TO_XAF = 640;
@@ -134,6 +135,7 @@ export function ShippingEstimator({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isShippingTypeOpen, setIsShippingTypeOpen] = useState(false);
   const [isRequestingQuote, setIsRequestingQuote] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -234,37 +236,37 @@ export function ShippingEstimator({
     }).format(amount) + ' FCFA';
   };
 
-  const handleRequestQuote = async () => {
+  const handleRequestQuote = () => {
     if (!user) {
       // Redirect to login with return URL
       router.push(`/login?redirect=/cars/${vehicleId}&action=quote`);
       return;
     }
 
-    setIsRequestingQuote(true);
-
-    // Store quote request data in session storage for PDF generation
-    const quoteData = {
-      vehicleId,
-      vehicleMake,
-      vehicleModel,
-      vehicleYear,
-      vehiclePriceUSD,
-      vehicleSource,
-      destination: selectedDestination,
-      shippingType: selectedShippingType,
-      shippingTypeName: shippingTypes.find(t => t.id === selectedShippingType)?.name,
-      calculations,
-      userId: user.id,
-      userEmail: user.email,
-      requestedAt: new Date().toISOString(),
-    };
-
-    sessionStorage.setItem('pendingQuote', JSON.stringify(quoteData));
-
-    // TODO: Redirect to quote generation page
-    router.push(`/dashboard/quotes/new?vehicleId=${vehicleId}`);
+    // Open the quote modal directly
+    setIsQuoteModalOpen(true);
   };
+
+  // Prepare quote data for the modal
+  const quoteDataForModal = selectedDestination && calculations ? {
+    vehicleId,
+    vehicleMake,
+    vehicleModel,
+    vehicleYear,
+    vehiclePriceUSD,
+    vehicleSource,
+    destination: {
+      id: selectedDestination.id,
+      name: selectedDestination.name,
+      country: selectedDestination.country,
+      flag: selectedDestination.flag,
+    },
+    shippingType: selectedShippingType,
+    shippingTypeName: shippingTypes.find(t => t.id === selectedShippingType)?.name || 'Container seul 20HQ',
+    calculations,
+    userId: user?.id || '',
+    userEmail: user?.email || '',
+  } : null;
 
   return (
     <div className="bg-[var(--surface)] rounded-xl p-4 space-y-4">
@@ -580,20 +582,21 @@ export function ShippingEstimator({
               variant="primary"
               className="w-full mt-4"
               onClick={handleRequestQuote}
-              disabled={isRequestingQuote}
-              leftIcon={
-                isRequestingQuote ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <FileText className="w-4 h-4" />
-                )
-              }
+              leftIcon={<FileText className="w-4 h-4" />}
             >
-              {isRequestingQuote ? 'Chargement...' : 'Obtenir un devis PDF'}
+              Obtenir un devis PDF
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quote PDF Modal */}
+      <QuotePDFModal
+        isOpen={isQuoteModalOpen}
+        onClose={() => setIsQuoteModalOpen(false)}
+        quoteData={quoteDataForModal}
+        user={user}
+      />
     </div>
   );
 }
