@@ -8,3 +8,4 @@ export * from './Spinner';
 export * from './Toast';
 export * from './Slider';
 export * from './Avatar';
+export * from './Pagination';

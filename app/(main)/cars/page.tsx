@@ -6,6 +6,7 @@ import { VehicleGrid, VehicleFilters } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Pagination } from '@/components/ui/Pagination';
 import { useVehicles } from '@/lib/hooks/useVehicles';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { useFilterStore } from '@/store/useFilterStore';
@@ -26,11 +27,15 @@ export default function CarsPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
 
-  const { vehicles, isLoading, totalCount, hasMore, refetch } = useVehicles({
+  const ITEMS_PER_PAGE = 12;
+
+  const { vehicles, isLoading, totalCount, refetch } = useVehicles({
     filters,
     page,
-    limit: 12,
+    limit: ITEMS_PER_PAGE,
   });
+
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const { favorites, toggleFavorite } = useFavorites();
 
@@ -134,15 +139,21 @@ export default function CarsPage() {
               onFavorite={toggleFavorite}
             />
 
-            {/* Load More */}
-            {hasMore && !isLoading && (
-              <div className="mt-8 text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Charger plus de véhicules
-                </Button>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex flex-col items-center gap-4">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={(newPage) => {
+                    setPage(newPage);
+                    // Scroll to top of results
+                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                  }}
+                />
+                <p className="text-sm text-[var(--text-muted)]">
+                  Page {page} sur {totalPages}
+                </p>
               </div>
             )}
           </main>
