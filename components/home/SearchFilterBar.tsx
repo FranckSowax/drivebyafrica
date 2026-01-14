@@ -20,11 +20,16 @@ import { useVehicles } from '@/lib/hooks/useVehicles';
 import { cn } from '@/lib/utils';
 import type { VehicleSource } from '@/types/vehicle';
 
-// Fallback brands (most popular)
+// Fallback brands - Korean, Chinese and popular international brands
 const FALLBACK_BRANDS = [
-  'Toyota', 'Hyundai', 'Kia', 'Mercedes-Benz', 'BMW', 'Audi',
-  'Volkswagen', 'Honda', 'Nissan', 'Mazda', 'Lexus', 'Porsche',
-  'Land Rover', 'Jeep', 'Ford', 'Chevrolet', 'Peugeot', 'Renault'
+  // Korean brands
+  'Hyundai', 'Kia', 'Genesis', 'SsangYong', 'Samsung (Renault)',
+  // Chinese brands
+  'BYD', 'Geely', 'Chery', 'Great Wall', 'Haval', 'MG', 'NIO', 'XPeng', 'Li Auto', 'Zeekr', 'Lynk & Co', 'Changan', 'GAC', 'Dongfeng', 'JAC', 'BAIC',
+  // Japanese brands (popular in Korea)
+  'Toyota', 'Honda', 'Nissan', 'Mazda', 'Lexus',
+  // European brands
+  'Mercedes-Benz', 'BMW', 'Audi', 'Volkswagen', 'Porsche', 'Land Rover'
 ];
 
 // Fallback transmissions
