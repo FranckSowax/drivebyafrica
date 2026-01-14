@@ -19,7 +19,9 @@ export function formatCurrency(
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Math.round(amount));
-    return `${formatted} FCFA`;
+    // Remplacer les espaces insécables (8239, 160) par des espaces normaux pour un affichage cohérent
+    const withNormalSpaces = formatted.replace(/[\u202F\u00A0]/g, ' ');
+    return `${withNormalSpaces} FCFA`;
   }
 
   const formatter = new Intl.NumberFormat(locale, {
