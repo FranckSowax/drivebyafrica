@@ -232,13 +232,41 @@ const MILEAGE_OPTIONS = [
   { value: '200000', label: '200 000 km' },
 ];
 
+// Empty filters for total count
+const EMPTY_FILTERS = {
+  source: 'all' as const,
+  makes: [],
+  models: [],
+  yearFrom: undefined,
+  yearTo: undefined,
+  priceFrom: undefined,
+  priceTo: undefined,
+  mileageMax: undefined,
+  transmission: undefined,
+  fuelType: undefined,
+  driveType: undefined,
+  color: undefined,
+  bodyType: undefined,
+};
+
 export function SearchFilterBar() {
   const router = useRouter();
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
 
-  // Get vehicle count based on current filters
-  const { totalCount, isLoading: isCountLoading } = useVehicles({ filters, page: 1, limit: 1 });
+  // Get total vehicle count (no filters)
+  const { totalCount: totalVehicles, isLoading: isTotalLoading } = useVehicles({
+    filters: EMPTY_FILTERS,
+    page: 1,
+    limit: 1
+  });
+
+  // Get filtered vehicle count
+  const { totalCount: filteredCount, isLoading: isFilteredLoading } = useVehicles({
+    filters,
+    page: 1,
+    limit: 1
+  });
 
   // Build brand options from Supabase data with fallback
   const brandOptions = useMemo(() => {
@@ -307,7 +335,7 @@ export function SearchFilterBar() {
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-[var(--text-primary)]">Recherche rapide</h3>
                 <p className="text-xs text-gray-500 dark:text-[var(--text-muted)]">
-                  {isCountLoading ? 'Chargement...' : `${formatCount(totalCount)} véhicules disponibles`}
+                  {isTotalLoading ? 'Chargement...' : `${formatCount(totalVehicles)} véhicules disponibles`}
                 </p>
               </div>
             </div>
@@ -415,15 +443,15 @@ export function SearchFilterBar() {
               onClick={handleSearch}
               className="h-[50px] px-6 shadow-lg shadow-mandarin/25"
             >
-              {isCountLoading ? (
+              {isFilteredLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
                   <Search className="w-5 h-5 mr-2" />
                   <span>Rechercher</span>
-                  {totalCount > 0 && (
+                  {filteredCount > 0 && (
                     <span className="ml-2 px-2.5 py-0.5 bg-white/20 rounded-full text-xs font-bold">
-                      {formatCount(totalCount)}
+                      {formatCount(filteredCount)}
                     </span>
                   )}
                 </>
