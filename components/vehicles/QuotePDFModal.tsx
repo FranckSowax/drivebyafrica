@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
-  Download,
   Share2,
-  Printer,
   Loader2,
   CheckCircle,
 } from 'lucide-react';
@@ -456,27 +454,6 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
     }
   };
 
-  const handleDownload = () => {
-    if (pdfBlob) {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(pdfBlob);
-      link.download = `Devis-${quoteNumber}.pdf`;
-      link.click();
-      toast.success('PDF telecharge');
-    }
-  };
-
-  const handlePrint = () => {
-    if (pdfUrl) {
-      const printWindow = window.open(pdfUrl, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-      }
-    }
-  };
-
   const handleShare = async () => {
     if (pdfBlob) {
       try {
@@ -489,9 +466,12 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
             files: [file],
           });
         } else {
-          // Fallback: copy link or download
-          handleDownload();
-          toast.info('Telechargez le PDF pour le partager');
+          // Fallback: download directly
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(pdfBlob);
+          link.download = `Devis-${quoteNumber}.pdf`;
+          link.click();
+          toast.info('PDF telecharge - partagez-le manuellement');
         }
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
@@ -589,30 +569,10 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="primary"
-                  onClick={handleDownload}
-                  disabled={isGenerating || !pdfBlob}
-                  leftIcon={<Download className="w-4 h-4" />}
-                  className="flex-1 min-w-[140px]"
-                >
-                  Telecharger
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  onClick={handlePrint}
-                  disabled={isGenerating || !pdfUrl}
-                  leftIcon={<Printer className="w-4 h-4" />}
-                  className="flex-1 min-w-[120px]"
-                >
-                  Imprimer
-                </Button>
-
-                <Button
-                  variant="secondary"
                   onClick={handleShare}
                   disabled={isGenerating || !pdfBlob}
                   leftIcon={<Share2 className="w-4 h-4" />}
-                  className="flex-1 min-w-[120px]"
+                  className="flex-1"
                 >
                   Partager
                 </Button>
