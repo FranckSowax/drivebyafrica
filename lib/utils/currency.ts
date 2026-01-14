@@ -48,3 +48,26 @@ export function formatUsdToLocal(
   const converted = convertCurrency(amountUsd, 'USD', targetCurrency);
   return formatCurrency(converted, targetCurrency);
 }
+
+/**
+ * Format USD to FCFA with abbreviated format (1M, 500K)
+ * Useful for compact display in filters
+ */
+export function formatUsdToFcfaShort(amountUsd: number): string {
+  const fcfa = amountUsd * EXCHANGE_RATES.XAF;
+
+  if (fcfa >= 1_000_000) {
+    const millions = fcfa / 1_000_000;
+    // Show decimal only if not a whole number
+    const formatted = millions % 1 === 0 ? millions.toString() : millions.toFixed(1);
+    return `${formatted}M`;
+  }
+
+  if (fcfa >= 1_000) {
+    const thousands = fcfa / 1_000;
+    const formatted = thousands % 1 === 0 ? thousands.toString() : thousands.toFixed(0);
+    return `${formatted}K`;
+  }
+
+  return Math.round(fcfa).toString();
+}

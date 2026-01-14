@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
 import { useFilterStore } from '@/store/useFilterStore';
 import { useDongchediFilters, getFilterLabel, getColorHex } from '@/lib/hooks/useDongchediFilters';
+import { formatUsdToFcfaShort } from '@/lib/utils/currency';
 import { cn } from '@/lib/utils';
 
 // Modern Dropdown Component
@@ -506,16 +507,16 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           formatValue={(val) => val.toString()}
         />
 
-        {/* Price Range (USD) */}
+        {/* Price Range (FCFA) */}
         <RangeFilter
-          label="Prix (USD)"
+          label="Prix (FCFA)"
           icon={<DollarSign className="w-4 h-4" />}
           min={0}
           max={100000}
           step={1000}
           value={[filters.priceFrom || 0, filters.priceTo || 50000]}
           onChange={([from, to]) => setFilters({ priceFrom: from, priceTo: to })}
-          formatValue={(val) => `$${val.toLocaleString()}`}
+          formatValue={(val) => formatUsdToFcfaShort(val)}
         />
 
         {/* Mileage Range */}
