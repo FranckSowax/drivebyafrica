@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import {
   X,
   Share2,
@@ -16,6 +17,7 @@ import {
   MapPin,
   Calendar,
   Clock,
+  Save,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -72,6 +74,7 @@ const SOURCE_FLAGS: Record<string, string> = {
 };
 
 export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNumber }: QuotePDFModalProps) {
+  const router = useRouter();
   const toast = useToast();
   const [quoteNumber, setQuoteNumber] = useState('');
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
@@ -489,9 +492,9 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
       console.log('QuotePDFModal: PDF URL created');
 
       // Auto-save quote to database
-      if (!quoteSaved) {
-        saveQuoteToDatabase(quoteNumber);
-      }
+      // if (!quoteSaved) {
+      //   saveQuoteToDatabase(quoteNumber);
+      // }
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Erreur lors de la generation du PDF');
@@ -507,7 +510,20 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
     }
   }, [isOpen, quoteData, quoteNumber, pdfBlob, isGenerating, generatePDF]);
 
-  // 8. Actions: Share and Close
+  const handleSaveAndRedirect = async () => {
+    if (quoteSaved) {
+      router.push('/dashboard/quotes');
+      return;
+    }
+    
+    setIsGenerating(true); // Show loading state
+    await saveQuoteToDatabase(quoteNumber);
+    setIsGenerating(false);
+    
+    toast.success('Devis enregistré avec succès');
+    router.push('/dashboard/quotes');
+  };
+
   const handleShare = async () => {
     console.log('QuotePDFModal: handleShare called, blob exists:', !!pdfBlob);
     if (pdfBlob) {
@@ -815,6 +831,18 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
 
               {/* Buttons */}
               <div className="flex flex-wrap gap-3">
+                {!defaultQuoteNumber && (
+                  <Button
+                    variant="success"
+                    onClick={handleSaveAndRedirect}
+                    disabled={isGenerating}
+                    leftIcon={<Save className="w-4 h-4" />}
+                    className="flex-1 sm:flex-none"
+                  >
+                    {quoteSaved ? 'Voir mes devis' : 'Enregistrer dans mes devis'}
+                  </Button>
+                )}
+                
                 <Button
                   variant="outline"
                   onClick={handleDownloadPDF}
