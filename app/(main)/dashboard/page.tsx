@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { DashboardClient } from '@/components/dashboard/DashboardClient';
+import DashboardClient from '@/components/dashboard/DashboardClient';
 import type { Order, Profile, Quote } from '@/types/database';
 
 export default async function DashboardPage() {
