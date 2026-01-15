@@ -23,7 +23,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { formatUsdToLocal } from '@/lib/utils/currency';
-import { formatDate, formatMileage, formatEngineSize } from '@/lib/utils/formatters';
+import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
+import { getProxiedImageUrls } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
 
@@ -49,7 +50,6 @@ const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
 export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const searchParams = useSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
 
@@ -57,25 +57,11 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const actionParam = searchParams.get('action');
   const shouldAutoOpenQuote = actionParam === 'quote';
 
-  const rawImages = vehicle.images || [PLACEHOLDER_IMAGE];
-  const images = rawImages.map((img, index) =>
-    failedImages.has(index) ? PLACEHOLDER_IMAGE : img
-  );
+  // Transform images through proxy for signed URLs
+  const rawImages = vehicle.images || [];
+  const images = rawImages.length > 0 ? getProxiedImageUrls(rawImages) : [PLACEHOLDER_IMAGE];
   const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
   const source = vehicle.source as VehicleSource;
-
-  // Check if images are external with signatures or from Chinese CDNs - need unoptimized
-  const isExternalImage = (img: string) =>
-    img.includes('byteimg.com') ||
-    img.includes('x-expires') ||
-    img.includes('tosv.byted') ||
-    img.includes('feishu') ||
-    img.includes('dongchedi') ||
-    img.startsWith('http');
-
-  const handleImageError = (index: number) => {
-    setFailedImages((prev) => new Set(prev).add(index));
-  };
 
   const handleShare = async () => {
     try {
@@ -140,8 +126,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     fill
                     className="object-cover"
                     priority
-                    unoptimized={isExternalImage(images[currentImageIndex])}
-                    onError={() => handleImageError(currentImageIndex)}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -194,8 +178,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-cover"
-                      unoptimized={isExternalImage(image)}
-                      onError={() => handleImageError(index)}
                     />
                   </button>
                 ))}
