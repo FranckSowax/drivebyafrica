@@ -42,33 +42,45 @@ const MAX_PAGES = parseInt(getArg('max-pages', '500'));
 const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
 
 /**
- * Decode URL that may be partially encoded from CSV
- * Handles single and double-encoding cases
+ * Normalize URL encoding from CSV
+ *
+ * Problem: CSV URLs may have inconsistent encoding:
+ * - Some have %2B for + (correct for URLs)
+ * - Some have literal + (gets interpreted as space by servers)
+ * - Some are double-encoded (%252B)
+ *
+ * Solution: Ensure + signs in query params are properly encoded as %2B
  */
-function decodeImageUrl(url: string): string {
+function normalizeImageUrl(url: string): string {
   if (!url || typeof url !== 'string') return url;
+
   try {
-    let decoded = url;
-    // Decode until no more encoded chars or no change (max 3 iterations for safety)
-    let iterations = 0;
-    while (decoded.includes('%') && iterations < 3) {
-      const newDecoded = decodeURIComponent(decoded);
-      if (newDecoded === decoded) break;
-      decoded = newDecoded;
-      iterations++;
-    }
-    return decoded;
+    // First, handle double-encoding: %252B -> %2B, %253D -> %3D
+    let normalized = url.replace(/%25([0-9A-Fa-f]{2})/g, '%$1');
+
+    // Split URL into base and query string
+    const questionIndex = normalized.indexOf('?');
+    if (questionIndex === -1) return normalized;
+
+    const base = normalized.substring(0, questionIndex);
+    const query = normalized.substring(questionIndex + 1);
+
+    // In query string, encode literal + as %2B (but don't double-encode existing %2B)
+    // This ensures the signature is sent correctly to the server
+    const fixedQuery = query.replace(/\+/g, '%2B');
+
+    return base + '?' + fixedQuery;
   } catch {
     return url;
   }
 }
 
 /**
- * Decode all image URLs in an array
+ * Normalize all image URLs in an array
  */
-function decodeImageUrls(urls: string[]): string[] {
+function normalizeImageUrls(urls: string[]): string[] {
   if (!urls || !Array.isArray(urls)) return [];
-  return urls.map(decodeImageUrl);
+  return urls.map(normalizeImageUrl);
 }
 
 interface ApiOffer {
@@ -304,7 +316,7 @@ async function main() {
       const csvImages = photoMap.get(sourceId);
       const apiImages = Array.isArray(offer.images) ? offer.images : [];
       // Always decode URLs before storing to prevent encoding issues
-      const images = decodeImageUrls(csvImages || apiImages);
+      const images = normalizeImageUrls(csvImages || apiImages);
 
       // Skip if no valid photos
       if (images.length === 0 || !isPhotoValid(images[0])) {

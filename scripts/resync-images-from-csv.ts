@@ -141,23 +141,26 @@ async function resyncImages() {
     try {
       const images = JSON.parse(imagesJson);
       if (Array.isArray(images) && images.length > 0) {
-        // Decode URLs if they are encoded
-        const decodedImages = images.map((url: string) => {
+        // Normalize URLs - fix encoding issues
+        const normalizedImages = images.map((url: string) => {
+          if (!url || typeof url !== 'string') return url;
           try {
-            let decoded = url;
-            while (decoded.includes('%')) {
-              const newDecoded = decodeURIComponent(decoded);
-              if (newDecoded === decoded) break;
-              decoded = newDecoded;
-            }
-            return decoded;
+            // First, handle double-encoding: %252B -> %2B
+            let normalized = url.replace(/%25([0-9A-Fa-f]{2})/g, '%$1');
+            // Encode literal + as %2B in query string
+            const questionIndex = normalized.indexOf('?');
+            if (questionIndex === -1) return normalized;
+            const base = normalized.substring(0, questionIndex);
+            const query = normalized.substring(questionIndex + 1);
+            const fixedQuery = query.replace(/\+/g, '%2B');
+            return base + '?' + fixedQuery;
           } catch {
             return url;
           }
         });
 
         validImages++;
-        updateBatch.push({ id: vehicleId, images: decodedImages });
+        updateBatch.push({ id: vehicleId, images: normalizedImages });
 
         if (updateBatch.length >= BATCH_SIZE) {
           await flushBatch();
