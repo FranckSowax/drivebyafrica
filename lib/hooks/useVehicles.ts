@@ -2,7 +2,41 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
+
+/**
+ * Check if an image URL is valid (not expired)
+ * Dongchedi images have x-expires timestamp in URL
+ */
+function isImageValid(imageUrl: string | undefined): boolean {
+  if (!imageUrl) return false;
+
+  // Supabase storage URLs are permanent
+  if (imageUrl.includes('supabase')) return true;
+
+  // Encar/Korea images are usually permanent
+  if (imageUrl.includes('encar') || imageUrl.includes('ci.encar.com')) return true;
+
+  // Check x-expires timestamp for Dongchedi images
+  const expiresMatch = imageUrl.match(/x-expires=(\d+)/);
+  if (expiresMatch) {
+    const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
+    return expiresTimestamp > Date.now();
+  }
+
+  // Other URLs are considered valid
+  return true;
+}
+
+/**
+ * Check if a vehicle has valid images
+ */
+function hasValidImages(vehicle: Vehicle): boolean {
+  const images = parseImagesField(vehicle.images);
+  if (images.length === 0) return false;
+  return isImageValid(images[0]);
+}
 
 interface UseVehiclesOptions {
   filters?: VehicleFilters;
@@ -139,7 +173,10 @@ export function useVehicles({
         throw new Error(queryError.message);
       }
 
-      setVehicles(data as Vehicle[]);
+      // Filter out vehicles with empty or expired images
+      const validVehicles = (data as Vehicle[]).filter(hasValidImages);
+
+      setVehicles(validVehicles);
       setTotalCount(count || 0);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch vehicles'));
