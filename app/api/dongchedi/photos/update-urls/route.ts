@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import {
   DONGCHEDI_CONFIG,
   getTodayDateString,
@@ -36,11 +37,16 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin();
 
-    // Check if this is a scheduled function call (from Netlify cron)
+    // Check if this is a scheduled function call (from Netlify cron) or authenticated user
     const isScheduledFunction = request.headers.get('x-scheduled-function') === 'true';
 
     if (!isScheduledFunction) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // Check user authentication for manual calls
+      const userSupabase = await createServerClient();
+      const { data: { user } } = await userSupabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     const body = await request.json().catch(() => ({}));
