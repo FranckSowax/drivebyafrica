@@ -12,7 +12,6 @@ import {
   Package,
   Wallet,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
@@ -135,15 +134,17 @@ export function Header() {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Connexion
-                  </Button>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg h-8 px-3 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface)] active:bg-[var(--surface)]"
+                >
+                  Connexion
                 </Link>
-                <Link href="/register">
-                  <Button variant="primary" size="sm">
-                    Inscription
-                  </Button>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg h-8 px-3 text-sm bg-mandarin text-white hover:bg-orange-600 active:bg-orange-700 shadow-md"
+                >
+                  Inscription
                 </Link>
               </div>
             )}
