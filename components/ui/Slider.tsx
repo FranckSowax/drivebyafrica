@@ -47,15 +47,22 @@ export function Slider({
     [min, max, step]
   );
 
+  // Mouse events
   const handleMouseDown = (thumb: 'start' | 'end') => (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(thumb);
   };
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  // Touch events
+  const handleTouchStart = (thumb: 'start' | 'end') => (e: React.TouchEvent) => {
+    e.stopPropagation();
+    setIsDragging(thumb);
+  };
+
+  const handleMove = useCallback(
+    (clientX: number) => {
       if (!isDragging) return;
-      const newValue = getValueFromPosition(e.clientX);
+      const newValue = getValueFromPosition(clientX);
 
       // Update local state only during drag (smooth UI, no re-renders of parent)
       setLocalValue(prev => {
@@ -69,7 +76,23 @@ export function Slider({
     [isDragging, getValueFromPosition, step]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      handleMove(e.clientX);
+    },
+    [handleMove]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX);
+      }
+    },
+    [handleMove]
+  );
+
+  const handleEnd = useCallback(() => {
     if (isDragging) {
       // Only update parent state when drag ends - prevents flickering
       onValueChange(localValue);
@@ -79,15 +102,23 @@ export function Slider({
 
   useEffect(() => {
     if (isDragging) {
+      // Mouse events
       window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mouseup', handleEnd);
+      // Touch events
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+      window.addEventListener('touchend', handleEnd);
+      window.addEventListener('touchcancel', handleEnd);
     }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener('touchcancel', handleEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleTouchMove, handleEnd]);
 
   // Use local value for display (smooth during drag)
   const displayValue = localValue;
@@ -110,21 +141,23 @@ export function Slider({
         {/* Start thumb */}
         <div
           className={cn(
-            'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white rounded-full shadow-md cursor-grab border-2 border-mandarin transition-transform',
+            'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-white rounded-full shadow-md cursor-grab border-2 border-mandarin transition-transform touch-none',
             isDragging === 'start' && 'scale-110 cursor-grabbing'
           )}
           style={{ left: `${getPercentage(displayValue[0])}%` }}
           onMouseDown={handleMouseDown('start')}
+          onTouchStart={handleTouchStart('start')}
         />
 
         {/* End thumb */}
         <div
           className={cn(
-            'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 bg-white rounded-full shadow-md cursor-grab border-2 border-mandarin transition-transform',
+            'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-white rounded-full shadow-md cursor-grab border-2 border-mandarin transition-transform touch-none',
             isDragging === 'end' && 'scale-110 cursor-grabbing'
           )}
           style={{ left: `${getPercentage(displayValue[1])}%` }}
           onMouseDown={handleMouseDown('end')}
+          onTouchStart={handleTouchStart('end')}
         />
       </div>
 
