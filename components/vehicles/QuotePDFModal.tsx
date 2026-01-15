@@ -69,29 +69,26 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
   const [mounted, setMounted] = useState(false);
   const [quoteSaved, setQuoteSaved] = useState(false);
 
+  // 1. Lifecycle: Mounted check for SSR
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
-  // Generate quote number
+  // 2. Lifecycle: Generate quote number when modal opens
   useEffect(() => {
     if (isOpen && quoteData) {
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       setQuoteNumber(`DBA-${timestamp}-${random}`);
       setQuoteSaved(false);
+      // Reset PDF state when opening for a new quote
+      setPdfBlob(null);
+      setPdfUrl(null);
     }
   }, [isOpen, quoteData]);
 
-  // Generate PDF when modal opens
-  useEffect(() => {
-    if (isOpen && quoteData && quoteNumber && !pdfBlob) {
-      generatePDF();
-    }
-  }, [isOpen, quoteData, quoteNumber]);
-
-  // Cleanup URL on close
+  // 3. Lifecycle: Cleanup blob URL
   useEffect(() => {
     return () => {
       if (pdfUrl) {
@@ -100,16 +97,54 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
     };
   }, [pdfUrl]);
 
-  const formatCurrency = (amount: number) => {
+  // 4. Helper: Format currency
+  const formatCurrency = useCallback((amount: number) => {
     const formatted = new Intl.NumberFormat('fr-FR', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
     return formatted.replace(/[\u202F\u00A0]/g, ' ') + ' FCFA';
-  };
+  }, []);
 
+  // 5. Action: Save to DB
+  const saveQuoteToDatabase = useCallback(async (qNumber: string) => {
+    if (!quoteData || !user || quoteSaved) return;
+
+    try {
+      const response = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quote_number: qNumber,
+          user_id: user.id,
+          vehicle_id: quoteData.vehicleId,
+          vehicle_make: quoteData.vehicleMake,
+          vehicle_model: quoteData.vehicleModel,
+          vehicle_year: quoteData.vehicleYear,
+          vehicle_price_usd: quoteData.vehiclePriceUSD,
+          vehicle_source: quoteData.vehicleSource,
+          destination_id: quoteData.destination.id,
+          destination_name: quoteData.destination.name,
+          destination_country: quoteData.destination.country,
+          shipping_type: quoteData.shippingType,
+          shipping_cost_xaf: quoteData.calculations.shippingCost,
+          insurance_cost_xaf: quoteData.calculations.insuranceCost,
+          inspection_fee_xaf: quoteData.calculations.inspectionFee,
+          total_cost_xaf: quoteData.calculations.total,
+        }),
+      });
+
+      if (response.ok) {
+        setQuoteSaved(true);
+      }
+    } catch (error) {
+      console.error('Error saving quote:', error);
+    }
+  }, [quoteData, user, quoteSaved]);
+
+  // 6. Action: Generate PDF logic
   const generatePDF = useCallback(async () => {
-    if (!quoteData || !user || !quoteNumber) return;
+    if (!quoteData || !user || !quoteNumber || isGenerating) return;
 
     setIsGenerating(true);
 
@@ -400,12 +435,15 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
 
       // Get blob
       const blob = doc.output('blob');
+      console.log('QuotePDFModal: PDF generated successfully, blob size:', blob.size);
       setPdfBlob(blob);
-      setPdfUrl(URL.createObjectURL(blob));
+      const url = URL.createObjectURL(blob);
+      setPdfUrl(url);
+      console.log('QuotePDFModal: PDF URL created');
 
       // Auto-save quote to database
       if (!quoteSaved) {
-        saveQuoteToDatabase();
+        saveQuoteToDatabase(quoteNumber);
       }
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -413,44 +451,16 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
     } finally {
       setIsGenerating(false);
     }
-  }, [quoteData, user, quoteNumber, toast, quoteSaved]);
+  }, [quoteData, user, quoteNumber, isGenerating, saveQuoteToDatabase, toast]);
 
-  // Save quote to database automatically
-  const saveQuoteToDatabase = async () => {
-    if (!quoteData || !user || quoteSaved) return;
-
-    try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quote_number: quoteNumber,
-          user_id: user.id,
-          vehicle_id: quoteData.vehicleId,
-          vehicle_make: quoteData.vehicleMake,
-          vehicle_model: quoteData.vehicleModel,
-          vehicle_year: quoteData.vehicleYear,
-          vehicle_price_usd: quoteData.vehiclePriceUSD,
-          vehicle_source: quoteData.vehicleSource,
-          destination_id: quoteData.destination.id,
-          destination_name: quoteData.destination.name,
-          destination_country: quoteData.destination.country,
-          shipping_type: quoteData.shippingType,
-          shipping_cost_xaf: quoteData.calculations.shippingCost,
-          insurance_cost_xaf: quoteData.calculations.insuranceCost,
-          inspection_fee_xaf: quoteData.calculations.inspectionFee,
-          total_cost_xaf: quoteData.calculations.total,
-        }),
-      });
-
-      if (response.ok) {
-        setQuoteSaved(true);
-      }
-    } catch (error) {
-      console.error('Error saving quote:', error);
+  // 7. Lifecycle: Trigger PDF generation when data is ready
+  useEffect(() => {
+    if (isOpen && quoteData && quoteNumber && !pdfBlob && !isGenerating) {
+      generatePDF();
     }
-  };
+  }, [isOpen, quoteData, quoteNumber, pdfBlob, isGenerating, generatePDF]);
 
+  // 8. Actions: Share and Close
   const handleShare = async () => {
     if (pdfBlob) {
       try {
@@ -540,7 +550,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
-                  <p className="text-[var(--text-muted)]">Erreur de chargement</p>
+                  <p className="text-[var(--text-muted)]">Erreur de chargement ou données manquantes</p>
                 </div>
               )}
             </div>
@@ -571,7 +581,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
                   leftIcon={<Share2 className="w-4 h-4" />}
                   className="flex-1"
                 >
-                  Partager
+                  Partager / Télécharger
                 </Button>
               </div>
             </div>
