@@ -63,6 +63,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
   const source = vehicle.source as VehicleSource;
 
+  // Check if image is external (needs unoptimized flag)
+  const isImageExternal = (img: string) => img.startsWith('http') || img.includes('/api/image-proxy');
+
   const handleShare = async () => {
     try {
       await navigator.share({
@@ -114,7 +117,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
             <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[var(--surface)]">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={currentImageIndex}
+                  key={`${vehicle.id}-${currentImageIndex}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -126,6 +129,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     fill
                     className="object-cover"
                     priority
+                    unoptimized={isImageExternal(images[currentImageIndex])}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -164,7 +168,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {images.map((image, index) => (
                   <button
-                    key={index}
+                    key={`thumb-${vehicle.id}-${index}`}
                     onClick={() => setCurrentImageIndex(index)}
                     className={cn(
                       'relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all',
@@ -178,6 +182,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-cover"
+                      unoptimized={isImageExternal(image)}
                     />
                   </button>
                 ))}

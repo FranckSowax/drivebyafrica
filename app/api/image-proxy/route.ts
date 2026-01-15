@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Cache for 24 hours on CDN, 1 hour in browser
-const CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800';
-
 // Allowed image domains for security
 const ALLOWED_DOMAINS = [
   'byteimg.com',
@@ -13,6 +10,32 @@ const ALLOWED_DOMAINS = [
   'tosv.byted.org',
   'dongchedi.com',
 ];
+
+/**
+ * Calculate appropriate cache duration based on image URL expiry
+ * Dongchedi images have x-expires parameter with Unix timestamp
+ */
+function getCacheControl(url: string): string {
+  // Check for x-expires parameter
+  const expiresMatch = url.match(/x-expires=(\d+)/);
+  if (expiresMatch) {
+    const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
+    const now = Date.now();
+    const remainingSeconds = Math.floor((expiresTimestamp - now) / 1000);
+
+    if (remainingSeconds <= 0) {
+      // Already expired - no cache
+      return 'no-store';
+    }
+
+    // Cache for remaining time minus 1 hour buffer, max 24 hours
+    const cacheSeconds = Math.min(Math.max(remainingSeconds - 3600, 60), 86400);
+    return `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`;
+  }
+
+  // Default for non-expiring images: cache for 7 days
+  return 'public, max-age=604800, s-maxage=604800';
+}
 
 function isAllowedDomain(url: string): boolean {
   try {
@@ -63,12 +86,19 @@ export async function GET(request: NextRequest) {
     const contentType = response.headers.get('content-type') || 'image/jpeg';
     const imageBuffer = await response.arrayBuffer();
 
+    // Calculate cache control based on image expiry
+    const cacheControl = getCacheControl(decodedUrl);
+
     return new NextResponse(imageBuffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': CACHE_CONTROL,
+        'Cache-Control': cacheControl,
         'Access-Control-Allow-Origin': '*',
+        // Vary header ensures cache distinguishes by full URL
+        'Vary': 'Accept-Encoding',
+        // ETag based on URL hash for cache validation
+        'ETag': `"${Buffer.from(decodedUrl).toString('base64').slice(0, 32)}"`,
       },
     });
   } catch (error) {

@@ -46,6 +46,8 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
   const mainImage = imgError || !proxiedImage ? PLACEHOLDER_IMAGE : proxiedImage;
   // Use unoptimized for external images to avoid Next.js caching issues
   const isExternal = mainImage.startsWith('http') || mainImage.includes('/api/image-proxy');
+  // Unique key for the image to prevent React from reusing stale image state
+  const imageKey = `${vehicle.id}-${rawImage?.slice(-20) || 'placeholder'}`;
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
@@ -53,6 +55,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface)]">
           <Image
+            key={imageKey}
             src={mainImage}
             alt={`${vehicle.make} ${vehicle.model}`}
             fill

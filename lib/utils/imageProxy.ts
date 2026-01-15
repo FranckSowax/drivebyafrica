@@ -12,47 +12,82 @@ const PROXY_DOMAINS = [
 /**
  * Parse images field that might be stored as PostgreSQL array string
  * e.g., '{"url1","url2"}' or '{url1,url2}' -> ['url1', 'url2']
+ * Also handles JSON array strings: '["url1","url2"]'
  */
 export function parseImagesField(images: string[] | string | null | undefined): string[] {
   if (!images) return [];
 
   // Already an array
   if (Array.isArray(images)) {
-    return images.filter(Boolean);
+    return images.filter(Boolean).filter(url => typeof url === 'string' && url.trim());
   }
 
-  // PostgreSQL array format: {url1,url2} or {"url1","url2"}
+  // String format handling
   if (typeof images === 'string') {
-    // Empty array
-    if (images === '{}' || images === '') return [];
+    const trimmed = images.trim();
 
-    // Remove curly braces and split
-    const content = images.slice(1, -1);
-    if (!content) return [];
+    // Empty array formats
+    if (trimmed === '{}' || trimmed === '[]' || trimmed === '') return [];
 
-    // Handle quoted strings: {"url1","url2"}
-    if (content.startsWith('"')) {
-      const urls: string[] = [];
-      let current = '';
-      let inQuotes = false;
-
-      for (let i = 0; i < content.length; i++) {
-        const char = content[i];
-        if (char === '"' && content[i - 1] !== '\\') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          if (current) urls.push(current);
-          current = '';
-        } else {
-          current += char;
+    // Try JSON parse first (handles ["url1","url2"])
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(Boolean).filter(url => typeof url === 'string' && url.trim());
         }
+      } catch {
+        // Fall through to manual parsing
       }
-      if (current) urls.push(current);
-      return urls.filter(Boolean);
     }
 
-    // Simple comma-separated
-    return content.split(',').map(s => s.trim()).filter(Boolean);
+    // PostgreSQL array format: {url1,url2} or {"url1","url2"}
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const content = trimmed.slice(1, -1);
+      if (!content) return [];
+
+      // Handle quoted strings: {"url1","url2"}
+      if (content.startsWith('"')) {
+        const urls: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        let escaped = false;
+
+        for (let i = 0; i < content.length; i++) {
+          const char = content[i];
+
+          if (escaped) {
+            current += char;
+            escaped = false;
+            continue;
+          }
+
+          if (char === '\\') {
+            escaped = true;
+            continue;
+          }
+
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            if (current) urls.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        if (current) urls.push(current);
+        return urls.filter(url => url && url.startsWith('http'));
+      }
+
+      // Simple comma-separated (rare, but handle it)
+      return content.split(',').map(s => s.trim()).filter(url => url && url.startsWith('http'));
+    }
+
+    // Single URL
+    if (trimmed.startsWith('http')) {
+      return [trimmed];
+    }
   }
 
   return [];
