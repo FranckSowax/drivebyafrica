@@ -757,6 +757,101 @@ export type Database = {
           }
         ];
       };
+      chat_conversations: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string | null;
+          status: string;
+          agent_requested_at: string | null;
+          agent_assigned_id: string | null;
+          last_message_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string | null;
+          status?: string;
+          agent_requested_at?: string | null;
+          agent_assigned_id?: string | null;
+          last_message_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string | null;
+          status?: string;
+          agent_requested_at?: string | null;
+          agent_assigned_id?: string | null;
+          last_message_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_conversations_agent_assigned_id_fkey";
+            columns: ["agent_assigned_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string | null;
+          sender_type: string;
+          content: string;
+          metadata: Json;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id?: string | null;
+          sender_type: string;
+          content: string;
+          metadata?: Json;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string | null;
+          sender_type?: string;
+          content?: string;
+          metadata?: Json;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            referencedRelation: "chat_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_messages_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -786,6 +881,8 @@ export type Transaction = Database['public']['Tables']['transactions']['Row'];
 export type Conversation = Database['public']['Tables']['conversations']['Row'];
 export type Message = Database['public']['Tables']['messages']['Row'];
 export type Quote = Database['public']['Tables']['quotes']['Row'];
+export type ChatConversation = Database['public']['Tables']['chat_conversations']['Row'];
+export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
