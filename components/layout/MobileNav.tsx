@@ -1,26 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Car, Gavel, Package, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, Car, Calculator, Heart, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const navItems = [
   { href: '/', label: 'Accueil', icon: Home },
   { href: '/cars', label: 'Véhicules', icon: Car },
-  { href: '/auctions', label: 'Enchères', icon: Gavel },
-  { href: '/dashboard/orders', label: 'Commandes', icon: Package },
+  { href: '/calculator', label: 'Estimer', icon: Calculator },
+  { href: '/dashboard/favorites', label: 'Favoris', icon: Heart, requiresAuth: true },
   { href: '/dashboard', label: 'Compte', icon: User },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuthStore();
 
   const isActive = (href: string) => {
     if (href === '/') {
       return pathname === href;
     }
     return pathname.startsWith(href);
+  };
+
+  const handleNavClick = (e: React.MouseEvent, item: typeof navItems[0]) => {
+    if (item.requiresAuth && !user) {
+      e.preventDefault();
+      // Redirect to login with return URL to favorites
+      router.push(`/login?redirect=${encodeURIComponent(item.href)}`);
+    }
   };
 
   return (
@@ -30,6 +41,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={(e) => handleNavClick(e, item)}
             className={cn(
               'flex flex-col items-center justify-center gap-1 px-3 py-2 transition-colors',
               isActive(item.href) ? 'text-mandarin' : 'text-[var(--text-muted)]'
