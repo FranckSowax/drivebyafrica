@@ -268,6 +268,7 @@ export function ShippingEstimator({
   };
 
   const handleRequestQuote = () => {
+    console.log('ShippingEstimator: handleRequestQuote clicked, user:', !!user);
     if (!user) {
       // Redirect to login with return URL including destination and shipping type
       const redirectUrl = `/cars/${vehicleId}?action=quote${selectedDestination ? `&dest=${selectedDestination.id}` : ''}${selectedShippingType ? `&shipping=${selectedShippingType}` : ''}`;

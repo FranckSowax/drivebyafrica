@@ -7,6 +7,8 @@ import {
   Share2,
   Loader2,
   CheckCircle,
+  FileText,
+  Download,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,11 +70,20 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
   const [isGenerating, setIsGenerating] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [quoteSaved, setQuoteSaved] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // 1. Lifecycle: Mounted check for SSR
+  // 1. Lifecycle: Mounted check for SSR and Mobile detection
   useEffect(() => {
     setMounted(true);
-    return () => setMounted(false);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => {
+      setMounted(false);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   // 2. Lifecycle: Generate quote number when modal opens
@@ -462,27 +473,38 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
 
   // 8. Actions: Share and Close
   const handleShare = async () => {
+    console.log('QuotePDFModal: handleShare called, blob exists:', !!pdfBlob);
     if (pdfBlob) {
       try {
-        const file = new File([pdfBlob], `Devis-${quoteNumber}.pdf`, { type: 'application/pdf' });
+        const fileName = `Devis-${quoteNumber}.pdf`;
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-        if (navigator.share && navigator.canShare({ files: [file] })) {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          console.log('QuotePDFModal: Using native share');
           await navigator.share({
-            title: `Devis ${quoteNumber}`,
-            text: `Devis d'importation vehicule - ${quoteData?.vehicleMake} ${quoteData?.vehicleModel}`,
+            title: `Devis Driveby Africa ${quoteNumber}`,
+            text: `Voici votre devis d'importation pour ${quoteData?.vehicleMake} ${quoteData?.vehicleModel}`,
             files: [file],
           });
         } else {
-          // Fallback: download directly
+          console.log('QuotePDFModal: Share not supported, falling back to download');
           const link = document.createElement('a');
-          link.href = URL.createObjectURL(pdfBlob);
-          link.download = `Devis-${quoteNumber}.pdf`;
+          link.href = pdfUrl || URL.createObjectURL(pdfBlob);
+          link.download = fileName;
+          document.body.appendChild(link);
           link.click();
-          toast.info('PDF telecharge - partagez-le manuellement');
+          document.body.removeChild(link);
+          toast.info('Téléchargement lancé');
         }
       } catch (error) {
+        console.error('QuotePDFModal: Share error:', error);
         if ((error as Error).name !== 'AbortError') {
-          toast.error('Erreur lors du partage');
+          toast.error('Erreur lors du partage. Tentative de téléchargement...');
+          // Second fallback to download
+          const link = document.createElement('a');
+          link.href = pdfUrl || '';
+          link.download = `Devis-${quoteNumber}.pdf`;
+          link.click();
         }
       }
     }
@@ -536,20 +558,59 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
             </div>
 
             {/* PDF Preview */}
-            <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900">
+            <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 flex flex-col">
               {isGenerating ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
+                <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                   <Loader2 className="w-10 h-10 animate-spin text-mandarin mb-4" />
-                  <p className="text-[var(--text-muted)]">Generation du devis...</p>
+                  <p className="text-[var(--text-muted)] font-medium">Génération du devis...</p>
                 </div>
               ) : pdfUrl ? (
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-full min-h-[600px]"
-                  title="Apercu du devis"
-                />
+                isMobile ? (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
+                    <div className="w-20 h-20 bg-mandarin/10 rounded-2xl flex items-center justify-center mb-6">
+                      <FileText className="w-10 h-10 text-mandarin" />
+                    </div>
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                      Votre devis est prêt
+                    </h3>
+                    <p className="text-[var(--text-muted)] mb-8 max-w-xs">
+                      Le PDF a été généré avec succès. Vous pouvez le visualiser ou le partager.
+                    </p>
+                    <div className="grid grid-cols-1 gap-4 w-full max-w-xs">
+                      <Button
+                        variant="primary"
+                        onClick={handleShare}
+                        leftIcon={<Share2 className="w-5 h-5" />}
+                        className="w-full h-12 text-lg"
+                      >
+                        Partager / Ouvrir
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = pdfUrl;
+                          link.download = `Devis-${quoteNumber}.pdf`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        leftIcon={<Download className="w-5 h-5" />}
+                        className="w-full h-12 text-lg"
+                      >
+                        Télécharger
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <iframe
+                    src={`${pdfUrl}#toolbar=0&navpanes=0`}
+                    className="w-full h-full min-h-[600px] border-none"
+                    title="Apercu du devis"
+                  />
+                )
               ) : (
-                <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
+                <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                   <p className="text-[var(--text-muted)]">Erreur de chargement ou données manquantes</p>
                 </div>
               )}
