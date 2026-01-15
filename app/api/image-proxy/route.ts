@@ -54,8 +54,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
-  // Decode the URL if it's encoded
-  const decodedUrl = decodeURIComponent(imageUrl);
+  // Decode the URL - handle potential double-encoding
+  let decodedUrl = imageUrl;
+  try {
+    // First decode
+    decodedUrl = decodeURIComponent(imageUrl);
+    // Check if still encoded (double-encoding case)
+    if (decodedUrl.includes('%')) {
+      decodedUrl = decodeURIComponent(decodedUrl);
+    }
+  } catch {
+    // If decoding fails, use as-is
+    decodedUrl = imageUrl;
+  }
 
   // Security check
   if (!isAllowedDomain(decodedUrl)) {

@@ -110,23 +110,15 @@ export function needsProxy(url: string): boolean {
 
 /**
  * Get the proxied URL for an image
+ * Note: Dongchedi images work directly in browsers, so we bypass the proxy
+ * The proxy had issues with some signatures returning 403
  */
 export function getProxiedImageUrl(url: string): string {
   if (!url) return url;
 
-  // Don't proxy local images or already proxied images
-  if (!url.startsWith('http') || url.includes('/api/image-proxy')) {
-    return url;
-  }
-
-  // Only proxy images that need it
-  if (!needsProxy(url)) {
-    return url;
-  }
-
-  // Encode the URL for the proxy
-  const encodedUrl = encodeURIComponent(url);
-  return `/api/image-proxy?url=${encodedUrl}`;
+  // Return URL as-is - browsers can load Dongchedi images directly
+  // The proxy was causing 403 errors for some images
+  return url;
 }
 
 /**
