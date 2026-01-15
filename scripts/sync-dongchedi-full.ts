@@ -50,6 +50,36 @@ function formatPgArray(arr: string[] | undefined | null): string {
   return `{${escaped.join(',')}}`;
 }
 
+/**
+ * Decode URL that may be partially encoded from CSV
+ * Handles single and double-encoding cases
+ */
+function decodeImageUrl(url: string): string {
+  if (!url || typeof url !== 'string') return url;
+  try {
+    let decoded = url;
+    // Decode until no more encoded chars or no change (max 3 iterations for safety)
+    let iterations = 0;
+    while (decoded.includes('%') && iterations < 3) {
+      const newDecoded = decodeURIComponent(decoded);
+      if (newDecoded === decoded) break;
+      decoded = newDecoded;
+      iterations++;
+    }
+    return decoded;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Decode all image URLs in an array
+ */
+function decodeImageUrls(urls: string[]): string[] {
+  if (!urls || !Array.isArray(urls)) return [];
+  return urls.map(decodeImageUrl);
+}
+
 interface ApiOffer {
   id: string;           // API's internal ID
   inner_id: string;     // Dongchedi's inner_id - used to match with CSV
@@ -304,7 +334,8 @@ async function main() {
       // Use CSV photos if available (valid < 6 days), otherwise API photos
       const csvImages = photoMap.get(sourceId);
       const apiImages = Array.isArray(offer.images) ? offer.images : [];
-      const images = csvImages || apiImages;
+      // Always decode URLs before storing to prevent encoding issues
+      const images = decodeImageUrls(csvImages || apiImages);
 
       return {
         source: 'china',

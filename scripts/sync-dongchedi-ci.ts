@@ -41,6 +41,35 @@ const getArg = (name: string, defaultVal: string) => {
 const MAX_PAGES = parseInt(getArg('max-pages', '500'));
 const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
 
+/**
+ * Decode URL that may be partially encoded from CSV
+ * Handles single and double-encoding cases
+ */
+function decodeImageUrl(url: string): string {
+  if (!url || typeof url !== 'string') return url;
+  try {
+    let decoded = url;
+    // Decode until no more encoded chars or no change (max 3 iterations for safety)
+    let iterations = 0;
+    while (decoded.includes('%') && iterations < 3) {
+      const newDecoded = decodeURIComponent(decoded);
+      if (newDecoded === decoded) break;
+      decoded = newDecoded;
+      iterations++;
+    }
+    return decoded;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Decode all image URLs in an array
+ */
+function decodeImageUrls(urls: string[]): string[] {
+  if (!urls || !Array.isArray(urls)) return [];
+  return urls.map(decodeImageUrl);
+}
 
 interface ApiOffer {
   id: string;
@@ -274,7 +303,8 @@ async function main() {
       // Prefer fresh CSV photos over API photos
       const csvImages = photoMap.get(sourceId);
       const apiImages = Array.isArray(offer.images) ? offer.images : [];
-      const images = csvImages || apiImages;
+      // Always decode URLs before storing to prevent encoding issues
+      const images = decodeImageUrls(csvImages || apiImages);
 
       // Skip if no valid photos
       if (images.length === 0 || !isPhotoValid(images[0])) {
