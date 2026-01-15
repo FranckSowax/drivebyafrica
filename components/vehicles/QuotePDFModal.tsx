@@ -223,13 +223,29 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
 
       y = 16;
 
-      // Logo text
-      doc.setFontSize(22);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(mandarin);
-      doc.text('driveby', margin, y + 10);
-      doc.setTextColor(darkGray);
-      doc.text('AFRICA', margin + 32, y + 10);
+      // Load and add logo image
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        await new Promise<void>((resolve, reject) => {
+          logoImg.onload = () => resolve();
+          logoImg.onerror = () => reject(new Error('Failed to load logo'));
+          logoImg.src = '/logo-driveby-africa-dark.png';
+        });
+
+        // Calculate logo dimensions (height 12mm, maintain aspect ratio)
+        const logoHeight = 12;
+        const logoWidth = (logoImg.width / logoImg.height) * logoHeight;
+        doc.addImage(logoImg, 'PNG', margin, y, logoWidth, logoHeight);
+      } catch {
+        // Fallback to text if logo fails to load
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(mandarin);
+        doc.text('driveby', margin, y + 10);
+        doc.setTextColor(darkGray);
+        doc.text('AFRICA', margin + 32, y + 10);
+      }
 
       // Quote info box
       drawBox(pageWidth - margin - 55, y - 2, 55, 22, '#FFF7ED', mandarin);
@@ -610,10 +626,11 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
                   <div className="p-8 md:p-12 space-y-8">
                     <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-3xl font-black text-mandarin tracking-tighter">driveby</span>
-                          <span className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">AFRICA</span>
-                        </div>
+                        <img
+                          src="/logo-driveby-africa-dark.png"
+                          alt="Driveby Africa"
+                          className="h-12 md:h-14 w-auto mb-2"
+                        />
                         <p className="text-sm text-gray-500">Votre partenaire d'importation automobile</p>
                       </div>
                       <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 p-4 rounded-lg min-w-[200px]">
