@@ -9,6 +9,85 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      quotes: {
+        Row: {
+          id: string;
+          quote_number: string;
+          user_id: string;
+          vehicle_id: string;
+          vehicle_make: string;
+          vehicle_model: string;
+          vehicle_year: number;
+          vehicle_price_usd: number;
+          vehicle_source: string;
+          destination_id: string;
+          destination_name: string;
+          destination_country: string;
+          shipping_type: string;
+          shipping_cost_xaf: number;
+          insurance_cost_xaf: number;
+          inspection_fee_xaf: number;
+          total_cost_xaf: number;
+          status: string;
+          valid_until: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          quote_number: string;
+          user_id: string;
+          vehicle_id: string;
+          vehicle_make: string;
+          vehicle_model: string;
+          vehicle_year: number;
+          vehicle_price_usd: number;
+          vehicle_source: string;
+          destination_id: string;
+          destination_name: string;
+          destination_country: string;
+          shipping_type: string;
+          shipping_cost_xaf: number;
+          insurance_cost_xaf: number;
+          inspection_fee_xaf: number;
+          total_cost_xaf: number;
+          status?: string;
+          valid_until: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          quote_number?: string;
+          user_id?: string;
+          vehicle_id?: string;
+          vehicle_make?: string;
+          vehicle_model?: string;
+          vehicle_year?: number;
+          vehicle_price_usd?: number;
+          vehicle_source?: string;
+          destination_id?: string;
+          destination_name?: string;
+          destination_country?: string;
+          shipping_type?: string;
+          shipping_cost_xaf?: number;
+          insurance_cost_xaf?: number;
+          inspection_fee_xaf?: number;
+          total_cost_xaf?: number;
+          status?: string;
+          valid_until?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quotes_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       profiles: {
         Row: {
           id: string;
@@ -601,6 +680,7 @@ export type Notification = Database['public']['Tables']['notifications']['Row'];
 export type Transaction = Database['public']['Tables']['transactions']['Row'];
 export type Conversation = Database['public']['Tables']['conversations']['Row'];
 export type Message = Database['public']['Tables']['messages']['Row'];
+export type Quote = Database['public']['Tables']['quotes']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -609,9 +689,11 @@ export type BidInsert = Database['public']['Tables']['bids']['Insert'];
 export type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 export type FavoriteInsert = Database['public']['Tables']['favorites']['Insert'];
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
+export type QuoteInsert = Database['public']['Tables']['quotes']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type VehicleUpdate = Database['public']['Tables']['vehicles']['Update'];
 export type BidUpdate = Database['public']['Tables']['bids']['Update'];
 export type OrderUpdate = Database['public']['Tables']['orders']['Update'];
+export type QuoteUpdate = Database['public']['Tables']['quotes']['Update'];
