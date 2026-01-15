@@ -63,6 +63,32 @@ function normalizeImageUrls(urls: string[]): string[] {
   return urls.map(normalizeImageUrl);
 }
 
+/**
+ * CDN servers that are blocked from most regions outside China
+ * These consistently return 403 errors
+ */
+const BLOCKED_CDN_PATTERNS = [
+  'p3-dcd-sign.byteimg.com',
+  'p6-dcd-sign.byteimg.com',
+  'p1-dcd-sign.byteimg.com',
+];
+
+/**
+ * Check if an image URL is from a blocked CDN server
+ */
+function isBlockedCdn(url: string): boolean {
+  if (!url) return true;
+  return BLOCKED_CDN_PATTERNS.some(pattern => url.includes(pattern));
+}
+
+/**
+ * Check if first image in array is from a working CDN
+ */
+function hasWorkingImages(images: string[]): boolean {
+  if (!images || images.length === 0) return false;
+  return !isBlockedCdn(images[0]);
+}
+
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
 }
@@ -302,6 +328,11 @@ export default async function handler() {
         // Always decode URLs before storing to prevent encoding issues
         const images = normalizeImageUrls(csvImages || apiImages);
 
+        // Skip vehicles with blocked CDN images
+        if (!hasWorkingImages(images)) {
+          return null;
+        }
+
         return {
           source: 'china',
           source_id: offer.inner_id,
@@ -324,7 +355,11 @@ export default async function handler() {
         };
       });
 
-      const { error } = await supabase.from('vehicles').upsert(records, {
+      // Filter out null records (blocked CDN)
+      const validRecords = records.filter(Boolean);
+      if (validRecords.length === 0) continue;
+
+      const { error } = await supabase.from('vehicles').upsert(validRecords, {
         onConflict: 'source,source_id',
       });
 

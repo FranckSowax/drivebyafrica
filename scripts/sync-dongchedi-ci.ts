@@ -83,6 +83,32 @@ function normalizeImageUrls(urls: string[]): string[] {
   return urls.map(normalizeImageUrl);
 }
 
+/**
+ * CDN servers that are blocked from most regions outside China
+ * These consistently return 403 errors
+ */
+const BLOCKED_CDN_PATTERNS = [
+  'p3-dcd-sign.byteimg.com',
+  'p6-dcd-sign.byteimg.com',
+  'p1-dcd-sign.byteimg.com',
+];
+
+/**
+ * Check if an image URL is from a blocked CDN server
+ */
+function isBlockedCdn(url: string): boolean {
+  if (!url) return true;
+  return BLOCKED_CDN_PATTERNS.some(pattern => url.includes(pattern));
+}
+
+/**
+ * Check if first image in array is from a working CDN
+ */
+function hasWorkingImages(images: string[]): boolean {
+  if (!images || images.length === 0) return false;
+  return !isBlockedCdn(images[0]);
+}
+
 interface ApiOffer {
   id: string;
   inner_id: string;
@@ -318,8 +344,8 @@ async function main() {
       // Always decode URLs before storing to prevent encoding issues
       const images = normalizeImageUrls(csvImages || apiImages);
 
-      // Skip if no valid photos
-      if (images.length === 0 || !isPhotoValid(images[0])) {
+      // Skip if no valid photos or blocked CDN
+      if (images.length === 0 || !isPhotoValid(images[0]) || !hasWorkingImages(images)) {
         stats.skipped++;
         return null;
       }
@@ -377,7 +403,8 @@ async function main() {
 
     for (const [sourceId, vehicle] of existingVehicles) {
       const firstImage = vehicle.images?.[0];
-      if (!isPhotoValid(firstImage)) {
+      // Remove if photo expired OR from blocked CDN
+      if (!isPhotoValid(firstImage) || isBlockedCdn(firstImage)) {
         toRemove.push(sourceId);
       }
     }

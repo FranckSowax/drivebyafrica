@@ -92,6 +92,23 @@ function normalizeImageUrls(urls: string[]): string[] {
   return urls.map(normalizeImageUrl);
 }
 
+/**
+ * CDN servers that are blocked from most regions outside China
+ */
+const BLOCKED_CDN_PATTERNS = [
+  'p3-dcd-sign.byteimg.com',
+  'p6-dcd-sign.byteimg.com',
+  'p1-dcd-sign.byteimg.com',
+];
+
+/**
+ * Check if first image in array is from a working CDN
+ */
+function hasWorkingImages(images: string[]): boolean {
+  if (!images || images.length === 0) return false;
+  return !BLOCKED_CDN_PATTERNS.some(pattern => images[0].includes(pattern));
+}
+
 interface ApiOffer {
   id: string;           // API's internal ID
   inner_id: string;     // Dongchedi's inner_id - used to match with CSV
@@ -349,6 +366,11 @@ async function main() {
       // Always decode URLs before storing to prevent encoding issues
       const images = normalizeImageUrls(csvImages || apiImages);
 
+      // Skip vehicles with blocked CDN images
+      if (!hasWorkingImages(images)) {
+        return null;
+      }
+
       return {
         source: 'china',
         source_id: sourceId,
@@ -371,7 +393,11 @@ async function main() {
       };
     });
 
-    const { error } = await supabase.from('vehicles').upsert(records, {
+    // Filter out null records (blocked CDN)
+    const validRecords = records.filter(Boolean);
+    if (validRecords.length === 0) continue;
+
+    const { error } = await supabase.from('vehicles').upsert(validRecords, {
       onConflict: 'source,source_id',
     });
 
