@@ -116,7 +116,7 @@ export function VehicleTable({
   };
 
   const getStatusBadge = (vehicle: Vehicle) => {
-    const status = vehicle.status || (vehicle.auction_status === 'sold' ? 'sold' : 'available');
+    const status = vehicle.status || 'available';
     const styles: Record<string, string> = {
       available: 'bg-jewel/10 text-jewel',
       reserved: 'bg-mandarin/10 text-mandarin',

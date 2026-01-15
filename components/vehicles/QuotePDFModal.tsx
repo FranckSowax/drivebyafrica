@@ -17,6 +17,10 @@ import {
   Calendar,
   Clock,
   Save,
+  CreditCard,
+  Smartphone,
+  Banknote,
+  Building2,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -56,7 +60,8 @@ interface QuotePDFModalProps {
   isOpen: boolean;
   onClose: () => void;
   quoteData: QuoteData | null;
-  user: { id: string; email?: string | null } | null;
+  user: { id: string; email?: string | null; user_metadata?: { full_name?: string; country?: string } } | null;
+  profile?: { full_name?: string | null; country?: string | null } | null;
   defaultQuoteNumber?: string;
 }
 
@@ -72,7 +77,10 @@ const SOURCE_FLAGS: Record<string, string> = {
   dubai: '🇦🇪',
 };
 
-export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNumber }: QuotePDFModalProps) {
+export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defaultQuoteNumber }: QuotePDFModalProps) {
+  // Derive client name and country from profile (preferred) or user_metadata (fallback)
+  const clientName = profile?.full_name || user?.user_metadata?.full_name || null;
+  const clientCountry = profile?.country || user?.user_metadata?.country || null;
   const router = useRouter();
   const toast = useToast();
   const [quoteNumber, setQuoteNumber] = useState('');
@@ -288,29 +296,50 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
       // ========== TWO COLUMNS: CLIENT & VEHICLE ==========
       const colWidth = (contentWidth - 6) / 2;
 
-      // Client Box
-      drawBox(margin, y, colWidth, 38, surface);
+      // Client Box - dynamic height based on content
+      const clientBoxHeight = clientName ? 48 : 38;
+      drawBox(margin, y, colWidth, clientBoxHeight, surface);
       doc.setFontSize(9);
       doc.setTextColor(mandarin);
       doc.setFont('helvetica', 'bold');
       doc.text('CLIENT', margin + 5, y + 7);
       doc.setFontSize(8);
-      doc.setTextColor(lightGray);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Email', margin + 5, y + 14);
-      doc.setTextColor(darkGray);
-      doc.setFont('helvetica', 'bold');
-      doc.text(user.email || '-', margin + 5, y + 20);
-      doc.setTextColor(lightGray);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Date de demande', margin + 5, y + 27);
-      doc.setTextColor(darkGray);
-      doc.setFont('helvetica', 'bold');
-      doc.text(new Date().toLocaleDateString('fr-FR'), margin + 5, y + 33);
 
-      // Vehicle Box
+      let clientY = y + 14;
+
+      // Name (if available)
+      if (clientName) {
+        doc.setTextColor(lightGray);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Nom', margin + 5, clientY);
+        doc.setTextColor(darkGray);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clientName, margin + 5, clientY + 6);
+        clientY += 13;
+      }
+
+      // Email
+      doc.setTextColor(lightGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Email', margin + 5, clientY);
+      doc.setTextColor(darkGray);
+      doc.setFont('helvetica', 'bold');
+      doc.text(user.email || '-', margin + 5, clientY + 6);
+      clientY += 13;
+
+      // Country (if available) - displayed on right side
+      if (clientCountry) {
+        doc.setTextColor(lightGray);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Pays', margin + colWidth / 2 + 5, y + 14);
+        doc.setTextColor(darkGray);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clientCountry, margin + colWidth / 2 + 5, y + 20);
+      }
+
+      // Vehicle Box - match client box height
       const vehicleX = margin + colWidth + 6;
-      drawBox(vehicleX, y, colWidth, 38, surface);
+      drawBox(vehicleX, y, colWidth, clientBoxHeight, surface);
       doc.setFontSize(9);
       doc.setTextColor(mandarin);
       doc.setFont('helvetica', 'bold');
@@ -329,7 +358,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
       doc.text(`Annee: ${quoteData.vehicleYear}`, vehicleX + 5, y + 28);
       doc.text(`Origine: ${SOURCE_NAMES[quoteData.vehicleSource]}`, vehicleX + 5, y + 33);
 
-      y += 45;
+      y += clientBoxHeight + 7;
 
       // ========== SHIPPING INFO ==========
       const isGroupage = quoteData.shippingType === 'groupage';
@@ -405,7 +434,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
       y += 18;
 
       // ========== DEPOSIT BOX ==========
-      drawBox(margin, y, contentWidth, 28, '#ECFDF5', jewel);
+      drawBox(margin, y, contentWidth, 32, '#ECFDF5', jewel);
       doc.setFontSize(10);
       doc.setTextColor(jewel);
       doc.setFont('helvetica', 'bold');
@@ -413,11 +442,14 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
       doc.setFontSize(16);
       doc.setTextColor(darkGray);
       doc.text('1 000 USD', margin + 5, y + 18);
+      doc.setFontSize(10);
+      doc.setTextColor(mediumGray);
+      doc.setFont('helvetica', 'normal');
+      doc.text('(600 000 FCFA)', margin + 40, y + 18);
       doc.setFontSize(8);
       doc.setTextColor(jewel);
-      doc.setFont('helvetica', 'normal');
-      doc.text("Cet acompte declenche le rapport d'inspection detaille du vehicule", margin + 5, y + 24);
-      y += 34;
+      doc.text("Cet acompte declenche le rapport d'inspection detaille du vehicule", margin + 5, y + 26);
+      y += 38;
 
       // ========== NEXT STEPS ==========
       doc.setFontSize(10);
@@ -656,10 +688,22 @@ return createPortal(
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100">
                     <div className="space-y-4">
                       <h4 className="text-xs uppercase tracking-widest text-gray-400 font-bold">Informations Client</h4>
+                      {clientName && (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-gray-500">Nom</p>
+                          <p className="text-base font-bold text-gray-900">{clientName}</p>
+                        </div>
+                      )}
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-500">Email de contact</p>
+                        <p className="text-sm font-medium text-gray-500">Email</p>
                         <p className="text-base font-bold text-gray-900">{user?.email || '-'}</p>
                       </div>
+                      {clientCountry && (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-gray-500">Pays</p>
+                          <p className="text-base font-bold text-gray-900">{clientCountry}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-4">
                       <h4 className="text-xs uppercase tracking-widest text-gray-400 font-bold">Détails Véhicule</h4>
@@ -740,6 +784,7 @@ return createPortal(
                     <div className="bg-green-50 border border-green-100 p-5 rounded-xl">
                       <h5 className="text-[10px] font-black text-green-700 uppercase mb-2">Acompte Requis</h5>
                       <p className="text-2xl font-black text-gray-900 mb-1">1 000 USD</p>
+                      <p className="text-sm font-medium text-gray-600 mb-2">≈ 600 000 FCFA</p>
                       <p className="text-[10px] text-green-600 leading-relaxed">
                         Le versement de cet acompte déclenche l'inspection physique détaillée du véhicule.
                       </p>
@@ -798,43 +843,105 @@ return createPortal(
 
           {/* Actions */}
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-            {/* Deposit reminder */}
-            <div className="mb-4 p-3 bg-jewel/10 border border-jewel/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-jewel flex-shrink-0" />
+            {/* Deposit section */}
+            <div className="mb-4 p-4 bg-jewel/10 border border-jewel/30 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-jewel rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-white" />
+                </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    Acompte: <span className="text-jewel">1 000 USD</span>
+                  <p className="text-base font-bold text-gray-900">
+                    Acompte pour bloquer le véhicule
                   </p>
                   <p className="text-xs text-gray-500">
-                    Pour bloquer le vehicule et recevoir le rapport d'inspection
+                    Déclenche l'inspection détaillée du véhicule
                   </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black text-jewel">1 000 USD</p>
+                  <p className="text-sm font-medium text-gray-600">≈ 600 000 FCFA</p>
+                </div>
+              </div>
+
+              {/* Payment options */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Choisissez votre mode de paiement</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {/* Stripe */}
+                  <button
+                    onClick={() => {
+                      toast.info('Paiement par carte', 'Redirection vers Stripe...');
+                      // TODO: Implement Stripe checkout
+                    }}
+                    className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <CreditCard className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-gray-900">Carte bancaire</p>
+                      <p className="text-[10px] text-gray-500">Visa, Mastercard</p>
+                    </div>
+                  </button>
+
+                  {/* Mobile Money */}
+                  <button
+                    onClick={() => {
+                      toast.info('Mobile Money', 'Contactez-nous sur WhatsApp pour payer par Mobile Money');
+                      window.open('https://wa.me/24177000000?text=Bonjour, je souhaite payer l\'acompte pour le devis ' + quoteNumber + ' par Mobile Money', '_blank');
+                    }}
+                    className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all group"
+                  >
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                      <Smartphone className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-gray-900">Mobile Money</p>
+                      <p className="text-[10px] text-gray-500">Airtel, MTN, Orange</p>
+                    </div>
+                  </button>
+
+                  {/* Cash in agency */}
+                  <button
+                    onClick={() => {
+                      toast.info('Paiement en agence', 'Retrouvez nos agences à Libreville (Gabon), Douala (Cameroun) et Dakar (Sénégal)');
+                    }}
+                    className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group"
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                      <Building2 className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-gray-900">Cash en agence</p>
+                      <p className="text-[10px] text-gray-500">Gabon, Cameroun, Sénégal</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Buttons */}
+            {/* Secondary buttons */}
             <div className="flex flex-wrap gap-3">
               {!defaultQuoteNumber && (
                 <Button
-                  variant="success"
+                  variant="outline"
                   onClick={handleSaveAndRedirect}
                   disabled={isGenerating}
                   leftIcon={<Save className="w-4 h-4" />}
                   className="flex-1 sm:flex-none"
                 >
-                  {quoteSaved ? 'Voir mes devis' : 'Enregistrer dans mes devis'}
+                  {quoteSaved ? 'Voir mes devis' : 'Enregistrer'}
                 </Button>
               )}
-                
+
               <Button
-                variant="primary"
+                variant="outline"
                 onClick={handleShare}
                 disabled={isGenerating || !pdfBlob}
                 leftIcon={<Share2 className="w-4 h-4" />}
-                className="flex-1"
+                className="flex-1 sm:flex-none"
               >
-                Partager
+                Partager le PDF
               </Button>
             </div>
           </div>

@@ -46,13 +46,27 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Quote API Supabase error:', error);
-      if (error.code === '42P01') {
+      // Table doesn't exist yet
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return NextResponse.json({ success: true, message: 'La table quotes n\'existe pas encore' });
       }
-      return NextResponse.json({ 
-        error: 'Erreur Supabase', 
+      // Check constraint violation - likely invalid vehicle_source or shipping_type
+      if (error.code === '23514') {
+        console.error('Quote API: Check constraint violation - invalid data:', {
+          vehicle_source: body.vehicle_source,
+          shipping_type: body.shipping_type,
+        });
+        return NextResponse.json({
+          error: 'Données invalides',
+          message: 'La source du véhicule ou le type d\'expédition est invalide',
+          details: { vehicle_source: body.vehicle_source, shipping_type: body.shipping_type },
+          code: error.code
+        }, { status: 400 });
+      }
+      return NextResponse.json({
+        error: 'Erreur Supabase',
         message: error.message,
-        code: error.code 
+        code: error.code
       }, { status: 400 });
     }
 
@@ -93,7 +107,12 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Quote API Supabase error (GET):', error);
-      if (error.code === '42P01') {
+      // Table doesn't exist yet - return empty array
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ quotes: [] });
+      }
+      // Permission denied - RLS policy issue, return empty array
+      if (error.code === '42501' || error.message?.includes('permission denied')) {
         return NextResponse.json({ quotes: [] });
       }
       return NextResponse.json({ error: error.message }, { status: 400 });

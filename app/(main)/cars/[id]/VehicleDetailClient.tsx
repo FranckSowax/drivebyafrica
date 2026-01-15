@@ -26,7 +26,7 @@ import { formatUsdToLocal } from '@/lib/utils/currency';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { getProxiedImageUrls, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
-import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
+import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
 
 interface VehicleDetailClientProps {
   vehicle: Vehicle;
@@ -38,11 +38,11 @@ const SOURCE_FLAGS: Record<VehicleSource, string> = {
   dubai: '🇦🇪',
 };
 
-const STATUS_STYLES: Record<AuctionStatus, { bg: string; label: string }> = {
-  upcoming: { bg: 'bg-royal-blue', label: 'À venir' },
-  ongoing: { bg: 'bg-mandarin animate-pulse', label: 'En cours' },
+const STATUS_STYLES: Record<VehicleStatus, { bg: string; label: string }> = {
+  available: { bg: 'bg-jewel', label: 'Disponible' },
+  reserved: { bg: 'bg-mandarin', label: 'Réservé' },
   sold: { bg: 'bg-red-500', label: 'Vendu' },
-  ended: { bg: 'bg-nobel', label: 'Terminé' },
+  pending: { bg: 'bg-royal-blue', label: 'En attente' },
 };
 
 const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
@@ -60,8 +60,13 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   // Transform images through proxy for signed URLs
   const parsedImages = parseImagesField(vehicle.images);
   const images = parsedImages.length > 0 ? getProxiedImageUrls(parsedImages) : [PLACEHOLDER_IMAGE];
-  const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
   const source = vehicle.source as VehicleSource;
+
+  // Vehicle status
+  const vehicleStatus = (vehicle.status || 'available') as VehicleStatus;
+  const statusStyle = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
+  const isReserved = vehicleStatus === 'reserved';
+  const isSold = vehicleStatus === 'sold';
 
   // Check if image is external (needs unoptimized flag)
   const isImageExternal = (img: string) => img.startsWith('http') || img.includes('/api/image-proxy');
@@ -157,9 +162,24 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 {currentImageIndex + 1} / {images.length}
               </div>
 
+              {/* Reserved/Sold Overlay */}
+              {(isReserved || isSold) && (
+                <div className={cn(
+                  'absolute inset-0 flex items-center justify-center z-10',
+                  isReserved ? 'bg-mandarin/20' : 'bg-red-500/20'
+                )}>
+                  <span className={cn(
+                    'px-6 py-3 rounded-xl font-bold text-2xl uppercase tracking-wider transform -rotate-12 shadow-xl',
+                    isReserved ? 'bg-mandarin text-white' : 'bg-red-500 text-white'
+                  )}>
+                    {isReserved ? 'Réservé' : 'Vendu'}
+                  </span>
+                </div>
+              )}
+
               {/* Status Badge */}
-              <Badge className={cn('absolute top-4 left-4', status.bg)}>
-                {status.label}
+              <Badge className={cn('absolute top-4 left-4', statusStyle.bg)}>
+                {statusStyle.label}
               </Badge>
             </div>
 
@@ -272,6 +292,28 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   </p>
                 </div>
               </div>
+
+              {/* Reserved/Sold Alert */}
+              {(isReserved || isSold) && (
+                <div className={cn(
+                  'rounded-lg p-4 mb-4 border-2',
+                  isReserved
+                    ? 'bg-mandarin/10 border-mandarin/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                )}>
+                  <p className={cn(
+                    'font-bold text-lg',
+                    isReserved ? 'text-mandarin' : 'text-red-500'
+                  )}>
+                    {isReserved ? 'Ce véhicule est réservé' : 'Ce véhicule a été vendu'}
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
+                    {isReserved
+                      ? 'Un acompte a été versé. Contactez-nous pour plus d\'informations.'
+                      : 'Ce véhicule n\'est plus disponible.'}
+                  </p>
+                </div>
+              )}
 
               {/* Price */}
               <div className="bg-[var(--surface)] rounded-lg p-4 mb-4">

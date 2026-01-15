@@ -158,6 +158,9 @@ export type Database = {
           auction_platform: string | null;
           auction_date: string | null;
           auction_status: string;
+          status: string | null;
+          is_visible: boolean;
+          admin_notes: string | null;
           lot_number: string | null;
           images: string[] | null;
           video_url: string | null;
@@ -191,6 +194,9 @@ export type Database = {
           auction_platform?: string | null;
           auction_date?: string | null;
           auction_status?: string;
+          status?: string | null;
+          is_visible?: boolean;
+          admin_notes?: string | null;
           lot_number?: string | null;
           images?: string[] | null;
           video_url?: string | null;
@@ -224,6 +230,9 @@ export type Database = {
           auction_platform?: string | null;
           auction_date?: string | null;
           auction_status?: string;
+          status?: string | null;
+          is_visible?: boolean;
+          admin_notes?: string | null;
           lot_number?: string | null;
           images?: string[] | null;
           video_url?: string | null;

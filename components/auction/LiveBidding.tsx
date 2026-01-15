@@ -50,7 +50,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
   const minNextBid = currentPrice + 100;
   const userHasActiveBid = hasActiveBid();
   const isUserHighestBidder = highestBid?.user_id === user?.id;
-  const auctionEnded = vehicle.auction_status === 'ended' || vehicle.auction_status === 'sold';
+  const auctionEnded = vehicle.status === 'sold';
 
   // Animation for new bids
   const [newBidAnimation, setNewBidAnimation] = useState(false);
@@ -100,7 +100,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
       {/* Auction Status Header */}
       <Card className="relative overflow-hidden">
         {/* Live indicator */}
-        {vehicle.auction_status === 'ongoing' && (
+        {vehicle.status === 'available' && (
           <div className="absolute top-4 right-4 flex items-center gap-2">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -141,7 +141,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
         </div>
 
         {/* Countdown */}
-        {vehicle.auction_date && vehicle.auction_status === 'ongoing' && (
+        {vehicle.auction_date && vehicle.status === 'available' && (
           <div className="flex justify-center mb-6">
             <CountdownTimer
               targetDate={vehicle.auction_date}
@@ -180,7 +180,7 @@ export function LiveBidding({ vehicle, className }: LiveBiddingProps) {
         )}
 
         {/* Bidding Controls */}
-        {!auctionEnded && vehicle.auction_status === 'ongoing' && (
+        {!auctionEnded && vehicle.status === 'available' && (
           <>
             {/* Quick Bid Buttons */}
             <div className="grid grid-cols-5 gap-2 mb-4">

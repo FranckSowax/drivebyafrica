@@ -39,7 +39,10 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
   const [imgError, setImgError] = useState(false);
-  const status = STATUS_STYLES[vehicle.status || 'available'] || STATUS_STYLES.available;
+  const vehicleStatus = vehicle.status || 'available';
+  const status = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
+  const isReserved = vehicleStatus === 'reserved';
+  const isSold = vehicleStatus === 'sold';
   const images = parseImagesField(vehicle.images);
   const rawImage = images[0];
   const proxiedImage = rawImage ? getProxiedImageUrl(rawImage) : null;
@@ -67,6 +70,21 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
 
           {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+          {/* Reserved/Sold Overlay */}
+          {(isReserved || isSold) && (
+            <div className={cn(
+              'absolute inset-0 flex items-center justify-center',
+              isReserved ? 'bg-mandarin/20' : 'bg-red-500/20'
+            )}>
+              <span className={cn(
+                'px-4 py-2 rounded-lg font-bold text-lg uppercase tracking-wider transform -rotate-12 shadow-lg',
+                isReserved ? 'bg-mandarin text-white' : 'bg-red-500 text-white'
+              )}>
+                {isReserved ? 'Réservé' : 'Vendu'}
+              </span>
+            </div>
+          )}
 
           {/* Status Badge */}
           <Badge className={cn('absolute top-3 left-3', status.bg)}>

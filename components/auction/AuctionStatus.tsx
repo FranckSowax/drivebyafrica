@@ -1,21 +1,18 @@
 'use client';
 
-import { Clock, CheckCircle, XCircle, Gavel } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { InlineCountdown } from './CountdownTimer';
 import { cn } from '@/lib/utils';
-import type { AuctionStatus as AuctionStatusType } from '@/types/vehicle';
+import type { VehicleStatus } from '@/types/vehicle';
 
-interface AuctionStatusProps {
-  status: AuctionStatusType | string;
-  auctionDate?: string | null;
+interface VehicleStatusProps {
+  status: VehicleStatus | string;
   className?: string;
-  showCountdown?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }
 
 const statusConfig: Record<
-  AuctionStatusType,
+  VehicleStatus,
   {
     icon: typeof Clock;
     label: string;
@@ -23,40 +20,38 @@ const statusConfig: Record<
     color: string;
   }
 > = {
-  upcoming: {
-    icon: Clock,
-    label: 'À venir',
-    variant: 'info',
-    color: 'text-royal-blue',
+  available: {
+    icon: CheckCircle,
+    label: 'Disponible',
+    variant: 'success',
+    color: 'text-jewel',
   },
-  ongoing: {
-    icon: Gavel,
-    label: 'En cours',
+  reserved: {
+    icon: ShieldCheck,
+    label: 'Réservé',
     variant: 'warning',
     color: 'text-mandarin',
   },
   sold: {
-    icon: CheckCircle,
-    label: 'Vendu',
-    variant: 'success',
-    color: 'text-jewel',
-  },
-  ended: {
     icon: XCircle,
-    label: 'Terminé',
-    variant: 'default',
-    color: 'text-nobel',
+    label: 'Vendu',
+    variant: 'error',
+    color: 'text-red-500',
+  },
+  pending: {
+    icon: Clock,
+    label: 'En attente',
+    variant: 'info',
+    color: 'text-royal-blue',
   },
 };
 
-export function AuctionStatus({
+export function VehicleStatusBadge({
   status,
-  auctionDate,
   className,
-  showCountdown = true,
   size = 'md',
-}: AuctionStatusProps) {
-  const config = statusConfig[status as AuctionStatusType] || statusConfig.ended;
+}: VehicleStatusProps) {
+  const config = statusConfig[status as VehicleStatus] || statusConfig.available;
   const Icon = config.icon;
 
   const sizeStyles = {
@@ -77,39 +72,31 @@ export function AuctionStatus({
         <Icon className={iconSizes[size]} />
         <span>{config.label}</span>
       </Badge>
-
-      {showCountdown && auctionDate && (status === 'upcoming' || status === 'ongoing') && (
-        <div className="flex items-center gap-1 ml-2">
-          <Clock className={cn(iconSizes[size], 'text-nobel')} />
-          <InlineCountdown targetDate={auctionDate} />
-        </div>
-      )}
     </div>
   );
 }
 
 // Pill version for vehicle cards
-interface AuctionStatusPillProps {
-  status: AuctionStatusType | string;
+interface VehicleStatusPillProps {
+  status: VehicleStatus | string;
   className?: string;
 }
 
-export function AuctionStatusPill({ status, className }: AuctionStatusPillProps) {
-  const config = statusConfig[status as AuctionStatusType] || statusConfig.ended;
+export function VehicleStatusPill({ status, className }: VehicleStatusPillProps) {
+  const config = statusConfig[status as VehicleStatus] || statusConfig.available;
 
-  const bgColors: Record<AuctionStatusType, string> = {
-    upcoming: 'bg-royal-blue',
-    ongoing: 'bg-mandarin',
-    sold: 'bg-jewel',
-    ended: 'bg-nobel',
+  const bgColors: Record<VehicleStatus, string> = {
+    available: 'bg-jewel',
+    reserved: 'bg-mandarin',
+    sold: 'bg-red-500',
+    pending: 'bg-royal-blue',
   };
 
   return (
     <span
       className={cn(
         'px-2 py-0.5 rounded-full text-xs font-medium text-white',
-        bgColors[status as AuctionStatusType] || bgColors.ended,
-        status === 'ongoing' && 'animate-pulse',
+        bgColors[status as VehicleStatus] || bgColors.available,
         className
       )}
     >
@@ -118,7 +105,11 @@ export function AuctionStatusPill({ status, className }: AuctionStatusPillProps)
   );
 }
 
-// Live indicator for ongoing auctions
+// Legacy exports for backwards compatibility
+export const AuctionStatus = VehicleStatusBadge;
+export const AuctionStatusPill = VehicleStatusPill;
+
+// Live indicator (kept for potential future use)
 interface LiveIndicatorProps {
   className?: string;
 }

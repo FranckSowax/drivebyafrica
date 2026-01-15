@@ -39,11 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (status && status !== 'all') {
-      if (status === 'sold') {
-        query = query.or('status.eq.sold,auction_status.eq.sold');
-      } else {
-        query = query.eq('status', status);
-      }
+      query = query.eq('status', status);
     }
 
     if (isVisible !== null && isVisible !== 'all') {

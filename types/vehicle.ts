@@ -1,18 +1,17 @@
 import type { DbVehicle } from './database';
 
 export type VehicleSource = 'korea' | 'china' | 'dubai';
-export type AuctionStatus = 'upcoming' | 'ongoing' | 'sold' | 'ended';
 export type VehicleStatus = 'available' | 'reserved' | 'sold' | 'pending';
 export type TransmissionType = 'automatic' | 'manual' | 'cvt';
 export type FuelType = 'petrol' | 'diesel' | 'hybrid' | 'electric' | 'lpg';
 export type DriveType = 'FWD' | 'RWD' | 'AWD' | '4WD';
 
-export interface Vehicle extends DbVehicle {
+export interface Vehicle extends Omit<DbVehicle, 'source' | 'auction_status' | 'status' | 'is_visible' | 'admin_notes'> {
   source: VehicleSource;
-  auction_status: AuctionStatus;
-  status?: VehicleStatus;
+  auction_status?: string; // Legacy field, not used
+  status?: VehicleStatus | null;
   is_visible?: boolean;
-  admin_notes?: string;
+  admin_notes?: string | null;
 }
 
 export type VehicleColor = 'white' | 'black' | 'silver' | 'gray' | 'red' | 'blue' | 'green' | 'brown' | 'beige' | 'other';
@@ -74,7 +73,7 @@ export interface KoreaVehicle {
   currentPriceUsd: number;
   platform: string;
   auctionDate: string;
-  status: AuctionStatus;
+  status: VehicleStatus;
   lotNumber: string;
   images: string[];
 }
@@ -140,16 +139,16 @@ export const SOURCE_NAMES: Record<VehicleSource, string> = {
 };
 
 // Status colors for badges
-export const STATUS_COLORS: Record<AuctionStatus, string> = {
-  upcoming: 'bg-royal-blue',
-  ongoing: 'bg-mandarin',
+export const STATUS_COLORS: Record<VehicleStatus, string> = {
+  available: 'bg-jewel',
+  reserved: 'bg-mandarin',
   sold: 'bg-red-500',
-  ended: 'bg-nobel',
+  pending: 'bg-royal-blue',
 };
 
-export const STATUS_LABELS: Record<AuctionStatus, string> = {
-  upcoming: 'À venir',
-  ongoing: 'En cours',
+export const STATUS_LABELS: Record<VehicleStatus, string> = {
+  available: 'Disponible',
+  reserved: 'Réservé',
   sold: 'Vendu',
-  ended: 'Terminé',
+  pending: 'En attente',
 };

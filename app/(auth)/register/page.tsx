@@ -17,7 +17,7 @@ const registerSchema = z
   .object({
     fullName: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
     email: z.string().email('Email invalide'),
-    phone: z.string().optional(),
+    whatsapp: z.string().min(8, 'Numéro WhatsApp requis').regex(/^\+?[0-9\s-]+$/, 'Format invalide'),
     country: z.string().min(1, 'Sélectionnez un pays'),
     password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
     confirmPassword: z.string(),
@@ -70,7 +70,7 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: data.fullName,
-            phone: data.phone,
+            whatsapp: data.whatsapp,
             country: data.country,
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -142,13 +142,13 @@ export default function RegisterPage() {
         />
 
         <Input
-          label="Téléphone (optionnel)"
+          label="WhatsApp"
           type="tel"
           placeholder="+241 XX XX XX XX"
           leftIcon={<Phone className="w-4 h-4" />}
-          hint="Pour les notifications WhatsApp"
-          error={errors.phone?.message}
-          {...register('phone')}
+          hint="Obligatoire pour recevoir vos documents et notifications"
+          error={errors.whatsapp?.message}
+          {...register('whatsapp')}
         />
 
         <Select

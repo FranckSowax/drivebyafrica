@@ -80,7 +80,7 @@ function ToastContainer() {
   const { toasts, removeToast } = context;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full">
+    <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 z-[100] flex flex-col gap-2 max-w-sm md:w-full mx-auto md:mx-0">
       <AnimatePresence>
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
@@ -98,10 +98,10 @@ const icons = {
 };
 
 const styles = {
-  success: 'border-jewel bg-jewel/10',
-  error: 'border-red-500 bg-red-500/10',
-  info: 'border-royal-blue bg-royal-blue/10',
-  warning: 'border-warning bg-warning/10',
+  success: 'border-jewel/50 bg-jewel/20',
+  error: 'border-red-500/50 bg-red-500/20',
+  info: 'border-royal-blue/50 bg-royal-blue/20',
+  warning: 'border-warning/50 bg-warning/20',
 };
 
 const iconColors = {
@@ -121,7 +121,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       exit={{ opacity: 0, x: 100, scale: 0.9 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'flex items-start gap-3 p-4 rounded-lg border bg-cod-gray shadow-lg',
+        'flex items-start gap-3 p-4 rounded-xl border-2 bg-gray-900/95 backdrop-blur-sm shadow-2xl',
         styles[toast.type]
       )}
     >

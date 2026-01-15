@@ -91,7 +91,7 @@ const STATUS_CONFIG = {
 let logoBase64: string | null = null;
 
 export default function QuotesPage() {
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const toast = useToast();
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -719,6 +719,7 @@ export default function QuotesPage() {
         onClose={handleCloseModal}
         quoteData={selectedQuote ? getQuoteDataForModal(selectedQuote) : null}
         user={user}
+        profile={profile}
         defaultQuoteNumber={selectedQuote?.quote_number}
       />
 

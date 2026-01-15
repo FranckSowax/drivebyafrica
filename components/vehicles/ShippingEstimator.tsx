@@ -92,7 +92,7 @@ export function ShippingEstimator({
 }: ShippingEstimatorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const toast = useToast();
 
   // État pour les destinations chargées depuis l'API
@@ -648,6 +648,7 @@ export function ShippingEstimator({
         onClose={() => setIsQuoteModalOpen(false)}
         quoteData={quoteDataForModal}
         user={user}
+        profile={profile}
       />
     </div>
   );

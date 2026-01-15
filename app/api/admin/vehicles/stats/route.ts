@@ -43,25 +43,25 @@ export async function GET() {
       .eq('source', 'dubai');
 
     // Get counts by status
-    const { count: ongoingCount } = await supabase
+    const { count: availableCount } = await supabase
       .from('vehicles')
       .select('*', { count: 'exact', head: true })
-      .eq('auction_status', 'ongoing');
+      .or('status.eq.available,status.is.null');
+
+    const { count: reservedCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'reserved');
 
     const { count: soldCount } = await supabase
       .from('vehicles')
       .select('*', { count: 'exact', head: true })
-      .eq('auction_status', 'sold');
+      .eq('status', 'sold');
 
-    const { count: upcomingCount } = await supabase
+    const { count: pendingCount } = await supabase
       .from('vehicles')
       .select('*', { count: 'exact', head: true })
-      .eq('auction_status', 'upcoming');
-
-    const { count: endedCount } = await supabase
-      .from('vehicles')
-      .select('*', { count: 'exact', head: true })
-      .eq('auction_status', 'ended');
+      .eq('status', 'pending');
 
     // Get average price using a sample (to avoid fetching all rows)
     const { data: priceData } = await supabase
@@ -76,23 +76,28 @@ export async function GET() {
       avgPrice = Math.round(total / priceData.length);
     }
 
+    // Get visibility counts
+    const { count: hiddenCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_visible', false);
+
     // Calculate stats
     const stats = {
       total: totalCount || 0,
       byStatus: {
-        available: ongoingCount || 0,
-        reserved: 0,
+        available: availableCount || 0,
+        reserved: reservedCount || 0,
         sold: soldCount || 0,
-        pending: upcomingCount || 0,
-        ended: endedCount || 0,
+        pending: pendingCount || 0,
       },
       bySource: {
         korea: koreaCount || 0,
         china: chinaCount || 0,
         dubai: dubaiCount || 0,
       },
-      hidden: 0,
-      visible: totalCount || 0,
+      hidden: hiddenCount || 0,
+      visible: (totalCount || 0) - (hiddenCount || 0),
       avgPrice,
     };
 
