@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     // Fetch some vehicle data for context
     const { data: vehicles } = await supabase
       .from('vehicles')
-      .select('id, make, model, year, price, mileage, fuel_type, transmission, source')
+      .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
       .or('status.eq.available,status.is.null')
       .limit(20);
 
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     let vehicleContext = '';
     if (vehicles && vehicles.length > 0) {
       vehicleContext = `\n\nVEHICULES DISPONIBLES (echantillon):
-${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleString() || 'N/A'} km, ${v.price?.toLocaleString() || 'N/A'} USD, ${v.fuel_type || 'N/A'}, ${v.transmission || 'N/A'}, origine: ${v.source || 'N/A'}`).join('\n')}`;
+${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleString() || 'N/A'} km, ${v.current_price_usd?.toLocaleString() || 'N/A'} USD, ${v.fuel_type || 'N/A'}, ${v.transmission || 'N/A'}, origine: ${v.source || 'N/A'}`).join('\n')}`;
     }
 
     // Build conversation history for Claude
