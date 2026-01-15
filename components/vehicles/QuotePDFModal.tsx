@@ -618,7 +618,7 @@ return createPortal(
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', duration: 0.3 }}
-          className="relative w-full max-w-4xl max-h-[95vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -639,15 +639,16 @@ return createPortal(
             </button>
           </div>
 
-          {/* Modal Content */}
-          <div className="flex-1 overflow-auto bg-gray-100 p-4 md:p-8 flex justify-center">
+          {/* Modal Content - scrollable container that includes both quote and actions */}
+          <div className="flex-1 overflow-auto bg-gray-100">
+            <div className="p-4 md:p-8 flex justify-center">
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center min-h-[400px]">
                 <Loader2 className="w-10 h-10 animate-spin text-mandarin mb-4" />
                 <p className="text-gray-500 font-medium">Préparation de votre devis...</p>
               </div>
             ) : quoteData ? (
-              <div className="w-full max-w-[210mm] bg-white shadow-xl rounded-sm overflow-hidden flex flex-col min-h-[297mm] text-gray-900 relative">
+              <div className="w-full max-w-[210mm] bg-white shadow-xl rounded-sm overflow-hidden flex flex-col text-gray-900 relative">
                 {/* Watermark for expired quotes */}
                 {isExpired() && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none overflow-hidden">
@@ -839,10 +840,10 @@ return createPortal(
                 <p className="text-gray-500">Erreur de chargement ou données manquantes</p>
               </div>
             )}
-          </div>
+            </div>
 
-          {/* Actions */}
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            {/* Actions - inside scrollable area */}
+            <div className="px-4 md:px-8 pb-6">
             {/* Deposit section */}
             <div className="mb-4 p-4 bg-jewel/10 border border-jewel/30 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
@@ -943,6 +944,7 @@ return createPortal(
               >
                 Partager le PDF
               </Button>
+            </div>
             </div>
           </div>
         </motion.div>

@@ -98,17 +98,17 @@ const icons = {
 };
 
 const styles = {
-  success: 'border-jewel/50 bg-jewel/20',
-  error: 'border-red-500/50 bg-red-500/20',
-  info: 'border-royal-blue/50 bg-royal-blue/20',
-  warning: 'border-warning/50 bg-warning/20',
+  success: 'border-green-200 bg-green-50',
+  error: 'border-red-200 bg-red-50',
+  info: 'border-blue-200 bg-blue-50',
+  warning: 'border-yellow-200 bg-yellow-50',
 };
 
 const iconColors = {
-  success: 'text-jewel',
-  error: 'text-red-500',
-  info: 'text-royal-blue',
-  warning: 'text-warning',
+  success: 'text-green-600',
+  error: 'text-red-600',
+  info: 'text-blue-600',
+  warning: 'text-yellow-600',
 };
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
@@ -121,20 +121,20 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       exit={{ opacity: 0, x: 100, scale: 0.9 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        'flex items-start gap-3 p-4 rounded-xl border-2 bg-gray-900/95 backdrop-blur-sm shadow-2xl',
+        'flex items-start gap-3 p-4 rounded-xl border-2 bg-white shadow-2xl',
         styles[toast.type]
       )}
     >
       <Icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', iconColors[toast.type])} />
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-white">{toast.title}</p>
+        <p className="font-medium text-gray-900">{toast.title}</p>
         {toast.message && (
-          <p className="text-sm text-nobel mt-0.5">{toast.message}</p>
+          <p className="text-sm text-gray-600 mt-0.5">{toast.message}</p>
         )}
       </div>
       <button
         onClick={onClose}
-        className="flex-shrink-0 p-1 text-nobel hover:text-white transition-colors rounded"
+        className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors rounded"
       >
         <X className="w-4 h-4" />
       </button>
