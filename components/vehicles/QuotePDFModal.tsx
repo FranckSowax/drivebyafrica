@@ -586,33 +586,33 @@ return createPortal(
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', duration: 0.3 }}
-          className="relative w-full max-w-4xl max-h-[95vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          className="relative w-full max-w-4xl max-h-[95vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-bold text-gray-900">
                 Votre devis
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500">
                 N° {quoteNumber}
               </p>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
 
           {/* Modal Content */}
-          <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 md:p-8 flex justify-center">
+          <div className="flex-1 overflow-auto bg-gray-100 p-4 md:p-8 flex justify-center">
             {isGenerating ? (
               <div className="flex flex-col items-center justify-center min-h-[400px]">
                 <Loader2 className="w-10 h-10 animate-spin text-mandarin mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 font-medium">Préparation de votre devis...</p>
+                <p className="text-gray-500 font-medium">Préparation de votre devis...</p>
               </div>
             ) : quoteData ? (
               <div className="w-full max-w-[210mm] bg-white shadow-xl rounded-sm overflow-hidden flex flex-col min-h-[297mm] text-gray-900 relative">
@@ -791,22 +791,22 @@ return createPortal(
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <p className="text-gray-500 dark:text-gray-400">Erreur de chargement ou données manquantes</p>
+                <p className="text-gray-500">Erreur de chargement ou données manquantes</p>
               </div>
             )}
           </div>
 
           {/* Actions */}
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
             {/* Deposit reminder */}
             <div className="mb-4 p-3 bg-jewel/10 border border-jewel/30 rounded-lg">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-jewel flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-gray-900">
                     Acompte: <span className="text-jewel">1 000 USD</span>
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-gray-500">
                     Pour bloquer le vehicule et recevoir le rapport d'inspection
                   </p>
                 </div>
