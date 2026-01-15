@@ -56,6 +56,7 @@ interface QuotePDFModalProps {
   onClose: () => void;
   quoteData: QuoteData | null;
   user: { id: string; email?: string | null } | null;
+  defaultQuoteNumber?: string;
 }
 
 const SOURCE_NAMES: Record<string, string> = {
@@ -70,7 +71,7 @@ const SOURCE_FLAGS: Record<string, string> = {
   dubai: '🇦🇪',
 };
 
-export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModalProps) {
+export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNumber }: QuotePDFModalProps) {
   const toast = useToast();
   const [quoteNumber, setQuoteNumber] = useState('');
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
@@ -97,15 +98,20 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user }: QuotePDFModa
   // 2. Lifecycle: Generate quote number when modal opens
   useEffect(() => {
     if (isOpen && quoteData) {
-      const timestamp = Date.now().toString(36).toUpperCase();
-      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-      setQuoteNumber(`DBA-${timestamp}-${random}`);
-      setQuoteSaved(false);
+      if (defaultQuoteNumber) {
+        setQuoteNumber(defaultQuoteNumber);
+        setQuoteSaved(true); // Prevent re-saving existing quotes
+      } else {
+        const timestamp = Date.now().toString(36).toUpperCase();
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        setQuoteNumber(`DBA-${timestamp}-${random}`);
+        setQuoteSaved(false);
+      }
       // Reset PDF state when opening for a new quote
       setPdfBlob(null);
       setPdfUrl(null);
     }
-  }, [isOpen, quoteData]);
+  }, [isOpen, quoteData, defaultQuoteNumber]);
 
   // 3. Lifecycle: Cleanup blob URL
   useEffect(() => {

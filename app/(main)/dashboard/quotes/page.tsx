@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from '@/components/vehicles/QuotePDFModal';
+import { QuoteValidationModal } from '@/components/vehicles/QuoteValidationModal';
 
 interface Quote {
   id: string;
@@ -101,6 +102,7 @@ export default function QuotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
 
   useEffect(() => {
     fetchQuotes();
@@ -166,8 +168,18 @@ export default function QuotesPage() {
     setIsModalOpen(true);
   };
 
+  const handleValidateQuote = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setIsValidationModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setSelectedQuote(null);
+  };
+
+  const handleCloseValidationModal = () => {
+    setIsValidationModalOpen(false);
     setSelectedQuote(null);
   };
 
@@ -633,14 +645,25 @@ export default function QuotesPage() {
                           Expire
                         </Button>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenQuote(quote)}
-                          leftIcon={<Eye className="w-4 h-4" />}
-                        >
-                          Ouvrir
-                        </Button>
+                        <>
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => handleValidateQuote(quote)}
+                            leftIcon={<CheckCircle className="w-4 h-4" />}
+                            className="hidden sm:inline-flex"
+                          >
+                            Valider
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenQuote(quote)}
+                            leftIcon={<Eye className="w-4 h-4" />}
+                          >
+                            Ouvrir
+                          </Button>
+                        </>
                       )}
                       <Button
                         variant="outline"
@@ -696,6 +719,14 @@ export default function QuotesPage() {
         onClose={handleCloseModal}
         quoteData={selectedQuote ? getQuoteDataForModal(selectedQuote) : null}
         user={user}
+        defaultQuoteNumber={selectedQuote?.quote_number}
+      />
+
+      {/* Quote Validation Modal */}
+      <QuoteValidationModal
+        isOpen={isValidationModalOpen}
+        onClose={handleCloseValidationModal}
+        quote={selectedQuote}
       />
     </div>
   );
