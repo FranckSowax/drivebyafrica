@@ -205,14 +205,27 @@ export function ShippingEstimator({
 
   // Auto-open quote modal when coming back from login with action=quote
   useEffect(() => {
-    if (autoOpenQuote && user && selectedDestination && !hasAutoOpened) {
-      // Open the modal after a short delay to ensure state is set
-      setTimeout(() => {
+    // Only auto-open if:
+    // 1. autoOpenQuote flag is set (from URL action=quote)
+    // 2. User is logged in
+    // 3. Destination is selected (either from URL params or manually)
+    // 4. Haven't already auto-opened (prevent duplicate opens)
+    // 5. Destinations are loaded (not loading)
+    if (autoOpenQuote && user && selectedDestination && !hasAutoOpened && !isLoadingDestinations) {
+      // Open the modal after a short delay to ensure all state is properly set
+      const timer = setTimeout(() => {
         setIsQuoteModalOpen(true);
         setHasAutoOpened(true);
-      }, 300);
+        // Clean up the URL params after opening the modal
+        const url = new URL(window.location.href);
+        url.searchParams.delete('action');
+        url.searchParams.delete('dest');
+        url.searchParams.delete('shipping');
+        window.history.replaceState({}, '', url.toString());
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [autoOpenQuote, user, hasAutoOpened, selectedDestination]);
+  }, [autoOpenQuote, user, hasAutoOpened, selectedDestination, isLoadingDestinations]);
 
   // Filter destinations based on search query
   const filteredDestinations = destinations.filter(
