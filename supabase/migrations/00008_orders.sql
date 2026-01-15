@@ -1,121 +1,365 @@
--- Create orders table for storing customer orders after deposit payment
-CREATE TABLE IF NOT EXISTS orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_number TEXT NOT NULL UNIQUE,
-  invoice_number TEXT NOT NULL UNIQUE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  quote_id UUID REFERENCES quotes(id) ON DELETE SET NULL,
+-- Add new columns to existing orders table for invoice/payment tracking
+-- This migration adds columns needed for the deposit payment flow and invoice generation
 
-  -- Vehicle info (copied from quote for historical record)
-  vehicle_id TEXT NOT NULL,
-  vehicle_make TEXT NOT NULL,
-  vehicle_model TEXT NOT NULL,
-  vehicle_year INTEGER NOT NULL,
-  vehicle_price_usd INTEGER NOT NULL,
-  vehicle_source TEXT NOT NULL CHECK (vehicle_source IN ('korea', 'china', 'dubai')),
-
-  -- Destination info
-  destination_id TEXT NOT NULL,
-  destination_name TEXT NOT NULL,
-  destination_country TEXT NOT NULL,
-
-  -- Shipping info
-  shipping_type TEXT NOT NULL CHECK (shipping_type IN ('container', 'groupage')),
-  shipping_cost_xaf INTEGER NOT NULL,
-  insurance_cost_xaf INTEGER NOT NULL,
-  inspection_fee_xaf INTEGER NOT NULL,
-  total_cost_xaf INTEGER NOT NULL,
-
-  -- Deposit info
-  deposit_amount_usd INTEGER NOT NULL DEFAULT 1000,
-  deposit_amount_xaf INTEGER NOT NULL DEFAULT 600000,
-  deposit_paid_at TIMESTAMPTZ,
-  deposit_payment_method TEXT CHECK (deposit_payment_method IN ('stripe', 'mobile_money', 'cash')),
-  deposit_payment_reference TEXT,
-
-  -- Balance info
-  balance_amount_xaf INTEGER NOT NULL,
-  balance_paid_at TIMESTAMPTZ,
-  balance_payment_method TEXT CHECK (balance_payment_method IN ('stripe', 'mobile_money', 'cash', 'bank_transfer')),
-  balance_payment_reference TEXT,
-
-  -- Order status
-  status TEXT NOT NULL DEFAULT 'pending_deposit' CHECK (status IN (
-    'pending_deposit',    -- Waiting for deposit payment
-    'deposit_paid',       -- Deposit received, inspection in progress
-    'inspection_sent',    -- Inspection report sent to customer
-    'pending_balance',    -- Waiting for balance payment
-    'balance_paid',       -- Balance received, shipping in progress
-    'shipped',            -- Vehicle shipped
-    'in_transit',         -- Vehicle in transit
-    'arrived',            -- Vehicle arrived at destination port
-    'customs_clearance',  -- Going through customs
-    'delivered',          -- Delivered to customer
-    'cancelled',          -- Order cancelled
-    'refunded'            -- Order refunded
-  )),
-
-  -- Tracking info
-  shipping_eta DATE,
-  tracking_number TEXT,
-  tracking_url TEXT,
-
-  -- Customer info at time of order
-  customer_name TEXT NOT NULL,
-  customer_email TEXT NOT NULL,
-  customer_whatsapp TEXT NOT NULL,
-  customer_country TEXT NOT NULL,
-
-  -- Notes
-  admin_notes TEXT,
-  customer_notes TEXT,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Create indexes for faster lookups
-CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
-CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
-CREATE INDEX IF NOT EXISTS idx_orders_invoice_number ON orders(invoice_number);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_vehicle_id ON orders(vehicle_id);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
-
--- Enable RLS
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-
--- Users can only view their own orders
-CREATE POLICY "Users can view own orders" ON orders
-  FOR SELECT USING (auth.uid() = user_id);
-
--- Only service role can insert/update orders (payments are processed server-side)
-CREATE POLICY "Service role can manage orders" ON orders
-  FOR ALL USING (auth.role() = 'service_role');
-
--- Function to update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_orders_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to auto-update updated_at
-CREATE TRIGGER orders_updated_at_trigger
-  BEFORE UPDATE ON orders
-  FOR EACH ROW
-  EXECUTE FUNCTION update_orders_updated_at();
-
--- Add whatsapp column to profiles if it doesn't exist
+-- Add order_number column
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'profiles' AND column_name = 'whatsapp'
+    WHERE table_name = 'orders' AND column_name = 'order_number'
   ) THEN
-    ALTER TABLE profiles ADD COLUMN whatsapp TEXT;
+    ALTER TABLE orders ADD COLUMN order_number TEXT;
   END IF;
+END $$;
+
+-- Add invoice_number column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'invoice_number'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN invoice_number TEXT;
+  END IF;
+END $$;
+
+-- Add quote_id column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'quote_id'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN quote_id UUID;
+  END IF;
+END $$;
+
+-- Add vehicle_make column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'vehicle_make'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN vehicle_make TEXT;
+  END IF;
+END $$;
+
+-- Add vehicle_model column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'vehicle_model'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN vehicle_model TEXT;
+  END IF;
+END $$;
+
+-- Add vehicle_year column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'vehicle_year'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN vehicle_year INTEGER;
+  END IF;
+END $$;
+
+-- Add vehicle_source column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'vehicle_source'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN vehicle_source TEXT;
+  END IF;
+END $$;
+
+-- Add destination_id column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'destination_id'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN destination_id TEXT;
+  END IF;
+END $$;
+
+-- Add destination_name column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'destination_name'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN destination_name TEXT;
+  END IF;
+END $$;
+
+-- Add shipping_type column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'shipping_type'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN shipping_type TEXT;
+  END IF;
+END $$;
+
+-- Add shipping_cost_xaf column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'shipping_cost_xaf'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN shipping_cost_xaf INTEGER;
+  END IF;
+END $$;
+
+-- Add insurance_cost_xaf column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'insurance_cost_xaf'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN insurance_cost_xaf INTEGER;
+  END IF;
+END $$;
+
+-- Add inspection_fee_xaf column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'inspection_fee_xaf'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN inspection_fee_xaf INTEGER;
+  END IF;
+END $$;
+
+-- Add total_cost_xaf column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'total_cost_xaf'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN total_cost_xaf INTEGER;
+  END IF;
+END $$;
+
+-- Add deposit_amount_usd column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'deposit_amount_usd'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN deposit_amount_usd INTEGER DEFAULT 1000;
+  END IF;
+END $$;
+
+-- Add deposit_amount_xaf column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'deposit_amount_xaf'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN deposit_amount_xaf INTEGER DEFAULT 600000;
+  END IF;
+END $$;
+
+-- Add deposit_paid_at column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'deposit_paid_at'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN deposit_paid_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
+-- Add deposit_payment_method column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'deposit_payment_method'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN deposit_payment_method TEXT;
+  END IF;
+END $$;
+
+-- Add deposit_payment_reference column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'deposit_payment_reference'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN deposit_payment_reference TEXT;
+  END IF;
+END $$;
+
+-- Add balance_amount_xaf column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'balance_amount_xaf'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN balance_amount_xaf INTEGER;
+  END IF;
+END $$;
+
+-- Add balance_paid_at column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'balance_paid_at'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN balance_paid_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
+-- Add balance_payment_method column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'balance_payment_method'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN balance_payment_method TEXT;
+  END IF;
+END $$;
+
+-- Add balance_payment_reference column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'balance_payment_reference'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN balance_payment_reference TEXT;
+  END IF;
+END $$;
+
+-- Add shipping_eta column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'shipping_eta'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN shipping_eta DATE;
+  END IF;
+END $$;
+
+-- Add tracking_url column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'tracking_url'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN tracking_url TEXT;
+  END IF;
+END $$;
+
+-- Add customer_name column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'customer_name'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN customer_name TEXT;
+  END IF;
+END $$;
+
+-- Add customer_email column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'customer_email'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN customer_email TEXT;
+  END IF;
+END $$;
+
+-- Add customer_whatsapp column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'customer_whatsapp'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN customer_whatsapp TEXT;
+  END IF;
+END $$;
+
+-- Add customer_country column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'customer_country'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN customer_country TEXT;
+  END IF;
+END $$;
+
+-- Add admin_notes column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'admin_notes'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN admin_notes TEXT;
+  END IF;
+END $$;
+
+-- Add customer_notes column
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'customer_notes'
+  ) THEN
+    ALTER TABLE orders ADD COLUMN customer_notes TEXT;
+  END IF;
+END $$;
+
+-- Create indexes for new columns (if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number) WHERE order_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_invoice_number ON orders(invoice_number) WHERE invoice_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_quote_id ON orders(quote_id) WHERE quote_id IS NOT NULL;
+
+-- Note: profiles table already has whatsapp_number column, no need to add it
+
+-- Generate order_number and invoice_number for existing orders that don't have them
+DO $$
+DECLARE
+  r RECORD;
+  counter INTEGER := 1;
+BEGIN
+  FOR r IN SELECT id FROM orders WHERE order_number IS NULL ORDER BY created_at LOOP
+    UPDATE orders SET
+      order_number = 'ORD-' || TO_CHAR(NOW(), 'YYYYMM') || '-' || LPAD(counter::TEXT, 4, '0'),
+      invoice_number = 'INV-' || TO_CHAR(NOW(), 'YYYYMM') || '-' || LPAD(counter::TEXT, 4, '0')
+    WHERE id = r.id;
+    counter := counter + 1;
+  END LOOP;
 END $$;
