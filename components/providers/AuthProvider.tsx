@@ -4,13 +4,12 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { initialize, isInitialized } = useAuthStore();
+  const initialize = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
-    if (!isInitialized) {
-      initialize();
-    }
-  }, [initialize, isInitialized]);
+    // Always call initialize on mount - it handles preventing duplicate calls internally
+    initialize();
+  }, [initialize]);
 
   return <>{children}</>;
 }
