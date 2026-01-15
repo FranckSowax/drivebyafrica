@@ -41,14 +41,6 @@ const getArg = (name: string, defaultVal: string) => {
 const MAX_PAGES = parseInt(getArg('max-pages', '500'));
 const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
 
-function formatPgArray(arr: string[] | undefined | null): string {
-  if (!arr || !Array.isArray(arr) || arr.length === 0) return '{}';
-  const escaped = arr.map((s) => {
-    if (typeof s !== 'string') return '""';
-    return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-  });
-  return `{${escaped.join(',')}}`;
-}
 
 interface ApiOffer {
   id: string;
@@ -308,7 +300,7 @@ async function main() {
         start_price_usd: Math.round(offer.price * CNY_TO_USD),
         current_price_usd: Math.round(offer.price * CNY_TO_USD),
         auction_status: 'ongoing',
-        images: formatPgArray(images) as unknown as string[],
+        images: images,
       };
     }).filter(Boolean);
 
