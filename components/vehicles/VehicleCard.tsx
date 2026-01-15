@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
@@ -8,6 +9,8 @@ import { formatUsdToLocal } from '@/lib/utils/currency';
 import { getProxiedImageUrl, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
+
+const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -35,10 +38,14 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
 };
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
+  const [imgError, setImgError] = useState(false);
   const status = STATUS_STYLES[vehicle.status || 'available'] || STATUS_STYLES.available;
   const images = parseImagesField(vehicle.images);
   const rawImage = images[0];
-  const mainImage = rawImage ? getProxiedImageUrl(rawImage) : '/images/placeholder-car.svg';
+  const proxiedImage = rawImage ? getProxiedImageUrl(rawImage) : null;
+  const mainImage = imgError || !proxiedImage ? PLACEHOLDER_IMAGE : proxiedImage;
+  // Use unoptimized for external images to avoid Next.js caching issues
+  const isExternal = mainImage.startsWith('http') || mainImage.includes('/api/image-proxy');
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
@@ -51,6 +58,8 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized={isExternal}
+            onError={() => setImgError(true)}
           />
 
           {/* Overlay gradient */}
