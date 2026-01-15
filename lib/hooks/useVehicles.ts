@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
@@ -63,7 +63,12 @@ export function useVehicles({
   const [error, setError] = useState<Error | null>(null);
   const [totalCount, setTotalCount] = useState(0);
 
-  const supabase = createClient();
+  // Create supabase client once and store in ref to prevent re-renders
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+
+  // Memoize filters to prevent unnecessary refetches
+  const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
 
   const fetchVehicles = useCallback(async () => {
     setIsLoading(true);
@@ -183,11 +188,13 @@ export function useVehicles({
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, filters, page, limit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey, page, limit]);
 
   useEffect(() => {
     fetchVehicles();
-  }, [fetchVehicles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey, page, limit]);
 
   return {
     vehicles,
