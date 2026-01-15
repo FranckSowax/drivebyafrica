@@ -615,11 +615,11 @@ return createPortal(
                 <p className="text-gray-500 dark:text-gray-400 font-medium">Préparation de votre devis...</p>
               </div>
             ) : quoteData ? (
-              <div className="w-full max-w-[210mm] bg-white dark:bg-gray-800 shadow-xl rounded-sm overflow-hidden flex flex-col min-h-[297mm] text-gray-900 dark:text-gray-100 relative">
+              <div className="w-full max-w-[210mm] bg-white shadow-xl rounded-sm overflow-hidden flex flex-col min-h-[297mm] text-gray-900 relative">
                 {/* Watermark for expired quotes */}
                 {isExpired() && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none overflow-hidden">
-                    <div className="rotate-[-45deg] text-red-500/10 dark:text-red-500/5 text-9xl font-black uppercase tracking-widest border-8 border-red-500/10 dark:border-red-500/5 p-8">
+                    <div className="rotate-[-45deg] text-red-500/10 text-9xl font-black uppercase tracking-widest border-8 border-red-500/10 p-8">
                       Expiré
                     </div>
                   </div>
@@ -635,39 +635,39 @@ return createPortal(
                       <img
                         src="/logo-driveby-africa-dark.png"
                         alt="Driveby Africa"
-                        className="h-12 md:h-14 w-auto mb-2 dark:invert"
+                        className="h-12 md:h-14 w-auto mb-2"
                       />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Votre partenaire d'importation automobile</p>
+                      <p className="text-sm text-gray-500">Votre partenaire d'importation automobile</p>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/40 p-4 rounded-lg min-w-[200px]">
-                      <p className="text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 font-bold mb-1">Devis Professionnel</p>
-                      <p className="text-lg font-mono font-bold text-gray-900 dark:text-white">{quoteNumber}</p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="bg-orange-50 border border-orange-100 p-4 rounded-lg min-w-[200px]">
+                      <p className="text-[10px] uppercase tracking-wider text-orange-600 font-bold mb-1">Devis Professionnel</p>
+                      <p className="text-lg font-mono font-bold text-gray-900">{quoteNumber}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                         <Calendar className="w-3 h-3" />
                         <span>Émis le: {new Date().toLocaleDateString('fr-FR')}</span>
                       </div>
-                      <div className={cn("flex items-center gap-2 mt-1 text-xs font-medium", isExpired() ? "text-red-500" : "text-gray-500 dark:text-gray-400")}>
+                      <div className={cn("flex items-center gap-2 mt-1 text-xs font-medium", isExpired() ? "text-red-500" : "text-gray-500")}>
                         <Clock className="w-3 h-3" />
                         <span>Valable jusqu'au: {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100">
                     <div className="space-y-4">
-                      <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Informations Client</h4>
+                      <h4 className="text-xs uppercase tracking-widest text-gray-400 font-bold">Informations Client</h4>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email de contact</p>
-                        <p className="text-base font-bold text-gray-900 dark:text-white">{user?.email || '-'}</p>
+                        <p className="text-sm font-medium text-gray-500">Email de contact</p>
+                        <p className="text-base font-bold text-gray-900">{user?.email || '-'}</p>
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Détails Véhicule</h4>
+                      <h4 className="text-xs uppercase tracking-widest text-gray-400 font-bold">Détails Véhicule</h4>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Marque & Modèle</p>
-                        <p className="text-base font-bold text-gray-900 dark:text-white">{quoteData.vehicleMake} {quoteData.vehicleModel} ({quoteData.vehicleYear})</p>
+                        <p className="text-sm font-medium text-gray-500">Marque & Modèle</p>
+                        <p className="text-base font-bold text-gray-900">{quoteData.vehicleMake} {quoteData.vehicleModel} ({quoteData.vehicleYear})</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                          <span className="text-sm px-2 py-0.5 bg-gray-100 rounded text-gray-600">
                             Origine: {SOURCE_NAMES[quoteData.vehicleSource]} {SOURCE_FLAGS[quoteData.vehicleSource]}
                           </span>
                         </div>
@@ -675,14 +675,14 @@ return createPortal(
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="bg-blue-50 border border-blue-100 p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
-                        <Ship className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Ship className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Expédition Internationale</p>
-                        <p className="text-xs text-blue-700 dark:text-blue-300">Destination: {quoteData.destination.name}, {quoteData.destination.country}</p>
+                        <p className="text-sm font-bold text-blue-900">Expédition Internationale</p>
+                        <p className="text-xs text-blue-700">Destination: {quoteData.destination.name}, {quoteData.destination.country}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -694,18 +694,18 @@ return createPortal(
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Détail des Coûts</h4>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Devis estimatif (FCFA)</span>
+                      <h4 className="text-xs uppercase tracking-widest text-gray-400 font-bold">Détail des Coûts</h4>
+                      <span className="text-[10px] text-gray-400 uppercase">Devis estimatif (FCFA)</span>
                     </div>
-                    <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <div className="border border-gray-100 rounded-xl overflow-hidden">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400">
+                          <tr className="bg-gray-50 text-gray-500">
                             <th className="px-6 py-3 text-left font-bold">Description</th>
                             <th className="px-6 py-3 text-right font-bold">Montant</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                        <tbody className="divide-y divide-gray-100 text-gray-700">
                           <tr>
                             <td className="px-6 py-4">Prix du véhicule (FOB)</td>
                             <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.vehiclePrice)}</td>
@@ -713,7 +713,7 @@ return createPortal(
                           <tr>
                             <td className="px-6 py-4 flex items-center gap-2">
                               Transport maritime
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 dark:text-gray-400">{quoteData.shippingTypeName}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-500">{quoteData.shippingTypeName}</span>
                             </td>
                             <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.shippingCost)}</td>
                           </tr>
@@ -725,8 +725,8 @@ return createPortal(
                             <td className="px-6 py-4">Inspection & Documents</td>
                             <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.inspectionFee)}</td>
                           </tr>
-                          <tr className="bg-orange-50/50 dark:bg-orange-900/10">
-                            <td className="px-6 py-5 font-black text-gray-900 dark:text-white uppercase tracking-tighter">Total estimé</td>
+                          <tr className="bg-orange-50/50">
+                            <td className="px-6 py-5 font-black text-gray-900 uppercase tracking-tighter">Total estimé</td>
                             <td className="px-6 py-5 text-right">
                               <span className="text-xl font-black text-mandarin font-mono">{formatCurrency(quoteData.calculations.total)}</span>
                             </td>
@@ -737,15 +737,15 @@ return createPortal(
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 p-5 rounded-xl">
-                      <h5 className="text-[10px] font-black text-green-700 dark:text-green-400 uppercase mb-2">Acompte Requis</h5>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white mb-1">1 000 USD</p>
-                      <p className="text-[10px] text-green-600 dark:text-green-300 leading-relaxed">
+                    <div className="bg-green-50 border border-green-100 p-5 rounded-xl">
+                      <h5 className="text-[10px] font-black text-green-700 uppercase mb-2">Acompte Requis</h5>
+                      <p className="text-2xl font-black text-gray-900 mb-1">1 000 USD</p>
+                      <p className="text-[10px] text-green-600 leading-relaxed">
                         Le versement de cet acompte déclenche l'inspection physique détaillée du véhicule.
                       </p>
                     </div>
                     <div className="space-y-3">
-                      <h5 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Prochaines Étapes</h5>
+                      <h5 className="text-[10px] font-black text-gray-400 uppercase">Prochaines Étapes</h5>
                       <div className="space-y-2">
                         {[
                           "Paiement de l'acompte de 1 000$",
@@ -755,37 +755,37 @@ return createPortal(
                         ].map((step, i) => (
                           <div key={i} className="flex items-center gap-2 text-[10px]">
                             <div className="w-4 h-4 bg-mandarin rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0">{i+1}</div>
-                            <span className="text-gray-600 dark:text-gray-400 font-medium">{step}</span>
+                            <span className="text-gray-600 font-medium">{step}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
-                    <p className="text-[9px] text-gray-400 dark:text-gray-500 italic leading-relaxed text-center">
+                  <div className="pt-8 border-t border-gray-100">
+                    <p className="text-[9px] text-gray-400 italic leading-relaxed text-center">
                       * Ce devis est une estimation basée sur les tarifs actuels. Les frais de dédouanement ne sont pas inclus et varient selon la réglementation de {quoteData.destination.country}. Devis valable 7 jours à compter de la date d'émission.
                     </p>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="mt-auto bg-gray-50 dark:bg-gray-900/50 p-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-gray-100 dark:border-gray-700">
+                <div className="mt-auto bg-gray-50 p-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-gray-100">
                   <div className="space-y-1">
-                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Email</p>
-                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">contact@drivebyafrica.com</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase">Email</p>
+                    <p className="text-[10px] font-medium text-gray-900">contact@drivebyafrica.com</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">WhatsApp</p>
-                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">+241 77 00 00 00</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase">WhatsApp</p>
+                    <p className="text-[10px] font-medium text-gray-900">+241 77 00 00 00</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Site Web</p>
-                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">www.drivebyafrica.com</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase">Site Web</p>
+                    <p className="text-[10px] font-medium text-gray-900">www.drivebyafrica.com</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Bureaux</p>
-                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">Gabon - Cameroun</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase">Bureaux</p>
+                    <p className="text-[10px] font-medium text-gray-900">Gabon - Cameroun</p>
                   </div>
                 </div>
               </div>
