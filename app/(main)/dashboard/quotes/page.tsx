@@ -174,7 +174,7 @@ export default function QuotesPage() {
   // Convert Quote to QuoteData format for the modal
   const getQuoteDataForModal = (quote: Quote) => {
     if (!quote) return null;
-    const vehiclePriceXAF = quote.vehicle_price_usd * 600;
+    const vehiclePriceXAF = quote.vehicle_price_usd * 640;
     return {
       vehicleId: quote.vehicle_id,
       vehicleMake: quote.vehicle_make,
@@ -352,7 +352,7 @@ export default function QuotesPage() {
 
       y += 10;
 
-      const vehiclePriceXAF = quote.vehicle_price_usd * 600;
+      const vehiclePriceXAF = quote.vehicle_price_usd * 640;
       const costs = [
         { label: 'Prix du vehicule (FOB)', value: vehiclePriceXAF },
         { label: `Transport maritime (${SOURCE_NAMES[quote.vehicle_source] || quote.vehicle_source} -> ${quote.destination_name})`, value: quote.shipping_cost_xaf },

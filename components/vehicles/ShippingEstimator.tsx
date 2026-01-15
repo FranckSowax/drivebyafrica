@@ -247,7 +247,8 @@ export function ShippingEstimator({
     const adjustedShippingCostUSD = shippingCostUSD * (shippingTypeConfig?.multiplier || 1);
     const shippingCostXAF = adjustedShippingCostUSD * USD_TO_XAF;
 
-    const insuranceCostXAF = vehiclePriceXAF * INSURANCE_RATE;
+    // Assurance cargo: 2.5% du (prix véhicule + transport maritime)
+    const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
     const inspectionFeeXAF = INSPECTION_FEE_XAF;
 
     const totalXAF = vehiclePriceXAF + shippingCostXAF + insuranceCostXAF + inspectionFeeXAF;
@@ -597,7 +598,7 @@ export function ShippingEstimator({
             <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-jewel" />
-                <span className="text-[var(--text-muted)]">Assurance (2.5%)</span>
+                <span className="text-[var(--text-muted)]">Assurance cargo (2.5%)</span>
               </div>
               <span className="text-[var(--text-primary)] font-medium">
                 {formatCurrency(calculations.insuranceCost)}

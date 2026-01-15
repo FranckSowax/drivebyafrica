@@ -90,7 +90,8 @@ export default function CalculatorPage() {
     const vehiclePriceUSD = vehiclePriceXAF / USD_TO_XAF;
     const shippingCostUSD = destination.shippingCost[source.id as keyof typeof destination.shippingCost];
     const shippingCostXAF = shippingCostUSD * USD_TO_XAF;
-    const insuranceCostXAF = vehiclePriceXAF * INSURANCE_RATE;
+    // Assurance cargo: 2.5% du (prix véhicule + transport maritime)
+    const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
     const inspectionFeeXAF = INSPECTION_FEE_XAF;
 
     const total = vehiclePriceXAF + shippingCostXAF + insuranceCostXAF + inspectionFeeXAF;
@@ -240,7 +241,7 @@ export default function CalculatorPage() {
                   <div className="flex justify-between items-center py-3 border-b border-[var(--card-border)]">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4 text-jewel" />
-                      <span className="text-[var(--text-muted)]">Assurance (2.5%)</span>
+                      <span className="text-[var(--text-muted)]">Assurance cargo (2.5%)</span>
                     </div>
                     <span className="text-[var(--text-primary)] font-medium">{formatCurrency(calculations.insuranceCost)}</span>
                   </div>
