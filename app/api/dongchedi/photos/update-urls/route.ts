@@ -17,15 +17,6 @@ function getSupabaseAdmin() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-// Helper to format array for PostgreSQL TEXT[] column
-function formatPgArray(arr: string[] | undefined | null): string {
-  if (!arr || !Array.isArray(arr) || arr.length === 0) return '{}';
-  const escaped = arr.map((s) => {
-    if (typeof s !== 'string') return '""';
-    return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-  });
-  return `{${escaped.join(',')}}`;
-}
 
 /**
  * POST /api/dongchedi/photos/update-urls
@@ -101,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Parse all data lines first
     const dataLines = lines.slice(1).filter(line => line.trim());
-    const updates: { source_id: string; images: string }[] = [];
+    const updates: { source_id: string; images: string[] }[] = [];
 
     for (const line of dataLines) {
       try {
@@ -129,7 +120,7 @@ export async function POST(request: NextRequest) {
 
         updates.push({
           source_id: sourceId,
-          images: formatPgArray(images),
+          images: images,
         });
       } catch {
         stats.errors++;
@@ -156,7 +147,7 @@ export async function POST(request: NextRequest) {
         const { error, count } = await supabase
           .from('vehicles')
           .update({
-            images: update.images as unknown as string[],
+            images: update.images,
             updated_at: new Date().toISOString(),
           })
           .eq('source', 'china')

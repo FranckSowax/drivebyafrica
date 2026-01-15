@@ -10,6 +10,55 @@ const PROXY_DOMAINS = [
 ];
 
 /**
+ * Parse images field that might be stored as PostgreSQL array string
+ * e.g., '{"url1","url2"}' or '{url1,url2}' -> ['url1', 'url2']
+ */
+export function parseImagesField(images: string[] | string | null | undefined): string[] {
+  if (!images) return [];
+
+  // Already an array
+  if (Array.isArray(images)) {
+    return images.filter(Boolean);
+  }
+
+  // PostgreSQL array format: {url1,url2} or {"url1","url2"}
+  if (typeof images === 'string') {
+    // Empty array
+    if (images === '{}' || images === '') return [];
+
+    // Remove curly braces and split
+    const content = images.slice(1, -1);
+    if (!content) return [];
+
+    // Handle quoted strings: {"url1","url2"}
+    if (content.startsWith('"')) {
+      const urls: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < content.length; i++) {
+        const char = content[i];
+        if (char === '"' && content[i - 1] !== '\\') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          if (current) urls.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      if (current) urls.push(current);
+      return urls.filter(Boolean);
+    }
+
+    // Simple comma-separated
+    return content.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
+/**
  * Check if an image URL needs to be proxied
  */
 export function needsProxy(url: string): boolean {

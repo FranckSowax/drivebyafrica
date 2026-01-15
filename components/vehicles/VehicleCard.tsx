@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { formatUsdToLocal } from '@/lib/utils/currency';
-import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
+import { getProxiedImageUrl, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
 
@@ -36,7 +36,8 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
   const status = STATUS_STYLES[vehicle.status || 'available'] || STATUS_STYLES.available;
-  const rawImage = vehicle.images?.[0];
+  const images = parseImagesField(vehicle.images);
+  const rawImage = images[0];
   const mainImage = rawImage ? getProxiedImageUrl(rawImage) : '/images/placeholder-car.svg';
 
   return (

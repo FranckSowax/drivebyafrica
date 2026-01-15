@@ -12,16 +12,6 @@ import type { DongchediOffer, DongchediOffersParams } from '@/lib/api/dongchedi'
 // Extend timeout for this route (Netlify/Vercel)
 export const maxDuration = 60; // 60 seconds
 
-// Helper to format array for PostgreSQL TEXT[] column
-function formatPgArray(arr: string[] | undefined | null): string {
-  if (!arr || !Array.isArray(arr) || arr.length === 0) return '{}';
-  // Escape double quotes and backslashes, then wrap each element
-  const escaped = arr.map((s) => {
-    if (typeof s !== 'string') return '""';
-    return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-  });
-  return `{${escaped.join(',')}}`;
-}
 
 /**
  * POST /api/dongchedi/sync
@@ -128,7 +118,7 @@ export async function POST(request: NextRequest) {
                 start_price_usd: vehicle.start_price_usd,
                 current_price_usd: vehicle.current_price_usd,
                 auction_status: 'ongoing',
-                images: formatPgArray(vehicle.images) as unknown as string[],
+                images: vehicle.images || [],
                 updated_at: new Date().toISOString(),
               }));
 
@@ -195,7 +185,7 @@ export async function POST(request: NextRequest) {
               current_price_usd: vehicle.current_price_usd,
               auction_status: 'ongoing',
               // Cast to unknown to handle PostgreSQL TEXT[] format
-              images: formatPgArray(vehicle.images) as unknown as string[],
+              images: vehicle.images || [],
               updated_at: new Date().toISOString(),
             }));
 
@@ -272,7 +262,7 @@ export async function POST(request: NextRequest) {
             current_price_usd: vehicle.current_price_usd,
             auction_status: 'ongoing',
             // Cast to unknown to handle PostgreSQL TEXT[] format
-            images: formatPgArray(vehicle.images) as unknown as string[],
+            images: vehicle.images || [],
             updated_at: new Date().toISOString(),
           }));
 

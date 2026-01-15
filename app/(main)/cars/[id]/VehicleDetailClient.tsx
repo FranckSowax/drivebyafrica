@@ -24,7 +24,7 @@ import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
-import { getProxiedImageUrls } from '@/lib/utils/imageProxy';
+import { getProxiedImageUrls, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource, AuctionStatus } from '@/types/vehicle';
 
@@ -58,8 +58,8 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const shouldAutoOpenQuote = actionParam === 'quote';
 
   // Transform images through proxy for signed URLs
-  const rawImages = vehicle.images || [];
-  const images = rawImages.length > 0 ? getProxiedImageUrls(rawImages) : [PLACEHOLDER_IMAGE];
+  const parsedImages = parseImagesField(vehicle.images);
+  const images = parsedImages.length > 0 ? getProxiedImageUrls(parsedImages) : [PLACEHOLDER_IMAGE];
   const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
   const source = vehicle.source as VehicleSource;
 
