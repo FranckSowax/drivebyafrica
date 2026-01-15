@@ -27,7 +27,7 @@ export default function CarsPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
 
-  const ITEMS_PER_PAGE = 12;
+  const ITEMS_PER_PAGE = 36;
 
   const { vehicles, isLoading, totalCount, refetch } = useVehicles({
     filters,

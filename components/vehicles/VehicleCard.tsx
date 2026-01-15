@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
@@ -33,11 +34,20 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
   pending: { bg: 'bg-royal-blue', label: 'En attente' },
 };
 
+const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
+
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
+  const [imgError, setImgError] = useState(false);
   const status = STATUS_STYLES[vehicle.status || 'available'] || STATUS_STYLES.available;
-  const mainImage = vehicle.images?.[0] || '/images/placeholder-car.jpg';
-  // External images with signatures (byteimg.com) need unoptimized to avoid server-side refetch
-  const isExternalImage = mainImage.includes('byteimg.com') || mainImage.includes('x-expires');
+  const rawImage = vehicle.images?.[0] || PLACEHOLDER_IMAGE;
+  const mainImage = imgError ? PLACEHOLDER_IMAGE : rawImage;
+  // External images with signatures or from Chinese CDNs need unoptimized to avoid server-side refetch
+  const isExternalImage = mainImage.includes('byteimg.com') ||
+    mainImage.includes('x-expires') ||
+    mainImage.includes('tosv.byted') ||
+    mainImage.includes('feishu') ||
+    mainImage.includes('dongchedi') ||
+    mainImage.startsWith('http');
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
@@ -51,6 +61,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             unoptimized={isExternalImage}
+            onError={() => setImgError(true)}
           />
 
           {/* Overlay gradient */}

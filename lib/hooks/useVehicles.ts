@@ -22,7 +22,7 @@ interface UseVehiclesReturn {
 export function useVehicles({
   filters,
   page = 1,
-  limit = 12,
+  limit = 36,
 }: UseVehiclesOptions = {}): UseVehiclesReturn {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);

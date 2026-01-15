@@ -44,9 +44,12 @@ const STATUS_STYLES: Record<AuctionStatus, { bg: string; label: string }> = {
   ended: { bg: 'bg-nobel', label: 'Terminé' },
 };
 
+const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
+
 export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const searchParams = useSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
 
@@ -54,12 +57,25 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const actionParam = searchParams.get('action');
   const shouldAutoOpenQuote = actionParam === 'quote';
 
-  const images = vehicle.images || ['/images/placeholder-car.jpg'];
+  const rawImages = vehicle.images || [PLACEHOLDER_IMAGE];
+  const images = rawImages.map((img, index) =>
+    failedImages.has(index) ? PLACEHOLDER_IMAGE : img
+  );
   const status = STATUS_STYLES[vehicle.auction_status as AuctionStatus] || STATUS_STYLES.upcoming;
   const source = vehicle.source as VehicleSource;
 
-  // Check if images are external with signatures (byteimg.com) - need unoptimized
-  const isExternalImage = (img: string) => img.includes('byteimg.com') || img.includes('x-expires');
+  // Check if images are external with signatures or from Chinese CDNs - need unoptimized
+  const isExternalImage = (img: string) =>
+    img.includes('byteimg.com') ||
+    img.includes('x-expires') ||
+    img.includes('tosv.byted') ||
+    img.includes('feishu') ||
+    img.includes('dongchedi') ||
+    img.startsWith('http');
+
+  const handleImageError = (index: number) => {
+    setFailedImages((prev) => new Set(prev).add(index));
+  };
 
   const handleShare = async () => {
     try {
@@ -125,6 +141,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     className="object-cover"
                     priority
                     unoptimized={isExternalImage(images[currentImageIndex])}
+                    onError={() => handleImageError(currentImageIndex)}
                   />
                 </motion.div>
               </AnimatePresence>
@@ -178,6 +195,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       fill
                       className="object-cover"
                       unoptimized={isExternalImage(image)}
+                      onError={() => handleImageError(index)}
                     />
                   </button>
                 ))}
