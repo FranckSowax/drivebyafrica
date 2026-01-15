@@ -1,7 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import React from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
   Package,
   FileText,
@@ -10,30 +11,27 @@ import {
   ArrowRight,
   TrendingUp,
   Ship,
-  CheckCircle,
   Calculator,
   Search,
-  Bell,
-  Clock,
-  MoreHorizontal,
   Wallet,
   Building2,
+  LucideIcon,
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatUsdToLocal, formatCurrency } from '@/lib/utils/currency';
+import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import type { Order, Profile, Quote } from '@/types/database';
 
 interface DashboardClientProps {
   profile: Profile | null;
   orders: Order[];
-  quotes: any[];
+  quotes: Quote[];
   favoritesCount: number;
 }
 
-const container = {
+const containerVariants = {
   hidden: { opacity: 0 },
-  show: {
+  visible: {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
@@ -41,344 +39,270 @@ const container = {
   },
 };
 
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 100,
+    },
+  },
 };
 
-export function DashboardClient({ profile, orders, quotes, favoritesCount }: DashboardClientProps) {
-  // Stats calculations
-  const activeOrders = orders.filter(
-    (o) => !['delivered', 'cancelled'].includes(o.status)
-  ).length;
-  const pendingQuotes = quotes.filter((q) => q.status === 'pending').length;
-  const totalSpent = orders
-    .filter((o) => o.status === 'delivered')
-    .reduce((sum, o) => sum + (o.total_price_usd || 0), 0);
-
-  // Status mapping for visual polish
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
-  };
+export default function DashboardClient({
+  profile,
+  orders,
+  quotes,
+  favoritesCount,
+}: DashboardClientProps) {
+  const stats = [
+    {
+      label: 'Commandes',
+      value: orders.length,
+      icon: Package,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      href: '/dashboard/orders',
+    },
+    {
+      label: 'Devis',
+      value: quotes.length,
+      icon: FileText,
+      color: 'text-mandarin',
+      bgColor: 'bg-orange-50',
+      href: '/dashboard/quotes',
+    },
+    {
+      label: 'Favoris',
+      value: favoritesCount,
+      icon: Heart,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      href: '/favorites',
+    },
+    {
+      label: 'Portefeuille',
+      value: formatCurrency(0),
+      icon: Wallet,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      href: '/dashboard/wallet',
+    },
+  ];
 
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-8 pb-10"
-    >
-      {/* Header Section with glassmorphism feel */}
-      <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-            {getGreeting()}, <span className="text-mandarin">{profile?.full_name?.split(' ')[0] || 'Utilisateur'}</span>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+            Tableau de bord
+            <span className="text-mandarin animate-pulse">.</span>
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">
-            Voici un aperçu de vos activités d'importation aujourd'hui.
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Bienvenue, <span className="text-gray-900 dark:text-white font-bold">{profile?.full_name || 'Importateur'}</span> 👋
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/cars">
-            <Button variant="primary" className="shadow-lg shadow-mandarin/20 hover:shadow-mandarin/30 transition-all">
-              <Search className="w-4 h-4 mr-2" />
-              Trouver un véhicule
+        <div className="flex gap-2">
+          <Link href="/shipping-estimator">
+            <Button className="bg-mandarin hover:bg-mandarin/90 text-white shadow-lg shadow-mandarin/20 rounded-xl px-6">
+              Nouveau Devis
             </Button>
           </Link>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Stats Grid - Ultra Responsive */}
-      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <ModernStatCard
-          icon={FileText}
-          label="Devis en attente"
-          value={pendingQuotes.toString()}
-          trend="Action requise"
-          trendUp={pendingQuotes > 0}
-          color="orange"
-          href="/dashboard/quotes"
-        />
-        <ModernStatCard
-          icon={Package}
-          label="Commandes actives"
-          value={activeOrders.toString()}
-          trend="En cours"
-          color="blue"
-          href="/dashboard/orders"
-        />
-        <ModernStatCard
-          icon={Heart}
-          label="Véhicules favoris"
-          value={favoritesCount.toString()}
-          trend="Sauvegardés"
-          color="red"
-          href="/dashboard/favorites"
-        />
-        <ModernStatCard
-          icon={Wallet}
-          label="Total investi"
-          value={formatUsdToLocal(totalSpent)}
-          trend="Importations réussies"
-          color="green"
-          isCurrency
-        />
-      </motion.div>
-
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
-        
-        {/* Left Column (2/3 width on large screens) */}
-        <div className="xl:col-span-2 space-y-6 md:space-y-8">
-          
-          {/* Quick Actions - Mobile First Design */}
-          <motion.div variants={item}>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-mandarin" />
-              Accès Rapide
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-              <QuickActionCard
-                href="/cars"
-                icon={Car}
-                label="Véhicules"
-                color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-              />
-              <QuickActionCard
-                href="/calculator"
-                icon={Calculator}
-                label="Simulateur"
-                color="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
-              />
-              <QuickActionCard
-                href="/dashboard/quotes"
-                icon={FileText}
-                label="Mes Devis"
-                color="bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
-              />
-              <QuickActionCard
-                href="/dashboard/orders"
-                icon={Ship}
-                label="Suivi"
-                color="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
-              />
-            </div>
-          </motion.div>
-
-          {/* Recent Orders Section */}
-          <motion.div variants={item}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Package className="w-5 h-5 text-mandarin" />
-                Commandes Récentes
-              </h2>
-              <Link href="/dashboard/orders" className="text-sm font-medium text-mandarin hover:text-mandarin/80 transition-colors flex items-center group">
-                Tout voir <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {orders.length > 0 ? (
-                orders.slice(0, 3).map((order) => (
-                  <ModernOrderCard key={order.id} order={order} />
-                ))
-              ) : (
-                <EmptyState
-                  icon={Package}
-                  title="Aucune commande en cours"
-                  description="Commencez par demander un devis pour votre véhicule de rêve."
-                  actionLabel="Trouver un véhicule"
-                  href="/cars"
-                />
-              )}
-            </div>
-          </motion.div>
-
-          {/* Recent Quotes Section */}
-          <motion.div variants={item}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-mandarin" />
-                Derniers Devis
-              </h2>
-              <Link href="/dashboard/quotes" className="text-sm font-medium text-mandarin hover:text-mandarin/80 transition-colors flex items-center group">
-                Tout voir <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {quotes.length > 0 ? (
-                quotes.slice(0, 4).map((quote) => (
-                  <ModernQuoteCard key={quote.id} quote={quote} />
-                ))
-              ) : (
-                <div className="md:col-span-2">
-                  <EmptyState
-                    icon={FileText}
-                    title="Aucun devis généré"
-                    description="Explorez notre catalogue et demandez un devis gratuit."
-                    actionLabel="Voir le catalogue"
-                    href="/cars"
-                  />
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-        </div>
-
-        {/* Right Column (1/3 width) - Sidebar-like content */}
-        <div className="space-y-6 md:space-y-8">
-          
-          {/* Process Steps */}
-          <motion.div variants={item} className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-32 bg-mandarin/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-            
-            <h3 className="text-lg font-bold mb-6 relative z-10">Processus d'importation</h3>
-            
-            <div className="space-y-6 relative z-10">
-              <ProcessStep 
-                number="1" 
-                title="Choix & Devis" 
-                desc="Sélectionnez votre véhicule et validez le devis." 
-                isLast={false} 
-              />
-              <ProcessStep 
-                number="2" 
-                title="Paiement Acompte" 
-                desc="1000$ pour bloquer le véhicule et l'inspecter." 
-                isLast={false} 
-              />
-              <ProcessStep 
-                number="3" 
-                title="Inspection & Solde" 
-                desc="Validation technique et paiement final." 
-                isLast={false} 
-              />
-              <ProcessStep 
-                number="4" 
-                title="Livraison" 
-                desc="Expédition sécurisée jusqu'au port." 
-                isLast={true} 
-              />
-            </div>
-
-            <Link href="/how-it-works" className="inline-block mt-8 text-sm font-medium text-mandarin hover:text-white transition-colors">
-              En savoir plus sur le processus &rarr;
+      {/* Stats Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        {stats.map((stat, idx) => (
+          <motion.div key={idx} variants={itemVariants}>
+            <Link href={stat.href}>
+              <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bgColor} rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110 opacity-50`} />
+                <stat.icon className={`w-5 h-5 ${stat.color} mb-3 relative z-10`} />
+                <p className="text-2xl font-black text-gray-900 dark:text-white relative z-10">
+                  {stat.value}
+                </p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider relative z-10">
+                  {stat.label}
+                </p>
+              </div>
             </Link>
           </motion.div>
+        ))}
+      </motion.div>
 
-          {/* Need Help Card */}
-          <motion.div variants={item} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Main Content: Orders & Quotes */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Recent Orders */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Package className="w-5 h-5 text-mandarin" />
+                Commandes récentes
+              </h2>
+              <Link href="/dashboard/orders" className="text-xs font-bold text-mandarin hover:underline flex items-center gap-1">
+                Tout voir <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            
+            {orders.length > 0 ? (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {orders.slice(0, 4).map((order) => (
+                  <ModernOrderCard key={order.id} order={order} />
+                ))}
               </div>
-              <h3 className="font-bold text-gray-900 dark:text-white">Besoin d'aide ?</h3>
+            ) : (
+              <EmptyState 
+                icon={Package}
+                title="Aucune commande"
+                description="Vous n'avez pas encore passé de commande. Commencez par créer un devis."
+                actionLabel="Calculer un devis"
+                href="/shipping-estimator"
+              />
+            )}
+          </section>
+
+          {/* Recent Quotes */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-mandarin" />
+                Devis récents
+              </h2>
+              <Link href="/dashboard/quotes" className="text-xs font-bold text-mandarin hover:underline flex items-center gap-1">
+                Tout voir <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Nos agents sont disponibles pour vous accompagner dans votre projet.
-            </p>
-            <div className="space-y-2">
-              <a href="https://wa.me/24177000000" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-2.5 px-4 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors">
-                Contacter sur WhatsApp
-              </a>
-              <a href="mailto:contact@drivebyafrica.com" className="flex items-center justify-center w-full py-2.5 px-4 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors">
-                Envoyer un email
-              </a>
+
+            {quotes.length > 0 ? (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {quotes.slice(0, 4).map((quote) => (
+                  <ModernQuoteCard key={quote.id} quote={quote} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                icon={FileText}
+                title="Aucun devis"
+                description="Utilisez notre simulateur pour estimer le coût d'importation de votre véhicule."
+                actionLabel="Calculer maintenant"
+                href="/shipping-estimator"
+              />
+            )}
+          </section>
+        </div>
+
+        {/* Sidebar: Next Steps & Quick Actions */}
+        <div className="space-y-8">
+          {/* Progress Card */}
+          <div className="bg-gray-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-mandarin/20 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-mandarin/30 transition-colors" />
+            <h3 className="text-xl font-black mb-4 relative z-10">Comment ça marche ?</h3>
+            <div className="space-y-4 relative z-10">
+              <ProcessStep 
+                number="1"
+                title="Simulation"
+                desc="Créez votre devis personnalisé en quelques secondes."
+              />
+              <ProcessStep 
+                number="2"
+                title="Acompte"
+                desc="Payez 600k FCFA pour lancer l'achat de votre véhicule."
+              />
+              <ProcessStep 
+                number="3"
+                title="Suivi"
+                desc="Suivez chaque étape du transport jusqu'au port."
+              />
+              <ProcessStep 
+                number="4"
+                title="Livraison"
+                desc="Récupérez vos clés et profitez de votre nouvelle voiture !"
+                isLast
+              />
             </div>
-          </motion.div>
+            <Link href="/how-it-works" className="block mt-6">
+              <Button className="w-full bg-white text-gray-900 hover:bg-gray-100 font-bold py-6 rounded-2xl">
+                Guide complet
+              </Button>
+            </Link>
+          </div>
 
+          {/* Quick Tools */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4">Outils rapides</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <QuickTool 
+                icon={Search} 
+                label="Rechercher" 
+                href="/vehicles" 
+                color="text-purple-600" 
+                bgColor="bg-purple-50 dark:bg-purple-900/20"
+              />
+              <QuickTool 
+                icon={Calculator} 
+                label="Simulateur" 
+                href="/shipping-estimator" 
+                color="text-orange-600" 
+                bgColor="bg-orange-50 dark:bg-orange-900/20"
+              />
+              <QuickTool 
+                icon={TrendingUp} 
+                label="Marché" 
+                href="/vehicles" 
+                color="text-green-600" 
+                bgColor="bg-green-50 dark:bg-green-900/20"
+              />
+              <QuickTool 
+                icon={Building2} 
+                label="Concession" 
+                href="/vehicles" 
+                color="text-blue-600" 
+                bgColor="bg-blue-50 dark:bg-blue-900/20"
+              />
+            </div>
+          </div>
         </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// Sub-components for cleaner code
-
-function ModernStatCard({ icon: Icon, label, value, trend, trendUp, color, href, isCurrency }: any) {
-  const colorStyles = {
-    orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/10 dark:text-orange-400',
-    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/10 dark:text-blue-400',
-    red: 'bg-red-50 text-red-600 dark:bg-red-900/10 dark:text-red-400',
-    green: 'bg-green-50 text-green-600 dark:bg-green-900/10 dark:text-green-400',
-  };
-
-  const Content = (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow h-full flex flex-col justify-between group">
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 rounded-xl ${colorStyles[color as keyof typeof colorStyles]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        {trend && (
-          <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
-            trendUp ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'
-          }`}>
-            {trend}
-          </span>
-        )}
-      </div>
-      <div>
-        <p className={`text-2xl font-black text-gray-900 dark:text-white mb-1 group-hover:scale-105 transition-transform origin-left ${isCurrency ? 'text-lg sm:text-2xl' : ''}`}>
-          {value}
-        </p>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          {label}
-        </p>
       </div>
     </div>
-  );
-
-  if (href) {
-    return <Link href={href} className="block h-full">{Content}</Link>;
-  }
-  return Content;
-}
-
-function QuickActionCard({ href, icon: Icon, label, color }: any) {
-  return (
-    <Link href={href}>
-      <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer h-full group">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${color}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        <span className="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-mandarin transition-colors">
-          {label}
-        </span>
-      </div>
-    </Link>
   );
 }
 
 function ModernOrderCard({ order }: { order: Order }) {
+  const status = ORDER_STATUSES[order.status as OrderStatus] || ORDER_STATUSES.deposit_pending;
   const title = order.vehicle_make && order.vehicle_model 
     ? `${order.vehicle_make} ${order.vehicle_model}`
     : `Commande #${order.id.slice(0, 8)}`;
 
   return (
     <Link href={`/dashboard/orders/${order.id}`}>
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-mandarin/30 transition-all group flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-            <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group">
+        <div className="flex justify-between items-start mb-2">
+          <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg group-hover:bg-mandarin/10 transition-colors">
+            <Car className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-mandarin" />
           </div>
-          <div>
-            <p className="font-bold text-sm text-gray-900 dark:text-white">{title}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {new Date(order.created_at).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="font-bold text-mandarin text-sm">
-            {formatUsdToLocal(order.total_price_usd || 0)}
+          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">
+            {new Date(order.created_at).toLocaleDateString()}
           </p>
-          <span className="text-[10px] bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
-            {order.status}
+        </div>
+        <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-1 truncate">
+          {title}
+        </h3>
+        <div className="flex items-center justify-between mt-3">
+          <p className="font-black text-gray-900 dark:text-white text-sm">
+            {formatUsdToLocal(order.vehicle_price_usd || 0)}
+          </p>
+          <span className={`text-[10px] ${status.color.replace('bg-', 'text-')} bg-opacity-10 px-2 py-0.5 rounded-full font-medium`}>
+            {status.label}
           </span>
         </div>
       </div>
@@ -386,7 +310,7 @@ function ModernOrderCard({ order }: { order: Order }) {
   );
 }
 
-function ModernQuoteCard({ quote }: { quote: any }) {
+function ModernQuoteCard({ quote }: { quote: Quote }) {
   const statusConfig = {
     pending: { label: 'En attente', class: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
     accepted: { label: 'Accepté', class: 'bg-green-100 text-green-700 border-green-200' },
@@ -432,7 +356,14 @@ function ModernQuoteCard({ quote }: { quote: any }) {
   );
 }
 
-function ProcessStep({ number, title, desc, isLast }: any) {
+interface ProcessStepProps {
+  number: string;
+  title: string;
+  desc: string;
+  isLast?: boolean;
+}
+
+function ProcessStep({ number, title, desc, isLast }: ProcessStepProps) {
   return (
     <div className="flex gap-4">
       <div className="flex flex-col items-center">
@@ -449,7 +380,15 @@ function ProcessStep({ number, title, desc, isLast }: any) {
   );
 }
 
-function EmptyState({ icon: Icon, title, description, actionLabel, href }: any) {
+interface EmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  actionLabel: string;
+  href: string;
+}
+
+function EmptyState({ icon: Icon, title, description, actionLabel, href }: EmptyStateProps) {
   return (
     <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
       <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
@@ -465,5 +404,30 @@ function EmptyState({ icon: Icon, title, description, actionLabel, href }: any) 
         </Button>
       </Link>
     </div>
+  );
+}
+
+function QuickTool({ 
+  icon: Icon, 
+  label, 
+  href, 
+  color, 
+  bgColor 
+}: { 
+  icon: LucideIcon; 
+  label: string; 
+  href: string; 
+  color: string; 
+  bgColor: string; 
+}) {
+  return (
+    <Link href={href}>
+      <div className={`${bgColor} p-4 rounded-2xl flex flex-col items-center text-center group hover:scale-105 transition-transform`}>
+        <Icon className={`w-6 h-6 ${color} mb-2`} />
+        <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tighter">
+          {label}
+        </span>
+      </div>
+    </Link>
   );
 }
