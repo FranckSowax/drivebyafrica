@@ -9,7 +9,6 @@ import {
   Loader2,
   CheckCircle,
   FileText,
-  Download,
   AlertTriangle,
   Ship,
   Shield,
@@ -546,327 +545,303 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, defaultQuoteNu
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          toast.info('Téléchargement lancé');
-        }
-      } catch (error) {
-        console.error('QuotePDFModal: Share error:', error);
-        if ((error as Error).name !== 'AbortError') {
-          toast.error('Erreur lors du partage. Tentative de téléchargement...');
-          // Second fallback to download
-          const link = document.createElement('a');
-          link.href = pdfUrl || '';
-          link.download = `Devis-${quoteNumber}.pdf`;
-          link.click();
-        }
+      }
+    } catch (error) {
+      console.error('QuotePDFModal: Share error:', error);
+      if ((error as Error).name !== 'AbortError') {
+        toast.error('Erreur lors du partage. Tentative de téléchargement...');
+        // Second fallback to download
+        const link = document.createElement('a');
+        link.href = pdfUrl || '';
+        link.download = `Devis-${quoteNumber}.pdf`;
+        link.click();
       }
     }
-  };
+  }
+};
 
-  const handleDownloadPDF = async () => {
-    if (!pdfBlob) {
-      await generatePDF();
-    }
-    if (pdfUrl) {
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = `Devis-${quoteNumber}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+const handleClose = () => {
+  setPdfBlob(null);
+  if (pdfUrl) {
+    URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+  }
+  onClose();
+};
 
-  const handleClose = () => {
-    setPdfBlob(null);
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
-    }
-    onClose();
-  };
+if (!mounted) return null;
 
-  if (!mounted) return null;
-
-  return createPortal(
-    <AnimatePresence>
-      {isOpen && (
+return createPortal(
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        onClick={handleClose}
+      >
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-          onClick={handleClose}
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ type: 'spring', duration: 0.3 }}
+          className="relative w-full max-w-4xl max-h-[95vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
         >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: 'spring', duration: 0.3 }}
-            className="relative w-full max-w-4xl max-h-[95vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Votre devis
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  N° {quoteNumber}
-                </p>
-              </div>
-              <button
-                onClick={handleClose}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Votre devis
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                N° {quoteNumber}
+              </p>
             </div>
+            <button
+              onClick={handleClose}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 md:p-8 flex justify-center">
-              {isGenerating ? (
-                <div className="flex flex-col items-center justify-center min-h-[400px]">
-                  <Loader2 className="w-10 h-10 animate-spin text-mandarin mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400 font-medium">Préparation de votre devis...</p>
-                </div>
-              ) : quoteData ? (
-                <div className="w-full max-w-[210mm] bg-white dark:bg-gray-800 shadow-xl rounded-sm overflow-hidden flex flex-col min-h-[297mm] text-gray-900 dark:text-gray-100 relative">
-                  {/* Watermark for expired quotes */}
-                  {isExpired() && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none overflow-hidden">
-                      <div className="rotate-[-45deg] text-red-500/10 dark:text-red-500/5 text-9xl font-black uppercase tracking-widest border-8 border-red-500/10 dark:border-red-500/5 p-8">
-                        Expiré
+          {/* Modal Content */}
+          <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 md:p-8 flex justify-center">
+            {isGenerating ? (
+              <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <Loader2 className="w-10 h-10 animate-spin text-mandarin mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">Préparation de votre devis...</p>
+              </div>
+            ) : quoteData ? (
+              <div className="w-full max-w-[210mm] bg-white dark:bg-gray-800 shadow-xl rounded-sm overflow-hidden flex flex-col min-h-[297mm] text-gray-900 dark:text-gray-100 relative">
+                {/* Watermark for expired quotes */}
+                {isExpired() && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none overflow-hidden">
+                    <div className="rotate-[-45deg] text-red-500/10 dark:text-red-500/5 text-9xl font-black uppercase tracking-widest border-8 border-red-500/10 dark:border-red-500/5 p-8">
+                      Expiré
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Accent */}
+                <div className="h-2 bg-mandarin w-full" />
+
+                {/* Header */}
+                <div className="p-8 md:p-12 space-y-8">
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+                    <div>
+                      <img
+                        src="/logo-driveby-africa-dark.png"
+                        alt="Driveby Africa"
+                        className="h-12 md:h-14 w-auto mb-2 dark:invert"
+                      />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Votre partenaire d'importation automobile</p>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/40 p-4 rounded-lg min-w-[200px]">
+                      <p className="text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 font-bold mb-1">Devis Professionnel</p>
+                      <p className="text-lg font-mono font-bold text-gray-900 dark:text-white">{quoteNumber}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        <Calendar className="w-3 h-3" />
+                        <span>Émis le: {new Date().toLocaleDateString('fr-FR')}</span>
+                      </div>
+                      <div className={cn("flex items-center gap-2 mt-1 text-xs font-medium", isExpired() ? "text-red-500" : "text-gray-500 dark:text-gray-400")}>
+                        <Clock className="w-3 h-3" />
+                        <span>Valable jusqu'au: {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {/* Top Accent */}
-                  <div className="h-2 bg-mandarin w-full" />
-
-                  {/* Header */}
-                  <div className="p-8 md:p-12 space-y-8">
-                    <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-                      <div>
-                        <img
-                          src="/logo-driveby-africa-dark.png"
-                          alt="Driveby Africa"
-                          className="h-12 md:h-14 w-auto mb-2 dark:invert"
-                        />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Votre partenaire d'importation automobile</p>
-                      </div>
-                      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/40 p-4 rounded-lg min-w-[200px]">
-                        <p className="text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 font-bold mb-1">Devis Professionnel</p>
-                        <p className="text-lg font-mono font-bold text-gray-900 dark:text-white">{quoteNumber}</p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                          <Calendar className="w-3 h-3" />
-                          <span>Émis le: {new Date().toLocaleDateString('fr-FR')}</span>
-                        </div>
-                        <div className={cn("flex items-center gap-2 mt-1 text-xs font-medium", isExpired() ? "text-red-500" : "text-gray-500 dark:text-gray-400")}>
-                          <Clock className="w-3 h-3" />
-                          <span>Valable jusqu'au: {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
-                      <div className="space-y-4">
-                        <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Informations Client</h4>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email de contact</p>
-                          <p className="text-base font-bold text-gray-900 dark:text-white">{user?.email || '-'}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Détails Véhicule</h4>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Marque & Modèle</p>
-                          <p className="text-base font-bold text-gray-900 dark:text-white">{quoteData.vehicleMake} {quoteData.vehicleModel} ({quoteData.vehicleYear})</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
-                              Origine: {SOURCE_NAMES[quoteData.vehicleSource]} {SOURCE_FLAGS[quoteData.vehicleSource]}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
-                          <Ship className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Expédition Internationale</p>
-                          <p className="text-xs text-blue-700 dark:text-blue-300">Destination: {quoteData.destination.name}, {quoteData.destination.country}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-tighter rounded-full">
-                          {quoteData.shippingTypeName}
-                        </span>
-                      </div>
-                    </div>
-
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Détail des Coûts</h4>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Devis estimatif (FCFA)</span>
-                      </div>
-                      <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400">
-                              <th className="px-6 py-3 text-left font-bold">Description</th>
-                              <th className="px-6 py-3 text-right font-bold">Montant</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
-                            <tr>
-                              <td className="px-6 py-4">Prix du véhicule (FOB)</td>
-                              <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.vehiclePrice)}</td>
-                            </tr>
-                            <tr>
-                              <td className="px-6 py-4 flex items-center gap-2">
-                                Transport maritime
-                                <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 dark:text-gray-400">{quoteData.shippingTypeName}</span>
-                              </td>
-                              <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.shippingCost)}</td>
-                            </tr>
-                            <tr>
-                              <td className="px-6 py-4">Assurance cargo (2.5%)</td>
-                              <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.insuranceCost)}</td>
-                            </tr>
-                            <tr>
-                              <td className="px-6 py-4">Inspection & Documents</td>
-                              <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.inspectionFee)}</td>
-                            </tr>
-                            <tr className="bg-orange-50/50 dark:bg-orange-900/10">
-                              <td className="px-6 py-5 font-black text-gray-900 dark:text-white uppercase tracking-tighter">Total estimé</td>
-                              <td className="px-6 py-5 text-right">
-                                <span className="text-xl font-black text-mandarin font-mono">{formatCurrency(quoteData.calculations.total)}</span>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
+                      <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Informations Client</h4>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email de contact</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white">{user?.email || '-'}</p>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 p-5 rounded-xl">
-                        <h5 className="text-[10px] font-black text-green-700 dark:text-green-400 uppercase mb-2">Acompte Requis</h5>
-                        <p className="text-2xl font-black text-gray-900 dark:text-white mb-1">1 000 USD</p>
-                        <p className="text-[10px] text-green-600 dark:text-green-300 leading-relaxed">
-                          Le versement de cet acompte déclenche l'inspection physique détaillée du véhicule.
-                        </p>
-                      </div>
-                      <div className="space-y-3">
-                        <h5 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Prochaines Étapes</h5>
-                        <div className="space-y-2">
-                          {[
-                            "Paiement de l'acompte de 1 000$",
-                            "Rapport d'inspection complet",
-                            "Règlement du solde et expédition",
-                            "Suivi et livraison à destination"
-                          ].map((step, i) => (
-                            <div key={i} className="flex items-center gap-2 text-[10px]">
-                              <div className="w-4 h-4 bg-mandarin rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0">{i+1}</div>
-                              <span className="text-gray-600 dark:text-gray-400 font-medium">{step}</span>
-                            </div>
-                          ))}
+                    <div className="space-y-4">
+                      <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Détails Véhicule</h4>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Marque & Modèle</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white">{quoteData.vehicleMake} {quoteData.vehicleModel} ({quoteData.vehicleYear})</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
+                            Origine: {SOURCE_NAMES[quoteData.vehicleSource]} {SOURCE_FLAGS[quoteData.vehicleSource]}
+                          </span>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
-                      <p className="text-[9px] text-gray-400 dark:text-gray-500 italic leading-relaxed text-center">
-                        * Ce devis est une estimation basée sur les tarifs actuels. Les frais de dédouanement ne sont pas inclus et varient selon la réglementation de {quoteData.destination.country}. Devis valable 7 jours à compter de la date d'émission.
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
+                        <Ship className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-blue-900 dark:text-blue-100">Expédition Internationale</p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">Destination: {quoteData.destination.name}, {quoteData.destination.country}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-tighter rounded-full">
+                        {quoteData.shippingTypeName}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Détail des Coûts</h4>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 uppercase">Devis estimatif (FCFA)</span>
+                    </div>
+                    <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400">
+                            <th className="px-6 py-3 text-left font-bold">Description</th>
+                            <th className="px-6 py-3 text-right font-bold">Montant</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-gray-700 dark:text-gray-200">
+                          <tr>
+                            <td className="px-6 py-4">Prix du véhicule (FOB)</td>
+                            <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.vehiclePrice)}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-6 py-4 flex items-center gap-2">
+                              Transport maritime
+                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 dark:text-gray-400">{quoteData.shippingTypeName}</span>
+                            </td>
+                            <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.shippingCost)}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-6 py-4">Assurance cargo (2.5%)</td>
+                            <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.insuranceCost)}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-6 py-4">Inspection & Documents</td>
+                            <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.inspectionFee)}</td>
+                          </tr>
+                          <tr className="bg-orange-50/50 dark:bg-orange-900/10">
+                            <td className="px-6 py-5 font-black text-gray-900 dark:text-white uppercase tracking-tighter">Total estimé</td>
+                            <td className="px-6 py-5 text-right">
+                              <span className="text-xl font-black text-mandarin font-mono">{formatCurrency(quoteData.calculations.total)}</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 p-5 rounded-xl">
+                      <h5 className="text-[10px] font-black text-green-700 dark:text-green-400 uppercase mb-2">Acompte Requis</h5>
+                      <p className="text-2xl font-black text-gray-900 dark:text-white mb-1">1 000 USD</p>
+                      <p className="text-[10px] text-green-600 dark:text-green-300 leading-relaxed">
+                        Le versement de cet acompte déclenche l'inspection physique détaillée du véhicule.
                       </p>
                     </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="mt-auto bg-gray-50 dark:bg-gray-900/50 p-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-gray-100 dark:border-gray-700">
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Email</p>
-                      <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">contact@drivebyafrica.com</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">WhatsApp</p>
-                      <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">+241 77 00 00 00</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Site Web</p>
-                      <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">www.drivebyafrica.com</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Bureaux</p>
-                      <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">Gabon - Cameroun</p>
+                    <div className="space-y-3">
+                      <h5 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Prochaines Étapes</h5>
+                      <div className="space-y-2">
+                        {[
+                          "Paiement de l'acompte de 1 000$",
+                          "Rapport d'inspection complet",
+                          "Règlement du solde et expédition",
+                          "Suivi et livraison à destination"
+                        ].map((step, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[10px]">
+                            <div className="w-4 h-4 bg-mandarin rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0">{i+1}</div>
+                            <span className="text-gray-600 dark:text-gray-400 font-medium">{step}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center min-h-[400px]">
-                  <p className="text-gray-500 dark:text-gray-400">Erreur de chargement ou données manquantes</p>
-                </div>
-              )}
-            </div>
 
-            {/* Actions */}
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-              {/* Deposit reminder */}
-              <div className="mb-4 p-3 bg-jewel/10 border border-jewel/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-jewel flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      Acompte: <span className="text-jewel">1 000 USD</span>
+                  <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
+                    <p className="text-[9px] text-gray-400 dark:text-gray-500 italic leading-relaxed text-center">
+                      * Ce devis est une estimation basée sur les tarifs actuels. Les frais de dédouanement ne sont pas inclus et varient selon la réglementation de {quoteData.destination.country}. Devis valable 7 jours à compter de la date d'émission.
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Pour bloquer le vehicule et recevoir le rapport d'inspection
-                    </p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-auto bg-gray-50 dark:bg-gray-900/50 p-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-gray-100 dark:border-gray-700">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Email</p>
+                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">contact@drivebyafrica.com</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">WhatsApp</p>
+                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">+241 77 00 00 00</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Site Web</p>
+                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">www.drivebyafrica.com</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">Bureaux</p>
+                    <p className="text-[10px] font-medium text-gray-900 dark:text-gray-100">Gabon - Cameroun</p>
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <p className="text-gray-500 dark:text-gray-400">Erreur de chargement ou données manquantes</p>
+              </div>
+            )}
+          </div>
 
-              {/* Buttons */}
-              <div className="flex flex-wrap gap-3">
-                {!defaultQuoteNumber && (
-                  <Button
-                    variant="success"
-                    onClick={handleSaveAndRedirect}
-                    disabled={isGenerating}
-                    leftIcon={<Save className="w-4 h-4" />}
-                    className="flex-1 sm:flex-none"
-                  >
-                    {quoteSaved ? 'Voir mes devis' : 'Enregistrer dans mes devis'}
-                  </Button>
-                )}
-                
+          {/* Actions */}
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+            {/* Deposit reminder */}
+            <div className="mb-4 p-3 bg-jewel/10 border border-jewel/30 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-jewel flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    Acompte: <span className="text-jewel">1 000 USD</span>
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Pour bloquer le vehicule et recevoir le rapport d'inspection
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-wrap gap-3">
+              {!defaultQuoteNumber && (
                 <Button
-                  variant="outline"
-                  onClick={handleDownloadPDF}
+                  variant="success"
+                  onClick={handleSaveAndRedirect}
                   disabled={isGenerating}
-                  leftIcon={<Download className="w-4 h-4" />}
-                  className="flex-1"
+                  leftIcon={<Save className="w-4 h-4" />}
+                  className="flex-1 sm:flex-none"
                 >
-                  Télécharger PDF
+                  {quoteSaved ? 'Voir mes devis' : 'Enregistrer dans mes devis'}
                 </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleShare}
-                  disabled={isGenerating || !pdfBlob}
-                  leftIcon={<Share2 className="w-4 h-4" />}
-                  className="flex-1"
-                >
-                  Partager
-                </Button>
-              </div>
+              )}
+                
+              <Button
+                variant="primary"
+                onClick={handleShare}
+                disabled={isGenerating || !pdfBlob}
+                leftIcon={<Share2 className="w-4 h-4" />}
+                className="flex-1"
+              >
+                Partager
+              </Button>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
-      )}
-    </AnimatePresence>,
+      </motion.div>
+    )}
+  </AnimatePresence>,
     document.body
   );
 }
