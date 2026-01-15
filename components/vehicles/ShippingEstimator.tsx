@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from './QuotePDFModal';
 
 // Taux de conversion: 1 USD = 640 FCFA
@@ -92,6 +93,7 @@ export function ShippingEstimator({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
+  const toast = useToast();
 
   // État pour les destinations chargées depuis l'API
   const [destinations, setDestinations] = useState<Destination[]>(FALLBACK_DESTINATIONS);
@@ -268,8 +270,15 @@ export function ShippingEstimator({
   };
 
   const handleRequestQuote = () => {
-    console.log('ShippingEstimator: handleRequestQuote clicked, user:', !!user);
+    console.log('ShippingEstimator: handleRequestQuote clicked, user:', !!user, 'dest:', !!selectedDestination);
+    
+    if (!selectedDestination) {
+      toast.error('Veuillez sélectionner une destination');
+      return;
+    }
+
     if (!user) {
+      toast.info('Veuillez vous connecter pour obtenir un devis');
       // Redirect to login with return URL including destination and shipping type
       const redirectUrl = `/cars/${vehicleId}?action=quote${selectedDestination ? `&dest=${selectedDestination.id}` : ''}${selectedShippingType ? `&shipping=${selectedShippingType}` : ''}`;
       router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
@@ -277,6 +286,7 @@ export function ShippingEstimator({
     }
 
     // Open the quote modal directly
+    console.log('ShippingEstimator: Opening Quote Modal');
     setIsQuoteModalOpen(true);
   };
 
