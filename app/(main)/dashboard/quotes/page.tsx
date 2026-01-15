@@ -162,10 +162,6 @@ export default function QuotesPage() {
   };
 
   const handleOpenQuote = (quote: Quote) => {
-    if (isExpired(quote.valid_until)) {
-      toast.error('Ce devis a expire. Veuillez en generer un nouveau.');
-      return;
-    }
     setSelectedQuote(quote);
     setIsModalOpen(true);
   };
@@ -193,7 +189,7 @@ export default function QuotesPage() {
         flag: '', // Will be displayed without flag
       },
       shippingType: (quote.shipping_type || 'container') as 'container' | 'groupage',
-      shippingTypeName: quote.shipping_type === 'groupage' ? 'Groupage' : 'Container 20HQ',
+      shippingTypeName: quote.shipping_type === 'groupage' ? 'Groupage maritime' : 'Container seul 20HQ',
       calculations: {
         vehiclePrice: vehiclePriceXAF,
         shippingCost: quote.shipping_cost_xaf,
@@ -203,6 +199,7 @@ export default function QuotesPage() {
       },
       userId: user?.id || '',
       userEmail: user?.email || '',
+      validUntil: quote.valid_until, // Add valid_until for expiration check in modal
     };
   };
 
@@ -585,9 +582,12 @@ export default function QuotesPage() {
                           <span className="text-lg">
                             {SOURCE_FLAGS[quote.vehicle_source] || '🚗'}
                           </span>
-                          <h3 className="font-bold text-[var(--text-primary)] truncate">
+                          <button
+                            onClick={() => handleOpenQuote(quote)}
+                            className="font-bold text-[var(--text-primary)] hover:text-mandarin hover:underline transition-colors text-left truncate"
+                          >
                             {quote.vehicle_make} {quote.vehicle_model}
-                          </h3>
+                          </button>
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}
                           >
