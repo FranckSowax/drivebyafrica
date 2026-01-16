@@ -40,6 +40,7 @@ const getArg = (name: string, defaultVal: string) => {
 
 const MAX_PAGES = parseInt(getArg('max-pages', '500'));
 const USE_CSV = getArg('use-csv', 'true') === 'true';
+const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
 
 // Transmission type mapping
 const transmissionMap: Record<string, string> = {
@@ -291,6 +292,46 @@ async function getExistingVehicles(): Promise<Set<string>> {
 }
 
 /**
+ * Load removed vehicle IDs from CSV export (removed_daily.csv)
+ */
+async function loadRemovedFromCsv(): Promise<Set<string>> {
+  const csvPath = '/tmp/che168_removed.csv';
+  const removedIds = new Set<string>();
+
+  if (!fs.existsSync(csvPath)) {
+    console.log('  No removed CSV found at /tmp/che168_removed.csv');
+    return removedIds;
+  }
+
+  const fileStream = fs.createReadStream(csvPath, { encoding: 'utf-8' });
+  const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+  let isFirst = true;
+  let headers: string[] = [];
+  let lineCount = 0;
+
+  for await (const line of rl) {
+    if (isFirst) {
+      headers = line.split('|');
+      isFirst = false;
+      continue;
+    }
+
+    lineCount++;
+    const cols = line.split('|');
+    const innerIdIdx = headers.indexOf('inner_id');
+    const innerId = innerIdIdx >= 0 ? cols[innerIdIdx]?.trim() : '';
+
+    if (innerId) {
+      removedIds.add(`che168_${innerId}`);
+    }
+  }
+
+  console.log(`  Loaded ${removedIds.size} removed vehicle IDs from CSV (${lineCount} lines)`);
+  return removedIds;
+}
+
+/**
  * Map vehicle data to database format
  */
 function mapToDbRecord(vehicle: ApiOffer | CsvVehicle) {
@@ -325,7 +366,7 @@ async function main() {
   const startTime = Date.now();
   console.log('=== CHE168 CI Sync ===');
   console.log(`Started: ${new Date().toISOString()}`);
-  console.log(`Options: max-pages=${MAX_PAGES}, use-csv=${USE_CSV}`);
+  console.log(`Options: max-pages=${MAX_PAGES}, use-csv=${USE_CSV}, remove-expired=${REMOVE_EXPIRED}`);
 
   // Step 1: Get existing vehicles
   console.log('\n[1/4] Fetching existing CHE168 vehicles from database...');
@@ -419,8 +460,51 @@ async function main() {
     }
   }
 
-  // Step 4: Update sync config
-  console.log('\n[4/4] Updating sync configuration...');
+  // Step 4: Remove expired/sold vehicles
+  let removed = 0;
+  if (REMOVE_EXPIRED) {
+    console.log('\n[4/5] Processing removed/expired vehicles...');
+
+    // Load removed IDs from CSV
+    const removedIds = await loadRemovedFromCsv();
+
+    // Also find vehicles not in current sync (stale listings)
+    const currentSourceIds = new Set(allVehicles.map(v => `che168_${v.inner_id}`));
+    const staleIds: string[] = [];
+
+    for (const existingId of existingVehicles) {
+      if (!currentSourceIds.has(existingId)) {
+        staleIds.push(existingId);
+      }
+    }
+
+    // Combine removed from CSV and stale
+    const allToRemove = new Set([...removedIds, ...staleIds]);
+    console.log(`  Found ${removedIds.size} from removed CSV, ${staleIds.length} stale listings`);
+    console.log(`  Total to remove: ${allToRemove.size}`);
+
+    // Delete in batches
+    const toRemoveArray = Array.from(allToRemove);
+    for (let i = 0; i < toRemoveArray.length; i += 100) {
+      const batch = toRemoveArray.slice(i, i + 100);
+      const { error } = await supabase
+        .from('vehicles')
+        .delete()
+        .eq('source', 'china')
+        .in('source_id', batch);
+
+      if (!error) {
+        removed += batch.length;
+      } else {
+        console.error(`  Error removing batch:`, error.message);
+      }
+    }
+
+    console.log(`  Removed ${removed} vehicles`);
+  }
+
+  // Step 5: Update sync config
+  console.log('\n[5/5] Updating sync configuration...');
   await supabase.from('sync_config').upsert({
     source: 'che168',
     last_sync_at: new Date().toISOString(),
@@ -428,6 +512,7 @@ async function main() {
     total_vehicles: stats.added + stats.updated,
     vehicles_added: stats.added,
     vehicles_updated: stats.updated,
+    vehicles_removed: removed,
   }, {
     onConflict: 'source',
   });
@@ -439,6 +524,7 @@ async function main() {
   console.log(`Total vehicles processed: ${allVehicles.length}`);
   console.log(`Added: ${stats.added}`);
   console.log(`Updated: ${stats.updated}`);
+  console.log(`Removed: ${removed}`);
   console.log(`Skipped (no images): ${stats.skipped}`);
   console.log(`Errors: ${stats.errors}`);
 
@@ -453,6 +539,7 @@ async function main() {
 | Vehicles Processed | ${allVehicles.length} |
 | Added | ${stats.added} |
 | Updated | ${stats.updated} |
+| Removed | ${removed} |
 | Skipped | ${stats.skipped} |
 | Errors | ${stats.errors} |
 `;
