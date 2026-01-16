@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import {
   DollarSign,
-  Save,
   Loader2,
   AlertCircle,
   Search,
@@ -14,7 +13,6 @@ import {
   Check,
   TrendingUp,
   TrendingDown,
-  Globe,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -52,6 +50,7 @@ export default function AdminCurrenciesPage() {
   const [editRate, setEditRate] = useState<string>('');
   const [editNote, setEditNote] = useState<string>('');
   const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
   // Filter currencies based on search query
   const filteredCurrencies = currencies.filter(
@@ -63,14 +62,6 @@ export default function AdminCurrenciesPage() {
       )
   );
 
-  // Group currencies by type
-  const cfaZone = filteredCurrencies.filter((c) =>
-    ['XAF', 'XOF'].includes(c.code)
-  );
-  const otherCurrencies = filteredCurrencies.filter(
-    (c) => !['XAF', 'XOF'].includes(c.code)
-  );
-
   // Fetch currencies from API
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -80,6 +71,15 @@ export default function AdminCurrenciesPage() {
 
         if (data.currencies) {
           setCurrencies(data.currencies);
+          // Find the most recent update
+          const mostRecent = data.currencies.reduce(
+            (latest: string | null, c: CurrencyRate) => {
+              if (!latest) return c.updatedAt;
+              return new Date(c.updatedAt) > new Date(latest) ? c.updatedAt : latest;
+            },
+            null
+          );
+          setLastUpdatedAt(mostRecent);
         }
       } catch (error) {
         console.error('Error fetching currencies:', error);
@@ -156,6 +156,7 @@ export default function AdminCurrenciesPage() {
         )
       );
 
+      setLastUpdatedAt(new Date().toISOString());
       toast.success(`Taux ${currency.code} mis à jour`);
       cancelEditing();
     } catch (error) {
@@ -196,14 +197,6 @@ export default function AdminCurrenciesPage() {
     }
   };
 
-  const formatUSD = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
   const getRateChange = (currency: CurrencyRate) => {
     if (currency.history.length < 1) return null;
     const lastChange = currency.history[0];
@@ -224,208 +217,6 @@ export default function AdminCurrenciesPage() {
     );
   }
 
-  const CurrencyCard = ({ currency }: { currency: CurrencyRate }) => {
-    const rateChange = getRateChange(currency);
-    const isEditing = editingId === currency.id;
-    const showingHistory = showHistory === currency.id;
-
-    return (
-      <Card
-        className={`relative ${!currency.isActive ? 'opacity-60' : ''}`}
-      >
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-mandarin/10 flex items-center justify-center">
-              <span className="text-lg font-bold text-mandarin">
-                {currency.symbol}
-              </span>
-            </div>
-            <div>
-              <h3 className="font-bold text-[var(--text-primary)]">
-                {currency.code}
-              </h3>
-              <p className="text-sm text-[var(--text-muted)]">{currency.name}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => toggleActive(currency)}
-            className={`w-12 h-6 rounded-full transition-colors ${
-              currency.isActive ? 'bg-jewel' : 'bg-[var(--card-border)]'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                currency.isActive ? 'translate-x-6' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Rate */}
-        <div className="mb-4">
-          <p className="text-sm text-[var(--text-muted)] mb-1">
-            Taux pour 1 USD
-          </p>
-          {isEditing ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={editRate}
-                  onChange={(e) => setEditRate(e.target.value)}
-                  step="0.01"
-                  className="flex-1 px-3 py-2 bg-[var(--surface)] border border-mandarin rounded-lg text-[var(--text-primary)] focus:outline-none"
-                  autoFocus
-                />
-                <span className="text-[var(--text-muted)]">{currency.symbol}</span>
-              </div>
-              <input
-                type="text"
-                value={editNote}
-                onChange={(e) => setEditNote(e.target.value)}
-                placeholder="Note (optionnel)"
-                className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none text-sm"
-              />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => saveRate(currency)}
-                  disabled={isSaving}
-                  leftIcon={
-                    isSaving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4" />
-                    )
-                  }
-                >
-                  Enregistrer
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={cancelEditing}
-                  leftIcon={<X className="w-4 h-4" />}
-                >
-                  Annuler
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-[var(--text-primary)]">
-                {currency.rateToUsd.toLocaleString('fr-FR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}
-              </span>
-              <span className="text-[var(--text-muted)]">{currency.symbol}</span>
-              {rateChange && (
-                <span
-                  className={`flex items-center gap-1 text-sm ${
-                    rateChange.isPositive ? 'text-jewel' : 'text-red-500'
-                  }`}
-                >
-                  {rateChange.isPositive ? (
-                    <TrendingUp className="w-4 h-4" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4" />
-                  )}
-                  {rateChange.percent}%
-                </span>
-              )}
-              <button
-                onClick={() => startEditing(currency)}
-                className="ml-auto p-2 hover:bg-[var(--surface)] rounded-lg transition-colors"
-              >
-                <Edit3 className="w-4 h-4 text-[var(--text-muted)]" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Countries */}
-        {currency.countries.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Globe className="w-4 h-4 text-[var(--text-muted)]" />
-              <span className="text-sm text-[var(--text-muted)]">Pays</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {currency.countries.map((country) => (
-                <span
-                  key={country}
-                  className="px-2 py-1 bg-[var(--surface)] rounded text-xs text-[var(--text-secondary)]"
-                >
-                  {country}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Last update */}
-        <div className="flex items-center justify-between text-sm text-[var(--text-muted)] pt-3 border-t border-[var(--card-border)]">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span>
-              {formatDistanceToNow(new Date(currency.updatedAt), {
-                addSuffix: true,
-                locale: fr,
-              })}
-            </span>
-          </div>
-          <button
-            onClick={() =>
-              setShowHistory(showingHistory ? null : currency.id)
-            }
-            className="flex items-center gap-1 hover:text-mandarin transition-colors"
-          >
-            <History className="w-3 h-3" />
-            <span>Historique</span>
-          </button>
-        </div>
-
-        {/* History Panel */}
-        {showingHistory && currency.history.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
-            <h4 className="text-sm font-medium text-[var(--text-primary)] mb-3">
-              Historique des modifications
-            </h4>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {currency.history.slice(0, 10).map((h, i) => (
-                <div
-                  key={h.id || i}
-                  className="flex items-center justify-between text-sm p-2 bg-[var(--surface)] rounded-lg"
-                >
-                  <div>
-                    <span className="text-[var(--text-muted)]">
-                      {h.old_rate.toLocaleString('fr-FR')}
-                    </span>
-                    <span className="mx-2 text-[var(--text-muted)]">→</span>
-                    <span className="text-[var(--text-primary)] font-medium">
-                      {h.new_rate.toLocaleString('fr-FR')}
-                    </span>
-                    {h.note && (
-                      <span className="ml-2 text-[var(--text-muted)] italic">
-                        "{h.note}"
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {format(new Date(h.changed_at), 'dd/MM/yy HH:mm')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </Card>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="container mx-auto px-4">
@@ -438,6 +229,15 @@ export default function AdminCurrenciesPage() {
             <p className="text-[var(--text-muted)] mt-1">
               Gérez les taux de conversion des devises africaines
             </p>
+            {lastUpdatedAt && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-[var(--text-muted)]">
+                <Clock className="w-4 h-4" />
+                <span>
+                  Dernière mise à jour : {format(new Date(lastUpdatedAt), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                  {' '}({formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })})
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -453,7 +253,7 @@ export default function AdminCurrenciesPage() {
                 Ces taux sont utilisés pour afficher les prix des véhicules et
                 les estimations de transport dans la devise sélectionnée par
                 l'utilisateur. Les prix sont stockés en USD et convertis à
-                l'affichage.
+                l'affichage. Cliquez sur le taux pour le modifier.
               </p>
             </div>
           </div>
@@ -472,44 +272,242 @@ export default function AdminCurrenciesPage() {
             />
           </div>
           <p className="text-sm text-[var(--text-muted)] mt-2">
-            {filteredCurrencies.length} devise
-            {filteredCurrencies.length > 1 ? 's' : ''} sur {currencies.length}
+            {filteredCurrencies.length} devise{filteredCurrencies.length > 1 ? 's' : ''} sur {currencies.length}
           </p>
         </div>
 
-        {/* CFA Zone */}
-        {cfaZone.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-mandarin/10 flex items-center justify-center text-mandarin">
-                F
-              </span>
-              Zone Franc CFA
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {cfaZone.map((currency) => (
-                <CurrencyCard key={currency.id} currency={currency} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Currencies Table */}
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--card-border)]">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                    Devise
+                  </th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                    Symbole
+                  </th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                    Taux (1 USD =)
+                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                    Pays
+                  </th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                    Mis à jour
+                  </th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                    Actif
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCurrencies.map((currency) => {
+                  const isEditing = editingId === currency.id;
+                  const rateChange = getRateChange(currency);
+                  const isShowingHistory = showHistory === currency.id;
 
-        {/* Other Currencies */}
-        {otherCurrencies.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-jewel/10 flex items-center justify-center text-jewel">
-                <DollarSign className="w-4 h-4" />
-              </span>
-              Autres devises
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {otherCurrencies.map((currency) => (
-                <CurrencyCard key={currency.id} currency={currency} />
-              ))}
-            </div>
+                  return (
+                    <Fragment key={currency.id}>
+                      <tr
+                        className={`border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/50 transition-colors ${
+                          !currency.isActive ? 'opacity-50' : ''
+                        }`}
+                      >
+                        {/* Currency Code & Name */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-mandarin/10 flex items-center justify-center">
+                              <span className="text-sm font-bold text-mandarin">
+                                {currency.symbol}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-[var(--text-primary)]">
+                                {currency.code}
+                              </p>
+                              <p className="text-sm text-[var(--text-muted)]">
+                                {currency.name}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Symbol */}
+                        <td className="py-4 px-4 text-center">
+                          <span className="text-lg font-medium text-[var(--text-primary)]">
+                            {currency.symbol}
+                          </span>
+                        </td>
+
+                        {/* Rate */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center justify-center">
+                            {isEditing ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  value={editRate}
+                                  onChange={(e) => setEditRate(e.target.value)}
+                                  step="0.01"
+                                  className="w-32 px-3 py-2 bg-[var(--surface)] border border-mandarin rounded-lg text-center text-[var(--text-primary)] focus:outline-none"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveRate(currency);
+                                    if (e.key === 'Escape') cancelEditing();
+                                  }}
+                                />
+                                <button
+                                  onClick={() => saveRate(currency)}
+                                  disabled={isSaving}
+                                  className="p-2 bg-jewel text-white rounded-lg hover:bg-jewel/90 transition-colors disabled:opacity-50"
+                                >
+                                  {isSaving ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Check className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={cancelEditing}
+                                  className="p-2 bg-[var(--surface)] text-[var(--text-muted)] rounded-lg hover:bg-[var(--card-border)] transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => startEditing(currency)}
+                                  className="group flex items-center gap-2 px-3 py-2 bg-[var(--surface)] rounded-lg hover:bg-mandarin/10 transition-colors"
+                                >
+                                  <span className="font-mono font-medium text-[var(--text-primary)]">
+                                    {currency.rateToUsd.toLocaleString('fr-FR', {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 4,
+                                    })}
+                                  </span>
+                                  <Edit3 className="w-3 h-3 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </button>
+                                {rateChange && (
+                                  <span
+                                    className={`flex items-center gap-1 text-xs ${
+                                      rateChange.isPositive ? 'text-jewel' : 'text-red-500'
+                                    }`}
+                                  >
+                                    {rateChange.isPositive ? (
+                                      <TrendingUp className="w-3 h-3" />
+                                    ) : (
+                                      <TrendingDown className="w-3 h-3" />
+                                    )}
+                                    {rateChange.percent}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Countries */}
+                        <td className="py-4 px-4">
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {currency.countries.slice(0, 3).map((country) => (
+                              <span
+                                key={country}
+                                className="px-2 py-0.5 bg-[var(--surface)] rounded text-xs text-[var(--text-secondary)]"
+                              >
+                                {country}
+                              </span>
+                            ))}
+                            {currency.countries.length > 3 && (
+                              <span className="px-2 py-0.5 bg-[var(--surface)] rounded text-xs text-[var(--text-muted)]">
+                                +{currency.countries.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Last Update */}
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-sm text-[var(--text-muted)]">
+                              {formatDistanceToNow(new Date(currency.updatedAt), {
+                                addSuffix: true,
+                                locale: fr,
+                              })}
+                            </span>
+                            <button
+                              onClick={() =>
+                                setShowHistory(isShowingHistory ? null : currency.id)
+                              }
+                              className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors"
+                            >
+                              <History className="w-3 h-3" />
+                              Historique
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Active Toggle */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center justify-center">
+                            <button
+                              onClick={() => toggleActive(currency)}
+                              className={`w-12 h-6 rounded-full transition-colors ${
+                                currency.isActive ? 'bg-jewel' : 'bg-[var(--card-border)]'
+                              }`}
+                            >
+                              <div
+                                className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                                  currency.isActive ? 'translate-x-6' : 'translate-x-0.5'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* History Row */}
+                      {isShowingHistory && currency.history.length > 0 && (
+                        <tr key={`${currency.id}-history`}>
+                          <td colSpan={6} className="px-4 py-4 bg-[var(--surface)]/50">
+                            <div className="ml-12">
+                              <h4 className="text-sm font-medium text-[var(--text-primary)] mb-3">
+                                Historique des modifications - {currency.code}
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {currency.history.slice(0, 6).map((h, i) => (
+                                  <div
+                                    key={h.id || i}
+                                    className="flex items-center justify-between text-sm p-2 bg-[var(--background)] rounded-lg"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[var(--text-muted)]">
+                                        {h.old_rate.toLocaleString('fr-FR')}
+                                      </span>
+                                      <span className="text-[var(--text-muted)]">→</span>
+                                      <span className="text-[var(--text-primary)] font-medium">
+                                        {h.new_rate.toLocaleString('fr-FR')}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-[var(--text-muted)]">
+                                      {format(new Date(h.changed_at), 'dd/MM HH:mm')}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
+        </Card>
 
         {/* Empty State */}
         {filteredCurrencies.length === 0 && (
@@ -522,7 +520,7 @@ export default function AdminCurrenciesPage() {
         )}
 
         {/* Summary Card */}
-        <Card className="mt-8">
+        <Card className="mt-6">
           <h3 className="font-bold text-[var(--text-primary)] mb-4">
             Récapitulatif des devises
           </h3>
