@@ -22,8 +22,8 @@ CREATE INDEX IF NOT EXISTS idx_currency_rates_active ON currency_rates(is_active
 -- Insert default currencies
 INSERT INTO currency_rates (currency_code, currency_name, currency_symbol, rate_to_usd, countries, is_active, display_order)
 VALUES
-  -- US Dollar (base currency)
-  ('USD', 'Dollar américain', '$', 1, ARRAY['USA'], true, 1),
+  -- US Dollar (base currency) - Also used in RD Congo and Angola
+  ('USD', 'Dollar américain', '$', 1, ARRAY['USA', 'RD Congo', 'Angola'], true, 1),
 
   -- Euro
   ('EUR', 'Euro', '€', 0.92, ARRAY['France', 'Belgique'], true, 2),
@@ -61,96 +61,92 @@ VALUES
   ('CVE', 'Escudo cap-verdien', '$', 103, ARRAY['Cap-Vert'], true, 12),
 
   -- ========== AFRIQUE CENTRALE ==========
-  -- Congolese Franc (DRC)
-  ('CDF', 'Franc congolais', 'FC', 2800, ARRAY['RD Congo'], true, 13),
-
-  -- Angolan Kwanza
-  ('AOA', 'Kwanza angolais', 'Kz', 830, ARRAY['Angola'], true, 14),
+  -- Note: RD Congo and Angola use USD (added to USD countries above)
 
   -- São Tomé and Príncipe Dobra
-  ('STN', 'Dobra santoméen', 'Db', 23, ARRAY['São Tomé-et-Príncipe'], true, 15),
+  ('STN', 'Dobra santoméen', 'Db', 23, ARRAY['São Tomé-et-Príncipe'], true, 13),
 
   -- ========== AFRIQUE DE L''EST ==========
   -- Kenyan Shilling
-  ('KES', 'Shilling kényan', 'KSh', 154, ARRAY['Kenya'], true, 16),
+  ('KES', 'Shilling kényan', 'KSh', 154, ARRAY['Kenya'], true, 14),
 
   -- Tanzanian Shilling
-  ('TZS', 'Shilling tanzanien', 'TSh', 2640, ARRAY['Tanzanie'], true, 17),
+  ('TZS', 'Shilling tanzanien', 'TSh', 2640, ARRAY['Tanzanie'], true, 15),
 
   -- Ugandan Shilling
-  ('UGX', 'Shilling ougandais', 'USh', 3750, ARRAY['Ouganda'], true, 18),
+  ('UGX', 'Shilling ougandais', 'USh', 3750, ARRAY['Ouganda'], true, 16),
 
   -- Rwandan Franc
-  ('RWF', 'Franc rwandais', 'FRw', 1280, ARRAY['Rwanda'], true, 19),
+  ('RWF', 'Franc rwandais', 'FRw', 1280, ARRAY['Rwanda'], true, 17),
 
   -- Burundian Franc
-  ('BIF', 'Franc burundais', 'FBu', 2850, ARRAY['Burundi'], true, 20),
+  ('BIF', 'Franc burundais', 'FBu', 2850, ARRAY['Burundi'], true, 18),
 
   -- Ethiopian Birr
-  ('ETB', 'Birr éthiopien', 'Br', 56.5, ARRAY['Éthiopie'], true, 21),
+  ('ETB', 'Birr éthiopien', 'Br', 56.5, ARRAY['Éthiopie'], true, 19),
 
   -- Djiboutian Franc
-  ('DJF', 'Franc djiboutien', 'Fdj', 178, ARRAY['Djibouti'], true, 22),
+  ('DJF', 'Franc djiboutien', 'Fdj', 178, ARRAY['Djibouti'], true, 20),
 
   -- Eritrean Nakfa
-  ('ERN', 'Nakfa érythréen', 'Nkf', 15, ARRAY['Érythrée'], true, 23),
+  ('ERN', 'Nakfa érythréen', 'Nkf', 15, ARRAY['Érythrée'], true, 21),
 
   -- Somali Shilling
-  ('SOS', 'Shilling somalien', 'Sh.So.', 571, ARRAY['Somalie'], true, 24),
+  ('SOS', 'Shilling somalien', 'Sh.So.', 571, ARRAY['Somalie'], true, 22),
 
   -- South Sudanese Pound
-  ('SSP', 'Livre sud-soudanaise', 'SSP', 1300, ARRAY['Soudan du Sud'], true, 25),
+  ('SSP', 'Livre sud-soudanaise', 'SSP', 1300, ARRAY['Soudan du Sud'], true, 23),
 
   -- ========== AFRIQUE DU NORD ==========
   -- Moroccan Dirham
-  ('MAD', 'Dirham marocain', 'DH', 10.1, ARRAY['Maroc'], true, 26),
+  ('MAD', 'Dirham marocain', 'DH', 10.1, ARRAY['Maroc'], true, 24),
 
   -- Algerian Dinar
-  ('DZD', 'Dinar algérien', 'DA', 135, ARRAY['Algérie'], true, 27),
+  ('DZD', 'Dinar algérien', 'DA', 135, ARRAY['Algérie'], true, 25),
 
   -- Tunisian Dinar
-  ('TND', 'Dinar tunisien', 'DT', 3.15, ARRAY['Tunisie'], true, 28),
+  ('TND', 'Dinar tunisien', 'DT', 3.15, ARRAY['Tunisie'], true, 26),
 
   -- Libyan Dinar
-  ('LYD', 'Dinar libyen', 'LD', 4.85, ARRAY['Libye'], true, 29),
+  ('LYD', 'Dinar libyen', 'LD', 4.85, ARRAY['Libye'], true, 27),
 
   -- Egyptian Pound
-  ('EGP', 'Livre égyptienne', 'E£', 50.5, ARRAY['Égypte'], true, 30),
+  ('EGP', 'Livre égyptienne', 'E£', 50.5, ARRAY['Égypte'], true, 28),
 
   -- Sudanese Pound
-  ('SDG', 'Livre soudanaise', 'SDG', 600, ARRAY['Soudan'], true, 31),
+  ('SDG', 'Livre soudanaise', 'SDG', 600, ARRAY['Soudan'], true, 29),
 
   -- ========== AFRIQUE AUSTRALE ==========
   -- South African Rand
-  ('ZAR', 'Rand sud-africain', 'R', 18.5, ARRAY['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'], true, 32),
+  ('ZAR', 'Rand sud-africain', 'R', 18.5, ARRAY['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'], true, 30),
 
   -- Mozambican Metical
-  ('MZN', 'Metical mozambicain', 'MT', 63.5, ARRAY['Mozambique'], true, 33),
+  ('MZN', 'Metical mozambicain', 'MT', 63.5, ARRAY['Mozambique'], true, 31),
 
   -- Zambian Kwacha
-  ('ZMW', 'Kwacha zambien', 'ZK', 27, ARRAY['Zambie'], true, 34),
+  ('ZMW', 'Kwacha zambien', 'ZK', 27, ARRAY['Zambie'], true, 32),
 
   -- Zimbabwean Dollar (ZiG - new currency 2024)
-  ('ZWL', 'Dollar zimbabwéen', 'Z$', 13.5, ARRAY['Zimbabwe'], true, 35),
+  ('ZWL', 'Dollar zimbabwéen', 'Z$', 13.5, ARRAY['Zimbabwe'], true, 33),
 
   -- Botswana Pula
-  ('BWP', 'Pula botswanais', 'P', 13.7, ARRAY['Botswana'], true, 36),
+  ('BWP', 'Pula botswanais', 'P', 13.7, ARRAY['Botswana'], true, 34),
 
   -- Malawian Kwacha
-  ('MWK', 'Kwacha malawien', 'MK', 1750, ARRAY['Malawi'], true, 37),
+  ('MWK', 'Kwacha malawien', 'MK', 1750, ARRAY['Malawi'], true, 35),
 
   -- ========== ÎLES DE L''OCÉAN INDIEN ==========
   -- Malagasy Ariary
-  ('MGA', 'Ariary malgache', 'Ar', 4650, ARRAY['Madagascar'], true, 38),
+  ('MGA', 'Ariary malgache', 'Ar', 4650, ARRAY['Madagascar'], true, 36),
 
   -- Mauritian Rupee
-  ('MUR', 'Roupie mauricienne', 'Rs', 46, ARRAY['Maurice'], true, 39),
+  ('MUR', 'Roupie mauricienne', 'Rs', 46, ARRAY['Maurice'], true, 37),
 
   -- Seychellois Rupee
-  ('SCR', 'Roupie seychelloise', 'SCR', 14.5, ARRAY['Seychelles'], true, 40),
+  ('SCR', 'Roupie seychelloise', 'SCR', 14.5, ARRAY['Seychelles'], true, 38),
 
   -- Comorian Franc
-  ('KMF', 'Franc comorien', 'CF', 460, ARRAY['Comores'], true, 41)
+  ('KMF', 'Franc comorien', 'CF', 460, ARRAY['Comores'], true, 39)
 
 ON CONFLICT (currency_code) DO UPDATE SET
   currency_name = EXCLUDED.currency_name,

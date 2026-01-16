@@ -25,9 +25,10 @@ async function createSupabaseClient() {
 
 // Default currencies if database table doesn't exist yet
 // Covers all African countries from the shipping destinations list
+// Note: RD Congo and Angola use USD
 const DEFAULT_CURRENCIES = [
-  // Base currencies
-  { code: 'USD', name: 'Dollar américain', symbol: '$', rateToUsd: 1, countries: ['USA'] },
+  // Base currencies - USD also used in RD Congo and Angola
+  { code: 'USD', name: 'Dollar américain', symbol: '$', rateToUsd: 1, countries: ['USA', 'RD Congo', 'Angola'] },
   { code: 'EUR', name: 'Euro', symbol: '€', rateToUsd: 0.92, countries: ['France', 'Belgique'] },
 
   // Zone Franc CFA
@@ -44,9 +45,7 @@ const DEFAULT_CURRENCIES = [
   { code: 'MRU', name: 'Ouguiya mauritanien', symbol: 'UM', rateToUsd: 39.5, countries: ['Mauritanie'] },
   { code: 'CVE', name: 'Escudo cap-verdien', symbol: '$', rateToUsd: 103, countries: ['Cap-Vert'] },
 
-  // Afrique Centrale
-  { code: 'CDF', name: 'Franc congolais', symbol: 'FC', rateToUsd: 2800, countries: ['RD Congo'] },
-  { code: 'AOA', name: 'Kwanza angolais', symbol: 'Kz', rateToUsd: 830, countries: ['Angola'] },
+  // Afrique Centrale (RD Congo et Angola utilisent USD)
   { code: 'STN', name: 'Dobra santoméen', symbol: 'Db', rateToUsd: 23, countries: ['São Tomé-et-Príncipe'] },
 
   // Afrique de l'Est
