@@ -22,6 +22,64 @@ import { useToast } from '@/components/ui/Toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+// Currency code to flag emoji mapping
+const CURRENCY_FLAGS: Record<string, string> = {
+  // Base currencies
+  USD: '🇺🇸',
+  EUR: '🇪🇺',
+  // Zone Franc CFA
+  XAF: '🇨🇲', // Cameroon as representative for BEAC
+  XOF: '🇸🇳', // Senegal as representative for BCEAO
+  // Afrique de l'Ouest
+  NGN: '🇳🇬',
+  GHS: '🇬🇭',
+  GNF: '🇬🇳',
+  SLE: '🇸🇱',
+  SLL: '🇸🇱', // Old code
+  LRD: '🇱🇷',
+  GMD: '🇬🇲',
+  MRU: '🇲🇷',
+  CVE: '🇨🇻',
+  // Afrique Centrale
+  CDF: '🇨🇩',
+  AOA: '🇦🇴',
+  STN: '🇸🇹',
+  // Afrique de l'Est
+  KES: '🇰🇪',
+  TZS: '🇹🇿',
+  UGX: '🇺🇬',
+  RWF: '🇷🇼',
+  BIF: '🇧🇮',
+  ETB: '🇪🇹',
+  DJF: '🇩🇯',
+  ERN: '🇪🇷',
+  SOS: '🇸🇴',
+  SSP: '🇸🇸',
+  // Afrique du Nord
+  MAD: '🇲🇦',
+  DZD: '🇩🇿',
+  TND: '🇹🇳',
+  LYD: '🇱🇾',
+  EGP: '🇪🇬',
+  SDG: '🇸🇩',
+  // Afrique Australe
+  ZAR: '🇿🇦',
+  BWP: '🇧🇼',
+  MZN: '🇲🇿',
+  ZMW: '🇿🇲',
+  MWK: '🇲🇼',
+  ZWG: '🇿🇼',
+  ZWL: '🇿🇼', // Old code
+  NAD: '🇳🇦',
+  SZL: '🇸🇿',
+  LSL: '🇱🇸',
+  // Îles de l'Océan Indien
+  MGA: '🇲🇬',
+  MUR: '🇲🇺',
+  SCR: '🇸🇨',
+  KMF: '🇰🇲',
+};
+
 interface CurrencyRate {
   id: string;
   code: string;
@@ -363,9 +421,9 @@ export default function AdminCurrenciesPage() {
                         {/* Currency Code & Name */}
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-mandarin/10 flex items-center justify-center">
-                              <span className="text-sm font-bold text-mandarin">
-                                {currency.symbol}
+                            <div className="w-10 h-10 rounded-lg bg-[var(--surface)] flex items-center justify-center">
+                              <span className="text-2xl">
+                                {CURRENCY_FLAGS[currency.code] || '💱'}
                               </span>
                             </div>
                             <div>
