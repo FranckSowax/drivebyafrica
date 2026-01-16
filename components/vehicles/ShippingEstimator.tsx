@@ -26,10 +26,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from './QuotePDFModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
-
-// Frais fixes
-const INSURANCE_RATE = 0.025; // 2.5% assurance
-const INSPECTION_FEE_XAF = 225000; // 225 000 FCFA pour inspection et documents
+import { INSURANCE_RATE, INSPECTION_FEE_XAF, getExportTax } from '@/lib/utils/pricing';
 
 // Types d'expédition
 type ShippingType = 'container' | 'groupage';
@@ -252,7 +249,11 @@ export function ShippingEstimator({
   const calculations = useMemo(() => {
     if (!selectedDestination) return null;
 
-    const vehiclePriceXAF = vehiclePriceUSD * xafRate;
+    // Pour les véhicules chinois, ajouter silencieusement la taxe export (980$)
+    const exportTaxUSD = getExportTax(vehicleSource);
+    const effectiveVehiclePriceUSD = vehiclePriceUSD + exportTaxUSD;
+    const vehiclePriceXAF = effectiveVehiclePriceUSD * xafRate;
+
     const shippingCostUSD = selectedDestination.shippingCost[vehicleSource];
 
     // Appliquer le multiplicateur selon le type d'expédition
@@ -260,7 +261,7 @@ export function ShippingEstimator({
     const adjustedShippingCostUSD = shippingCostUSD * (shippingTypeConfig?.multiplier || 1);
     const shippingCostXAF = adjustedShippingCostUSD * xafRate;
 
-    // Assurance cargo: 2.5% du (prix véhicule + transport maritime)
+    // Assurance cargo: 2.5% du (prix véhicule + taxe export + transport maritime)
     const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
     const inspectionFeeXAF = INSPECTION_FEE_XAF;
 
@@ -273,6 +274,7 @@ export function ShippingEstimator({
       inspectionFee: Math.round(inspectionFeeXAF),
       total: Math.round(totalXAF),
       isGroupage: selectedShippingType === 'groupage',
+      hasExportTax: exportTaxUSD > 0,
     };
   }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType, xafRate]);
 
@@ -641,7 +643,12 @@ export function ShippingEstimator({
 
             {/* Total */}
             <div className="flex justify-between items-center py-3 bg-mandarin/10 -mx-4 px-4 rounded-lg mt-2">
-              <span className="font-bold text-[var(--text-primary)]">Coût total estimé</span>
+              <div>
+                <span className="font-bold text-[var(--text-primary)] block">Coût total estimé</span>
+                {calculations.hasExportTax && (
+                  <span className="text-xs text-[var(--text-muted)]">Inclut taxe et douane export</span>
+                )}
+              </div>
               <span className="text-xl font-bold text-mandarin">
                 {formatCurrency(calculations.total)}
               </span>

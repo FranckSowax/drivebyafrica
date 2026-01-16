@@ -26,6 +26,7 @@ import { useCurrency } from '@/components/providers/LocaleProvider';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { getProxiedImageUrls, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
+import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
 
 interface VehicleDetailClientProps {
@@ -316,13 +317,13 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 </div>
               )}
 
-              {/* Price */}
+              {/* Price - includes export tax silently for Chinese vehicles */}
               <div className="bg-[var(--surface)] rounded-lg p-4 mb-4">
                 <div>
                   <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
                   <p className="text-2xl font-bold text-mandarin">
                     {vehicle.start_price_usd
-                      ? formatPrice(vehicle.start_price_usd)
+                      ? formatPrice(vehicle.start_price_usd + getExportTax(vehicle.source))
                       : 'Sur demande'}
                   </p>
                 </div>

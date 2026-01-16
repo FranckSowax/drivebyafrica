@@ -50,6 +50,7 @@ interface QuoteData {
     insuranceCost: number;
     inspectionFee: number;
     total: number;
+    hasExportTax?: boolean;
   };
   userId: string;
   userEmail: string;
@@ -752,7 +753,12 @@ return createPortal(
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-gray-700">
                           <tr>
-                            <td className="px-6 py-4">Prix du véhicule (FOB)</td>
+                            <td className="px-6 py-4">
+                              Prix du véhicule (FOB)
+                              {quoteData.calculations.hasExportTax && (
+                                <span className="ml-2 text-xs text-gray-400">(inclut taxe export)</span>
+                              )}
+                            </td>
                             <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.vehiclePrice)}</td>
                           </tr>
                           <tr>
@@ -771,7 +777,12 @@ return createPortal(
                             <td className="px-6 py-4 text-right font-mono font-medium">{formatCurrency(quoteData.calculations.inspectionFee)}</td>
                           </tr>
                           <tr className="bg-orange-50/50">
-                            <td className="px-6 py-5 font-black text-gray-900 uppercase tracking-tighter">Total estimé</td>
+                            <td className="px-6 py-5">
+                              <span className="font-black text-gray-900 uppercase tracking-tighter block">Total estimé</span>
+                              {quoteData.calculations.hasExportTax && (
+                                <span className="text-xs text-gray-500 font-normal">Inclut taxe et douane export</span>
+                              )}
+                            </td>
                             <td className="px-6 py-5 text-right">
                               <span className="text-xl font-black text-mandarin font-mono">{formatCurrency(quoteData.calculations.total)}</span>
                             </td>

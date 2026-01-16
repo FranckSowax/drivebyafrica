@@ -6,10 +6,7 @@ import { Calculator, Ship, Shield, FileCheck, ArrowRight, Info, MapPin } from 'l
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useCurrency } from '@/components/providers/LocaleProvider';
-
-// Frais fixes (nouveaux calculs)
-const INSURANCE_RATE = 0.025; // 2.5% assurance
-const INSPECTION_FEE_XAF = 225000; // 225 000 FCFA pour inspection et documents
+import { INSURANCE_RATE, INSPECTION_FEE_XAF, getExportTax } from '@/lib/utils/pricing';
 
 // Destinations africaines avec coûts de transport (estimations en USD)
 const destinations = [
@@ -92,21 +89,26 @@ export default function CalculatorPage() {
   }, [availableCurrencies]);
 
   const calculations = useMemo(() => {
-    const vehiclePriceUSD = vehiclePriceXAF / xafRate;
+    // Pour les véhicules chinois, ajouter silencieusement la taxe export (980$)
+    const exportTaxUSD = getExportTax(source.id);
+    const exportTaxXAF = exportTaxUSD * xafRate;
+    const effectiveVehiclePriceXAF = vehiclePriceXAF + exportTaxXAF;
+
     const shippingCostUSD = destination.shippingCost[source.id as keyof typeof destination.shippingCost];
     const shippingCostXAF = shippingCostUSD * xafRate;
-    // Assurance cargo: 2.5% du (prix véhicule + transport maritime)
-    const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
+    // Assurance cargo: 2.5% du (prix véhicule + taxe export + transport maritime)
+    const insuranceCostXAF = (effectiveVehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
     const inspectionFeeXAF = INSPECTION_FEE_XAF;
 
-    const total = vehiclePriceXAF + shippingCostXAF + insuranceCostXAF + inspectionFeeXAF;
+    const total = effectiveVehiclePriceXAF + shippingCostXAF + insuranceCostXAF + inspectionFeeXAF;
 
     return {
-      vehiclePrice: Math.round(vehiclePriceXAF),
+      vehiclePrice: Math.round(effectiveVehiclePriceXAF),
       shippingCost: Math.round(shippingCostXAF),
       insuranceCost: Math.round(insuranceCostXAF),
       inspectionFee: Math.round(inspectionFeeXAF),
       total: Math.round(total),
+      hasExportTax: exportTaxUSD > 0,
     };
   }, [vehiclePriceXAF, destination, source, xafRate]);
 
@@ -261,7 +263,12 @@ export default function CalculatorPage() {
 
                   {/* Total */}
                   <div className="flex justify-between items-center py-4 bg-mandarin/10 -mx-6 px-6 rounded-b-xl mt-4">
-                    <span className="text-xl font-bold text-[var(--text-primary)]">Coût total estimé</span>
+                    <div>
+                      <span className="text-xl font-bold text-[var(--text-primary)] block">Coût total estimé</span>
+                      {calculations.hasExportTax && (
+                        <span className="text-xs text-[var(--text-muted)]">Inclut taxe et douane export</span>
+                      )}
+                    </div>
                     <span className="text-2xl font-bold text-mandarin">{formatCurrency(calculations.total)}</span>
                   </div>
                 </div>

@@ -72,12 +72,18 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     country,
   } = useLocaleStore();
 
-  // Fetch currencies on mount
+  // Fetch currencies on mount and periodically refresh
   useEffect(() => {
     const fetchCurrencies = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/currencies');
+        // Add cache-busting query param
+        const response = await fetch(`/api/currencies?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setAvailableCurrencies(data.currencies || []);
@@ -104,14 +110,12 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // Set currency info if not set
-          if (!currencyInfo) {
-            const currentCurrencyData = data.currencies?.find(
-              (c: CurrencyInfo) => c.code === currency
-            );
-            if (currentCurrencyData) {
-              setCurrencyInfo(currentCurrencyData);
-            }
+          // Always update currency info with fresh data from API
+          const currentCurrencyData = data.currencies?.find(
+            (c: CurrencyInfo) => c.code === currency
+          );
+          if (currentCurrencyData) {
+            setCurrencyInfo(currentCurrencyData);
           }
         }
       } catch (error) {
@@ -123,6 +127,10 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
     fetchCurrencies();
     setMounted(true);
+
+    // Refresh currencies every 5 minutes to catch updates
+    const intervalId = setInterval(fetchCurrencies, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Translation function

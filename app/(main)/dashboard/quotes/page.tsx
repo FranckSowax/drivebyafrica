@@ -26,6 +26,7 @@ import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from '@/components/vehicles/QuotePDFModal';
 import { QuoteValidationModal } from '@/components/vehicles/QuoteValidationModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
+import { getExportTax } from '@/lib/utils/pricing';
 
 interface Quote {
   id: string;
@@ -194,7 +195,10 @@ export default function QuotesPage() {
   // Convert Quote to QuoteData format for the modal
   const getQuoteDataForModal = (quote: Quote) => {
     if (!quote) return null;
-    const vehiclePriceXAF = quote.vehicle_price_usd * xafRate;
+    // Pour les véhicules chinois, ajouter silencieusement la taxe export (980$)
+    const exportTaxUSD = getExportTax(quote.vehicle_source);
+    const effectivePriceUSD = quote.vehicle_price_usd + exportTaxUSD;
+    const vehiclePriceXAF = effectivePriceUSD * xafRate;
     return {
       vehicleId: quote.vehicle_id,
       vehicleMake: quote.vehicle_make,
@@ -216,6 +220,7 @@ export default function QuotesPage() {
         insuranceCost: quote.insurance_cost_xaf,
         inspectionFee: quote.inspection_fee_xaf,
         total: quote.total_cost_xaf,
+        hasExportTax: exportTaxUSD > 0,
       },
       userId: user?.id || '',
       userEmail: user?.email || '',
@@ -372,9 +377,13 @@ export default function QuotesPage() {
 
       y += 10;
 
-      const vehiclePriceXAF = quote.vehicle_price_usd * xafRate;
+      // Pour les véhicules chinois, ajouter silencieusement la taxe export (980$)
+      const exportTaxUSD = getExportTax(quote.vehicle_source);
+      const effectivePriceUSD = quote.vehicle_price_usd + exportTaxUSD;
+      const vehiclePriceXAF = effectivePriceUSD * xafRate;
+      const hasExportTax = exportTaxUSD > 0;
       const costs = [
-        { label: 'Prix du vehicule (FOB)', value: vehiclePriceXAF },
+        { label: hasExportTax ? 'Prix du vehicule (FOB, inclut taxe export)' : 'Prix du vehicule (FOB)', value: vehiclePriceXAF },
         { label: `Transport maritime (${SOURCE_NAMES[quote.vehicle_source] || quote.vehicle_source} -> ${quote.destination_name})`, value: quote.shipping_cost_xaf },
         { label: 'Assurance cargo (2.5%)', value: quote.insurance_cost_xaf },
         { label: 'Inspection & Documents', value: quote.inspection_fee_xaf },
@@ -403,15 +412,22 @@ export default function QuotesPage() {
 
       // Total
       doc.setFillColor(255, 247, 237);
-      doc.rect(margin, y, contentWidth, 14, 'F');
+      doc.rect(margin, y, contentWidth, hasExportTax ? 18 : 14, 'F');
 
       doc.setFontSize(11);
       doc.setTextColor(darkGray);
       doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL ESTIME', margin + 5, y + 10);
+      doc.text('TOTAL ESTIME', margin + 5, y + (hasExportTax ? 7 : 10));
+      if (hasExportTax) {
+        doc.setFontSize(7);
+        doc.setTextColor(mediumGray);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Inclut taxe et douane export', margin + 5, y + 13);
+      }
       doc.setTextColor(mandarin);
       doc.setFontSize(12);
-      doc.text(formatCurrency(quote.total_cost_xaf), pageWidth - margin - 5, y + 10, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text(formatCurrency(quote.total_cost_xaf), pageWidth - margin - 5, y + (hasExportTax ? 10 : 10), { align: 'right' });
 
       y += 22;
 

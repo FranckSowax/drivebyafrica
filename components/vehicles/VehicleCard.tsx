@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { useCurrency, useTranslation } from '@/components/providers/LocaleProvider';
 import { getProxiedImageUrl, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
+import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
 
 const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
@@ -161,12 +162,12 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             </div>
           </div>
 
-          {/* Price */}
+          {/* Price - includes export tax silently for Chinese vehicles */}
           <div className="mt-4">
             <p className="text-xs text-[var(--text-muted)]">{t('vehicles.card.fobPrice')}</p>
             <p className="text-mandarin font-bold text-xl">
               {vehicle.start_price_usd
-                ? formatPrice(vehicle.start_price_usd)
+                ? formatPrice(vehicle.start_price_usd + getExportTax(vehicle.source))
                 : t('vehicles.card.onRequest')}
             </p>
           </div>

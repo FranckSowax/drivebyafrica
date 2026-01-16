@@ -3,6 +3,10 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import type { Database } from '@/types/database';
 
+// Force dynamic to prevent Next.js caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function createSupabaseClient() {
   const cookieStore = await cookies();
   return createServerClient<Database>(
@@ -126,6 +130,11 @@ export async function GET() {
     return NextResponse.json({
       currencies: mappedCurrencies.length > 0 ? mappedCurrencies : DEFAULT_CURRENCIES,
       source: mappedCurrencies.length > 0 ? 'database' : 'defaults',
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     });
   } catch (error) {
     console.error('Error fetching currencies:', error);
@@ -133,6 +142,11 @@ export async function GET() {
       currencies: DEFAULT_CURRENCIES,
       source: 'defaults',
       error: 'Failed to fetch from database',
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     });
   }
 }
