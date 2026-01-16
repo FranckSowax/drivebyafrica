@@ -9,8 +9,6 @@ import {
   Eye,
   Heart,
   Globe,
-  ArrowUpRight,
-  ArrowDownRight,
   RefreshCw,
   Loader2,
   AlertCircle,
@@ -18,12 +16,45 @@ import {
   FileText,
   Package,
   Ship,
-  Calendar,
   Target,
   Percent,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  Bar,
+  BarChart,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  RadialBarChart,
+  RadialBar,
+} from 'recharts';
+
+interface TimeSeriesData {
+  date: string;
+  users: number;
+  quotes: number;
+  vehicles: number;
+  views: number;
+}
+
+interface MonthlyData {
+  month: string;
+  users: number;
+  quotes: number;
+  vehicles: number;
+}
 
 interface AnalyticsData {
   kpis: {
@@ -92,6 +123,8 @@ interface AnalyticsData {
     totalMessages: number;
     messagesThisWeek: number;
   };
+  timeSeries: TimeSeriesData[];
+  monthlyComparison: MonthlyData[];
 }
 
 // Country flags mapping
@@ -119,10 +152,24 @@ const sourceFlags: Record<string, { flag: string; name: string }> = {
   'dubai': { flag: '🇦🇪', name: 'Dubaï' },
 };
 
+// Chart colors
+const CHART_COLORS = {
+  primary: '#F97316',
+  secondary: '#3B82F6',
+  tertiary: '#10B981',
+  quaternary: '#8B5CF6',
+  yellow: '#EAB308',
+  red: '#EF4444',
+  muted: '#94A3B8',
+};
+
+const PIE_COLORS = ['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#F59E0B'];
+
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   const fetchData = useCallback(async () => {
     try {
@@ -147,90 +194,80 @@ export default function AdminAnalyticsPage() {
     return new Intl.NumberFormat('fr-FR').format(value);
   };
 
-  const formatCurrency = (value: number, currency: 'USD' | 'XAF' = 'USD') => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: currency,
-      maximumFractionDigits: 0,
-    }).format(value);
+  // Filter time series data based on selected range
+  const getFilteredTimeSeries = () => {
+    if (!data?.timeSeries) return [];
+    const daysToShow = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    return data.timeSeries.slice(-daysToShow);
   };
 
-  const GrowthBadge = ({ value, inverted = false }: { value: number; inverted?: boolean }) => {
-    const isPositive = inverted ? value < 0 : value > 0;
-    return (
-      <span className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-green-600' : value === 0 ? 'text-gray-500' : 'text-red-500'}`}>
-        {value >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-        {value >= 0 ? '+' : ''}{value}%
-      </span>
-    );
-  };
-
-  // Simple bar chart component
-  const BarChart = ({ data, maxValue }: { data: Array<{ label: string; value: number; color?: string }>; maxValue?: number }) => {
-    const max = maxValue || Math.max(...data.map(d => d.value));
-    return (
-      <div className="space-y-3">
-        {data.map((item, index) => (
-          <div key={index}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-[var(--text-primary)]">{item.label}</span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">{formatNumber(item.value)}</span>
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg p-3 shadow-lg">
+          <p className="text-sm font-medium text-[var(--text-primary)] mb-2">
+            {label ? new Date(label).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+          </p>
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center gap-2 text-xs">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-[var(--text-muted)]">{entry.name}:</span>
+              <span className="font-medium text-[var(--text-primary)]">{entry.value}</span>
             </div>
-            <div className="h-3 bg-[var(--surface)] rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${item.color || 'bg-mandarin'}`}
-                style={{ width: `${(item.value / max) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Donut chart component
-  const DonutChart = ({ data, size = 120 }: { data: Array<{ label: string; value: number; color: string }>; size?: number }) => {
-    const total = data.reduce((sum, d) => sum + d.value, 0);
-    let cumulative = 0;
-
-    return (
-      <div className="flex items-center justify-center">
-        <div className="relative" style={{ width: size, height: size }}>
-          <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              fill="none"
-              stroke="var(--surface)"
-              strokeWidth="16"
-            />
-            {data.map((item, index) => {
-              const percentage = (item.value / total) * 100;
-              const offset = cumulative;
-              cumulative += percentage;
-              return (
-                <circle
-                  key={index}
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="none"
-                  stroke={item.color}
-                  strokeWidth="16"
-                  strokeDasharray={`${percentage * 2.51} ${100 * 2.51}`}
-                  strokeDashoffset={`${-offset * 2.51}`}
-                />
-              );
-            })}
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-[var(--text-primary)]">{total}</span>
-            <span className="text-xs text-[var(--text-muted)]">Total</span>
-          </div>
+          ))}
         </div>
-      </div>
-    );
+      );
+    }
+    return null;
+  };
+
+  // Prepare pie chart data for vehicle sources
+  const getSourcesPieData = () => {
+    if (!data?.vehicles.bySource) return [];
+    return Object.entries(data.vehicles.bySource).map(([source, count]) => {
+      const sourceInfo = sourceFlags[source] || { name: source };
+      return {
+        name: sourceInfo.name,
+        value: count,
+      };
+    });
+  };
+
+  // Prepare pie chart data for quote status
+  const getQuoteStatusPieData = () => {
+    if (!data?.quotes.byStatus) return [];
+    const statusLabels: Record<string, string> = {
+      pending: 'En attente',
+      accepted: 'Acceptés',
+      expired: 'Expirés',
+      cancelled: 'Annulés',
+    };
+    return Object.entries(data.quotes.byStatus).map(([status, count]) => ({
+      name: statusLabels[status] || status,
+      value: count,
+    }));
+  };
+
+  // Prepare bar chart data for top makes
+  const getTopMakesData = () => {
+    if (!data?.vehicles.topMakes) return [];
+    return data.vehicles.topMakes.slice(0, 8).map(item => ({
+      name: item.make,
+      value: item.count,
+    }));
+  };
+
+  // Prepare data for orders pipeline
+  const getOrdersPipelineData = () => {
+    if (!data?.orders) return [];
+    return [
+      { name: 'Acompte payé', value: data.orders.deposit_paid, fill: CHART_COLORS.yellow },
+      { name: 'Véhicule acheté', value: data.orders.vehicle_purchased, fill: CHART_COLORS.secondary },
+      { name: 'En transit', value: data.orders.in_transit, fill: CHART_COLORS.primary },
+      { name: 'En mer', value: data.orders.shipping, fill: CHART_COLORS.quaternary },
+      { name: 'Livrés', value: data.orders.delivered, fill: CHART_COLORS.tertiary },
+    ];
   };
 
   if (isLoading) {
@@ -252,6 +289,12 @@ export default function AdminAnalyticsPage() {
       </div>
     );
   }
+
+  const filteredTimeSeries = getFilteredTimeSeries();
+  const sourcesPieData = getSourcesPieData();
+  const quoteStatusPieData = getQuoteStatusPieData();
+  const topMakesData = getTopMakesData();
+  const ordersPipelineData = getOrdersPipelineData();
 
   return (
     <div className="p-6 lg:p-8">
@@ -347,6 +390,91 @@ export default function AdminAnalyticsPage() {
         </Card>
       </div>
 
+      {/* Main Activity Chart */}
+      <Card className="p-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Activité globale</h2>
+            <p className="text-sm text-[var(--text-muted)]">Utilisateurs, devis et véhicules au fil du temps</p>
+          </div>
+          <div className="flex gap-2">
+            {(['7d', '30d', '90d'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  timeRange === range
+                    ? 'bg-mandarin text-white'
+                    : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {range === '7d' ? '7 jours' : range === '30d' ? '30 jours' : '3 mois'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="h-[350px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={filteredTimeSeries}>
+              <defs>
+                <linearGradient id="colorUsersAnalytics" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={CHART_COLORS.secondary} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={CHART_COLORS.secondary} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorQuotesAnalytics" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorVehiclesAnalytics" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={CHART_COLORS.tertiary} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={CHART_COLORS.tertiary} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                minTickGap={30}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Area
+                type="monotone"
+                dataKey="users"
+                name="Utilisateurs"
+                stroke={CHART_COLORS.secondary}
+                fill="url(#colorUsersAnalytics)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="quotes"
+                name="Devis"
+                stroke={CHART_COLORS.primary}
+                fill="url(#colorQuotesAnalytics)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="vehicles"
+                name="Véhicules"
+                stroke={CHART_COLORS.tertiary}
+                fill="url(#colorVehiclesAnalytics)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
       {/* Growth Comparison */}
       <Card className="p-6 mb-8">
         <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Évolution mensuelle</h2>
@@ -419,7 +547,44 @@ export default function AdminAnalyticsPage() {
         </div>
       </Card>
 
-      {/* Two Column Layout */}
+      {/* Monthly Comparison Bar Chart */}
+      <Card className="p-6 mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-5 h-5 text-mandarin" />
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Comparaison mensuelle</h2>
+        </div>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data.monthlyComparison}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '8px',
+                }}
+              />
+              <Legend />
+              <Bar dataKey="users" name="Utilisateurs" fill={CHART_COLORS.secondary} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="quotes" name="Devis" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="vehicles" name="Véhicules" fill={CHART_COLORS.tertiary} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* Two Column Layout - Pie Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Vehicles by Source */}
         <Card className="p-6">
@@ -427,33 +592,34 @@ export default function AdminAnalyticsPage() {
             <Globe className="w-5 h-5 text-mandarin" />
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">Véhicules par source</h2>
           </div>
-          <div className="flex gap-8">
-            <div className="flex-1">
-              <DonutChart
-                size={140}
-                data={Object.entries(data.vehicles.bySource).map(([source, count], index) => ({
-                  label: sourceFlags[source]?.name || source,
-                  value: count,
-                  color: index === 0 ? '#F97316' : index === 1 ? '#2563EB' : '#15803D',
-                }))}
-              />
-            </div>
-            <div className="flex-1 space-y-3">
-              {Object.entries(data.vehicles.bySource).map(([source, count], index) => {
-                const sourceInfo = sourceFlags[source] || { flag: '🌍', name: source };
-                const percentage = Math.round((count / data.vehicles.total) * 100);
-                return (
-                  <div key={source} className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-mandarin' : index === 1 ? 'bg-royal-blue' : 'bg-jewel'}`} />
-                    <span className="text-xl">{sourceInfo.flag}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{sourceInfo.name}</p>
-                      <p className="text-xs text-[var(--text-muted)]">{formatNumber(count)} ({percentage}%)</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={sourcesPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                  labelLine={{ stroke: 'var(--text-muted)' }}
+                >
+                  {sourcesPieData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value) => [formatNumber(value as number), 'Véhicules']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
@@ -463,48 +629,35 @@ export default function AdminAnalyticsPage() {
             <FileText className="w-5 h-5 text-mandarin" />
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">Statut des devis</h2>
           </div>
-          <div className="flex gap-8">
-            <div className="flex-1">
-              <DonutChart
-                size={140}
-                data={[
-                  { label: 'En attente', value: data.quotes.byStatus?.pending || 0, color: '#EAB308' },
-                  { label: 'Acceptés', value: data.quotes.byStatus?.accepted || 0, color: '#22C55E' },
-                  { label: 'Expirés', value: data.quotes.byStatus?.expired || 0, color: '#6B7280' },
-                  { label: 'Annulés', value: data.quotes.byStatus?.cancelled || 0, color: '#EF4444' },
-                ]}
-              />
-            </div>
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">En attente</p>
-                  <p className="text-xs text-[var(--text-muted)]">{data.quotes.byStatus?.pending || 0}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">Acceptés</p>
-                  <p className="text-xs text-[var(--text-muted)]">{data.quotes.byStatus?.accepted || 0}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-gray-500" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">Expirés</p>
-                  <p className="text-xs text-[var(--text-muted)]">{data.quotes.byStatus?.expired || 0}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">Annulés</p>
-                  <p className="text-xs text-[var(--text-muted)]">{data.quotes.byStatus?.cancelled || 0}</p>
-                </div>
-              </div>
-            </div>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={quoteStatusPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                  labelLine={{ stroke: 'var(--text-muted)' }}
+                >
+                  <Cell fill={CHART_COLORS.yellow} />
+                  <Cell fill={CHART_COLORS.tertiary} />
+                  <Cell fill={CHART_COLORS.muted} />
+                  <Cell fill={CHART_COLORS.red} />
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value) => [formatNumber(value as number), 'Devis']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </Card>
       </div>
@@ -570,42 +723,26 @@ export default function AdminAnalyticsPage() {
             <Package className="w-5 h-5 text-purple-500" />
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">Pipeline commandes</h2>
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                <span className="text-sm text-[var(--text-primary)]">Acompte payé</span>
-              </div>
-              <span className="text-lg font-bold text-yellow-600">{data.orders.deposit_paid}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-sm text-[var(--text-primary)]">Véhicule acheté</span>
-              </div>
-              <span className="text-lg font-bold text-blue-600">{data.orders.vehicle_purchased}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-orange-500" />
-                <span className="text-sm text-[var(--text-primary)]">En transit</span>
-              </div>
-              <span className="text-lg font-bold text-orange-600">{data.orders.in_transit}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-purple-500" />
-                <span className="text-sm text-[var(--text-primary)]">En mer</span>
-              </div>
-              <span className="text-lg font-bold text-purple-600">{data.orders.shipping}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-sm text-[var(--text-primary)]">Livrés</span>
-              </div>
-              <span className="text-lg font-bold text-green-600">{data.orders.delivered}</span>
-            </div>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ordersPipelineData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" horizontal={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} width={100} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {ordersPipelineData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </Card>
       </div>
@@ -679,7 +816,7 @@ export default function AdminAnalyticsPage() {
         </Card>
       </div>
 
-      {/* Top Makes */}
+      {/* Top Makes - Bar Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Makes in Catalog */}
         <Card className="p-6">
@@ -687,28 +824,51 @@ export default function AdminAnalyticsPage() {
             <Car className="w-5 h-5 text-mandarin" />
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">Marques dans le catalogue</h2>
           </div>
-          <BarChart
-            data={data.vehicles.topMakes.slice(0, 6).map(item => ({
-              label: item.make,
-              value: item.count,
-              color: 'bg-mandarin',
-            }))}
-          />
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topMakesData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" horizontal={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} width={80} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="value" name="Véhicules" fill={CHART_COLORS.primary} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
         {/* Top Quoted Makes */}
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <FileText className="w-5 h-5 text-jewel" />
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Marques les plus demandées (devis)</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Marques les plus demandées</h2>
           </div>
-          <BarChart
-            data={data.quotes.topMakes.slice(0, 6).map(item => ({
-              label: item.make,
-              value: item.count,
-              color: 'bg-jewel',
-            }))}
-          />
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.quotes.topMakes.slice(0, 8).map(item => ({ name: item.make, value: item.count }))}
+                layout="vertical"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" horizontal={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} width={80} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="value" name="Devis" fill={CHART_COLORS.tertiary} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
       </div>
     </div>
