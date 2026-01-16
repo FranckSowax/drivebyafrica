@@ -253,18 +253,18 @@ export function LocaleSwitcher() {
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Dropdown */}
+            {/* Dropdown - Bottom sheet on mobile, dropdown on desktop */}
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
               className={cn(
                 'z-50 bg-[var(--card-bg)] border border-[var(--card-border)] shadow-2xl overflow-hidden',
-                // Mobile: Full width bottom sheet
-                'fixed inset-x-0 bottom-0 rounded-t-2xl max-h-[85vh]',
-                // Desktop: Dropdown
-                'md:absolute md:right-0 md:bottom-auto md:top-full md:mt-2 md:w-96 md:rounded-2xl md:max-h-[70vh]'
+                // Mobile: Full width bottom sheet from bottom of screen
+                'fixed inset-x-0 bottom-0 rounded-t-2xl',
+                // Desktop: Dropdown positioned below trigger
+                'md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:w-96 md:rounded-2xl md:max-h-[70vh]'
               )}
             >
               {/* Header */}
@@ -372,7 +372,7 @@ export function LocaleSwitcher() {
               </div>
 
               {/* Currency List */}
-              <div className="overflow-y-auto max-h-[50vh] md:max-h-[40vh] overscroll-contain">
+              <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: 'calc(100vh - 280px)' }}>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-mandarin" />
