@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   Zap,
   AlertTriangle,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,7 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems = [
   { href: '/admin/analytics', label: 'Analytiques', icon: BarChart3 },
+  { href: '/admin/currencies', label: 'Devises', icon: DollarSign },
   { href: '/admin/api', label: 'APIs externes', icon: Globe },
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];

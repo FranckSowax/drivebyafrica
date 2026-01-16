@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { formatUsdToLocal } from '@/lib/utils/currency';
+import { useCurrency } from '@/components/providers/LocaleProvider';
 import { getProxiedImageUrl, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
@@ -39,6 +39,7 @@ const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
   const [imgError, setImgError] = useState(false);
+  const { formatPrice } = useCurrency();
   const vehicleStatus = vehicle.status || 'available';
   const status = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
   const isReserved = vehicleStatus === 'reserved';
@@ -169,7 +170,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
             <p className="text-mandarin font-bold text-xl">
               {vehicle.start_price_usd
-                ? formatUsdToLocal(vehicle.start_price_usd)
+                ? formatPrice(vehicle.start_price_usd)
                 : 'Sur demande'}
             </p>
           </div>

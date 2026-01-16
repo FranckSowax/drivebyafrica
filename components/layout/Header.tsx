@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LocaleSwitcher } from '@/components/ui/LocaleSwitcher';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -54,6 +55,9 @@ export function Header() {
 
           {/* Right Side */}
           <div className="flex items-center gap-3">
+            {/* Locale Switcher (Language & Currency) */}
+            <LocaleSwitcher />
+
             {/* Theme Toggle */}
             <ThemeToggle />
 

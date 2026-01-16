@@ -22,7 +22,7 @@ import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
-import { formatUsdToLocal } from '@/lib/utils/currency';
+import { useCurrency } from '@/components/providers/LocaleProvider';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { getProxiedImageUrls, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
+  const { formatPrice } = useCurrency();
 
   // Check if we should auto-open the quote modal (after login redirect)
   const actionParam = searchParams.get('action');
@@ -321,7 +322,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
                   <p className="text-2xl font-bold text-mandarin">
                     {vehicle.start_price_usd
-                      ? formatUsdToLocal(vehicle.start_price_usd)
+                      ? formatPrice(vehicle.start_price_usd)
                       : 'Sur demande'}
                   </p>
                 </div>
