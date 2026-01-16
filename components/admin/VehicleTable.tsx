@@ -12,10 +12,11 @@ import {
   ChevronRight,
   Check,
   X,
+  Search,
+  Filter,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
 import type { Vehicle } from '@/types/vehicle';
 
@@ -136,68 +137,195 @@ export function VehicleTable({
     );
   };
 
+  const hasActiveFilters = filters.source !== 'all' || filters.status !== 'all' || filters.isVisible !== 'all' || filters.search !== '';
+
+  const resetFilters = () => {
+    onFilterChange({ source: 'all', status: 'all', isVisible: 'all', search: '' });
+  };
+
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <Input
-          type="search"
-          placeholder="Rechercher..."
-          value={filters.search}
-          onChange={(e) => onFilterChange({ search: e.target.value })}
-          className="w-full sm:w-64"
-        />
-        <Select
-          options={SOURCE_OPTIONS}
-          value={filters.source}
-          onChange={(e) => onFilterChange({ source: e.target.value })}
-          className="w-full sm:w-40"
-        />
-        <Select
-          options={STATUS_OPTIONS}
-          value={filters.status}
-          onChange={(e) => onFilterChange({ status: e.target.value })}
-          className="w-full sm:w-40"
-        />
-        <Select
-          options={VISIBILITY_OPTIONS}
-          value={filters.isVisible}
-          onChange={(e) => onFilterChange({ isVisible: e.target.value })}
-          className="w-full sm:w-32"
-        />
+      {/* Search & Filters Bar */}
+      <div className="bg-gradient-to-r from-[var(--surface)] to-[var(--card-bg)] rounded-2xl border border-[var(--card-border)] p-4 shadow-sm">
+        {/* Search Row */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+              <Search className="w-5 h-5" />
+            </div>
+            <input
+              type="search"
+              placeholder="Rechercher par marque, modèle, ID source..."
+              value={filters.search}
+              onChange={(e) => onFilterChange({ search: e.target.value })}
+              className="w-full h-12 pl-12 pr-4 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-mandarin focus:ring-2 focus:ring-mandarin/20 focus:outline-none transition-all"
+            />
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+            <div className="flex items-center gap-1.5 text-sm text-[var(--text-muted)]">
+              <Filter className="w-4 h-4" />
+              <span className="hidden sm:inline">Filtres:</span>
+            </div>
+
+            {/* Source Filter */}
+            <div className="relative group">
+              <select
+                value={filters.source}
+                onChange={(e) => onFilterChange({ source: e.target.value })}
+                className={cn(
+                  "h-10 px-4 pr-8 rounded-full text-sm font-medium border-2 cursor-pointer transition-all appearance-none bg-[var(--card-bg)]",
+                  filters.source !== 'all'
+                    ? "border-mandarin text-mandarin bg-mandarin/10"
+                    : "border-[var(--card-border)] text-[var(--text-primary)] hover:border-mandarin/50"
+                )}
+              >
+                {SOURCE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="w-4 h-4 rotate-90 text-[var(--text-muted)]" />
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="relative">
+              <select
+                value={filters.status}
+                onChange={(e) => onFilterChange({ status: e.target.value })}
+                className={cn(
+                  "h-10 px-4 pr-8 rounded-full text-sm font-medium border-2 cursor-pointer transition-all appearance-none bg-[var(--card-bg)]",
+                  filters.status !== 'all'
+                    ? "border-jewel text-jewel bg-jewel/10"
+                    : "border-[var(--card-border)] text-[var(--text-primary)] hover:border-jewel/50"
+                )}
+              >
+                {STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="w-4 h-4 rotate-90 text-[var(--text-muted)]" />
+              </div>
+            </div>
+
+            {/* Visibility Filter */}
+            <div className="relative">
+              <select
+                value={filters.isVisible}
+                onChange={(e) => onFilterChange({ isVisible: e.target.value })}
+                className={cn(
+                  "h-10 px-4 pr-8 rounded-full text-sm font-medium border-2 cursor-pointer transition-all appearance-none bg-[var(--card-bg)]",
+                  filters.isVisible !== 'all'
+                    ? "border-royal-blue text-royal-blue bg-royal-blue/10"
+                    : "border-[var(--card-border)] text-[var(--text-primary)] hover:border-royal-blue/50"
+                )}
+              >
+                {VISIBILITY_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronRight className="w-4 h-4 rotate-90 text-[var(--text-muted)]" />
+              </div>
+            </div>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="h-10 px-4 rounded-full text-sm font-medium border-2 border-red-500/30 text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-all flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Réinitialiser</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Active Filters Summary */}
+        {hasActiveFilters && (
+          <div className="mt-3 pt-3 border-t border-[var(--card-border)] flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-[var(--text-muted)]">Filtres actifs:</span>
+            {filters.search && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-mandarin/10 text-mandarin text-xs rounded-full">
+                Recherche: "{filters.search}"
+                <button onClick={() => onFilterChange({ search: '' })} className="hover:text-mandarin/70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.source !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-mandarin/10 text-mandarin text-xs rounded-full">
+                Source: {SOURCE_OPTIONS.find(o => o.value === filters.source)?.label}
+                <button onClick={() => onFilterChange({ source: 'all' })} className="hover:text-mandarin/70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.status !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-jewel/10 text-jewel text-xs rounded-full">
+                Statut: {STATUS_OPTIONS.find(o => o.value === filters.status)?.label}
+                <button onClick={() => onFilterChange({ status: 'all' })} className="hover:text-jewel/70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.isVisible !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-royal-blue/10 text-royal-blue text-xs rounded-full">
+                Visibilité: {VISIBILITY_OPTIONS.find(o => o.value === filters.isVisible)?.label}
+                <button onClick={() => onFilterChange({ isVisible: 'all' })} className="hover:text-royal-blue/70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bulk Actions */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-mandarin/10 rounded-lg">
-          <span className="text-sm text-[var(--text-primary)]">
-            {selectedIds.length} sélectionné(s)
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleBulkVisibility(true)}
-            leftIcon={<Eye className="w-4 h-4" />}
-          >
-            Afficher
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleBulkVisibility(false)}
-            leftIcon={<EyeOff className="w-4 h-4" />}
-          >
-            Masquer
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-red-500 border-red-500 hover:bg-red-500/10"
-            onClick={handleBulkDelete}
-            leftIcon={<Trash2 className="w-4 h-4" />}
-          >
-            Supprimer
-          </Button>
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-mandarin/10 to-orange-500/10 rounded-xl border border-mandarin/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-mandarin rounded-full flex items-center justify-center text-white font-bold text-sm">
+              {selectedIds.length}
+            </div>
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              véhicule{selectedIds.length > 1 ? 's' : ''} sélectionné{selectedIds.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleBulkVisibility(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-jewel/10 text-jewel rounded-lg hover:bg-jewel/20 transition-colors text-sm font-medium"
+            >
+              <Eye className="w-4 h-4" />
+              <span className="hidden sm:inline">Afficher</span>
+            </button>
+            <button
+              onClick={() => handleBulkVisibility(false)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-500/10 text-gray-500 rounded-lg hover:bg-gray-500/20 transition-colors text-sm font-medium"
+            >
+              <EyeOff className="w-4 h-4" />
+              <span className="hidden sm:inline">Masquer</span>
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Supprimer</span>
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       )}
 
