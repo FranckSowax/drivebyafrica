@@ -852,6 +852,88 @@ export type Database = {
           }
         ];
       };
+      quote_reassignments: {
+        Row: {
+          id: string;
+          original_quote_id: string;
+          user_id: string;
+          original_vehicle_id: string;
+          original_vehicle_make: string;
+          original_vehicle_model: string;
+          original_vehicle_year: number;
+          original_vehicle_price_usd: number;
+          reason: string;
+          status: string;
+          proposed_vehicles: Json;
+          selected_vehicle_id: string | null;
+          new_quote_id: string | null;
+          whatsapp_sent_at: string | null;
+          whatsapp_message_id: string | null;
+          customer_response: string | null;
+          customer_responded_at: string | null;
+          admin_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          original_quote_id: string;
+          user_id: string;
+          original_vehicle_id: string;
+          original_vehicle_make: string;
+          original_vehicle_model: string;
+          original_vehicle_year: number;
+          original_vehicle_price_usd: number;
+          reason: string;
+          status?: string;
+          proposed_vehicles?: Json;
+          selected_vehicle_id?: string | null;
+          new_quote_id?: string | null;
+          whatsapp_sent_at?: string | null;
+          whatsapp_message_id?: string | null;
+          customer_response?: string | null;
+          customer_responded_at?: string | null;
+          admin_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          original_quote_id?: string;
+          user_id?: string;
+          original_vehicle_id?: string;
+          original_vehicle_make?: string;
+          original_vehicle_model?: string;
+          original_vehicle_year?: number;
+          original_vehicle_price_usd?: number;
+          reason?: string;
+          status?: string;
+          proposed_vehicles?: Json;
+          selected_vehicle_id?: string | null;
+          new_quote_id?: string | null;
+          whatsapp_sent_at?: string | null;
+          whatsapp_message_id?: string | null;
+          customer_response?: string | null;
+          customer_responded_at?: string | null;
+          admin_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quote_reassignments_original_quote_id_fkey";
+            columns: ["original_quote_id"];
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quote_reassignments_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -883,6 +965,7 @@ export type Message = Database['public']['Tables']['messages']['Row'];
 export type Quote = Database['public']['Tables']['quotes']['Row'];
 export type ChatConversation = Database['public']['Tables']['chat_conversations']['Row'];
 export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
+export type QuoteReassignment = Database['public']['Tables']['quote_reassignments']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];

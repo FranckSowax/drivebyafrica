@@ -19,11 +19,14 @@ import {
   Check,
   X,
   Loader2,
+  AlertTriangle,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Link from 'next/link';
 
 interface Quote {
   id: string;
@@ -100,6 +103,13 @@ const statusConfig = {
     border: 'border-red-500/30',
     icon: XCircle,
   },
+  reassigned: {
+    label: 'Réassigné',
+    color: 'text-orange-500',
+    bg: 'bg-orange-500/10',
+    border: 'border-orange-500/30',
+    icon: ArrowRightLeft,
+  },
 };
 
 const countryFlags: Record<string, string> = {
@@ -128,6 +138,9 @@ export default function AdminQuotesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [reassignModalQuote, setReassignModalQuote] = useState<Quote | null>(null);
+  const [reassignReason, setReassignReason] = useState<string>('sold');
+  const [isReassigning, setIsReassigning] = useState(false);
 
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
@@ -197,6 +210,36 @@ export default function AdminQuotesPage() {
     }).format(value) + ' FCFA';
   };
 
+  const handleReassign = async () => {
+    if (!reassignModalQuote) return;
+    setIsReassigning(true);
+    try {
+      const response = await fetch('/api/admin/quotes/reassign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteId: reassignModalQuote.id,
+          reason: reassignReason,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchQuotes();
+        setReassignModalQuote(null);
+        // Redirect to reassignments page
+        window.location.href = '/admin/quotes/reassignments';
+      } else {
+        const data = await response.json();
+        alert(`Erreur: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error reassigning quote:', error);
+      alert('Erreur lors de la reassignation');
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
@@ -212,10 +255,18 @@ export default function AdminQuotesPage() {
             </p>
           </div>
         </div>
-        <Button onClick={fetchQuotes} disabled={loading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/admin/quotes/reassignments">
+            <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500/10">
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Reassignations
+            </Button>
+          </Link>
+          <Button onClick={fetchQuotes} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -333,6 +384,7 @@ export default function AdminQuotesPage() {
           <option value="validated">En attente paiement</option>
           <option value="accepted">Acceptés</option>
           <option value="rejected">Refusés</option>
+          <option value="reassigned">Réassignés</option>
         </select>
       </div>
 
@@ -457,15 +509,26 @@ export default function AdminQuotesPage() {
                                 </>
                               )}
                               {quote.status === 'validated' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => updateQuoteStatus(quote.id, 'accepted')}
-                                  className="text-jewel hover:text-jewel/80"
-                                  title="Marquer comme payé ($1000)"
-                                >
-                                  <DollarSign className="w-4 h-4" />
-                                </Button>
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateQuoteStatus(quote.id, 'accepted')}
+                                    className="text-jewel hover:text-jewel/80"
+                                    title="Marquer comme paye ($1000)"
+                                  >
+                                    <DollarSign className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setReassignModalQuote(quote)}
+                                    className="text-orange-500 hover:text-orange-600"
+                                    title="Vehicule non disponible - Reassigner"
+                                  >
+                                    <ArrowRightLeft className="w-4 h-4" />
+                                  </Button>
+                                </>
                               )}
                             </>
                           )}
@@ -654,6 +717,98 @@ export default function AdminQuotesPage() {
                     Fermer
                   </Button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign Modal */}
+      {reassignModalQuote && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-[var(--card-border)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500/10 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                    Vehicule non disponible
+                  </h3>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setReassignModalQuote(null)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <p className="font-semibold text-[var(--text-primary)]">
+                  {reassignModalQuote.vehicle_make} {reassignModalQuote.vehicle_model} {reassignModalQuote.vehicle_year}
+                </p>
+                <p className="text-sm text-mandarin">
+                  {formatCurrency(reassignModalQuote.vehicle_price_usd, 'USD')}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Client: {reassignModalQuote.customer_name}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                  Raison de l&apos;indisponibilite
+                </label>
+                <select
+                  value={reassignReason}
+                  onChange={(e) => setReassignReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
+                >
+                  <option value="sold">Vehicule vendu sur une autre marketplace</option>
+                  <option value="unavailable">Vehicule non disponible</option>
+                  <option value="priority_conflict">Un autre client a paye en premier</option>
+                  <option value="price_change">Changement de prix significatif</option>
+                  <option value="other">Autre raison</option>
+                </select>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+                <p className="text-sm text-[var(--text-primary)]">
+                  <strong>Le systeme va automatiquement:</strong>
+                </p>
+                <ul className="text-xs text-[var(--text-muted)] mt-2 space-y-1 list-disc list-inside">
+                  <li>Rechercher 3 vehicules similaires (meme marque, modele, budget)</li>
+                  <li>Creer un dossier de reassignation</li>
+                  <li>Vous permettre d&apos;envoyer les alternatives via WhatsApp</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setReassignModalQuote(null)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  className="flex-1 bg-orange-500 hover:bg-orange-600"
+                  onClick={handleReassign}
+                  disabled={isReassigning}
+                >
+                  {isReassigning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Recherche...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="w-4 h-4 mr-2" />
+                      Reassigner
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
