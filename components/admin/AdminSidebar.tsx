@@ -14,6 +14,7 @@ import {
   CreditCard,
   Globe,
   ChevronLeft,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,15 +45,15 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[var(--card-bg)] border-r border-[var(--card-border)] z-40 flex flex-col">
+    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-mandarin via-mandarin to-[#e85d04] z-40 flex flex-col shadow-xl">
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-[var(--card-border)]">
+      <div className="h-16 flex items-center px-6 border-b border-black/10">
         <Link href="/admin" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-mandarin rounded-lg flex items-center justify-center">
-            <Car className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center shadow-lg">
+            <Zap className="w-5 h-5 text-mandarin" />
           </div>
-          <span className="font-bold text-lg text-[var(--text-primary)]">
-            Driveby<span className="text-mandarin">Admin</span>
+          <span className="font-bold text-lg text-black">
+            Driveby<span className="text-white">Admin</span>
           </span>
         </Link>
       </div>
@@ -65,10 +66,10 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                 isActive(item.href, item.exact)
-                  ? 'bg-mandarin/10 text-mandarin'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+                  ? 'bg-black text-white shadow-lg'
+                  : 'text-black/80 hover:text-black hover:bg-black/10'
               )}
             >
               <item.icon className="w-5 h-5" />
@@ -78,8 +79,8 @@ export function AdminSidebar() {
         </div>
 
         {/* Secondary Navigation */}
-        <div className="mt-8 pt-6 border-t border-[var(--card-border)]">
-          <p className="px-3 mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+        <div className="mt-8 pt-6 border-t border-black/10">
+          <p className="px-3 mb-2 text-xs font-bold text-black/60 uppercase tracking-wider">
             Configuration
           </p>
           <div className="space-y-1">
@@ -88,10 +89,10 @@ export function AdminSidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
                   isActive(item.href)
-                    ? 'bg-mandarin/10 text-mandarin'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+                    ? 'bg-black text-white shadow-lg'
+                    : 'text-black/80 hover:text-black hover:bg-black/10'
                 )}
               >
                 <item.icon className="w-5 h-5" />
@@ -103,10 +104,10 @@ export function AdminSidebar() {
       </nav>
 
       {/* Back to Site */}
-      <div className="px-3 py-4 border-t border-[var(--card-border)]">
+      <div className="px-3 py-4 border-t border-black/10">
         <Link
           href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)] transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-black/80 hover:text-black hover:bg-black/10 transition-all duration-200"
         >
           <ChevronLeft className="w-5 h-5" />
           Retour au site

@@ -1,83 +1,200 @@
 'use client';
 
-import { useState } from 'react';
-import { FileText, Search, Filter, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  FileText,
+  Search,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  CreditCard,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  Check,
+  X,
+  Loader2,
+} from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { format, formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-// Mock data for quotes
-const mockQuotes = [
-  {
-    id: 'Q-2024-001',
-    vehicle: 'Toyota Land Cruiser 2023',
-    customer: 'Jean Mbarga',
-    email: 'jean.mbarga@email.com',
-    destination: 'Libreville, Gabon',
-    flag: '🇬🇦',
-    totalPrice: 45000,
-    status: 'pending',
-    createdAt: '2024-01-12',
-  },
-  {
-    id: 'Q-2024-002',
-    vehicle: 'Mercedes GLE 350 2022',
-    customer: 'Marie Nguema',
-    email: 'marie.nguema@email.com',
-    destination: 'Douala, Cameroun',
-    flag: '🇨🇲',
-    totalPrice: 62000,
-    status: 'accepted',
-    createdAt: '2024-01-11',
-  },
-  {
-    id: 'Q-2024-003',
-    vehicle: 'BMW X5 2023',
-    customer: 'Paul Essono',
-    email: 'paul.essono@email.com',
-    destination: 'Pointe-Noire, Congo',
-    flag: '🇨🇬',
-    totalPrice: 58000,
-    status: 'rejected',
-    createdAt: '2024-01-10',
-  },
-  {
-    id: 'Q-2024-004',
-    vehicle: 'Hyundai Santa Fe 2024',
-    customer: 'Sophie Mba',
-    email: 'sophie.mba@email.com',
-    destination: 'Abidjan, Côte d\'Ivoire',
-    flag: '🇨🇮',
-    totalPrice: 38000,
-    status: 'pending',
-    createdAt: '2024-01-09',
-  },
-];
+interface Quote {
+  id: string;
+  quote_number: string;
+  user_id: string;
+  vehicle_id: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_year: number;
+  vehicle_price_usd: number;
+  vehicle_source: string;
+  destination_id: string;
+  destination_name: string;
+  destination_country: string;
+  shipping_type: string;
+  shipping_cost_xaf: number;
+  insurance_cost_xaf: number;
+  inspection_fee_xaf: number;
+  total_cost_xaf: number;
+  status: string;
+  valid_until: string;
+  created_at: string;
+  updated_at: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
+}
+
+interface Stats {
+  total: number;
+  pending: number;
+  validated: number;
+  accepted: number;
+  rejected: number;
+  depositsToday: number;
+  depositsThisMonth: number;
+  depositsThisYear: number;
+  totalDeposits: number;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 const statusConfig = {
-  pending: { label: 'En attente', color: 'text-yellow-500', bg: 'bg-yellow-500/10', icon: Clock },
-  accepted: { label: 'Accepté', color: 'text-jewel', bg: 'bg-jewel/10', icon: CheckCircle },
-  rejected: { label: 'Refusé', color: 'text-red-500', bg: 'bg-red-500/10', icon: XCircle },
+  pending: {
+    label: 'Non validé',
+    color: 'text-yellow-500',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/30',
+    icon: Clock,
+  },
+  validated: {
+    label: 'En attente de paiement',
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/30',
+    icon: CreditCard,
+  },
+  accepted: {
+    label: 'Accepté',
+    color: 'text-jewel',
+    bg: 'bg-jewel/10',
+    border: 'border-jewel/30',
+    icon: CheckCircle,
+  },
+  rejected: {
+    label: 'Refusé',
+    color: 'text-red-500',
+    bg: 'bg-red-500/10',
+    border: 'border-red-500/30',
+    icon: XCircle,
+  },
+};
+
+const countryFlags: Record<string, string> = {
+  'Gabon': '🇬🇦',
+  'Cameroun': '🇨🇲',
+  'Congo': '🇨🇬',
+  "Côte d'Ivoire": '🇨🇮',
+  'Sénégal': '🇸🇳',
+  'Togo': '🇹🇬',
+  'Bénin': '🇧🇯',
+  'Nigeria': '🇳🇬',
+  'Ghana': '🇬🇭',
+  'Kenya': '🇰🇪',
+  'Tanzanie': '🇹🇿',
+  'Afrique du Sud': '🇿🇦',
+  'Maroc': '🇲🇦',
 };
 
 export default function AdminQuotesPage() {
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
-  const filteredQuotes = mockQuotes.filter((quote) => {
-    const matchesSearch =
-      quote.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      quote.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      quote.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const fetchQuotes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '20',
+      });
 
-  const formatCurrency = (value: number) => {
+      if (statusFilter !== 'all') {
+        params.set('status', statusFilter);
+      }
+
+      if (searchQuery) {
+        params.set('search', searchQuery);
+      }
+
+      const response = await fetch(`/api/admin/quotes?${params}`);
+      const data = await response.json();
+
+      if (data.quotes) {
+        setQuotes(data.quotes);
+        setStats(data.stats);
+        setPagination(data.pagination);
+      }
+    } catch (error) {
+      console.error('Error fetching quotes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, statusFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchQuotes();
+  }, [fetchQuotes]);
+
+  const updateQuoteStatus = async (id: string, newStatus: string) => {
+    setUpdatingId(id);
+    try {
+      const response = await fetch('/api/admin/quotes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+
+      if (response.ok) {
+        await fetchQuotes();
+      }
+    } catch (error) {
+      console.error('Error updating quote:', error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const formatCurrency = (value: number, currency: 'USD' | 'XAF' = 'XAF') => {
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(value);
+    }
     return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'USD',
+      style: 'decimal',
       maximumFractionDigits: 0,
-    }).format(value);
+    }).format(value) + ' FCFA';
   };
 
   return (
@@ -85,15 +202,108 @@ export default function AdminQuotesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-jewel/10 rounded-xl">
-            <FileText className="w-6 h-6 text-jewel" />
+          <div className="p-3 bg-mandarin/10 rounded-xl">
+            <FileText className="w-6 h-6 text-mandarin" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">Gestion des devis</h1>
-            <p className="text-[var(--text-muted)]">{mockQuotes.length} devis au total</p>
+            <p className="text-[var(--text-muted)]">
+              {stats?.total || 0} devis au total
+            </p>
           </div>
         </div>
+        <Button onClick={fetchQuotes} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Actualiser
+        </Button>
       </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-yellow-500/10 rounded-lg">
+              <Clock className="w-5 h-5 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">Non validés</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{stats?.pending || 0}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <CreditCard className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">En attente paiement</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{stats?.validated || 0}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-jewel/10 rounded-lg">
+              <CheckCircle className="w-5 h-5 text-jewel" />
+            </div>
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">Acceptés</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{stats?.accepted || 0}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500/10 rounded-lg">
+              <XCircle className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">Refusés</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{stats?.rejected || 0}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Deposit Stats */}
+      <Card className="p-6 mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="w-5 h-5 text-mandarin" />
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Acomptes encaissés</h2>
+          <span className="text-xs text-[var(--text-muted)]">(1 000 $ par devis accepté)</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="text-center p-4 bg-[var(--surface)] rounded-xl">
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-xs text-[var(--text-muted)]">Aujourd&apos;hui</span>
+            </div>
+            <p className="text-2xl font-bold text-mandarin">{formatCurrency(stats?.depositsToday || 0, 'USD')}</p>
+          </div>
+          <div className="text-center p-4 bg-[var(--surface)] rounded-xl">
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-xs text-[var(--text-muted)]">Ce mois</span>
+            </div>
+            <p className="text-2xl font-bold text-jewel">{formatCurrency(stats?.depositsThisMonth || 0, 'USD')}</p>
+          </div>
+          <div className="text-center p-4 bg-[var(--surface)] rounded-xl">
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <TrendingUp className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-xs text-[var(--text-muted)]">Cette année</span>
+            </div>
+            <p className="text-2xl font-bold text-blue-500">{formatCurrency(stats?.depositsThisYear || 0, 'USD')}</p>
+          </div>
+          <div className="text-center p-4 bg-gradient-to-br from-mandarin/10 to-jewel/10 rounded-xl border border-mandarin/20">
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <DollarSign className="w-4 h-4 text-mandarin" />
+              <span className="text-xs text-[var(--text-muted)]">Total cumulé</span>
+            </div>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{formatCurrency(stats?.totalDeposits || 0, 'USD')}</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -101,19 +311,26 @@ export default function AdminQuotesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Rechercher par véhicule, client ou ID..."
+            placeholder="Rechercher par numéro, marque ou modèle..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full pl-10 pr-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
           />
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
           className="px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
         >
           <option value="all">Tous les statuts</option>
-          <option value="pending">En attente</option>
+          <option value="pending">Non validés</option>
+          <option value="validated">En attente paiement</option>
           <option value="accepted">Acceptés</option>
           <option value="rejected">Refusés</option>
         </select>
@@ -121,68 +338,327 @@ export default function AdminQuotesPage() {
 
       {/* Quotes Table */}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--card-border)]">
-                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">ID</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Véhicule</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Client</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Destination</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Prix total</th>
-                <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Statut</th>
-                <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredQuotes.map((quote) => {
-                const status = statusConfig[quote.status as keyof typeof statusConfig];
-                return (
-                  <tr
-                    key={quote.id}
-                    className="border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/50 transition-colors"
-                  >
-                    <td className="py-4 px-4">
-                      <span className="text-sm font-mono text-mandarin">{quote.id}</span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="text-sm text-[var(--text-primary)]">{quote.vehicle}</span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div>
-                        <p className="text-sm font-medium text-[var(--text-primary)]">{quote.customer}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{quote.email}</p>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{quote.flag}</span>
-                        <span className="text-sm text-[var(--text-primary)]">{quote.destination}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <span className="text-sm font-semibold text-[var(--text-primary)]">
-                        {formatCurrency(quote.totalPrice)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color}`}>
-                        <status.icon className="w-3.5 h-3.5" />
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {loading && quotes.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-mandarin" />
+          </div>
+        ) : quotes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="w-12 h-12 text-[var(--text-muted)] mb-4" />
+            <p className="text-[var(--text-muted)]">Aucun devis trouvé</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--card-border)]">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Numéro</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Véhicule</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Client</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Destination</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Total</th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Statut</th>
+                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quotes.map((quote) => {
+                  const status = statusConfig[quote.status as keyof typeof statusConfig] || statusConfig.pending;
+                  const flag = countryFlags[quote.destination_country] || '🌍';
+                  const isUpdating = updatingId === quote.id;
+
+                  return (
+                    <tr
+                      key={quote.id}
+                      className="border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/50 transition-colors"
+                    >
+                      <td className="py-4 px-4">
+                        <div>
+                          <span className="text-sm font-mono text-mandarin">{quote.quote_number}</span>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {formatDistanceToNow(new Date(quote.created_at), { addSuffix: true, locale: fr })}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--text-primary)]">
+                            {quote.vehicle_make} {quote.vehicle_model}
+                          </p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {quote.vehicle_year} - {formatCurrency(quote.vehicle_price_usd, 'USD')}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--text-primary)]">
+                            {quote.customer_name || 'Utilisateur'}
+                          </p>
+                          {quote.customer_email && (
+                            <p className="text-xs text-[var(--text-muted)]">{quote.customer_email}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{flag}</span>
+                          <div>
+                            <p className="text-sm text-[var(--text-primary)]">{quote.destination_name}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{quote.destination_country}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <span className="text-sm font-semibold text-[var(--text-primary)]">
+                          {formatCurrency(quote.total_cost_xaf)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color} ${status.border} border`}>
+                          <status.icon className="w-3.5 h-3.5" />
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-center gap-1">
+                          {isUpdating ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-mandarin" />
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedQuote(quote)}
+                                title="Voir détails"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {quote.status === 'pending' && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateQuoteStatus(quote.id, 'validated')}
+                                    className="text-blue-500 hover:text-blue-600"
+                                    title="Valider"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateQuoteStatus(quote.id, 'rejected')}
+                                    className="text-red-500 hover:text-red-600"
+                                    title="Refuser"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                              {quote.status === 'validated' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateQuoteStatus(quote.id, 'accepted')}
+                                  className="text-jewel hover:text-jewel/80"
+                                  title="Marquer comme payé ($1000)"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 border-t border-[var(--card-border)]">
+            <p className="text-sm text-[var(--text-muted)]">
+              Page {pagination.page} sur {pagination.totalPages} ({pagination.total} résultats)
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === pagination.totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
+
+      {/* Quote Detail Modal */}
+      {selectedQuote && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[var(--card-border)]">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                  Devis {selectedQuote.quote_number}
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedQuote(null)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Vehicle Info */}
+              <div>
+                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Véhicule</h4>
+                <div className="bg-[var(--surface)] rounded-xl p-4">
+                  <p className="font-semibold text-[var(--text-primary)]">
+                    {selectedQuote.vehicle_make} {selectedQuote.vehicle_model} {selectedQuote.vehicle_year}
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    Prix: {formatCurrency(selectedQuote.vehicle_price_usd, 'USD')}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Source: {selectedQuote.vehicle_source}
+                  </p>
+                </div>
+              </div>
+
+              {/* Customer Info */}
+              <div>
+                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Client</h4>
+                <div className="bg-[var(--surface)] rounded-xl p-4 space-y-1">
+                  <p className="font-medium text-[var(--text-primary)]">{selectedQuote.customer_name || 'Utilisateur'}</p>
+                  {selectedQuote.customer_email && (
+                    <p className="text-sm text-[var(--text-muted)]">{selectedQuote.customer_email}</p>
+                  )}
+                  {selectedQuote.customer_phone && (
+                    <p className="text-sm text-[var(--text-muted)]">{selectedQuote.customer_phone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Destination */}
+              <div>
+                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Destination</h4>
+                <div className="bg-[var(--surface)] rounded-xl p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{countryFlags[selectedQuote.destination_country] || '🌍'}</span>
+                    <div>
+                      <p className="font-medium text-[var(--text-primary)]">{selectedQuote.destination_name}</p>
+                      <p className="text-sm text-[var(--text-muted)]">{selectedQuote.destination_country}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cost Breakdown */}
+              <div>
+                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Détails du coût</h4>
+                <div className="bg-[var(--surface)] rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">Transport ({selectedQuote.shipping_type})</span>
+                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedQuote.shipping_cost_xaf)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">Assurance</span>
+                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedQuote.insurance_cost_xaf)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-muted)]">Frais d&apos;inspection</span>
+                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedQuote.inspection_fee_xaf)}</span>
+                  </div>
+                  <div className="border-t border-[var(--card-border)] pt-2 mt-2 flex justify-between font-semibold">
+                    <span className="text-[var(--text-primary)]">Total</span>
+                    <span className="text-mandarin">{formatCurrency(selectedQuote.total_cost_xaf)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="flex gap-4 text-sm">
+                <div>
+                  <span className="text-[var(--text-muted)]">Créé le: </span>
+                  <span className="text-[var(--text-primary)]">
+                    {format(new Date(selectedQuote.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)]">Valide jusqu&apos;au: </span>
+                  <span className="text-[var(--text-primary)]">
+                    {format(new Date(selectedQuote.valid_until), 'dd/MM/yyyy', { locale: fr })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-[var(--card-border)]">
+                {selectedQuote.status === 'pending' && (
+                  <>
+                    <Button
+                      className="flex-1 bg-blue-500 hover:bg-blue-600"
+                      onClick={() => {
+                        updateQuoteStatus(selectedQuote.id, 'validated');
+                        setSelectedQuote(null);
+                      }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Valider le devis
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
+                      onClick={() => {
+                        updateQuoteStatus(selectedQuote.id, 'rejected');
+                        setSelectedQuote(null);
+                      }}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Refuser
+                    </Button>
+                  </>
+                )}
+                {selectedQuote.status === 'validated' && (
+                  <Button
+                    className="flex-1 bg-jewel hover:bg-jewel/90"
+                    onClick={() => {
+                      updateQuoteStatus(selectedQuote.id, 'accepted');
+                      setSelectedQuote(null);
+                    }}
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Acompte reçu ($1 000)
+                  </Button>
+                )}
+                {(selectedQuote.status === 'accepted' || selectedQuote.status === 'rejected') && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setSelectedQuote(null)}
+                  >
+                    Fermer
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

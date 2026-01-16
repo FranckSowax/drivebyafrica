@@ -543,6 +543,16 @@ export function ShippingEstimator({
               </AnimatePresence>
             </div>
 
+            {/* Last Update Info - below shipping type selector */}
+            {lastUpdatedAt && (
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)]">
+                <Clock className="w-3 h-3" />
+                <span>
+                  Prix transport actualisés {formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })}
+                </span>
+              </div>
+            )}
+
             {/* Groupage Notice */}
             {selectedShippingType === 'groupage' && (
               <motion.div
@@ -630,16 +640,6 @@ export function ShippingEstimator({
                 {formatCurrency(calculations.total)}
               </span>
             </div>
-
-            {/* Last Update Info */}
-            {lastUpdatedAt && (
-              <div className="flex items-center gap-1.5 mt-3 text-xs text-[var(--text-muted)]">
-                <Clock className="w-3 h-3" />
-                <span>
-                  Tarifs mis à jour {formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })}
-                </span>
-              </div>
-            )}
 
             {/* Note */}
             <p className="text-xs text-[var(--text-muted)] mt-2">

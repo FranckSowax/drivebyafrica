@@ -79,8 +79,8 @@ export async function GET() {
     let lastUpdatedAt: string | null = null;
     const dates = routes
       .map((r: { updated_at?: string }) => r.updated_at)
-      .filter(Boolean)
-      .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
+      .filter((d): d is string => Boolean(d))
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
     lastUpdatedAt = dates[0] || null;
 
     // Transform to the format expected by ShippingEstimator
