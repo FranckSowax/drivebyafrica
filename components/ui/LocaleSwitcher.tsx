@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Globe, ChevronDown, Check, Loader2, Search, X, Coins } from 'lucide-react';
+import { Globe, ChevronDown, Check, Loader2, Search, X, Coins, ChevronRight } from 'lucide-react';
 import { useLocale, type Language, type CurrencyInfo } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
 
@@ -24,12 +24,15 @@ const CURRENCY_FLAGS: Record<string, string> = {
   NGN: '🇳🇬',
   GHS: '🇬🇭',
   GNF: '🇬🇳',
-  SLL: '🇸🇱',
+  SLL: '🇸🇱', // Old code
+  SLE: '🇸🇱', // New code (2022)
   LRD: '🇱🇷',
   GMD: '🇬🇲',
   MRU: '🇲🇷',
   CVE: '🇨🇻',
   // Afrique Centrale
+  CDF: '🇨🇩', // RD Congo
+  AOA: '🇦🇴', // Angola
   STN: '🇸🇹',
   // Afrique de l'Est
   KES: '🇰🇪',
@@ -51,9 +54,13 @@ const CURRENCY_FLAGS: Record<string, string> = {
   SDG: '🇸🇩',
   // Afrique Australe
   ZAR: '🇿🇦',
+  NAD: '🇳🇦', // Namibie
+  SZL: '🇸🇿', // Eswatini
+  LSL: '🇱🇸', // Lesotho
   MZN: '🇲🇿',
   ZMW: '🇿🇲',
-  ZWL: '🇿🇼',
+  ZWL: '🇿🇼', // Old code
+  ZWG: '🇿🇼', // New code (2024)
   BWP: '🇧🇼',
   MWK: '🇲🇼',
   // Océan Indien
@@ -65,21 +72,21 @@ const CURRENCY_FLAGS: Record<string, string> = {
 
 // Currency regions for grouping
 const CURRENCY_REGIONS: Record<string, { label: string; codes: string[] }> = {
-  cfa: {
-    label: 'Zone Franc CFA',
-    codes: ['XAF', 'XOF'],
-  },
   base: {
     label: 'Devises principales',
     codes: ['USD', 'EUR'],
   },
+  cfa: {
+    label: 'Zone Franc CFA',
+    codes: ['XAF', 'XOF'],
+  },
   westAfrica: {
     label: 'Afrique de l\'Ouest',
-    codes: ['NGN', 'GHS', 'GNF', 'SLL', 'LRD', 'GMD', 'MRU', 'CVE'],
+    codes: ['NGN', 'GHS', 'GNF', 'SLE', 'SLL', 'LRD', 'GMD', 'MRU', 'CVE'],
   },
   centralAfrica: {
     label: 'Afrique Centrale',
-    codes: ['STN'],
+    codes: ['CDF', 'AOA', 'STN'],
   },
   eastAfrica: {
     label: 'Afrique de l\'Est',
@@ -91,7 +98,7 @@ const CURRENCY_REGIONS: Record<string, { label: string; codes: string[] }> = {
   },
   southernAfrica: {
     label: 'Afrique Australe',
-    codes: ['ZAR', 'MZN', 'ZMW', 'ZWL', 'BWP', 'MWK'],
+    codes: ['ZAR', 'NAD', 'SZL', 'LSL', 'MZN', 'ZMW', 'ZWG', 'ZWL', 'BWP', 'MWK'],
   },
   indianOcean: {
     label: 'Océan Indien',
@@ -106,6 +113,7 @@ export function LocaleSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'popular' | 'all'>('popular');
+  const [expandedRegion, setExpandedRegion] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -464,6 +472,7 @@ export function LocaleSwitcher() {
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 className="fixed inset-x-0 bottom-0 z-[9999] bg-[var(--card-bg)] border-t border-[var(--card-border)] rounded-t-2xl shadow-2xl overflow-hidden md:hidden"
                 style={{ maxHeight: '85vh' }}
+                onClick={(e) => e.stopPropagation()}
               >
                 {/* Mobile Handle */}
                 <div className="flex justify-center pt-3 pb-2">
@@ -512,13 +521,14 @@ export function LocaleSwitcher() {
                   </div>
 
                   {/* Search Input */}
-                  <div className="relative">
+                  <div className="relative" onClick={(e) => e.stopPropagation()}>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                     <input
                       type="text"
                       placeholder="Rechercher une devise..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={(e) => e.stopPropagation()}
                       className={cn(
                         'w-full pl-10 pr-10 py-2.5 rounded-xl text-sm',
                         'bg-[var(--surface)] border border-[var(--card-border)]',
@@ -528,7 +538,10 @@ export function LocaleSwitcher() {
                     />
                     {searchQuery && (
                       <button
-                        onClick={() => setSearchQuery('')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSearchQuery('');
+                        }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                       >
                         <X className="w-4 h-4" />
@@ -537,30 +550,93 @@ export function LocaleSwitcher() {
                   </div>
                 </div>
 
-                {/* Currency List */}
+                {/* Currency List with Accordion */}
                 <div className="overflow-y-auto px-4 pb-4" style={{ maxHeight: 'calc(85vh - 220px)' }}>
                   {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-6 h-6 animate-spin text-mandarin" />
                     </div>
-                  ) : (
+                  ) : searchQuery ? (
+                    // Search Results
                     <div className="grid grid-cols-1 gap-1">
-                      {(searchQuery ? filteredCurrencies : popularCurrencies).map((curr) => {
-                        const display = getCurrencyDisplay(curr);
-                        return (
-                          <CurrencyButton
-                            key={curr.code}
-                            currency={curr}
-                            display={display}
-                            isSelected={currency === curr.code}
-                            onClick={() => {
-                              setCurrency(curr.code);
-                              setIsOpen(false);
-                              setSearchQuery('');
-                            }}
-                          />
-                        );
-                      })}
+                      {filteredCurrencies.length === 0 ? (
+                        <p className="text-center text-[var(--text-muted)] py-8">Aucune devise trouvée</p>
+                      ) : (
+                        filteredCurrencies.map((curr) => {
+                          const display = getCurrencyDisplay(curr);
+                          return (
+                            <CurrencyButton
+                              key={curr.code}
+                              currency={curr}
+                              display={display}
+                              isSelected={currency === curr.code}
+                              onClick={() => {
+                                setCurrency(curr.code);
+                                setIsOpen(false);
+                                setSearchQuery('');
+                              }}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  ) : (
+                    // Accordion by Region
+                    <div className="space-y-2">
+                      {groupedCurrencies.map((group) => (
+                        <div key={group.label} className="border border-[var(--card-border)] rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => setExpandedRegion(expandedRegion === group.label ? null : group.label)}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-[var(--surface)] hover:bg-[var(--surface)]/80 transition-colors"
+                          >
+                            <span className="text-sm font-medium text-[var(--text-primary)]">
+                              {group.label}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-[var(--text-muted)]">
+                                {group.currencies.length}
+                              </span>
+                              <ChevronRight
+                                className={cn(
+                                  'w-4 h-4 text-[var(--text-muted)] transition-transform',
+                                  expandedRegion === group.label && 'rotate-90'
+                                )}
+                              />
+                            </div>
+                          </button>
+                          <AnimatePresence>
+                            {expandedRegion === group.label && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="p-2 space-y-1 bg-[var(--card-bg)]">
+                                  {group.currencies.map((curr) => {
+                                    const display = getCurrencyDisplay(curr);
+                                    return (
+                                      <CurrencyButton
+                                        key={curr.code}
+                                        currency={curr}
+                                        display={display}
+                                        isSelected={currency === curr.code}
+                                        onClick={() => {
+                                          setCurrency(curr.code);
+                                          setIsOpen(false);
+                                          setSearchQuery('');
+                                          setExpandedRegion(null);
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
