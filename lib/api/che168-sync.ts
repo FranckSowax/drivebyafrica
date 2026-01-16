@@ -89,6 +89,20 @@ export function mapChe168ToVehicle(che168Data: Che168VehicleData): VehicleInsert
     ? convertDisplacementToCC(che168Data.displacement)
     : null;
 
+  // Parser les images (peuvent être une string JSON ou un array)
+  let images: string[] = [];
+  if (che168Data.images) {
+    if (typeof che168Data.images === 'string') {
+      try {
+        images = JSON.parse(che168Data.images);
+      } catch {
+        images = [];
+      }
+    } else if (Array.isArray(che168Data.images)) {
+      images = che168Data.images;
+    }
+  }
+
   return {
     source: 'china',
     source_id: `che168_${che168Data.inner_id}`,
@@ -109,7 +123,7 @@ export function mapChe168ToVehicle(che168Data: Che168VehicleData): VehicleInsert
     current_price_usd: priceUsd,
     auction_platform: 'che168',
     auction_status: 'ongoing', // Les annonces CHE168 sont des ventes directes
-    images: che168Data.images,
+    images: images,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };

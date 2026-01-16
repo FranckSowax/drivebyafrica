@@ -57,7 +57,7 @@ export interface Che168VehicleData {
   description?: string;
   displacement?: number; // Cylindrée en litres (ex: 5.2)
   offer_created?: string; // Date de création du listing
-  images: string[];
+  images: string[] | string; // Peut être un array ou une string JSON
   extra?: Che168ExtraData;
   power?: number; // Puissance en chevaux (hp)
   vin?: string;
