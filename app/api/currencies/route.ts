@@ -27,29 +27,31 @@ async function createSupabaseClient() {
   );
 }
 
-// Default currencies if database table doesn't exist yet
-// Covers all African countries from the shipping destinations list
-// Note: RD Congo and Angola use USD
+// Complete list of all African currencies (fallback if database not available)
 const DEFAULT_CURRENCIES = [
-  // Base currencies - USD also used in RD Congo and Angola
-  { code: 'USD', name: 'Dollar américain', symbol: '$', rateToUsd: 1, countries: ['USA', 'RD Congo', 'Angola'] },
-  { code: 'EUR', name: 'Euro', symbol: '€', rateToUsd: 0.92, countries: ['France', 'Belgique'] },
+  // Base currencies
+  { code: 'USD', name: 'Dollar américain', symbol: '$', rateToUsd: 1, countries: ['USA', 'RD Congo', 'Angola', 'Zimbabwe'] },
+  { code: 'EUR', name: 'Euro', symbol: '€', rateToUsd: 0.92, countries: ['France', 'Belgique', 'Réunion', 'Mayotte'] },
 
-  // Zone Franc CFA
+  // Zone Franc CFA BEAC (Afrique Centrale)
   { code: 'XAF', name: 'Franc CFA BEAC', symbol: 'FCFA', rateToUsd: 615, countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'] },
+
+  // Zone Franc CFA BCEAO (Afrique de l'Ouest)
   { code: 'XOF', name: 'Franc CFA BCEAO', symbol: 'FCFA', rateToUsd: 615, countries: ['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', "Côte d'Ivoire", 'Guinée-Bissau'] },
 
   // Afrique de l'Ouest
   { code: 'NGN', name: 'Naira nigérian', symbol: '₦', rateToUsd: 1550, countries: ['Nigeria'] },
   { code: 'GHS', name: 'Cedi ghanéen', symbol: 'GH₵', rateToUsd: 15.5, countries: ['Ghana'] },
   { code: 'GNF', name: 'Franc guinéen', symbol: 'FG', rateToUsd: 8600, countries: ['Guinée'] },
-  { code: 'SLL', name: 'Leone sierra-léonais', symbol: 'Le', rateToUsd: 22500, countries: ['Sierra Leone'] },
+  { code: 'SLE', name: 'Leone sierra-léonais', symbol: 'Le', rateToUsd: 22.5, countries: ['Sierra Leone'] },
   { code: 'LRD', name: 'Dollar libérien', symbol: 'L$', rateToUsd: 192, countries: ['Liberia'] },
   { code: 'GMD', name: 'Dalasi gambien', symbol: 'D', rateToUsd: 67, countries: ['Gambie'] },
   { code: 'MRU', name: 'Ouguiya mauritanien', symbol: 'UM', rateToUsd: 39.5, countries: ['Mauritanie'] },
   { code: 'CVE', name: 'Escudo cap-verdien', symbol: '$', rateToUsd: 103, countries: ['Cap-Vert'] },
 
-  // Afrique Centrale (RD Congo et Angola utilisent USD)
+  // Afrique Centrale
+  { code: 'CDF', name: 'Franc congolais', symbol: 'FC', rateToUsd: 2800, countries: ['RD Congo'] },
+  { code: 'AOA', name: 'Kwanza angolais', symbol: 'Kz', rateToUsd: 830, countries: ['Angola'] },
   { code: 'STN', name: 'Dobra santoméen', symbol: 'Db', rateToUsd: 23, countries: ['São Tomé-et-Príncipe'] },
 
   // Afrique de l'Est
@@ -74,11 +76,14 @@ const DEFAULT_CURRENCIES = [
 
   // Afrique Australe
   { code: 'ZAR', name: 'Rand sud-africain', symbol: 'R', rateToUsd: 18.5, countries: ['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'] },
+  { code: 'BWP', name: 'Pula botswanais', symbol: 'P', rateToUsd: 13.7, countries: ['Botswana'] },
   { code: 'MZN', name: 'Metical mozambicain', symbol: 'MT', rateToUsd: 63.5, countries: ['Mozambique'] },
   { code: 'ZMW', name: 'Kwacha zambien', symbol: 'ZK', rateToUsd: 27, countries: ['Zambie'] },
-  { code: 'ZWL', name: 'Dollar zimbabwéen', symbol: 'Z$', rateToUsd: 13.5, countries: ['Zimbabwe'] },
-  { code: 'BWP', name: 'Pula botswanais', symbol: 'P', rateToUsd: 13.7, countries: ['Botswana'] },
   { code: 'MWK', name: 'Kwacha malawien', symbol: 'MK', rateToUsd: 1750, countries: ['Malawi'] },
+  { code: 'ZWG', name: 'Dollar zimbabwéen ZiG', symbol: 'ZiG', rateToUsd: 13.5, countries: ['Zimbabwe'] },
+  { code: 'NAD', name: 'Dollar namibien', symbol: 'N$', rateToUsd: 18.5, countries: ['Namibie'] },
+  { code: 'SZL', name: 'Lilangeni swazi', symbol: 'E', rateToUsd: 18.5, countries: ['Eswatini'] },
+  { code: 'LSL', name: 'Loti lesothan', symbol: 'L', rateToUsd: 18.5, countries: ['Lesotho'] },
 
   // Îles de l'Océan Indien
   { code: 'MGA', name: 'Ariary malgache', symbol: 'Ar', rateToUsd: 4650, countries: ['Madagascar'] },

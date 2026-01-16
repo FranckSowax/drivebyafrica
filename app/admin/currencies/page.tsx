@@ -13,6 +13,8 @@ import {
   Check,
   TrendingUp,
   TrendingDown,
+  Plus,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -51,6 +53,7 @@ export default function AdminCurrenciesPage() {
   const [editNote, setEditNote] = useState<string>('');
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Filter currencies based on search query
   const filteredCurrencies = currencies.filter(
@@ -91,6 +94,34 @@ export default function AdminCurrenciesPage() {
 
     fetchCurrencies();
   }, []);
+
+  // Seed all African currencies
+  const seedCurrencies = async () => {
+    setIsSeeding(true);
+    try {
+      const response = await fetch('/api/admin/currencies', {
+        method: 'PATCH',
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(data.message);
+        // Refresh the list
+        const refreshResponse = await fetch('/api/admin/currencies?withHistory=true');
+        const refreshData = await refreshResponse.json();
+        if (refreshData.currencies) {
+          setCurrencies(refreshData.currencies);
+        }
+      } else {
+        toast.error(data.error || 'Erreur lors de l\'ajout des devises');
+      }
+    } catch (error) {
+      console.error('Error seeding currencies:', error);
+      toast.error('Erreur lors de l\'ajout des devises');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const startEditing = (currency: CurrencyRate) => {
     setEditingId(currency.id);
@@ -239,6 +270,20 @@ export default function AdminCurrenciesPage() {
               </div>
             )}
           </div>
+          <Button
+            variant="primary"
+            onClick={seedCurrencies}
+            disabled={isSeeding}
+            leftIcon={
+              isSeeding ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )
+            }
+          >
+            {isSeeding ? 'Ajout en cours...' : 'Ajouter devises manquantes'}
+          </Button>
         </div>
 
         {/* Info Card */}

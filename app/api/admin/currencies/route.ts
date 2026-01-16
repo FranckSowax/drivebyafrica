@@ -288,6 +288,132 @@ export async function POST(request: Request) {
   }
 }
 
+// PATCH: Seed all African currencies
+export async function PATCH() {
+  try {
+    const supabase = await createSupabaseClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseAny = supabase as any;
+
+    // Complete list of all African currencies
+    const ALL_AFRICAN_CURRENCIES = [
+      // Base currencies
+      { code: 'USD', name: 'Dollar américain', symbol: '$', rateToUsd: 1, countries: ['USA', 'RD Congo', 'Angola', 'Zimbabwe'], displayOrder: 1 },
+      { code: 'EUR', name: 'Euro', symbol: '€', rateToUsd: 0.92, countries: ['France', 'Belgique', 'Réunion', 'Mayotte'], displayOrder: 2 },
+
+      // Zone Franc CFA BEAC (Afrique Centrale)
+      { code: 'XAF', name: 'Franc CFA BEAC', symbol: 'FCFA', rateToUsd: 615, countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'], displayOrder: 3 },
+
+      // Zone Franc CFA BCEAO (Afrique de l'Ouest)
+      { code: 'XOF', name: 'Franc CFA BCEAO', symbol: 'FCFA', rateToUsd: 615, countries: ['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', "Côte d'Ivoire", 'Guinée-Bissau'], displayOrder: 4 },
+
+      // Afrique de l'Ouest
+      { code: 'NGN', name: 'Naira nigérian', symbol: '₦', rateToUsd: 1550, countries: ['Nigeria'], displayOrder: 10 },
+      { code: 'GHS', name: 'Cedi ghanéen', symbol: 'GH₵', rateToUsd: 15.5, countries: ['Ghana'], displayOrder: 11 },
+      { code: 'GNF', name: 'Franc guinéen', symbol: 'FG', rateToUsd: 8600, countries: ['Guinée'], displayOrder: 12 },
+      { code: 'SLE', name: 'Leone sierra-léonais', symbol: 'Le', rateToUsd: 22.5, countries: ['Sierra Leone'], displayOrder: 13 },
+      { code: 'LRD', name: 'Dollar libérien', symbol: 'L$', rateToUsd: 192, countries: ['Liberia'], displayOrder: 14 },
+      { code: 'GMD', name: 'Dalasi gambien', symbol: 'D', rateToUsd: 67, countries: ['Gambie'], displayOrder: 15 },
+      { code: 'MRU', name: 'Ouguiya mauritanien', symbol: 'UM', rateToUsd: 39.5, countries: ['Mauritanie'], displayOrder: 16 },
+      { code: 'CVE', name: 'Escudo cap-verdien', symbol: '$', rateToUsd: 103, countries: ['Cap-Vert'], displayOrder: 17 },
+
+      // Afrique Centrale
+      { code: 'CDF', name: 'Franc congolais', symbol: 'FC', rateToUsd: 2800, countries: ['RD Congo'], displayOrder: 20 },
+      { code: 'AOA', name: 'Kwanza angolais', symbol: 'Kz', rateToUsd: 830, countries: ['Angola'], displayOrder: 21 },
+      { code: 'STN', name: 'Dobra santoméen', symbol: 'Db', rateToUsd: 23, countries: ['São Tomé-et-Príncipe'], displayOrder: 22 },
+
+      // Afrique de l'Est
+      { code: 'KES', name: 'Shilling kényan', symbol: 'KSh', rateToUsd: 154, countries: ['Kenya'], displayOrder: 30 },
+      { code: 'TZS', name: 'Shilling tanzanien', symbol: 'TSh', rateToUsd: 2640, countries: ['Tanzanie'], displayOrder: 31 },
+      { code: 'UGX', name: 'Shilling ougandais', symbol: 'USh', rateToUsd: 3750, countries: ['Ouganda'], displayOrder: 32 },
+      { code: 'RWF', name: 'Franc rwandais', symbol: 'FRw', rateToUsd: 1280, countries: ['Rwanda'], displayOrder: 33 },
+      { code: 'BIF', name: 'Franc burundais', symbol: 'FBu', rateToUsd: 2850, countries: ['Burundi'], displayOrder: 34 },
+      { code: 'ETB', name: 'Birr éthiopien', symbol: 'Br', rateToUsd: 56.5, countries: ['Éthiopie'], displayOrder: 35 },
+      { code: 'DJF', name: 'Franc djiboutien', symbol: 'Fdj', rateToUsd: 178, countries: ['Djibouti'], displayOrder: 36 },
+      { code: 'ERN', name: 'Nakfa érythréen', symbol: 'Nkf', rateToUsd: 15, countries: ['Érythrée'], displayOrder: 37 },
+      { code: 'SOS', name: 'Shilling somalien', symbol: 'Sh.So.', rateToUsd: 571, countries: ['Somalie'], displayOrder: 38 },
+      { code: 'SSP', name: 'Livre sud-soudanaise', symbol: 'SSP', rateToUsd: 1300, countries: ['Soudan du Sud'], displayOrder: 39 },
+
+      // Afrique du Nord
+      { code: 'MAD', name: 'Dirham marocain', symbol: 'DH', rateToUsd: 10.1, countries: ['Maroc'], displayOrder: 40 },
+      { code: 'DZD', name: 'Dinar algérien', symbol: 'DA', rateToUsd: 135, countries: ['Algérie'], displayOrder: 41 },
+      { code: 'TND', name: 'Dinar tunisien', symbol: 'DT', rateToUsd: 3.15, countries: ['Tunisie'], displayOrder: 42 },
+      { code: 'LYD', name: 'Dinar libyen', symbol: 'LD', rateToUsd: 4.85, countries: ['Libye'], displayOrder: 43 },
+      { code: 'EGP', name: 'Livre égyptienne', symbol: 'E£', rateToUsd: 50.5, countries: ['Égypte'], displayOrder: 44 },
+      { code: 'SDG', name: 'Livre soudanaise', symbol: 'SDG', rateToUsd: 600, countries: ['Soudan'], displayOrder: 45 },
+
+      // Afrique Australe
+      { code: 'ZAR', name: 'Rand sud-africain', symbol: 'R', rateToUsd: 18.5, countries: ['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'], displayOrder: 50 },
+      { code: 'BWP', name: 'Pula botswanais', symbol: 'P', rateToUsd: 13.7, countries: ['Botswana'], displayOrder: 51 },
+      { code: 'MZN', name: 'Metical mozambicain', symbol: 'MT', rateToUsd: 63.5, countries: ['Mozambique'], displayOrder: 52 },
+      { code: 'ZMW', name: 'Kwacha zambien', symbol: 'ZK', rateToUsd: 27, countries: ['Zambie'], displayOrder: 53 },
+      { code: 'MWK', name: 'Kwacha malawien', symbol: 'MK', rateToUsd: 1750, countries: ['Malawi'], displayOrder: 54 },
+      { code: 'ZWG', name: 'Dollar zimbabwéen ZiG', symbol: 'ZiG', rateToUsd: 13.5, countries: ['Zimbabwe'], displayOrder: 55 },
+      { code: 'NAD', name: 'Dollar namibien', symbol: 'N$', rateToUsd: 18.5, countries: ['Namibie'], displayOrder: 56 },
+      { code: 'SZL', name: 'Lilangeni swazi', symbol: 'E', rateToUsd: 18.5, countries: ['Eswatini'], displayOrder: 57 },
+      { code: 'LSL', name: 'Loti lesothan', symbol: 'L', rateToUsd: 18.5, countries: ['Lesotho'], displayOrder: 58 },
+
+      // Îles de l'Océan Indien
+      { code: 'MGA', name: 'Ariary malgache', symbol: 'Ar', rateToUsd: 4650, countries: ['Madagascar'], displayOrder: 60 },
+      { code: 'MUR', name: 'Roupie mauricienne', symbol: 'Rs', rateToUsd: 46, countries: ['Maurice'], displayOrder: 61 },
+      { code: 'SCR', name: 'Roupie seychelloise', symbol: 'SCR', rateToUsd: 14.5, countries: ['Seychelles'], displayOrder: 62 },
+      { code: 'KMF', name: 'Franc comorien', symbol: 'CF', rateToUsd: 460, countries: ['Comores'], displayOrder: 63 },
+    ];
+
+    // Get existing currencies
+    const { data: existing } = await supabaseAny
+      .from('currency_rates')
+      .select('currency_code');
+
+    const existingCodes = new Set((existing || []).map((c: { currency_code: string }) => c.currency_code));
+
+    // Filter currencies that don't exist yet
+    const toInsert = ALL_AFRICAN_CURRENCIES.filter(c => !existingCodes.has(c.code));
+
+    if (toInsert.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'Toutes les devises sont déjà présentes',
+        added: 0,
+      });
+    }
+
+    // Insert missing currencies
+    const { error: insertError } = await supabaseAny
+      .from('currency_rates')
+      .insert(toInsert.map(c => ({
+        currency_code: c.code,
+        currency_name: c.name,
+        currency_symbol: c.symbol,
+        rate_to_usd: c.rateToUsd,
+        countries: c.countries,
+        is_active: true,
+        display_order: c.displayOrder,
+      })));
+
+    if (insertError) {
+      console.error('Error seeding currencies:', insertError);
+      return NextResponse.json(
+        { error: 'Erreur lors de l\'ajout des devises', details: insertError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `${toInsert.length} devises ajoutées`,
+      added: toInsert.length,
+      currencies: toInsert.map(c => c.code),
+    });
+  } catch (error) {
+    console.error('Error seeding currencies:', error);
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE: Toggle currency active status
 export async function DELETE(request: Request) {
   try {
