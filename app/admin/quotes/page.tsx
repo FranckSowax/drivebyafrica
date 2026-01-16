@@ -660,78 +660,26 @@ export default function AdminQuotesPage() {
 
               {/* Actions */}
               <div className="flex flex-col gap-3 pt-4 border-t border-[var(--card-border)]">
-                {selectedQuote.status === 'pending' && (
-                  <>
-                    <div className="flex gap-3">
-                      <Button
-                        className="flex-1 bg-blue-500 hover:bg-blue-600"
-                        onClick={() => {
-                          updateQuoteStatus(selectedQuote.id, 'validated');
-                          setSelectedQuote(null);
-                        }}
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Valider le devis
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
-                        onClick={() => {
-                          updateQuoteStatus(selectedQuote.id, 'rejected');
-                          setSelectedQuote(null);
-                        }}
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Refuser
-                      </Button>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="w-full border-orange-500 text-orange-500 hover:bg-orange-500/10"
-                      onClick={() => {
-                        setSelectedQuote(null);
-                        setReassignModalQuote(selectedQuote);
-                      }}
-                    >
-                      <ArrowRightLeft className="w-4 h-4 mr-2" />
-                      Réassigner (véhicule non disponible)
-                    </Button>
-                  </>
-                )}
-                {selectedQuote.status === 'validated' && (
-                  <>
-                    <Button
-                      className="flex-1 bg-jewel hover:bg-jewel/90"
-                      onClick={() => {
-                        updateQuoteStatus(selectedQuote.id, 'accepted');
-                        setSelectedQuote(null);
-                      }}
-                    >
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      Acompte reçu ($1 000)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 border-orange-500 text-orange-500 hover:bg-orange-500/10"
-                      onClick={() => {
-                        setSelectedQuote(null);
-                        setReassignModalQuote(selectedQuote);
-                      }}
-                    >
-                      <ArrowRightLeft className="w-4 h-4 mr-2" />
-                      Réassigner
-                    </Button>
-                  </>
-                )}
-                {(selectedQuote.status === 'accepted' || selectedQuote.status === 'rejected') && (
+                {(selectedQuote.status === 'pending' || selectedQuote.status === 'validated') && (
                   <Button
                     variant="outline"
-                    className="flex-1"
-                    onClick={() => setSelectedQuote(null)}
+                    className="w-full border-orange-500 text-orange-500 hover:bg-orange-500/10"
+                    onClick={() => {
+                      setSelectedQuote(null);
+                      setReassignModalQuote(selectedQuote);
+                    }}
                   >
-                    Fermer
+                    <ArrowRightLeft className="w-4 h-4 mr-2" />
+                    Réassigner (véhicule non disponible)
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setSelectedQuote(null)}
+                >
+                  Fermer
+                </Button>
               </div>
             </div>
           </div>
