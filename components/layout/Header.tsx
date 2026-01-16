@@ -15,7 +15,6 @@ import {
   FileText,
   Calculator,
   MessageSquare,
-  HelpCircle,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -36,7 +35,6 @@ const userMenuLinks = [
 // Bottom menu links
 const bottomMenuLinks = [
   { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
-  { href: '/help', label: 'Aide', icon: HelpCircle },
 ];
 
 export function Header() {

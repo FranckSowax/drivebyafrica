@@ -54,6 +54,15 @@ const apiIntegrations = [
     features: ['sync', 'photos', 'reset'],
   },
   {
+    id: 'che168',
+    name: 'CHE168 (Chine)',
+    description: 'API CHE168 pour les vehicules chinois (che168.com)',
+    flag: '🇨🇳',
+    status: 'connected',
+    endpoint: 'https://api1.auto-api.com/api/v2/che168',
+    features: ['sync'],
+  },
+  {
     id: 'encar',
     name: 'Encar Korea',
     description: 'API pour les vehicules de Coree du Sud',
@@ -141,10 +150,15 @@ export default function AdminApiPage() {
     setSyncResults((prev) => ({ ...prev, [apiId]: { success: false } }));
 
     try {
-      const response = await fetch(`/api/${apiId}/sync`, {
+      // Use admin endpoint for dongchedi and che168
+      const endpoint = (apiId === 'dongchedi' || apiId === 'che168')
+        ? `/api/admin/sync/${apiId}`
+        : `/api/${apiId}/sync`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'changes', sinceDays: 1 }),
+        body: JSON.stringify({ mode: 'changes', sinceDays: 1, maxPages: 50 }),
       });
 
       const result = await response.json();
@@ -152,7 +166,11 @@ export default function AdminApiPage() {
         ...prev,
         [apiId]: {
           success: response.ok,
-          stats: result.stats,
+          stats: {
+            added: result.added || result.stats?.added || 0,
+            updated: result.updated || result.stats?.updated || 0,
+            removed: result.removed || result.stats?.removed || 0,
+          },
           syncedAt: result.syncedAt,
           error: result.error,
         },
@@ -448,6 +466,99 @@ export default function AdminApiPage() {
               <p className="text-[var(--text-muted)]">
                 Les liens photos de Dongchedi expirent apres 6 jours. Executez la sync photos quotidiennement
                 pour maintenir les images actives. Un cron job est configure pour s&apos;executer a 06:30 UTC.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* CHE168 Sync Panel */}
+      <Card className="p-6 mb-8 border-2 border-red-500/30">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-red-500/10 rounded-xl flex items-center justify-center">
+              <span className="text-3xl">🇨🇳</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">CHE168 - Synchronisation</h2>
+              <p className="text-[var(--text-muted)]">
+                Synchronisation des vehicules depuis che168.com (marche chinois)
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-jewel/10 text-jewel">
+            <CheckCircle className="w-4 h-4" />
+            Connecte
+          </span>
+        </div>
+
+        {/* CHE168 Sync Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Sync Full */}
+          <div className="p-4 bg-[var(--surface)] rounded-xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-royal-blue/10 rounded-lg flex items-center justify-center">
+                <RefreshCw className="w-5 h-5 text-royal-blue" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[var(--text-primary)]">Sync complete</h3>
+                <p className="text-xs text-[var(--text-muted)]">Importe tous les vehicules CHE168</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => handleSyncChanges('che168')}
+              disabled={isSyncing !== null}
+            >
+              {isSyncing === 'che168-changes' ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Synchronisation...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 mr-2" />
+                  Lancer la sync
+                </>
+              )}
+            </Button>
+            {syncResults.che168 && (
+              <div className={`mt-3 p-2 rounded-lg text-xs ${syncResults.che168.success ? 'bg-jewel/10 text-jewel' : 'bg-red-500/10 text-red-500'}`}>
+                {syncResults.che168.success ? (
+                  <>
+                    Ajoutes: {syncResults.che168.stats?.added || 0} |
+                    Maj: {syncResults.che168.stats?.updated || 0}
+                  </>
+                ) : (
+                  syncResults.che168.error
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="p-4 bg-[var(--surface)] rounded-xl flex flex-col justify-center">
+            <div className="flex items-center gap-3 mb-2">
+              <Key className="w-5 h-5 text-[var(--text-muted)]" />
+              <span className="text-sm text-[var(--text-muted)]">Meme cle API que Encar/Dongchedi</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Database className="w-5 h-5 text-[var(--text-muted)]" />
+              <span className="text-sm text-[var(--text-muted)]">Source: china</span>
+            </div>
+          </div>
+        </div>
+
+        {/* CHE168 Info */}
+        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+          <div className="flex gap-3">
+            <Globe className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-blue-600 mb-1">CHE168 - Marche automobile chinois</p>
+              <p className="text-[var(--text-muted)]">
+                che168.com est l&apos;une des plus grandes plateformes de vente de vehicules d&apos;occasion en Chine.
+                Les prix sont en CNY et convertis automatiquement en USD lors de l&apos;import.
               </p>
             </div>
           </div>
