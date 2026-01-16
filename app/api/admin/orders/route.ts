@@ -89,7 +89,7 @@ export async function GET(request: Request) {
 
     // Get user profiles for these orders
     const userIds = [...new Set(quotes?.map(q => q.user_id) || [])];
-    let profiles: Record<string, { full_name: string; phone: string | null; whatsapp_number: string | null; country: string | null }> = {};
+    let profiles: Record<string, { full_name: string | null; phone: string | null; whatsapp_number: string | null; country: string | null }> = {};
 
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
@@ -99,27 +99,40 @@ export async function GET(request: Request) {
 
       if (profilesData) {
         profiles = profilesData.reduce((acc, p) => {
-          acc[p.id] = p;
+          acc[p.id] = {
+            full_name: p.full_name,
+            phone: p.phone,
+            whatsapp_number: p.whatsapp_number,
+            country: p.country,
+          };
           return acc;
         }, {} as typeof profiles);
       }
     }
 
-    // Get order tracking data if exists
+    // Get order tracking data if exists (table may not exist yet)
     const quoteIds = quotes?.map(q => q.id) || [];
-    let orderTracking: Record<string, { order_status: string; tracking_steps: unknown; shipping_eta: string | null }> = {};
+    const orderTracking: Record<string, { order_status: string; tracking_steps: unknown; shipping_eta: string | null }> = {};
 
     if (quoteIds.length > 0) {
-      const { data: trackingData } = await supabase
-        .from('order_tracking')
-        .select('quote_id, order_status, tracking_steps, shipping_eta')
-        .in('quote_id', quoteIds);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: trackingData } = await (supabase as any)
+          .from('order_tracking')
+          .select('quote_id, order_status, tracking_steps, shipping_eta')
+          .in('quote_id', quoteIds);
 
-      if (trackingData) {
-        orderTracking = trackingData.reduce((acc, t) => {
-          acc[t.quote_id] = t;
-          return acc;
-        }, {} as typeof orderTracking);
+        if (trackingData && Array.isArray(trackingData)) {
+          trackingData.forEach((t: { quote_id: string; order_status: string; tracking_steps: unknown; shipping_eta: string | null }) => {
+            orderTracking[t.quote_id] = {
+              order_status: t.order_status,
+              tracking_steps: t.tracking_steps,
+              shipping_eta: t.shipping_eta,
+            };
+          });
+        }
+      } catch {
+        // Table may not exist yet, continue without tracking data
       }
     }
 
@@ -195,8 +208,11 @@ export async function PUT(request: Request) {
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseAny = supabase as any;
+
     // Check if tracking record exists
-    const { data: existingTracking } = await supabase
+    const { data: existingTracking } = await supabaseAny
       .from('order_tracking')
       .select('*')
       .eq('quote_id', quoteId)
@@ -215,7 +231,7 @@ export async function PUT(request: Request) {
         ? existingTracking.tracking_steps
         : [];
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAny
         .from('order_tracking')
         .update({
           order_status: orderStatus,
@@ -231,7 +247,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, tracking: data });
     } else {
       // Create new tracking record
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAny
         .from('order_tracking')
         .insert({
           quote_id: quoteId,
