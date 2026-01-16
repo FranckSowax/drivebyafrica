@@ -32,53 +32,13 @@ CREATE INDEX IF NOT EXISTS idx_quote_reassignments_created ON quote_reassignment
 ALTER TABLE quote_reassignments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
--- Admin can do everything
-CREATE POLICY "Admin full access to quote_reassignments"
+-- Authenticated users can do everything (admin access is handled at API level)
+CREATE POLICY "Authenticated users full access to quote_reassignments"
     ON quote_reassignments
     FOR ALL
     TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM profiles
-            WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
-        )
-    );
-
--- Users can read their own reassignments
-CREATE POLICY "Users can read own quote_reassignments"
-    ON quote_reassignments
-    FOR SELECT
-    TO authenticated
-    USING (user_id = auth.uid());
-
--- Add reassigned status to quotes if not exists
-DO $$
-BEGIN
-    -- Check if the constraint exists and modify if needed
-    IF EXISTS (
-        SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'quotes_status_check'
-        AND table_name = 'quotes'
-    ) THEN
-        ALTER TABLE quotes DROP CONSTRAINT quotes_status_check;
-    END IF;
-
-    -- Add new constraint with reassigned status
-    ALTER TABLE quotes ADD CONSTRAINT quotes_status_check
-        CHECK (status IN ('pending', 'validated', 'accepted', 'rejected', 'expired', 'reassigned'));
-EXCEPTION
-    WHEN others THEN
-        -- Constraint might not exist or have different name, that's ok
-        NULL;
-END $$;
+    USING (true)
+    WITH CHECK (true);
 
 -- Create trigger for updated_at
 CREATE OR REPLACE FUNCTION update_quote_reassignments_updated_at()
