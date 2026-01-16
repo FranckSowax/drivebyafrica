@@ -115,6 +115,7 @@ export function LocaleSwitcher() {
   const [activeTab, setActiveTab] = useState<'popular' | 'all'>('popular');
   const [expandedRegion, setExpandedRegion] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileSheetRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const {
     language,
@@ -130,10 +131,16 @@ export function LocaleSwitcher() {
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+
+      // Check if click is inside the desktop dropdown
+      const isInsideDropdown = dropdownRef.current && dropdownRef.current.contains(target);
+
+      // Check if click is inside the mobile bottom sheet
+      const isInsideMobileSheet = mobileSheetRef.current && mobileSheetRef.current.contains(target);
+
+      // Only close if click is outside both
+      if (!isInsideDropdown && !isInsideMobileSheet) {
         setIsOpen(false);
         setSearchQuery('');
       }
@@ -466,6 +473,7 @@ export function LocaleSwitcher() {
 
               {/* Mobile Bottom Sheet */}
               <motion.div
+                ref={mobileSheetRef}
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
