@@ -25,9 +25,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from './QuotePDFModal';
-
-// Taux de conversion: 1 USD = 640 FCFA
-const USD_TO_XAF = 640;
+import { useCurrency } from '@/components/providers/LocaleProvider';
 
 // Frais fixes
 const INSURANCE_RATE = 0.025; // 2.5% assurance
@@ -97,6 +95,14 @@ export function ShippingEstimator({
   const searchParams = useSearchParams();
   const { user, profile } = useAuthStore();
   const toast = useToast();
+  const { availableCurrencies } = useCurrency();
+
+  // Get XAF rate dynamically from currency API (default to 615 if not available)
+  const xafRate = useMemo(() => {
+    // Find XAF rate from available currencies
+    const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
+    return xafCurrency?.rateToUsd || 615; // Default to 615 if not found
+  }, [availableCurrencies]);
 
   // État pour les destinations chargées depuis l'API
   const [destinations, setDestinations] = useState<Destination[]>(FALLBACK_DESTINATIONS);
@@ -246,13 +252,13 @@ export function ShippingEstimator({
   const calculations = useMemo(() => {
     if (!selectedDestination) return null;
 
-    const vehiclePriceXAF = vehiclePriceUSD * USD_TO_XAF;
+    const vehiclePriceXAF = vehiclePriceUSD * xafRate;
     const shippingCostUSD = selectedDestination.shippingCost[vehicleSource];
 
     // Appliquer le multiplicateur selon le type d'expédition
     const shippingTypeConfig = shippingTypes.find(t => t.id === selectedShippingType);
     const adjustedShippingCostUSD = shippingCostUSD * (shippingTypeConfig?.multiplier || 1);
-    const shippingCostXAF = adjustedShippingCostUSD * USD_TO_XAF;
+    const shippingCostXAF = adjustedShippingCostUSD * xafRate;
 
     // Assurance cargo: 2.5% du (prix véhicule + transport maritime)
     const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
@@ -268,7 +274,7 @@ export function ShippingEstimator({
       total: Math.round(totalXAF),
       isGroupage: selectedShippingType === 'groupage',
     };
-  }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType]);
+  }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType, xafRate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {

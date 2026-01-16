@@ -1,12 +1,36 @@
-const EXCHANGE_RATES: Record<string, number> = {
+// Default exchange rates (fallback values)
+// These will be overridden by dynamic rates from the API when available
+const DEFAULT_EXCHANGE_RATES: Record<string, number> = {
   USD: 1,
   EUR: 0.92,
-  XAF: 640, // CFA Franc (1 USD = 640 FCFA)
-  XOF: 640, // West African CFA
+  XAF: 615, // CFA Franc BEAC (Central Africa)
+  XOF: 615, // CFA Franc BCEAO (West Africa)
   NGN: 1550,  // Nigerian Naira
 };
 
-export type Currency = keyof typeof EXCHANGE_RATES;
+export type Currency = keyof typeof DEFAULT_EXCHANGE_RATES | string;
+
+// Store for dynamic rates fetched from API
+let dynamicRates: Record<string, number> | null = null;
+
+/**
+ * Set dynamic exchange rates from API
+ * Call this after fetching rates from /api/currencies
+ */
+export function setDynamicRates(rates: Record<string, number>) {
+  dynamicRates = rates;
+}
+
+/**
+ * Get the current exchange rate for a currency
+ * Uses dynamic rates if available, falls back to defaults
+ */
+export function getRate(currency: string): number {
+  if (dynamicRates && dynamicRates[currency] !== undefined) {
+    return dynamicRates[currency];
+  }
+  return DEFAULT_EXCHANGE_RATES[currency] || 1;
+}
 
 export function formatCurrency(
   amount: number,
@@ -24,39 +48,56 @@ export function formatCurrency(
     return `${withNormalSpaces} FCFA`;
   }
 
-  const formatter = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  return formatter.format(amount);
+  try {
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(amount);
+  } catch {
+    // Fallback for unknown currency codes
+    const formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Math.round(amount));
+    return `${formatted} ${currency}`;
+  }
 }
 
 export function convertCurrency(
   amount: number,
   from: Currency,
-  to: Currency
+  to: Currency,
+  customRates?: Record<string, number>
 ): number {
-  const inUsd = amount / EXCHANGE_RATES[from];
-  return inUsd * EXCHANGE_RATES[to];
+  const rates = customRates || dynamicRates || DEFAULT_EXCHANGE_RATES;
+  const fromRate = rates[from] || 1;
+  const toRate = rates[to] || 1;
+  const inUsd = amount / fromRate;
+  return inUsd * toRate;
 }
 
 export function formatUsdToLocal(
   amountUsd: number,
-  targetCurrency: Currency = 'XAF'
+  targetCurrency: Currency = 'XAF',
+  customRate?: number
 ): string {
-  const converted = convertCurrency(amountUsd, 'USD', targetCurrency);
+  const rate = customRate ?? getRate(targetCurrency);
+  const converted = amountUsd * rate;
   return formatCurrency(converted, targetCurrency);
 }
 
 /**
  * Format USD to FCFA with abbreviated format (1M, 500K)
  * Useful for compact display in filters
+ * @param amountUsd - Amount in USD
+ * @param xafRate - Optional custom XAF rate (uses dynamic/default if not provided)
  */
-export function formatUsdToFcfaShort(amountUsd: number): string {
-  const fcfa = amountUsd * EXCHANGE_RATES.XAF;
+export function formatUsdToFcfaShort(amountUsd: number, xafRate?: number): string {
+  const rate = xafRate ?? getRate('XAF');
+  const fcfa = amountUsd * rate;
 
   if (fcfa >= 1_000_000) {
     const millions = fcfa / 1_000_000;

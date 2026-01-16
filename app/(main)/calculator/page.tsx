@@ -2,12 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Calculator, Ship, Shield, FileCheck, ArrowRight, Info, HelpCircle, MapPin } from 'lucide-react';
+import { Calculator, Ship, Shield, FileCheck, ArrowRight, Info, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-
-// Taux de conversion: 1 USD = 640 FCFA
-const USD_TO_XAF = 640;
+import { useCurrency } from '@/components/providers/LocaleProvider';
 
 // Frais fixes (nouveaux calculs)
 const INSURANCE_RATE = 0.025; // 2.5% assurance
@@ -85,11 +83,18 @@ export default function CalculatorPage() {
   const [vehiclePriceXAF, setVehiclePriceXAF] = useState<number>(5000000); // 5 millions FCFA par défaut
   const [destination, setDestination] = useState(destinations[0]);
   const [source, setSource] = useState(sources[0]);
+  const { availableCurrencies } = useCurrency();
+
+  // Get XAF rate dynamically from currency API (default to 615 if not available)
+  const xafRate = useMemo(() => {
+    const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
+    return xafCurrency?.rateToUsd || 615;
+  }, [availableCurrencies]);
 
   const calculations = useMemo(() => {
-    const vehiclePriceUSD = vehiclePriceXAF / USD_TO_XAF;
+    const vehiclePriceUSD = vehiclePriceXAF / xafRate;
     const shippingCostUSD = destination.shippingCost[source.id as keyof typeof destination.shippingCost];
-    const shippingCostXAF = shippingCostUSD * USD_TO_XAF;
+    const shippingCostXAF = shippingCostUSD * xafRate;
     // Assurance cargo: 2.5% du (prix véhicule + transport maritime)
     const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
     const inspectionFeeXAF = INSPECTION_FEE_XAF;
@@ -103,7 +108,7 @@ export default function CalculatorPage() {
       inspectionFee: Math.round(inspectionFeeXAF),
       total: Math.round(total),
     };
-  }, [vehiclePriceXAF, destination, source]);
+  }, [vehiclePriceXAF, destination, source, xafRate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {

@@ -6,6 +6,7 @@ import { useLocaleStore, type Language, type CurrencyInfo } from '@/store/useLoc
 export type { Language, CurrencyInfo };
 import frTranslations from '@/locales/fr.json';
 import enTranslations from '@/locales/en.json';
+import { setDynamicRates } from '@/lib/utils/currency';
 
 // Translations type
 type TranslationKeys = typeof frTranslations;
@@ -80,6 +81,15 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
         if (response.ok) {
           const data = await response.json();
           setAvailableCurrencies(data.currencies || []);
+
+          // Update dynamic rates in currency utility for non-hook usage
+          if (data.currencies && data.currencies.length > 0) {
+            const ratesMap: Record<string, number> = {};
+            data.currencies.forEach((c: CurrencyInfo) => {
+              ratesMap[c.code] = c.rateToUsd;
+            });
+            setDynamicRates(ratesMap);
+          }
 
           // If we have a country set, find matching currency
           if (country) {
@@ -190,7 +200,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       }
 
       // For currencies with special symbols
-      if (['CDF', 'GNF', 'RWF', 'BIF', 'AOA'].includes(code)) {
+      if (['GNF', 'RWF', 'BIF'].includes(code)) {
         const formatted = new Intl.NumberFormat(locale, {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,

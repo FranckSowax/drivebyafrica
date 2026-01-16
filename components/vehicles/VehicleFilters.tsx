@@ -25,6 +25,7 @@ import { Slider } from '@/components/ui/Slider';
 import { useFilterStore } from '@/store/useFilterStore';
 import { useVehicleFilters, translateFilter, getColorHex } from '@/lib/hooks/useVehicleFilters';
 import { formatUsdToFcfaShort } from '@/lib/utils/currency';
+import { useCurrency } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
 import type { VehicleSource } from '@/types/vehicle';
 
@@ -311,7 +312,14 @@ interface VehicleFiltersProps {
 export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
+  const { availableCurrencies } = useCurrency();
   const currentYear = new Date().getFullYear();
+
+  // Get XAF rate dynamically
+  const xafRate = useMemo(() => {
+    const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
+    return xafCurrency?.rateToUsd || 615;
+  }, [availableCurrencies]);
 
   // Build options from Supabase data
   const brandOptions = useMemo(() =>
@@ -564,7 +572,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           step={1000}
           value={[filters.priceFrom || 0, filters.priceTo || 200000]}
           onChange={([from, to]) => setFilters({ priceFrom: from, priceTo: to })}
-          formatValue={(val) => formatUsdToFcfaShort(val)}
+          formatValue={(val) => formatUsdToFcfaShort(val, xafRate)}
         />
 
         {/* Mileage Range */}

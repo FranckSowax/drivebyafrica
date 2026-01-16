@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   FileText,
@@ -25,6 +25,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from '@/components/vehicles/QuotePDFModal';
 import { QuoteValidationModal } from '@/components/vehicles/QuoteValidationModal';
+import { useCurrency } from '@/components/providers/LocaleProvider';
 
 interface Quote {
   id: string;
@@ -93,6 +94,13 @@ let logoBase64: string | null = null;
 export default function QuotesPage() {
   const { user, profile } = useAuthStore();
   const toast = useToast();
+  const { availableCurrencies } = useCurrency();
+
+  // Get XAF rate dynamically from currency API (default to 615 if not available)
+  const xafRate = useMemo(() => {
+    const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
+    return xafCurrency?.rateToUsd || 615;
+  }, [availableCurrencies]);
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +194,7 @@ export default function QuotesPage() {
   // Convert Quote to QuoteData format for the modal
   const getQuoteDataForModal = (quote: Quote) => {
     if (!quote) return null;
-    const vehiclePriceXAF = quote.vehicle_price_usd * 640;
+    const vehiclePriceXAF = quote.vehicle_price_usd * xafRate;
     return {
       vehicleId: quote.vehicle_id,
       vehicleMake: quote.vehicle_make,
@@ -364,7 +372,7 @@ export default function QuotesPage() {
 
       y += 10;
 
-      const vehiclePriceXAF = quote.vehicle_price_usd * 640;
+      const vehiclePriceXAF = quote.vehicle_price_usd * xafRate;
       const costs = [
         { label: 'Prix du vehicule (FOB)', value: vehiclePriceXAF },
         { label: `Transport maritime (${SOURCE_NAMES[quote.vehicle_source] || quote.vehicle_source} -> ${quote.destination_name})`, value: quote.shipping_cost_xaf },
