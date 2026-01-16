@@ -1,4 +1,76 @@
 {
+  "landing": {
+    "hero": {
+      "badge": "New: Direct import from South Korea",
+      "title": "Import your vehicle from",
+      "titleHighlight": "China, Korea and Dubai",
+      "subtitle": "Access thousands of vehicles from South Korea, China and Dubai. Free estimate and delivery to your port in Africa.",
+      "cta": "Browse vehicles",
+      "sources": "Sources"
+    },
+    "stats": {
+      "vehicles": "Vehicles available",
+      "clients": "Satisfied clients",
+      "countries": "Countries served",
+      "satisfaction": "Satisfaction rate"
+    },
+    "featured": {
+      "title": "Popular",
+      "titleHighlight": "vehicles",
+      "subtitle": "The most searched vehicles by our clients",
+      "viewAll": "View all"
+    },
+    "howItWorks": {
+      "title": "How it",
+      "titleHighlight": "works",
+      "subtitle": "A simple and transparent process to import your vehicle",
+      "steps": {
+        "choose": {
+          "title": "Choose",
+          "description": "Browse our catalog and find the ideal vehicle among thousands of options."
+        },
+        "estimate": {
+          "title": "Estimate",
+          "description": "Calculate shipping costs to your port and get a personalized quote."
+        },
+        "reserve": {
+          "title": "Reserve",
+          "description": "Pay a deposit to secure the vehicle and start the import process."
+        },
+        "receive": {
+          "title": "Receive",
+          "description": "Track your vehicle in real-time until delivery at your chosen port."
+        }
+      }
+    },
+    "features": {
+      "title": "Why",
+      "titleHighlight": "Driveby Africa",
+      "subtitle": "A platform designed to simplify vehicle imports to Africa",
+      "verified": {
+        "title": "Verified vehicles",
+        "description": "Each vehicle is inspected with detailed specifications and complete history."
+      },
+      "secure": {
+        "title": "Secure transactions",
+        "description": "Secure payments via Stripe and Mobile Money. Your deposit is protected until delivery."
+      },
+      "delivery": {
+        "title": "Complete delivery",
+        "description": "From reservation to African port. Real-time tracking and customs assistance included."
+      },
+      "support": {
+        "title": "24/7 Support",
+        "description": "Dedicated team available via WhatsApp. English assistance throughout the process."
+      }
+    },
+    "cta": {
+      "title": "Ready to import your next vehicle?",
+      "subtitle": "Create your free account, explore our catalog and get a personalized quote for your import.",
+      "register": "Create free account",
+      "browse": "Browse vehicles"
+    }
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
@@ -72,7 +144,25 @@
     "estimatedPrice": "Estimated price",
     "shippingIncluded": "Shipping included",
     "views": "views",
-    "favorites": "favorites"
+    "favorites": "favorites",
+    "card": {
+      "status": {
+        "available": "Available",
+        "reserved": "Reserved",
+        "sold": "Sold",
+        "pending": "Pending"
+      },
+      "source": {
+        "korea": "South Korea",
+        "china": "China",
+        "dubai": "Dubai"
+      },
+      "grade": "Grade",
+      "fobPrice": "FOB Price",
+      "onRequest": "On request",
+      "freeEstimate": "Free shipping estimate",
+      "viewDetail": "View details →"
+    }
   },
   "quote": {
     "title": "Quote request",

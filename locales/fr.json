@@ -1,4 +1,76 @@
 {
+  "landing": {
+    "hero": {
+      "badge": "Nouveau: Importation directe depuis la Corée du Sud",
+      "title": "Importez votre véhicule depuis",
+      "titleHighlight": "la Chine, la Corée et Dubaï",
+      "subtitle": "Accédez à des milliers de véhicules depuis la Corée du Sud, la Chine et Dubaï. Estimation gratuite et livraison jusqu'à votre port en Afrique.",
+      "cta": "Explorer les véhicules",
+      "sources": "Sources"
+    },
+    "stats": {
+      "vehicles": "Véhicules disponibles",
+      "clients": "Clients satisfaits",
+      "countries": "Pays desservis",
+      "satisfaction": "Taux de satisfaction"
+    },
+    "featured": {
+      "title": "Véhicules",
+      "titleHighlight": "populaires",
+      "subtitle": "Les véhicules les plus recherchés par nos clients",
+      "viewAll": "Voir tout"
+    },
+    "howItWorks": {
+      "title": "Comment ça",
+      "titleHighlight": "fonctionne",
+      "subtitle": "Un processus simple et transparent pour importer votre véhicule",
+      "steps": {
+        "choose": {
+          "title": "Choisissez",
+          "description": "Parcourez notre catalogue et trouvez le véhicule idéal parmi des milliers d'options."
+        },
+        "estimate": {
+          "title": "Estimez",
+          "description": "Calculez les frais de transport jusqu'à votre port et obtenez un devis personnalisé."
+        },
+        "reserve": {
+          "title": "Réservez",
+          "description": "Versez un acompte pour bloquer le véhicule et lancer la procédure d'importation."
+        },
+        "receive": {
+          "title": "Recevez",
+          "description": "Suivez votre véhicule en temps réel jusqu'à sa livraison au port de votre choix."
+        }
+      }
+    },
+    "features": {
+      "title": "Pourquoi",
+      "titleHighlight": "Driveby Africa",
+      "subtitle": "Une plateforme conçue pour simplifier l'importation de véhicules vers l'Afrique",
+      "verified": {
+        "title": "Véhicules vérifiés",
+        "description": "Chaque véhicule est inspecté avec une fiche technique détaillée et un historique complet."
+      },
+      "secure": {
+        "title": "Transactions sécurisées",
+        "description": "Paiements sécurisés via Stripe et Mobile Money. Votre acompte est protégé jusqu'à la livraison."
+      },
+      "delivery": {
+        "title": "Livraison complète",
+        "description": "De la réservation au port africain. Suivi en temps réel et assistance douanière incluse."
+      },
+      "support": {
+        "title": "Support 24/7",
+        "description": "Équipe dédiée disponible par WhatsApp. Assistance en français tout au long du processus."
+      }
+    },
+    "cta": {
+      "title": "Prêt à importer votre prochain véhicule?",
+      "subtitle": "Créez votre compte gratuitement, explorez notre catalogue et obtenez un devis personnalisé pour votre importation.",
+      "register": "Créer un compte gratuit",
+      "browse": "Explorer les véhicules"
+    }
+  },
   "common": {
     "loading": "Chargement...",
     "error": "Une erreur est survenue",
@@ -72,7 +144,25 @@
     "estimatedPrice": "Prix estimé",
     "shippingIncluded": "Livraison incluse",
     "views": "vues",
-    "favorites": "favoris"
+    "favorites": "favoris",
+    "card": {
+      "status": {
+        "available": "Disponible",
+        "reserved": "Réservé",
+        "sold": "Vendu",
+        "pending": "En attente"
+      },
+      "source": {
+        "korea": "Corée du Sud",
+        "china": "Chine",
+        "dubai": "Dubaï"
+      },
+      "grade": "Note",
+      "fobPrice": "Prix FOB",
+      "onRequest": "Sur demande",
+      "freeEstimate": "Estimation transport gratuite",
+      "viewDetail": "Voir le détail →"
+    }
   },
   "quote": {
     "title": "Demande de devis",

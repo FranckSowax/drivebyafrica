@@ -35,7 +35,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-white mb-1.5">
+          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
             {label}
           </label>
         )}
@@ -44,13 +44,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             disabled={disabled}
             className={cn(
-              'w-full h-10 px-3 pr-10 bg-cod-gray border rounded-lg text-white appearance-none cursor-pointer',
+              'w-full h-10 px-3 pr-10 bg-[var(--surface)] border rounded-lg text-[var(--text-primary)] appearance-none cursor-pointer',
               'transition-colors duration-200',
               'focus:outline-none focus:ring-2 focus:ring-mandarin focus:border-transparent',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               error
                 ? 'border-red-500 focus:ring-red-500'
-                : 'border-nobel/30 hover:border-nobel/50',
+                : 'border-[var(--card-border)] hover:border-mandarin/50',
               className
             )}
             {...props}
@@ -65,16 +65,17 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 key={option.value}
                 value={option.value}
                 disabled={option.disabled}
+                className="bg-[var(--surface)] text-[var(--text-primary)]"
               >
                 {option.label}
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-nobel pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
         </div>
         {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
         {hint && !error && (
-          <p className="mt-1.5 text-sm text-nobel">{hint}</p>
+          <p className="mt-1.5 text-sm text-[var(--text-muted)]">{hint}</p>
         )}
       </div>
     );

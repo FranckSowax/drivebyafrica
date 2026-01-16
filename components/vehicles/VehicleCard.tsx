@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { useCurrency } from '@/components/providers/LocaleProvider';
+import { useCurrency, useTranslation } from '@/components/providers/LocaleProvider';
 import { getProxiedImageUrl, parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
@@ -24,24 +24,20 @@ const SOURCE_FLAGS: Record<VehicleSource, string> = {
   dubai: '🇦🇪',
 };
 
-const SOURCE_LABELS: Record<VehicleSource, string> = {
-  korea: 'Corée du Sud',
-  china: 'Chine',
-  dubai: 'Dubaï',
-};
-
-const STATUS_STYLES: Record<string, { bg: string; label: string }> = {
-  available: { bg: 'bg-jewel', label: 'Disponible' },
-  reserved: { bg: 'bg-mandarin', label: 'Réservé' },
-  sold: { bg: 'bg-red-500', label: 'Vendu' },
-  pending: { bg: 'bg-royal-blue', label: 'En attente' },
+const STATUS_STYLES: Record<string, string> = {
+  available: 'bg-jewel',
+  reserved: 'bg-mandarin',
+  sold: 'bg-red-500',
+  pending: 'bg-royal-blue',
 };
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
   const [imgError, setImgError] = useState(false);
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
   const vehicleStatus = vehicle.status || 'available';
-  const status = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
+  const statusBg = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
+  const statusLabel = t(`vehicles.card.status.${vehicleStatus}`);
   const isReserved = vehicleStatus === 'reserved';
   const isSold = vehicleStatus === 'sold';
   const images = parseImagesField(vehicle.images);
@@ -82,14 +78,14 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
                 'px-4 py-2 rounded-lg font-bold text-lg uppercase tracking-wider transform -rotate-12 shadow-lg',
                 isReserved ? 'bg-mandarin text-white' : 'bg-red-500 text-white'
               )}>
-                {isReserved ? 'Réservé' : 'Vendu'}
+                {isReserved ? t('vehicles.card.status.reserved') : t('vehicles.card.status.sold')}
               </span>
             </div>
           )}
 
           {/* Status Badge */}
-          <Badge className={cn('absolute top-3 left-3', status.bg)}>
-            {status.label}
+          <Badge className={cn('absolute top-3 left-3', statusBg)}>
+            {statusLabel}
           </Badge>
 
           {/* Source Flag */}
@@ -120,7 +116,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           {/* Grade Badge */}
           {vehicle.grade && (
             <Badge className="absolute bottom-3 right-3 bg-jewel">
-              Note: {vehicle.grade}
+              {t('vehicles.card.grade')}: {vehicle.grade}
             </Badge>
           )}
 
@@ -161,17 +157,17 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             )}
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4" />
-              <span>{SOURCE_LABELS[vehicle.source as VehicleSource] || vehicle.source}</span>
+              <span>{t(`vehicles.card.source.${vehicle.source}`)}</span>
             </div>
           </div>
 
           {/* Price */}
           <div className="mt-4">
-            <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('vehicles.card.fobPrice')}</p>
             <p className="text-mandarin font-bold text-xl">
               {vehicle.start_price_usd
                 ? formatPrice(vehicle.start_price_usd)
-                : 'Sur demande'}
+                : t('vehicles.card.onRequest')}
             </p>
           </div>
 
@@ -179,10 +175,10 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
             <div className="flex justify-between items-center">
               <span className="text-xs text-[var(--text-muted)]">
-                Estimation gratuite
+                {t('vehicles.card.freeEstimate')}
               </span>
               <span className="text-sm font-medium text-mandarin group-hover:underline">
-                Voir le détail →
+                {t('vehicles.card.viewDetail')}
               </span>
             </div>
           </div>

@@ -11,6 +11,57 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
 ];
 
+// Currency code to flag emoji mapping
+const CURRENCY_FLAGS: Record<string, string> = {
+  // Base currencies
+  USD: '🇺🇸',
+  EUR: '🇪🇺',
+  // Zone CFA
+  XAF: '🇨🇲', // Cameroun (représente CEMAC)
+  XOF: '🇸🇳', // Sénégal (représente UEMOA)
+  // Afrique de l'Ouest
+  NGN: '🇳🇬',
+  GHS: '🇬🇭',
+  GNF: '🇬🇳',
+  SLL: '🇸🇱',
+  LRD: '🇱🇷',
+  GMD: '🇬🇲',
+  MRU: '🇲🇷',
+  CVE: '🇨🇻',
+  // Afrique Centrale
+  STN: '🇸🇹',
+  // Afrique de l'Est
+  KES: '🇰🇪',
+  TZS: '🇹🇿',
+  UGX: '🇺🇬',
+  RWF: '🇷🇼',
+  BIF: '🇧🇮',
+  ETB: '🇪🇹',
+  DJF: '🇩🇯',
+  ERN: '🇪🇷',
+  SOS: '🇸🇴',
+  SSP: '🇸🇸',
+  // Afrique du Nord
+  MAD: '🇲🇦',
+  DZD: '🇩🇿',
+  TND: '🇹🇳',
+  LYD: '🇱🇾',
+  EGP: '🇪🇬',
+  SDG: '🇸🇩',
+  // Afrique Australe
+  ZAR: '🇿🇦',
+  MZN: '🇲🇿',
+  ZMW: '🇿🇲',
+  ZWL: '🇿🇼',
+  BWP: '🇧🇼',
+  MWK: '🇲🇼',
+  // Océan Indien
+  MGA: '🇲🇬',
+  MUR: '🇲🇺',
+  SCR: '🇸🇨',
+  KMF: '🇰🇲',
+};
+
 // Currency regions for grouping
 const CURRENCY_REGIONS: Record<string, { label: string; codes: string[] }> = {
   cfa: {
@@ -48,7 +99,7 @@ const CURRENCY_REGIONS: Record<string, { label: string; codes: string[] }> = {
 };
 
 // Popular currencies to show at top
-const POPULAR_CURRENCIES = ['XAF', 'XOF', 'USD', 'EUR', 'NGN', 'GHS', 'ZAR', 'KES', 'MAD'];
+const POPULAR_CURRENCIES = ['XAF', 'XOF', 'USD', 'EUR', 'NGN', 'GHS', 'ZAR', 'KES', 'MAD', 'TZS', 'MZN'];
 
 export function LocaleSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
@@ -435,6 +486,8 @@ function CurrencyButton({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const flag = CURRENCY_FLAGS[curr.code] || '💰';
+
   return (
     <button
       onClick={onClick}
@@ -446,10 +499,10 @@ function CurrencyButton({
       )}
     >
       <div className={cn(
-        'flex items-center justify-center w-10 h-10 rounded-lg font-bold text-sm',
-        isSelected ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-primary)]'
+        'flex items-center justify-center w-10 h-10 rounded-lg text-2xl',
+        isSelected ? 'bg-mandarin/20' : 'bg-[var(--surface)]'
       )}>
-        {display.symbol.length > 3 ? display.symbol.slice(0, 3) : display.symbol}
+        {flag}
       </div>
       <div className="flex-1 text-left min-w-0">
         <p className={cn(
@@ -459,7 +512,7 @@ function CurrencyButton({
           {display.name}
         </p>
         <p className="text-xs text-[var(--text-muted)] truncate">
-          {display.subtitle}
+          {display.symbol} • {display.subtitle}
         </p>
       </div>
       {isSelected && (
