@@ -128,8 +128,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     fetchCurrencies();
     setMounted(true);
 
-    // Refresh currencies every 5 minutes to catch updates
-    const intervalId = setInterval(fetchCurrencies, 5 * 60 * 1000);
+    // Refresh currencies every 12 hours (2 times per day)
+    const intervalId = setInterval(fetchCurrencies, 12 * 60 * 60 * 1000);
     return () => clearInterval(intervalId);
   }, []);
 
