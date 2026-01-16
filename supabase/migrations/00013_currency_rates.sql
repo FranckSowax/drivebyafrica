@@ -28,29 +28,129 @@ VALUES
   -- Euro
   ('EUR', 'Euro', '€', 0.92, ARRAY['France', 'Belgique'], true, 2),
 
-  -- CFA Franc BEAC (Central Africa)
-  ('XAF', 'Franc CFA BEAC', 'FCFA', 615, ARRAY['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée équatoriale'], true, 3),
+  -- ========== ZONE FRANC CFA ==========
+  -- CFA Franc BEAC (Central Africa - CEMAC)
+  ('XAF', 'Franc CFA BEAC', 'FCFA', 615, ARRAY['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'], true, 3),
 
-  -- CFA Franc BCEAO (West Africa)
+  -- CFA Franc BCEAO (West Africa - UEMOA)
   ('XOF', 'Franc CFA BCEAO', 'FCFA', 615, ARRAY['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', 'Côte d''Ivoire', 'Guinée-Bissau'], true, 4),
 
-  -- Congolese Franc (DRC)
-  ('CDF', 'Franc congolais', 'FC', 2800, ARRAY['RDC'], true, 5),
-
+  -- ========== AFRIQUE DE L''OUEST ==========
   -- Nigerian Naira
-  ('NGN', 'Naira nigérian', '₦', 1550, ARRAY['Nigeria'], true, 6),
+  ('NGN', 'Naira nigérian', '₦', 1550, ARRAY['Nigeria'], true, 5),
+
+  -- Ghanaian Cedi
+  ('GHS', 'Cedi ghanéen', 'GH₵', 15.5, ARRAY['Ghana'], true, 6),
 
   -- Guinean Franc
   ('GNF', 'Franc guinéen', 'FG', 8600, ARRAY['Guinée'], true, 7),
 
-  -- Rwandan Franc
-  ('RWF', 'Franc rwandais', 'FRw', 1280, ARRAY['Rwanda'], true, 8),
+  -- Sierra Leonean Leone
+  ('SLL', 'Leone sierra-léonais', 'Le', 22500, ARRAY['Sierra Leone'], true, 8),
 
-  -- Burundian Franc
-  ('BIF', 'Franc burundais', 'FBu', 2850, ARRAY['Burundi'], true, 9),
+  -- Liberian Dollar
+  ('LRD', 'Dollar libérien', 'L$', 192, ARRAY['Liberia'], true, 9),
+
+  -- Gambian Dalasi
+  ('GMD', 'Dalasi gambien', 'D', 67, ARRAY['Gambie'], true, 10),
+
+  -- Mauritanian Ouguiya
+  ('MRU', 'Ouguiya mauritanien', 'UM', 39.5, ARRAY['Mauritanie'], true, 11),
+
+  -- Cape Verdean Escudo
+  ('CVE', 'Escudo cap-verdien', '$', 103, ARRAY['Cap-Vert'], true, 12),
+
+  -- ========== AFRIQUE CENTRALE ==========
+  -- Congolese Franc (DRC)
+  ('CDF', 'Franc congolais', 'FC', 2800, ARRAY['RD Congo'], true, 13),
 
   -- Angolan Kwanza
-  ('AOA', 'Kwanza angolais', 'Kz', 830, ARRAY['Angola'], true, 10)
+  ('AOA', 'Kwanza angolais', 'Kz', 830, ARRAY['Angola'], true, 14),
+
+  -- São Tomé and Príncipe Dobra
+  ('STN', 'Dobra santoméen', 'Db', 23, ARRAY['São Tomé-et-Príncipe'], true, 15),
+
+  -- ========== AFRIQUE DE L''EST ==========
+  -- Kenyan Shilling
+  ('KES', 'Shilling kényan', 'KSh', 154, ARRAY['Kenya'], true, 16),
+
+  -- Tanzanian Shilling
+  ('TZS', 'Shilling tanzanien', 'TSh', 2640, ARRAY['Tanzanie'], true, 17),
+
+  -- Ugandan Shilling
+  ('UGX', 'Shilling ougandais', 'USh', 3750, ARRAY['Ouganda'], true, 18),
+
+  -- Rwandan Franc
+  ('RWF', 'Franc rwandais', 'FRw', 1280, ARRAY['Rwanda'], true, 19),
+
+  -- Burundian Franc
+  ('BIF', 'Franc burundais', 'FBu', 2850, ARRAY['Burundi'], true, 20),
+
+  -- Ethiopian Birr
+  ('ETB', 'Birr éthiopien', 'Br', 56.5, ARRAY['Éthiopie'], true, 21),
+
+  -- Djiboutian Franc
+  ('DJF', 'Franc djiboutien', 'Fdj', 178, ARRAY['Djibouti'], true, 22),
+
+  -- Eritrean Nakfa
+  ('ERN', 'Nakfa érythréen', 'Nkf', 15, ARRAY['Érythrée'], true, 23),
+
+  -- Somali Shilling
+  ('SOS', 'Shilling somalien', 'Sh.So.', 571, ARRAY['Somalie'], true, 24),
+
+  -- South Sudanese Pound
+  ('SSP', 'Livre sud-soudanaise', 'SSP', 1300, ARRAY['Soudan du Sud'], true, 25),
+
+  -- ========== AFRIQUE DU NORD ==========
+  -- Moroccan Dirham
+  ('MAD', 'Dirham marocain', 'DH', 10.1, ARRAY['Maroc'], true, 26),
+
+  -- Algerian Dinar
+  ('DZD', 'Dinar algérien', 'DA', 135, ARRAY['Algérie'], true, 27),
+
+  -- Tunisian Dinar
+  ('TND', 'Dinar tunisien', 'DT', 3.15, ARRAY['Tunisie'], true, 28),
+
+  -- Libyan Dinar
+  ('LYD', 'Dinar libyen', 'LD', 4.85, ARRAY['Libye'], true, 29),
+
+  -- Egyptian Pound
+  ('EGP', 'Livre égyptienne', 'E£', 50.5, ARRAY['Égypte'], true, 30),
+
+  -- Sudanese Pound
+  ('SDG', 'Livre soudanaise', 'SDG', 600, ARRAY['Soudan'], true, 31),
+
+  -- ========== AFRIQUE AUSTRALE ==========
+  -- South African Rand
+  ('ZAR', 'Rand sud-africain', 'R', 18.5, ARRAY['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'], true, 32),
+
+  -- Mozambican Metical
+  ('MZN', 'Metical mozambicain', 'MT', 63.5, ARRAY['Mozambique'], true, 33),
+
+  -- Zambian Kwacha
+  ('ZMW', 'Kwacha zambien', 'ZK', 27, ARRAY['Zambie'], true, 34),
+
+  -- Zimbabwean Dollar (ZiG - new currency 2024)
+  ('ZWL', 'Dollar zimbabwéen', 'Z$', 13.5, ARRAY['Zimbabwe'], true, 35),
+
+  -- Botswana Pula
+  ('BWP', 'Pula botswanais', 'P', 13.7, ARRAY['Botswana'], true, 36),
+
+  -- Malawian Kwacha
+  ('MWK', 'Kwacha malawien', 'MK', 1750, ARRAY['Malawi'], true, 37),
+
+  -- ========== ÎLES DE L''OCÉAN INDIEN ==========
+  -- Malagasy Ariary
+  ('MGA', 'Ariary malgache', 'Ar', 4650, ARRAY['Madagascar'], true, 38),
+
+  -- Mauritian Rupee
+  ('MUR', 'Roupie mauricienne', 'Rs', 46, ARRAY['Maurice'], true, 39),
+
+  -- Seychellois Rupee
+  ('SCR', 'Roupie seychelloise', 'SCR', 14.5, ARRAY['Seychelles'], true, 40),
+
+  -- Comorian Franc
+  ('KMF', 'Franc comorien', 'CF', 460, ARRAY['Comores'], true, 41)
 
 ON CONFLICT (currency_code) DO UPDATE SET
   currency_name = EXCLUDED.currency_name,
