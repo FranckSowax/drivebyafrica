@@ -15,14 +15,30 @@ import {
   Globe,
   ChevronLeft,
   Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const mainNavItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exact?: boolean;
+  subItems?: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[];
+}
+
+const mainNavItems: NavItem[] = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
   { href: '/admin/vehicles', label: 'Véhicules', icon: Car },
   { href: '/admin/shipping', label: 'Transport', icon: Ship },
-  { href: '/admin/quotes', label: 'Devis', icon: FileText },
+  {
+    href: '/admin/quotes',
+    label: 'Devis',
+    icon: FileText,
+    subItems: [
+      { href: '/admin/quotes/reassignments', label: 'Réassignations', icon: AlertTriangle },
+    ]
+  },
   { href: '/admin/orders', label: 'Commandes', icon: CreditCard },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
@@ -62,19 +78,40 @@ export function AdminSidebar() {
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="space-y-1">
           {mainNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
-                isActive(item.href, item.exact)
-                  ? 'bg-black text-white shadow-lg'
-                  : 'text-black/80 hover:text-black hover:bg-black/10'
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                  isActive(item.href, item.exact)
+                    ? 'bg-black text-white shadow-lg'
+                    : 'text-black/80 hover:text-black hover:bg-black/10'
+                )}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.label}
+              </Link>
+              {/* Sub-items */}
+              {item.subItems && item.subItems.length > 0 && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <Link
+                      key={subItem.href}
+                      href={subItem.href}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+                        pathname === subItem.href
+                          ? 'bg-black/80 text-white'
+                          : 'text-black/70 hover:text-black hover:bg-black/10'
+                      )}
+                    >
+                      <subItem.icon className="w-4 h-4" />
+                      {subItem.label}
+                    </Link>
+                  ))}
+                </div>
               )}
-            >
-              <item.icon className="w-5 h-5" />
-              {item.label}
-            </Link>
+            </div>
           ))}
         </div>
 

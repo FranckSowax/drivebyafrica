@@ -509,26 +509,15 @@ export default function AdminQuotesPage() {
                                 </>
                               )}
                               {quote.status === 'validated' && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => updateQuoteStatus(quote.id, 'accepted')}
-                                    className="text-jewel hover:text-jewel/80"
-                                    title="Marquer comme paye ($1000)"
-                                  >
-                                    <DollarSign className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setReassignModalQuote(quote)}
-                                    className="text-orange-500 hover:text-orange-600"
-                                    title="Vehicule non disponible - Reassigner"
-                                  >
-                                    <ArrowRightLeft className="w-4 h-4" />
-                                  </Button>
-                                </>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateQuoteStatus(quote.id, 'accepted')}
+                                  className="text-jewel hover:text-jewel/80"
+                                  title="Marquer comme paye ($1000)"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                </Button>
                               )}
                             </>
                           )}
@@ -697,16 +686,29 @@ export default function AdminQuotesPage() {
                   </>
                 )}
                 {selectedQuote.status === 'validated' && (
-                  <Button
-                    className="flex-1 bg-jewel hover:bg-jewel/90"
-                    onClick={() => {
-                      updateQuoteStatus(selectedQuote.id, 'accepted');
-                      setSelectedQuote(null);
-                    }}
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Acompte reçu ($1 000)
-                  </Button>
+                  <>
+                    <Button
+                      className="flex-1 bg-jewel hover:bg-jewel/90"
+                      onClick={() => {
+                        updateQuoteStatus(selectedQuote.id, 'accepted');
+                        setSelectedQuote(null);
+                      }}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Acompte reçu ($1 000)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-orange-500 text-orange-500 hover:bg-orange-500/10"
+                      onClick={() => {
+                        setSelectedQuote(null);
+                        setReassignModalQuote(selectedQuote);
+                      }}
+                    >
+                      <ArrowRightLeft className="w-4 h-4 mr-2" />
+                      Réassigner
+                    </Button>
+                  </>
                 )}
                 {(selectedQuote.status === 'accepted' || selectedQuote.status === 'rejected') && (
                   <Button
