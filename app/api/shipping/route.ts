@@ -68,12 +68,20 @@ export async function GET() {
     if (error) {
       // If table doesn't exist, return defaults
       console.error('Error fetching shipping routes:', error);
-      return NextResponse.json({ destinations: DEFAULT_DESTINATIONS });
+      return NextResponse.json({ destinations: DEFAULT_DESTINATIONS, lastUpdatedAt: null });
     }
 
     if (!routes || routes.length === 0) {
-      return NextResponse.json({ destinations: DEFAULT_DESTINATIONS });
+      return NextResponse.json({ destinations: DEFAULT_DESTINATIONS, lastUpdatedAt: null });
     }
+
+    // Find the most recent updated_at date
+    let lastUpdatedAt: string | null = null;
+    const dates = routes
+      .map((r: { updated_at?: string }) => r.updated_at)
+      .filter(Boolean)
+      .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
+    lastUpdatedAt = dates[0] || null;
 
     // Transform to the format expected by ShippingEstimator
     const destinations: Destination[] = routes.map((route) => ({
@@ -88,9 +96,9 @@ export async function GET() {
       },
     }));
 
-    return NextResponse.json({ destinations });
+    return NextResponse.json({ destinations, lastUpdatedAt });
   } catch (error) {
     console.error('Error fetching shipping routes:', error);
-    return NextResponse.json({ destinations: DEFAULT_DESTINATIONS });
+    return NextResponse.json({ destinations: DEFAULT_DESTINATIONS, lastUpdatedAt: null });
   }
 }

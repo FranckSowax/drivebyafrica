@@ -15,7 +15,10 @@ import {
   Container,
   Users,
   Info,
+  Clock,
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -98,6 +101,7 @@ export function ShippingEstimator({
   // État pour les destinations chargées depuis l'API
   const [destinations, setDestinations] = useState<Destination[]>(FALLBACK_DESTINATIONS);
   const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [selectedShippingType, setSelectedShippingType] = useState<ShippingType>('container');
@@ -121,6 +125,9 @@ export function ShippingEstimator({
 
         if (data.destinations && data.destinations.length > 0) {
           setDestinations(data.destinations);
+        }
+        if (data.lastUpdatedAt) {
+          setLastUpdatedAt(data.lastUpdatedAt);
         }
       } catch (error) {
         console.error('Error fetching shipping destinations:', error);
@@ -623,6 +630,16 @@ export function ShippingEstimator({
                 {formatCurrency(calculations.total)}
               </span>
             </div>
+
+            {/* Last Update Info */}
+            {lastUpdatedAt && (
+              <div className="flex items-center gap-1.5 mt-3 text-xs text-[var(--text-muted)]">
+                <Clock className="w-3 h-3" />
+                <span>
+                  Tarifs mis à jour {formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })}
+                </span>
+              </div>
+            )}
 
             {/* Note */}
             <p className="text-xs text-[var(--text-muted)] mt-2">

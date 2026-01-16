@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Ship, Save, Plus, Trash2, Loader2, AlertCircle, Search } from 'lucide-react';
+import { Ship, Save, Plus, Trash2, Loader2, AlertCircle, Search, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { formatDistanceToNow, format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface ShippingRoute {
   id: string;
@@ -105,6 +107,7 @@ export default function AdminShippingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
   // Filter routes based on search query
   const filteredRoutes = routes.filter(
@@ -122,6 +125,9 @@ export default function AdminShippingPage() {
 
         if (data.routes && data.routes.length > 0) {
           setRoutes(data.routes);
+        }
+        if (data.lastUpdatedAt) {
+          setLastUpdatedAt(data.lastUpdatedAt);
         }
       } catch (error) {
         console.error('Error fetching routes:', error);
@@ -158,6 +164,8 @@ export default function AdminShippingPage() {
 
       toast.success('Tarifs mis à jour avec succès');
       setHasChanges(false);
+      // Update the last updated timestamp
+      setLastUpdatedAt(new Date().toISOString());
     } catch (error) {
       console.error('Error saving routes:', error);
       toast.error('Erreur lors de la sauvegarde');
@@ -198,6 +206,15 @@ export default function AdminShippingPage() {
             <p className="text-[var(--text-muted)] mt-1">
               Gérez les tarifs de transport par destination
             </p>
+            {lastUpdatedAt && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-[var(--text-muted)]">
+                <Clock className="w-4 h-4" />
+                <span>
+                  Dernière mise à jour : {format(new Date(lastUpdatedAt), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                  {' '}({formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })})
+                </span>
+              </div>
+            )}
           </div>
           <Button
             variant="primary"

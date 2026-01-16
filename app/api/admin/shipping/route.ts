@@ -49,17 +49,28 @@ export async function GET() {
       // If table doesn't exist, return defaults
       // PostgreSQL error 42P01 or PostgREST error PGRST205
       if (error.code === '42P01' || error.code === 'PGRST205') {
-        return NextResponse.json({ routes: DEFAULT_ROUTES });
+        return NextResponse.json({ routes: DEFAULT_ROUTES, lastUpdatedAt: null });
       }
       throw error;
     }
 
+    // Find the most recent updated_at date
+    let lastUpdatedAt: string | null = null;
+    if (routes && routes.length > 0) {
+      const dates = routes
+        .map((r: { updated_at?: string }) => r.updated_at)
+        .filter(Boolean)
+        .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
+      lastUpdatedAt = dates[0] || null;
+    }
+
     return NextResponse.json({
-      routes: routes && routes.length > 0 ? routes : DEFAULT_ROUTES
+      routes: routes && routes.length > 0 ? routes : DEFAULT_ROUTES,
+      lastUpdatedAt,
     });
   } catch (error) {
     console.error('Error fetching shipping routes:', error);
-    return NextResponse.json({ routes: DEFAULT_ROUTES });
+    return NextResponse.json({ routes: DEFAULT_ROUTES, lastUpdatedAt: null });
   }
 }
 
