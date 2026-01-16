@@ -14,7 +14,6 @@ import {
   TrendingUp,
   TrendingDown,
   Plus,
-  RefreshCw,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -164,6 +163,10 @@ export default function AdminCurrenciesPage() {
 
       if (data.success) {
         toast.success(data.message);
+        // Show partial success if some failed
+        if (data.failed && data.failed.length > 0) {
+          toast.warning(`${data.failed.length} devise(s) n'ont pas pu être ajoutées`);
+        }
         // Refresh the list
         const refreshResponse = await fetch('/api/admin/currencies?withHistory=true');
         const refreshData = await refreshResponse.json();
@@ -171,7 +174,11 @@ export default function AdminCurrenciesPage() {
           setCurrencies(refreshData.currencies);
         }
       } else {
-        toast.error(data.error || 'Erreur lors de l\'ajout des devises');
+        const errorMsg = data.details
+          ? `${data.error}: ${data.details}`
+          : data.error || 'Erreur lors de l\'ajout des devises';
+        toast.error(errorMsg);
+        console.error('Seed error details:', data);
       }
     } catch (error) {
       console.error('Error seeding currencies:', error);

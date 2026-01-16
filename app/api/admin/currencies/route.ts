@@ -378,32 +378,63 @@ export async function PATCH() {
       });
     }
 
-    // Insert missing currencies
-    const { error: insertError } = await supabaseAny
-      .from('currency_rates')
-      .insert(toInsert.map(c => ({
-        currency_code: c.code,
-        currency_name: c.name,
-        currency_symbol: c.symbol,
-        rate_to_usd: c.rateToUsd,
-        countries: c.countries,
-        is_active: true,
-        display_order: c.displayOrder,
-      })));
+    // Insert missing currencies one by one to handle errors gracefully
+    const insertedCurrencies: string[] = [];
+    const failedCurrencies: { code: string; error: string }[] = [];
 
-    if (insertError) {
-      console.error('Error seeding currencies:', insertError);
+    for (const c of toInsert) {
+      // Try with display_order first
+      let insertResult = await supabaseAny
+        .from('currency_rates')
+        .insert({
+          currency_code: c.code,
+          currency_name: c.name,
+          currency_symbol: c.symbol,
+          rate_to_usd: c.rateToUsd,
+          countries: c.countries,
+          is_active: true,
+          display_order: c.displayOrder,
+        });
+
+      // If display_order column doesn't exist, try without it
+      if (insertResult.error && insertResult.error.message?.includes('display_order')) {
+        insertResult = await supabaseAny
+          .from('currency_rates')
+          .insert({
+            currency_code: c.code,
+            currency_name: c.name,
+            currency_symbol: c.symbol,
+            rate_to_usd: c.rateToUsd,
+            countries: c.countries,
+            is_active: true,
+          });
+      }
+
+      if (insertResult.error) {
+        console.error(`Error inserting ${c.code}:`, insertResult.error);
+        failedCurrencies.push({ code: c.code, error: insertResult.error.message });
+      } else {
+        insertedCurrencies.push(c.code);
+      }
+    }
+
+    if (insertedCurrencies.length === 0 && failedCurrencies.length > 0) {
       return NextResponse.json(
-        { error: 'Erreur lors de l\'ajout des devises', details: insertError.message },
+        {
+          error: 'Erreur lors de l\'ajout des devises',
+          details: failedCurrencies[0]?.error,
+          failed: failedCurrencies,
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: `${toInsert.length} devises ajoutées`,
-      added: toInsert.length,
-      currencies: toInsert.map(c => c.code),
+      message: `${insertedCurrencies.length} devises ajoutées`,
+      added: insertedCurrencies.length,
+      currencies: insertedCurrencies,
+      failed: failedCurrencies.length > 0 ? failedCurrencies : undefined,
     });
   } catch (error) {
     console.error('Error seeding currencies:', error);
