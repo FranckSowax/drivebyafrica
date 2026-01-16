@@ -11,7 +11,7 @@ on:
       max_pages:
         description: 'Maximum pages to fetch (20 vehicles/page)'
         required: false
-        default: '500'
+        default: '4000'
       remove_expired:
         description: 'Remove vehicles with expired photos'
         required: false
@@ -55,7 +55,7 @@ jobs:
       - name: Run Dongchedi sync
         run: |
           npx tsx scripts/sync-dongchedi-ci.ts \
-            --max-pages=${{ github.event.inputs.max_pages || '500' }} \
+            --max-pages=${{ github.event.inputs.max_pages || '4000' }} \
             --remove-expired=${{ github.event.inputs.remove_expired || 'true' }}
 
       - name: Summary

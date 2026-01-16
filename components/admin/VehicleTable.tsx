@@ -426,12 +426,15 @@ export function VehicleTable({
                   <td className="p-3">
                     {editingId === vehicle.id ? (
                       <div className="flex items-center gap-1">
-                        <Select
-                          options={STATUS_OPTIONS.slice(1)}
+                        <select
                           value={editStatus || vehicle.status || 'available'}
                           onChange={(e) => setEditStatus(e.target.value)}
-                          className="w-28 text-xs"
-                        />
+                          className="w-28 h-8 px-2 text-xs bg-[var(--card-bg)] border border-[var(--card-border)] rounded text-[var(--text-primary)]"
+                        >
+                          {STATUS_OPTIONS.slice(1).map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
                         <button
                           onClick={() => handleStatusEdit(vehicle.id)}
                           className="p-1 text-jewel hover:bg-jewel/10 rounded"
