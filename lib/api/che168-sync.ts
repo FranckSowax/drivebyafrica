@@ -105,7 +105,7 @@ export function mapChe168ToVehicle(che168Data: Che168VehicleData): VehicleInsert
 
   return {
     source: 'china',
-    source_id: `che168_${che168Data.inner_id}`,
+    source_id: che168Data.inner_id,
     source_url: che168Data.url,
     make: che168Data.mark,
     model: che168Data.model,
@@ -251,7 +251,7 @@ export async function applyChe168Changes(
 
     for (const change of response.result) {
       try {
-        const sourceId = `che168_${change.inner_id}`;
+        const sourceId = change.inner_id;
 
         switch (change.change_type) {
           case 'added':

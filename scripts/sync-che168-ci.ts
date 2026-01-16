@@ -268,7 +268,7 @@ async function loadVehiclesFromCsv(): Promise<CsvVehicle[]> {
 }
 
 /**
- * Get existing CHE168 vehicles from database
+ * Get existing China vehicles from database
  */
 async function getExistingVehicles(): Promise<Set<string>> {
   const sourceIds = new Set<string>();
@@ -279,7 +279,6 @@ async function getExistingVehicles(): Promise<Set<string>> {
       .from('vehicles')
       .select('source_id')
       .eq('source', 'china')
-      .like('source_id', 'che168_%')
       .range(offset, offset + 999);
 
     if (!data || data.length === 0) break;
@@ -323,7 +322,7 @@ async function loadRemovedFromCsv(): Promise<Set<string>> {
     const innerId = innerIdIdx >= 0 ? cols[innerIdIdx]?.trim() : '';
 
     if (innerId) {
-      removedIds.add(`che168_${innerId}`);
+      removedIds.add(innerId);
     }
   }
 
@@ -335,7 +334,7 @@ async function loadRemovedFromCsv(): Promise<Set<string>> {
  * Map vehicle data to database format
  */
 function mapToDbRecord(vehicle: ApiOffer | CsvVehicle) {
-  const sourceId = `che168_${vehicle.inner_id}`;
+  const sourceId = vehicle.inner_id;
   const priceUsd = Math.round(vehicle.price * CNY_TO_USD);
   const engineCc = convertDisplacementToCC(vehicle.displacement);
 
@@ -469,7 +468,7 @@ async function main() {
     const removedIds = await loadRemovedFromCsv();
 
     // Also find vehicles not in current sync (stale listings)
-    const currentSourceIds = new Set(allVehicles.map(v => `che168_${v.inner_id}`));
+    const currentSourceIds = new Set(allVehicles.map(v => v.inner_id));
     const staleIds: string[] = [];
 
     for (const existingId of existingVehicles) {
