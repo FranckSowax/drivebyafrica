@@ -659,29 +659,42 @@ export default function AdminQuotesPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-[var(--card-border)]">
+              <div className="flex flex-col gap-3 pt-4 border-t border-[var(--card-border)]">
                 {selectedQuote.status === 'pending' && (
                   <>
-                    <Button
-                      className="flex-1 bg-blue-500 hover:bg-blue-600"
-                      onClick={() => {
-                        updateQuoteStatus(selectedQuote.id, 'validated');
-                        setSelectedQuote(null);
-                      }}
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Valider le devis
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button
+                        className="flex-1 bg-blue-500 hover:bg-blue-600"
+                        onClick={() => {
+                          updateQuoteStatus(selectedQuote.id, 'validated');
+                          setSelectedQuote(null);
+                        }}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Valider le devis
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
+                        onClick={() => {
+                          updateQuoteStatus(selectedQuote.id, 'rejected');
+                          setSelectedQuote(null);
+                        }}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Refuser
+                      </Button>
+                    </div>
                     <Button
                       variant="outline"
-                      className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
+                      className="w-full border-orange-500 text-orange-500 hover:bg-orange-500/10"
                       onClick={() => {
-                        updateQuoteStatus(selectedQuote.id, 'rejected');
                         setSelectedQuote(null);
+                        setReassignModalQuote(selectedQuote);
                       }}
                     >
-                      <X className="w-4 h-4 mr-2" />
-                      Refuser
+                      <ArrowRightLeft className="w-4 h-4 mr-2" />
+                      Réassigner (véhicule non disponible)
                     </Button>
                   </>
                 )}
