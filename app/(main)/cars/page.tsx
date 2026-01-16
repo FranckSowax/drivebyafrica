@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { VehicleGrid, VehicleFilters } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,6 @@ import { Pagination } from '@/components/ui/Pagination';
 import { useVehicles } from '@/lib/hooks/useVehicles';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { useFilterStore } from '@/store/useFilterStore';
-import { cn } from '@/lib/utils';
 
 const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Prix croissant' },
@@ -21,16 +20,37 @@ const SORT_OPTIONS = [
   { value: 'mileage_desc', label: 'Kilométrage (haut)' },
 ];
 
+const ITEMS_PER_PAGE = 36;
+
 export default function CarsPage() {
   const { filters, setFilters } = useFilterStore();
-  const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  const ITEMS_PER_PAGE = 36;
+  // Local search state - synced with store
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Track previous filters to detect changes
+  const prevFiltersRef = useRef<string>('');
+
+  // Handle hydration - wait for store to be ready
+  useEffect(() => {
+    setIsHydrated(true);
+    // Sync local search with store after hydration
+    setSearchQuery(filters.search || '');
+  }, []);
+
+  // Update local search when filters.search changes (e.g., from store hydration)
+  useEffect(() => {
+    if (isHydrated && filters.search !== undefined) {
+      setSearchQuery(filters.search || '');
+    }
+  }, [filters.search, isHydrated]);
+
+  // Use vehicles hook with current filters
   const { vehicles, isLoading, totalCount, refetch } = useVehicles({
-    filters,
+    filters: isHydrated ? filters : undefined,
     page,
     limit: ITEMS_PER_PAGE,
   });
@@ -39,25 +59,67 @@ export default function CarsPage() {
 
   const { favorites, toggleFavorite } = useFavorites();
 
-  // Reset page when filters change
+  // Reset page when filters change (but not on initial hydration)
   useEffect(() => {
-    setPage(1);
-  }, [filters]);
+    if (!isHydrated) return;
 
-  // Sync search query with filters
+    const currentFiltersStr = JSON.stringify(filters);
+    if (prevFiltersRef.current && prevFiltersRef.current !== currentFiltersStr) {
+      setPage(1);
+    }
+    prevFiltersRef.current = currentFiltersStr;
+  }, [filters, isHydrated]);
+
+  // Debounced search - update store after user stops typing
   useEffect(() => {
+    if (!isHydrated) return;
+
     const debounce = setTimeout(() => {
-      if (searchQuery !== filters.search) {
+      const currentSearch = filters.search || '';
+      if (searchQuery !== currentSearch) {
         setFilters({ search: searchQuery || undefined });
       }
     }, 300);
+
     return () => clearTimeout(debounce);
-  }, [searchQuery, filters.search, setFilters]);
+  }, [searchQuery, isHydrated]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters({ search: searchQuery || undefined });
+    if (isHydrated) {
+      setFilters({ search: searchQuery || undefined });
+    }
   };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    // Scroll to top of results
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  };
+
+  // Show loading state during hydration
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-[var(--background)]">
+        <div className="bg-gradient-to-b from-[var(--surface)] to-transparent py-10 lg:py-14">
+          <div className="container mx-auto px-4">
+            <h1 className="text-3xl lg:text-4xl font-bold text-[var(--text-primary)] mb-2">
+              <span className="text-mandarin">TROUVEZ</span> VOTRE VÉHICULE
+            </h1>
+            <p className="text-[var(--text-muted)] max-w-xl">
+              Explorez des véhicules vérifiés de Corée, Chine et Dubaï.
+              Obtenez une estimation des frais et réservez avec un acompte.
+            </p>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 pb-12">
+          <div className="flex justify-center items-center py-20">
+            <div className="w-8 h-8 border-4 border-mandarin border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -140,16 +202,12 @@ export default function CarsPage() {
             />
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {totalPages > 1 && !isLoading && (
               <div className="mt-8 flex flex-col items-center gap-4">
                 <Pagination
                   currentPage={page}
                   totalPages={totalPages}
-                  onPageChange={(newPage) => {
-                    setPage(newPage);
-                    // Scroll to top of results
-                    window.scrollTo({ top: 300, behavior: 'smooth' });
-                  }}
+                  onPageChange={handlePageChange}
                 />
                 <p className="text-sm text-[var(--text-muted)]">
                   Page {page} sur {totalPages}
