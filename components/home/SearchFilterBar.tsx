@@ -546,8 +546,9 @@ export function SearchFilterBar() {
   );
 
   // Format count for display - show exact number with space separator
+  // Use manual formatting to avoid hydration mismatch between server/client locales
   const formatCount = (count: number) => {
-    return count.toLocaleString('fr-FR');
+    return count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   };
 
   return (

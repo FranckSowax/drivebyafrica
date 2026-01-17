@@ -36,6 +36,15 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.autoimg.cn',
       },
+      // Dubicars Dubai images
+      {
+        protocol: 'https',
+        hostname: 'www.dubicars.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'dubicars.com',
+      },
     ],
   },
 };
