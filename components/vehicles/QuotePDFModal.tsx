@@ -7,20 +7,10 @@ import {
   X,
   Share2,
   Loader2,
-  CheckCircle,
-  FileText,
-  AlertTriangle,
   Ship,
-  Shield,
-  FileCheck,
-  MapPin,
   Calendar,
   Clock,
   Save,
-  CreditCard,
-  Smartphone,
-  Banknote,
-  Building2,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -855,84 +845,7 @@ return createPortal(
 
             {/* Actions - inside scrollable area */}
             <div className="px-4 md:px-8 pb-6">
-            {/* Deposit section */}
-            <div className="mb-4 p-4 bg-jewel/10 border border-jewel/30 rounded-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-jewel rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-base font-bold text-gray-900">
-                    Acompte pour bloquer le véhicule
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Déclenche l'inspection détaillée du véhicule
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-black text-jewel">1 000 USD</p>
-                  <p className="text-sm font-medium text-gray-600">≈ 600 000 FCFA</p>
-                </div>
-              </div>
-
-              {/* Payment options */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Choisissez votre mode de paiement</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {/* Stripe */}
-                  <button
-                    onClick={() => {
-                      toast.info('Paiement par carte', 'Redirection vers Stripe...');
-                      // TODO: Implement Stripe checkout
-                    }}
-                    className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
-                  >
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                      <CreditCard className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-gray-900">Carte bancaire</p>
-                      <p className="text-[10px] text-gray-500">Visa, Mastercard</p>
-                    </div>
-                  </button>
-
-                  {/* Mobile Money */}
-                  <button
-                    onClick={() => {
-                      toast.info('Mobile Money', 'Contactez-nous sur WhatsApp pour payer par Mobile Money');
-                      window.open('https://wa.me/24177000000?text=Bonjour, je souhaite payer l\'acompte pour le devis ' + quoteNumber + ' par Mobile Money', '_blank');
-                    }}
-                    className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all group"
-                  >
-                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                      <Smartphone className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-gray-900">Mobile Money</p>
-                      <p className="text-[10px] text-gray-500">Airtel, MTN, Orange</p>
-                    </div>
-                  </button>
-
-                  {/* Cash in agency */}
-                  <button
-                    onClick={() => {
-                      toast.info('Paiement en agence', 'Retrouvez nos agences à Libreville (Gabon), Douala (Cameroun) et Dakar (Sénégal)');
-                    }}
-                    className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group"
-                  >
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                      <Building2 className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-gray-900">Cash en agence</p>
-                      <p className="text-[10px] text-gray-500">Gabon, Cameroun, Sénégal</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Secondary buttons */}
+            {/* Action buttons */}
             <div className="flex flex-wrap gap-3">
               {!defaultQuoteNumber && (
                 <Button
