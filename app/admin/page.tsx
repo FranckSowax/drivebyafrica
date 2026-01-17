@@ -672,54 +672,49 @@ export default function AdminDashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               {data.vehiclePricing?.vehiclesMissingCount > 0 && (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                  {data.vehiclePricing.vehiclesMissingCount} supprimés
+                <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
+                  {data.vehiclePricing.vehiclesMissingCount} ignorés
                 </span>
               )}
               <span className="px-2 py-1 bg-jewel/10 text-jewel text-xs font-medium rounded-full">
-                {data.vehiclePricing?.vehiclesFoundCount || 0}/{data.vehiclePricing?.quotesWithPricesCount || 0} véhicules
+                {data.vehiclePricing?.vehiclesFoundCount || 0} devis valides
               </span>
             </div>
           </div>
           {data.vehiclePricing?.vehiclesMissingCount > 0 && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-700">
-                {data.vehiclePricing.vehiclesMissingCount} véhicule(s) n&apos;existent plus sur la plateforme.
-                Les prix source ne peuvent pas être calculés pour ces véhicules.
+            <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600">
+                {data.vehiclePricing.vehiclesMissingCount} devis ignorés (véhicules supprimés de la plateforme).
+                Seuls les {data.vehiclePricing.vehiclesFoundCount} devis avec véhicules existants sont comptabilisés.
               </p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-[var(--text-muted)]">Prix Driveby (total)</p>
-              <p className="text-2xl font-bold text-mandarin mt-1">
-                {formatCurrency(data.vehiclePricing?.totalDrivebyPriceUSD || 0, 'USD')}
-              </p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Prix affiché sur les devis</p>
-            </div>
-            <div>
-              <p className="text-sm text-[var(--text-muted)]">Prix Source ({data.vehiclePricing?.vehiclesFoundCount || 0} véhicules)</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
-                {data.vehiclePricing?.vehiclesFoundCount > 0
-                  ? formatCurrency(data.vehiclePricing?.totalSourcePriceUSD || 0, 'USD')
-                  : 'N/A'}
-              </p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">
-                {data.vehiclePricing?.vehiclesFoundCount > 0
-                  ? "Prix d'origine"
-                  : "Véhicules supprimés"}
-              </p>
-            </div>
-          </div>
-          {data.vehiclePricing?.vehiclesFoundCount > 0 && (
-            <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
-              <div className="flex items-center justify-between">
+          {data.vehiclePricing?.vehiclesFoundCount > 0 ? (
+            <>
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-[var(--text-muted)]">Marge ({data.vehiclePricing.vehiclesFoundCount} véhicules)</p>
-                  <p className="text-xl font-bold text-jewel">
-                    {formatCurrency(data.vehiclePricing?.totalMarginUSD || 0, 'USD')}
+                  <p className="text-sm text-[var(--text-muted)]">Prix Driveby</p>
+                  <p className="text-2xl font-bold text-mandarin mt-1">
+                    {formatCurrency(data.vehiclePricing?.totalDrivebyPriceUSD || 0, 'USD')}
                   </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{data.vehiclePricing.vehiclesFoundCount} devis valides</p>
                 </div>
+                <div>
+                  <p className="text-sm text-[var(--text-muted)]">Prix Source</p>
+                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
+                    {formatCurrency(data.vehiclePricing?.totalSourcePriceUSD || 0, 'USD')}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Prix d&apos;origine</p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[var(--text-muted)]">Marge totale</p>
+                    <p className="text-xl font-bold text-jewel">
+                      {formatCurrency(data.vehiclePricing?.totalMarginUSD || 0, 'USD')}
+                    </p>
+                  </div>
                 <div className="text-right">
                   <p className="text-sm text-[var(--text-muted)]">Taux marge</p>
                   <p className="text-xl font-bold text-jewel">
@@ -727,6 +722,12 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
               </div>
+            </div>
+            </>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-[var(--text-muted)]">Aucun devis valide</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Tous les véhicules ont été supprimés</p>
             </div>
           )}
         </Card>

@@ -221,22 +221,27 @@ export async function GET() {
       }
     }
 
-    // Calculate totals for all quotes with prices
+    // Calculate totals - ONLY for quotes where the vehicle still exists on the platform
     const quotesWithPrices = quotes?.filter((q: { vehicle_price_usd: number | null }) => q.vehicle_price_usd !== null) || [];
-    const totalDrivebyPriceUSD = quotesWithPrices.reduce((sum: number, q: { vehicle_price_usd: number }) => sum + (q.vehicle_price_usd || 0), 0);
 
-    // Count how many vehicles still exist (have source prices)
-    const vehiclesFoundCount = quotesWithPrices.filter((q: { vehicle_id: string }) => vehicleSourcePrices[q.vehicle_id]).length;
+    // Filter to only quotes where vehicle still exists (has source price)
+    const validQuotes = quotesWithPrices.filter((q: { vehicle_id: string }) => vehicleSourcePrices[q.vehicle_id]);
+    const vehiclesFoundCount = validQuotes.length;
     const vehiclesMissingCount = quotesWithPrices.length - vehiclesFoundCount;
 
-    // Calculate total source prices (only for quotes with matching vehicles that still exist)
-    const totalSourcePriceUSD = quotesWithPrices.reduce((sum: number, q: { vehicle_id: string }) => {
+    // Calculate Driveby price only for valid quotes (vehicles that exist)
+    const totalDrivebyPriceUSD = validQuotes.reduce((sum: number, q: { vehicle_price_usd: number }) => sum + (q.vehicle_price_usd || 0), 0);
+
+    // Calculate source prices for valid quotes
+    const totalSourcePriceUSD = validQuotes.reduce((sum: number, q: { vehicle_id: string }) => {
       const sourcePrice = vehicleSourcePrices[q.vehicle_id] || 0;
       return sum + sourcePrice;
     }, 0);
 
-    // Calculate for accepted quotes only
-    const acceptedWithPrices = acceptedQuotes.filter((q: { vehicle_price_usd: number | null }) => q.vehicle_price_usd !== null);
+    // Calculate for accepted quotes only - also filter to existing vehicles
+    const acceptedWithPrices = acceptedQuotes.filter((q: { vehicle_price_usd: number | null; vehicle_id: string }) =>
+      q.vehicle_price_usd !== null && vehicleSourcePrices[q.vehicle_id]
+    );
     const acceptedDrivebyPriceUSD = acceptedWithPrices.reduce((sum: number, q: { vehicle_price_usd: number }) => sum + (q.vehicle_price_usd || 0), 0);
     const acceptedSourcePriceUSD = acceptedWithPrices.reduce((sum: number, q: { vehicle_id: string }) => {
       const sourcePrice = vehicleSourcePrices[q.vehicle_id] || 0;
