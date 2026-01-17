@@ -18,6 +18,7 @@ import {
   FileText,
   MessageCircle,
   ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 import type { Order, OrderTracking } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
@@ -94,31 +95,29 @@ export default async function OrderDetailPage({ params }: PageProps) {
           {/* Vehicle Info */}
           <Card>
             <h2 className="font-bold text-[var(--text-primary)] mb-4">Véhicule</h2>
-            <div className="flex gap-4">
-              <div className="relative w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-surface">
-                {vehicleData?.images?.[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={getProxiedImageUrl(vehicleData.images[0])}
-                    alt={`${vehicleData.make} ${vehicleData.model}`}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Package className="w-8 h-8 text-[var(--text-muted)]" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                  {vehicleData
-                    ? `${vehicleData.make} ${vehicleData.model}`
-                    : 'Véhicule'}
-                </h3>
-                <p className="text-[var(--text-muted)]">
-                  {vehicleData?.year} • Lot #{vehicleData?.lot_number || '-'}
-                </p>
-                {vehicleData && (
+            {vehicleData ? (
+              <div className="flex gap-4">
+                <div className="relative w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-surface">
+                  {vehicleData.images?.[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={getProxiedImageUrl(vehicleData.images[0])}
+                      alt={`${vehicleData.make} ${vehicleData.model}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Package className="w-8 h-8 text-[var(--text-muted)]" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                    {vehicleData.make} {vehicleData.model}
+                  </h3>
+                  <p className="text-[var(--text-muted)]">
+                    {vehicleData.year} • Lot #{vehicleData.lot_number || '-'}
+                  </p>
                   <Link
                     href={`/cars/${vehicleData.id}`}
                     className="inline-flex items-center gap-1 text-sm text-mandarin hover:underline mt-2"
@@ -126,9 +125,29 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     <ExternalLink className="w-3 h-3" />
                     Voir le véhicule
                   </Link>
-                )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-yellow-500/20 rounded-full">
+                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-yellow-500">
+                      Véhicule vendu ou retiré
+                    </h3>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">
+                      Ce véhicule n&apos;est plus disponible sur la marketplace d&apos;origine.
+                      Il a probablement été vendu ou retiré de la vente.
+                    </p>
+                    <p className="text-sm text-[var(--text-muted)] mt-2">
+                      Contactez notre équipe pour plus d&apos;informations ou pour trouver un véhicule similaire.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Tracking Timeline */}
