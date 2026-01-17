@@ -132,7 +132,7 @@ export async function GET() {
     // ===== QUOTES STATS =====
     const { data: quotes, count: quotesTotal } = await supabaseAny
       .from('quotes')
-      .select('id, status, destination_country, vehicle_source, vehicle_make, total_cost_xaf, created_at', { count: 'exact' });
+      .select('id, status, destination_country, vehicle_source, vehicle_make, vehicle_id, vehicle_price_usd, total_cost_xaf, created_at', { count: 'exact' });
 
     // Quotes by status
     const quotesByStatus: Record<string, number> = {};
@@ -183,6 +183,54 @@ export async function GET() {
     const acceptedQuotes = quotes?.filter((q: { status: string }) => q.status === 'accepted') || [];
     const totalRevenueXAF = acceptedQuotes.reduce((sum: number, q: { total_cost_xaf: number }) => sum + (q.total_cost_xaf || 0), 0);
     const totalDepositsUSD = acceptedQuotes.length * 1000; // $1000 per order
+
+    // ===== VEHICLE PRICING STATS (Driveby price vs Source price) =====
+    // Get vehicle IDs from quotes to fetch source prices
+    const quoteVehicleIds = quotes?.map((q: { vehicle_id: string }) => q.vehicle_id).filter(Boolean) || [];
+
+    // Fetch vehicles with their source prices
+    let vehicleSourcePrices: Record<string, number> = {};
+    if (quoteVehicleIds.length > 0) {
+      try {
+        const { data: quoteVehicles } = await supabase
+          .from('vehicles')
+          .select('id, current_price_usd')
+          .in('id', quoteVehicleIds);
+
+        if (quoteVehicles) {
+          quoteVehicles.forEach((v: { id: string; current_price_usd: number | null }) => {
+            if (v.current_price_usd) {
+              vehicleSourcePrices[v.id] = v.current_price_usd;
+            }
+          });
+        }
+      } catch {
+        // Vehicles table query failed
+      }
+    }
+
+    // Calculate totals for all quotes with prices
+    const quotesWithPrices = quotes?.filter((q: { vehicle_price_usd: number | null }) => q.vehicle_price_usd !== null) || [];
+    const totalDrivebyPriceUSD = quotesWithPrices.reduce((sum: number, q: { vehicle_price_usd: number }) => sum + (q.vehicle_price_usd || 0), 0);
+
+    // Calculate total source prices (only for quotes with matching vehicles)
+    const totalSourcePriceUSD = quotesWithPrices.reduce((sum: number, q: { vehicle_id: string }) => {
+      const sourcePrice = vehicleSourcePrices[q.vehicle_id] || 0;
+      return sum + sourcePrice;
+    }, 0);
+
+    // Calculate for accepted quotes only
+    const acceptedWithPrices = acceptedQuotes.filter((q: { vehicle_price_usd: number | null }) => q.vehicle_price_usd !== null);
+    const acceptedDrivebyPriceUSD = acceptedWithPrices.reduce((sum: number, q: { vehicle_price_usd: number }) => sum + (q.vehicle_price_usd || 0), 0);
+    const acceptedSourcePriceUSD = acceptedWithPrices.reduce((sum: number, q: { vehicle_id: string }) => {
+      const sourcePrice = vehicleSourcePrices[q.vehicle_id] || 0;
+      return sum + sourcePrice;
+    }, 0);
+
+    // Calculate margin
+    const totalMarginUSD = totalDrivebyPriceUSD - totalSourcePriceUSD;
+    const acceptedMarginUSD = acceptedDrivebyPriceUSD - acceptedSourcePriceUSD;
+    const marginPercentage = totalSourcePriceUSD > 0 ? Math.round((totalMarginUSD / totalSourcePriceUSD) * 100) : 0;
 
     // ===== ORDERS STATS (from order_tracking) =====
     let ordersStats = {
@@ -445,6 +493,19 @@ export async function GET() {
         totalDepositsUSD: totalDepositsUSD,
         conversionRate,
         quoteAcceptanceRate,
+      },
+
+      // Vehicle pricing comparison (Driveby vs Source)
+      vehiclePricing: {
+        totalDrivebyPriceUSD,
+        totalSourcePriceUSD,
+        totalMarginUSD,
+        marginPercentage,
+        quotesWithPricesCount: quotesWithPrices.length,
+        acceptedDrivebyPriceUSD,
+        acceptedSourcePriceUSD,
+        acceptedMarginUSD,
+        acceptedCount: acceptedWithPrices.length,
       },
 
       // Period comparisons
