@@ -350,6 +350,11 @@ export const ORDER_STATUSES = {
     color: 'bg-red-500',
     step: 0,
   },
+  pending_reassignment: {
+    label: 'Véhicule non disponible',
+    color: 'bg-yellow-600',
+    step: 0,
+  },
   // Legacy statuses for backwards compatibility
   pending_payment: {
     label: 'En attente de paiement',

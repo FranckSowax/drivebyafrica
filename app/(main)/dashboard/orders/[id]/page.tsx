@@ -20,7 +20,7 @@ import {
   ExternalLink,
   AlertTriangle,
 } from 'lucide-react';
-import type { Order, OrderTracking } from '@/types/database';
+import type { Order, OrderTracking, QuoteReassignment } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
 
 interface PageProps {
@@ -50,19 +50,72 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   const orderData = order as Order;
 
-  // Fetch vehicle and tracking
-  const [vehicleResult, trackingResult] = await Promise.all([
+  // Fetch vehicle, tracking, and check for existing reassignment
+  const [vehicleResult, trackingResult, reassignmentResult] = await Promise.all([
     supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).maybeSingle(),
     supabase
       .from('order_tracking')
       .select('*')
       .eq('order_id', id)
       .order('completed_at', { ascending: true }),
+    // Check if a reassignment already exists for this order's quote
+    orderData.quote_id
+      ? supabase
+          .from('quote_reassignments')
+          .select('*')
+          .eq('original_quote_id', orderData.quote_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const vehicleData = vehicleResult.data as Vehicle | null;
   const trackingData = (trackingResult.data || []) as OrderTracking[];
+  const existingReassignment = reassignmentResult.data as QuoteReassignment | null;
   const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
+
+  // If vehicle is not available and no reassignment exists, create one automatically
+  if (!vehicleData && orderData.quote_id && !existingReassignment) {
+    // Get quote details for reassignment
+    const { data: quoteData } = await supabase
+      .from('quotes')
+      .select('*')
+      .eq('id', orderData.quote_id)
+      .single();
+
+    if (quoteData) {
+      // Create reassignment request
+      await supabase.from('quote_reassignments').insert({
+        original_quote_id: orderData.quote_id,
+        user_id: user.id,
+        original_vehicle_id: orderData.vehicle_id,
+        original_vehicle_make: quoteData.vehicle_make || orderData.vehicle_make || 'Inconnu',
+        original_vehicle_model: quoteData.vehicle_model || orderData.vehicle_model || 'Inconnu',
+        original_vehicle_year: quoteData.vehicle_year || orderData.vehicle_year || 0,
+        original_vehicle_price_usd: quoteData.vehicle_price_usd || orderData.vehicle_price_usd || 0,
+        reason: 'vehicle_sold',
+        status: 'pending',
+        proposed_vehicles: [],
+      });
+
+      // Update order status to indicate issue
+      await supabase
+        .from('orders')
+        .update({
+          status: 'pending_reassignment',
+          admin_notes: 'Véhicule vendu ou retiré - Réassignation automatique créée'
+        })
+        .eq('id', id);
+
+      // Add tracking entry
+      await supabase.from('order_tracking').insert({
+        order_id: id,
+        status: 'pending_reassignment',
+        title: 'Véhicule non disponible',
+        description: 'Le véhicule original a été vendu ou retiré. Notre équipe recherche des alternatives similaires.',
+        completed_at: new Date().toISOString(),
+      });
+    }
+  }
 
   const createdAt = orderData.created_at
     ? format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
@@ -133,7 +186,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   <div className="p-2 bg-yellow-500/20 rounded-full">
                     <AlertTriangle className="w-5 h-5 text-yellow-500" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-bold text-yellow-500">
                       Véhicule vendu ou retiré
                     </h3>
@@ -141,9 +194,27 @@ export default async function OrderDetailPage({ params }: PageProps) {
                       Ce véhicule n&apos;est plus disponible sur la marketplace d&apos;origine.
                       Il a probablement été vendu ou retiré de la vente.
                     </p>
-                    <p className="text-sm text-[var(--text-muted)] mt-2">
-                      Contactez notre équipe pour plus d&apos;informations ou pour trouver un véhicule similaire.
-                    </p>
+                    {orderData.quote_id ? (
+                      <div className="mt-3 p-3 bg-mandarin/10 border border-mandarin/30 rounded-lg">
+                        <p className="text-sm text-mandarin font-medium">
+                          Une demande de réassignation a été créée automatiquement.
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">
+                          Notre équipe recherche des véhicules similaires pour vous. Vous serez notifié dès que des alternatives seront disponibles.
+                        </p>
+                        <Link
+                          href={`/reassignment/${existingReassignment?.id || ''}`}
+                          className="inline-flex items-center gap-1 text-sm text-mandarin hover:underline mt-2"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Voir les alternatives proposées
+                        </Link>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-[var(--text-muted)] mt-2">
+                        Contactez notre équipe pour plus d&apos;informations ou pour trouver un véhicule similaire.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
