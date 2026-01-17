@@ -260,13 +260,44 @@ interface FilterData {
 
 /**
  * Fetch all filter options from Supabase
+ * Uses pagination to bypass the 1000 row limit
  */
 async function fetchFilters(): Promise<FilterData> {
   const supabase = createClient();
 
-  // Fetch distinct values for each filter field
+  // Helper to fetch all pages of a query
+  async function fetchAllPages<T>(
+    queryFn: (from: number, to: number) => Promise<{ data: T[] | null; error: unknown }>
+  ): Promise<T[]> {
+    const pageSize = 1000;
+    const allData: T[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await queryFn(from, from + pageSize - 1);
+      if (error || !data) break;
+      allData.push(...data);
+      hasMore = data.length === pageSize;
+      from += pageSize;
+    }
+    return allData;
+  }
+
+  // Fetch all brands and models with pagination
+  const brandsData = await fetchAllPages<{ make: string | null; model: string | null }>(
+    async (from, to) => {
+      const result = await supabase
+        .from('vehicles')
+        .select('make, model')
+        .not('make', 'is', null)
+        .range(from, to);
+      return { data: result.data, error: result.error };
+    }
+  );
+
+  // Fetch other filter values (these are less likely to hit 1000 limit for distinct values)
   const [
-    brandsResult,
     transmissionsResult,
     fuelTypesResult,
     driveTypesResult,
@@ -274,26 +305,23 @@ async function fetchFilters(): Promise<FilterData> {
     colorsResult,
     yearsResult,
   ] = await Promise.all([
-    supabase.from('vehicles').select('make, model').not('make', 'is', null),
-    supabase.from('vehicles').select('transmission').not('transmission', 'is', null),
-    supabase.from('vehicles').select('fuel_type').not('fuel_type', 'is', null),
-    supabase.from('vehicles').select('drive_type').not('drive_type', 'is', null),
-    supabase.from('vehicles').select('body_type').not('body_type', 'is', null),
-    supabase.from('vehicles').select('color').not('color', 'is', null),
-    supabase.from('vehicles').select('year').not('year', 'is', null),
+    supabase.from('vehicles').select('transmission').not('transmission', 'is', null).limit(1000),
+    supabase.from('vehicles').select('fuel_type').not('fuel_type', 'is', null).limit(1000),
+    supabase.from('vehicles').select('drive_type').not('drive_type', 'is', null).limit(1000),
+    supabase.from('vehicles').select('body_type').not('body_type', 'is', null).limit(1000),
+    supabase.from('vehicles').select('color').not('color', 'is', null).limit(1000),
+    supabase.from('vehicles').select('year').not('year', 'is', null).limit(1000),
   ]);
 
-  // Process brands and models
+  // Process brands and models from paginated data
   const brandModelMap: Record<string, Set<string>> = {};
-  if (brandsResult.data) {
-    for (const row of brandsResult.data) {
-      if (row.make) {
-        if (!brandModelMap[row.make]) {
-          brandModelMap[row.make] = new Set();
-        }
-        if (row.model) {
-          brandModelMap[row.make].add(row.model);
-        }
+  for (const row of brandsData) {
+    if (row.make) {
+      if (!brandModelMap[row.make]) {
+        brandModelMap[row.make] = new Set();
+      }
+      if (row.model) {
+        brandModelMap[row.make].add(row.model);
       }
     }
   }
