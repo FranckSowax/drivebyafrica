@@ -1,27 +1,5 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
-
-async function createSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Quote status flow:
 // - pending: Default state when user creates a quote
@@ -30,7 +8,7 @@ async function createSupabaseClient() {
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -152,7 +130,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const { id, status } = await request.json();
 
     if (!id || !status) {
@@ -198,7 +176,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
