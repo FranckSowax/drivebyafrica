@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
+import { Heart, Eye, Gauge, MapPin, Copy, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { useCurrency, useTranslation } from '@/components/providers/LocaleProvider';
 import { parseImagesField, getProxiedImageUrl } from '@/lib/utils/imageProxy';
@@ -33,8 +33,20 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
   const [imgError, setImgError] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { formatPrice } = useCurrency();
   const { t } = useTranslation();
+
+  // Short ID for display (first 8 chars)
+  const shortId = vehicle.id.slice(0, 8);
+
+  const copyId = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(vehicle.id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const vehicleStatus = vehicle.status || 'available';
   const statusBg = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
   const statusLabel = t(`vehicles.card.status.${vehicleStatus}`);
@@ -168,9 +180,19 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           {/* CTA */}
           <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[var(--text-muted)]">
-                {t('vehicles.card.freeEstimate')}
-              </span>
+              {/* Vehicle ID with copy button */}
+              <button
+                onClick={copyId}
+                className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono"
+                title={`ID: ${vehicle.id}`}
+              >
+                {copied ? (
+                  <Check className="w-3 h-3 text-jewel" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+                <span>{shortId}</span>
+              </button>
               <span className="text-sm font-medium text-mandarin group-hover:underline">
                 {t('vehicles.card.viewDetail')}
               </span>
