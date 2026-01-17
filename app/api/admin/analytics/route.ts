@@ -52,10 +52,16 @@ export async function GET() {
     const totalViews = vehicles?.reduce((sum, v) => sum + (v.views_count || 0), 0) || 0;
     const totalFavorites = vehicles?.reduce((sum, v) => sum + (v.favorites_count || 0), 0) || 0;
 
-    // Vehicles by source
+    // Vehicles by source (normalize source names)
+    const normalizeSource = (source: string): string => {
+      if (source === 'che168' || source === 'dongchedi') return 'china';
+      if (source === 'dubicars') return 'dubai';
+      return source;
+    };
     const vehiclesBySource: Record<string, number> = {};
     vehicles?.forEach(v => {
-      vehiclesBySource[v.source] = (vehiclesBySource[v.source] || 0) + 1;
+      const normalizedSource = normalizeSource(v.source);
+      vehiclesBySource[normalizedSource] = (vehiclesBySource[normalizedSource] || 0) + 1;
     });
 
     // Top viewed vehicles
@@ -398,6 +404,7 @@ export async function GET() {
       views: number;
       syncAdded: number;
       syncUpdated: number;
+      totalVehicles: number;
     }> = [];
 
     // Generate data for last 90 days
@@ -424,6 +431,12 @@ export async function GET() {
         return d >= dayStart && d < dayEnd;
       }).length || 0;
 
+      // Total vehicles present on the platform up to this day (cumulative)
+      const totalVehiclesOnDay = vehicles?.filter(v => {
+        const d = new Date(v.created_at);
+        return d < dayEnd;
+      }).length || 0;
+
       // Estimate views based on vehicle views (distribute proportionally)
       const viewsOnDay = Math.floor((totalViews / 90) * (0.5 + Math.random()));
 
@@ -438,6 +451,7 @@ export async function GET() {
         views: viewsOnDay,
         syncAdded: syncData.added,
         syncUpdated: syncData.updated,
+        totalVehicles: totalVehiclesOnDay,
       });
     }
 

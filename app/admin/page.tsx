@@ -51,6 +51,7 @@ interface TimeSeriesData {
   views: number;
   syncAdded: number;
   syncUpdated: number;
+  totalVehicles: number;
 }
 
 interface MonthlyData {
@@ -488,15 +489,15 @@ export default function AdminDashboardPage() {
         </div>
       </Card>
 
-      {/* Sync Chart - Vehicles Synced vs Quotes */}
+      {/* Total Vehicles Chart */}
       <Card className="p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
-              <Zap className="w-5 h-5 text-mandarin" />
-              Synchronisation vs Demandes
+              <Car className="w-5 h-5 text-mandarin" />
+              Véhicules sur la plateforme
             </h2>
-            <p className="text-sm text-[var(--text-muted)]">Véhicules ajoutés par sync comparés aux demandes de devis</p>
+            <p className="text-sm text-[var(--text-muted)]">Nombre total de véhicules disponibles chaque jour</p>
           </div>
           <div className="flex gap-2">
             {(['7d', '30d', '90d'] as const).map((range) => (
@@ -516,15 +517,11 @@ export default function AdminDashboardPage() {
         </div>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={filteredTimeSeries}>
+            <AreaChart data={filteredTimeSeries}>
               <defs>
-                <linearGradient id="colorSyncAdded" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.3} />
-                </linearGradient>
-                <linearGradient id="colorQuotesBar" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#F97316" stopOpacity={0.3} />
+                <linearGradient id="colorTotalVehicles" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#F97316" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
@@ -540,6 +537,7 @@ export default function AdminDashboardPage() {
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                domain={['dataMin - 50', 'dataMax + 50']}
               />
               <Tooltip
                 contentStyle={{
@@ -548,21 +546,17 @@ export default function AdminDashboardPage() {
                   borderRadius: '8px',
                 }}
                 labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                formatter={(value: number) => [value.toLocaleString('fr-FR'), 'Véhicules']}
               />
-              <Legend />
-              <Bar
-                dataKey="syncAdded"
-                name="Véhicules synchronisés"
-                fill="url(#colorSyncAdded)"
-                radius={[4, 4, 0, 0]}
+              <Area
+                type="monotone"
+                dataKey="totalVehicles"
+                name="Véhicules"
+                stroke="#F97316"
+                fill="url(#colorTotalVehicles)"
+                strokeWidth={2}
               />
-              <Bar
-                dataKey="quotes"
-                name="Demandes de devis"
-                fill="url(#colorQuotesBar)"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </Card>
