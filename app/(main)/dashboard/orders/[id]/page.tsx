@@ -73,58 +73,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
   let reassignmentData = reassignmentResult.data as QuoteReassignment | null;
   const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
 
-  // If vehicle is not available and no reassignment exists, create one automatically
-  if (!vehicleData && orderData.quote_id && !reassignmentData) {
-    try {
-      // Get quote details for reassignment
-      const { data: quoteData } = await supabase
-        .from('quotes')
-        .select('*')
-        .eq('id', orderData.quote_id)
-        .single();
-
-      if (quoteData) {
-        // Create reassignment request
-        const { data: newReassignment, error: reassignError } = await supabase.from('quote_reassignments').insert({
-          original_quote_id: orderData.quote_id,
-          user_id: user.id,
-          original_vehicle_id: orderData.vehicle_id,
-          original_vehicle_make: quoteData.vehicle_make || orderData.vehicle_make || 'Inconnu',
-          original_vehicle_model: quoteData.vehicle_model || orderData.vehicle_model || 'Inconnu',
-          original_vehicle_year: quoteData.vehicle_year || orderData.vehicle_year || 0,
-          original_vehicle_price_usd: quoteData.vehicle_price_usd || orderData.vehicle_price_usd || 0,
-          reason: 'vehicle_sold',
-          status: 'pending',
-          proposed_vehicles: [],
-        }).select().single();
-
-        if (!reassignError && newReassignment) {
-          reassignmentData = newReassignment as QuoteReassignment;
-
-          // Update order status to indicate issue
-          await supabase
-            .from('orders')
-            .update({
-              status: 'pending_reassignment',
-              admin_notes: 'Véhicule vendu ou retiré - Réassignation automatique créée'
-            })
-            .eq('id', id);
-
-          // Add tracking entry
-          await supabase.from('order_tracking').insert({
-            order_id: id,
-            status: 'pending_reassignment',
-            title: 'Véhicule non disponible',
-            description: 'Le véhicule original a été vendu ou retiré. Notre équipe recherche des alternatives similaires.',
-            completed_at: new Date().toISOString(),
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Error creating reassignment:', err);
-      // Continue without reassignment - don't crash the page
-    }
-  }
+  // Note: Auto-reassignment is disabled to avoid RLS issues
+  // The reassignment should be created via the admin panel instead
+  // If vehicle is not available, just show the warning message
 
   const createdAt = orderData.created_at
     ? format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
@@ -203,16 +154,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
                       Ce véhicule n&apos;est plus disponible sur la marketplace d&apos;origine.
                       Il a probablement été vendu ou retiré de la vente.
                     </p>
-                    {orderData.quote_id ? (
+                    {reassignmentData ? (
                       <div className="mt-3 p-3 bg-mandarin/10 border border-mandarin/30 rounded-lg">
                         <p className="text-sm text-mandarin font-medium">
-                          Une demande de réassignation a été créée automatiquement.
+                          Une demande de réassignation est en cours.
                         </p>
                         <p className="text-xs text-[var(--text-muted)] mt-1">
                           Notre équipe recherche des véhicules similaires pour vous. Vous serez notifié dès que des alternatives seront disponibles.
                         </p>
                         <Link
-                          href={`/reassignment/${reassignmentData?.id || ''}`}
+                          href={`/reassignment/${reassignmentData.id}`}
                           className="inline-flex items-center gap-1 text-sm text-mandarin hover:underline mt-2"
                         >
                           <ExternalLink className="w-3 h-3" />
@@ -220,9 +171,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
                         </Link>
                       </div>
                     ) : (
-                      <p className="text-sm text-[var(--text-muted)] mt-2">
-                        Contactez notre équipe pour plus d&apos;informations ou pour trouver un véhicule similaire.
-                      </p>
+                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <p className="text-sm text-blue-400 font-medium">
+                          Notre équipe a été notifiée
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">
+                          Nous recherchons des véhicules similaires pour vous. Vous serez contacté dès que des alternatives seront disponibles.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
