@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -240,102 +241,108 @@ const COLOR_HEX: Record<string, string> = {
   'Pink': '#EC4899',
 };
 
+// Query key for filter data
+export const filterKeys = {
+  all: ['vehicleFilters'] as const,
+};
+
+interface FilterData {
+  brands: string[];
+  modelsByBrand: Record<string, string[]>;
+  transmissions: string[];
+  fuelTypes: string[];
+  driveTypes: string[];
+  bodyTypes: string[];
+  colors: string[];
+  minYear: number;
+  maxYear: number;
+}
+
 /**
- * Hook to load filter options from Supabase
+ * Fetch all filter options from Supabase
  */
-export function useVehicleFilters(): VehicleFiltersData {
-  const [data, setData] = useState<{
-    brands: string[];
-    modelsByBrand: Record<string, string[]>;
-    transmissions: string[];
-    fuelTypes: string[];
-    driveTypes: string[];
-    bodyTypes: string[];
-    colors: string[];
-    minYear: number;
-    maxYear: number;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchFilters(): Promise<FilterData> {
+  const supabase = createClient();
 
-  useEffect(() => {
-    const supabase = createClient();
+  // Fetch distinct values for each filter field
+  const [
+    brandsResult,
+    transmissionsResult,
+    fuelTypesResult,
+    driveTypesResult,
+    bodyTypesResult,
+    colorsResult,
+    yearsResult,
+  ] = await Promise.all([
+    supabase.from('vehicles').select('make, model').not('make', 'is', null),
+    supabase.from('vehicles').select('transmission').not('transmission', 'is', null),
+    supabase.from('vehicles').select('fuel_type').not('fuel_type', 'is', null),
+    supabase.from('vehicles').select('drive_type').not('drive_type', 'is', null),
+    supabase.from('vehicles').select('body_type').not('body_type', 'is', null),
+    supabase.from('vehicles').select('color').not('color', 'is', null),
+    supabase.from('vehicles').select('year').not('year', 'is', null),
+  ]);
 
-    async function loadFilters() {
-      try {
-        // Fetch distinct values for each filter field
-        const [
-          brandsResult,
-          transmissionsResult,
-          fuelTypesResult,
-          driveTypesResult,
-          bodyTypesResult,
-          colorsResult,
-          yearsResult,
-        ] = await Promise.all([
-          supabase.from('vehicles').select('make, model').not('make', 'is', null),
-          supabase.from('vehicles').select('transmission').not('transmission', 'is', null),
-          supabase.from('vehicles').select('fuel_type').not('fuel_type', 'is', null),
-          supabase.from('vehicles').select('drive_type').not('drive_type', 'is', null),
-          supabase.from('vehicles').select('body_type').not('body_type', 'is', null),
-          supabase.from('vehicles').select('color').not('color', 'is', null),
-          supabase.from('vehicles').select('year').not('year', 'is', null),
-        ]);
-
-        // Process brands and models
-        const brandModelMap: Record<string, Set<string>> = {};
-        if (brandsResult.data) {
-          for (const row of brandsResult.data) {
-            if (row.make) {
-              if (!brandModelMap[row.make]) {
-                brandModelMap[row.make] = new Set();
-              }
-              if (row.model) {
-                brandModelMap[row.make].add(row.model);
-              }
-            }
-          }
+  // Process brands and models
+  const brandModelMap: Record<string, Set<string>> = {};
+  if (brandsResult.data) {
+    for (const row of brandsResult.data) {
+      if (row.make) {
+        if (!brandModelMap[row.make]) {
+          brandModelMap[row.make] = new Set();
         }
-
-        const brands = Object.keys(brandModelMap).sort();
-        const modelsByBrand: Record<string, string[]> = {};
-        for (const [brand, models] of Object.entries(brandModelMap)) {
-          modelsByBrand[brand] = Array.from(models).sort();
+        if (row.model) {
+          brandModelMap[row.make].add(row.model);
         }
-
-        // Extract unique values with proper type narrowing
-        const transmissions = [...new Set(transmissionsResult.data?.map(r => r.transmission).filter((v): v is string => !!v) || [])];
-        const fuelTypes = [...new Set(fuelTypesResult.data?.map(r => r.fuel_type).filter((v): v is string => !!v) || [])];
-        const driveTypes = [...new Set(driveTypesResult.data?.map(r => r.drive_type).filter((v): v is string => !!v) || [])];
-        const bodyTypes = [...new Set(bodyTypesResult.data?.map(r => r.body_type).filter((v): v is string => !!v) || [])];
-        const colors = [...new Set(colorsResult.data?.map(r => r.color).filter((v): v is string => !!v) || [])];
-
-        // Get year range
-        const years = yearsResult.data?.map(r => r.year).filter((y): y is number => y !== null && y !== undefined) || [];
-        const minYear = years.length > 0 ? Math.min(...years) : 2000;
-        const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
-
-        setData({
-          brands,
-          modelsByBrand,
-          transmissions,
-          fuelTypes,
-          driveTypes,
-          bodyTypes,
-          colors,
-          minYear,
-          maxYear,
-        });
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load filters');
-      } finally {
-        setIsLoading(false);
       }
     }
+  }
 
-    loadFilters();
-  }, []);
+  const brands = Object.keys(brandModelMap).sort();
+  const modelsByBrand: Record<string, string[]> = {};
+  for (const [brand, models] of Object.entries(brandModelMap)) {
+    modelsByBrand[brand] = Array.from(models).sort();
+  }
+
+  // Extract unique values with proper type narrowing
+  const transmissions = [...new Set(transmissionsResult.data?.map(r => r.transmission).filter((v): v is string => !!v) || [])];
+  const fuelTypes = [...new Set(fuelTypesResult.data?.map(r => r.fuel_type).filter((v): v is string => !!v) || [])];
+  const driveTypes = [...new Set(driveTypesResult.data?.map(r => r.drive_type).filter((v): v is string => !!v) || [])];
+  const bodyTypes = [...new Set(bodyTypesResult.data?.map(r => r.body_type).filter((v): v is string => !!v) || [])];
+  const colors = [...new Set(colorsResult.data?.map(r => r.color).filter((v): v is string => !!v) || [])];
+
+  // Get year range
+  const years = yearsResult.data?.map(r => r.year).filter((y): y is number => y !== null && y !== undefined) || [];
+  const minYear = years.length > 0 ? Math.min(...years) : 2000;
+  const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+
+  return {
+    brands,
+    modelsByBrand,
+    transmissions,
+    fuelTypes,
+    driveTypes,
+    bodyTypes,
+    colors,
+    minYear,
+    maxYear,
+  };
+}
+
+/**
+ * Hook to load filter options from Supabase with React Query caching
+ */
+export function useVehicleFilters(): VehicleFiltersData {
+  const { data, isLoading, error } = useQuery({
+    queryKey: filterKeys.all,
+    queryFn: fetchFilters,
+    // Filters rarely change - cache for 1 hour
+    staleTime: 60 * 60 * 1000,
+    // Keep in cache for 2 hours
+    gcTime: 2 * 60 * 60 * 1000,
+    // Don't refetch on window focus for filters
+    refetchOnWindowFocus: false,
+  });
 
   return useMemo(() => ({
     brands: data?.brands || [],
@@ -350,7 +357,7 @@ export function useVehicleFilters(): VehicleFiltersData {
       max: data?.maxYear || new Date().getFullYear(),
     },
     isLoading,
-    error,
+    error: error instanceof Error ? error.message : error ? String(error) : null,
   }), [data, isLoading, error]);
 }
 

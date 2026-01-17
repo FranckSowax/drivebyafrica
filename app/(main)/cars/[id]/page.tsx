@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 import { VehicleDetailClient } from './VehicleDetailClient';
 import type { Vehicle } from '@/types/vehicle';
 
+// ISR: Revalidate every 5 minutes for fresh data while keeping pages fast
+export const revalidate = 300;
+
+// Dynamic params for vehicle IDs
+export const dynamicParams = true;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

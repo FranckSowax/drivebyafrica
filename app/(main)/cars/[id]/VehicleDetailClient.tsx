@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
@@ -27,7 +28,7 @@ import { PriceRequestButton } from '@/components/vehicles/PriceRequestButton';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
-import { parseImagesField, getProxiedImageUrls } from '@/lib/utils/imageProxy';
+import { parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
@@ -70,9 +71,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const actionParam = searchParams.get('action');
   const shouldAutoOpenQuote = actionParam === 'quote';
 
-  // Parse and proxy images (autoimg.cn needs proxy due to Referer blocking)
+  // Parse images (proxy is handled by OptimizedImage component)
   const parsedImages = parseImagesField(vehicle.images);
-  const images = parsedImages.length > 0 ? getProxiedImageUrls(parsedImages) : [PLACEHOLDER_IMAGE];
+  const images = parsedImages.length > 0 ? parsedImages : [PLACEHOLDER_IMAGE];
   const source = vehicle.source as VehicleSource;
 
   // Vehicle status
@@ -145,11 +146,13 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   exit={{ opacity: 0 }}
                   className="absolute inset-0"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <OptimizedImage
                     src={images[currentImageIndex]}
                     alt={`${vehicle.make} ${vehicle.model}`}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 66vw"
+                    priority={currentImageIndex === 0}
+                    className="object-cover"
                   />
                 </motion.div>
               </AnimatePresence>
@@ -212,11 +215,13 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                         : 'border-transparent opacity-60 hover:opacity-100'
                     )}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <OptimizedImage
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="80px"
+                      quality={50}
+                      className="object-cover"
                     />
                   </button>
                 ))}

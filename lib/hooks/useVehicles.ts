@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
@@ -53,12 +54,134 @@ interface UseVehiclesReturn {
   refetch: () => Promise<void>;
 }
 
-// Simple in-memory cache for vehicles
-const vehicleCache = new Map<string, { vehicles: Vehicle[]; totalCount: number; timestamp: number }>();
-const CACHE_TTL = 60000; // 1 minute cache
+// Query key factory for better cache management
+export const vehicleKeys = {
+  all: ['vehicles'] as const,
+  lists: () => [...vehicleKeys.all, 'list'] as const,
+  list: (filters: VehicleFilters | undefined, page: number, limit: number) =>
+    [...vehicleKeys.lists(), { filters, page, limit }] as const,
+  details: () => [...vehicleKeys.all, 'detail'] as const,
+  detail: (id: string) => [...vehicleKeys.details(), id] as const,
+};
 
-function getCacheKey(filters: VehicleFilters | undefined, page: number, limit: number): string {
-  return JSON.stringify({ filters: filters || {}, page, limit });
+/**
+ * Fetch vehicles from Supabase with filters, pagination, and sorting
+ */
+async function fetchVehicles(
+  filters: VehicleFilters | undefined,
+  page: number,
+  limit: number
+): Promise<{ vehicles: Vehicle[]; totalCount: number }> {
+  const supabase = createClient();
+
+  let query = supabase.from('vehicles').select('*', { count: 'exact' });
+
+  // Apply filters
+  if (filters?.source && filters.source !== 'all') {
+    query = query.eq('source', filters.source);
+  }
+
+  if (filters?.makes && filters.makes.length > 0) {
+    query = query.in('make', filters.makes);
+  }
+
+  if (filters?.models && filters.models.length > 0) {
+    query = query.in('model', filters.models);
+  }
+
+  if (filters?.yearFrom) {
+    query = query.gte('year', filters.yearFrom);
+  }
+
+  if (filters?.yearTo) {
+    query = query.lte('year', filters.yearTo);
+  }
+
+  if (filters?.priceFrom) {
+    query = query.gte('current_price_usd', filters.priceFrom);
+  }
+
+  if (filters?.priceTo) {
+    query = query.lte('current_price_usd', filters.priceTo);
+  }
+
+  if (filters?.mileageMax) {
+    query = query.lte('mileage', filters.mileageMax);
+  }
+
+  if (filters?.transmission) {
+    query = query.eq('transmission', filters.transmission);
+  }
+
+  if (filters?.fuelType) {
+    query = query.eq('fuel_type', filters.fuelType);
+  }
+
+  if (filters?.driveType) {
+    query = query.eq('drive_type', filters.driveType);
+  }
+
+  if (filters?.color) {
+    query = query.ilike('color', `%${filters.color}%`);
+  }
+
+  if (filters?.bodyType) {
+    query = query.eq('body_type', filters.bodyType);
+  }
+
+  if (filters?.status) {
+    query = query.eq('status', filters.status);
+  }
+
+  // Apply search (searches make and model)
+  if (filters?.search && filters.search.trim()) {
+    const searchTerm = filters.search.trim().toLowerCase();
+    query = query.or(`make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
+  }
+
+  // Apply sorting
+  switch (filters?.sortBy) {
+    case 'price_asc':
+      query = query.order('start_price_usd', { ascending: true, nullsFirst: false });
+      break;
+    case 'price_desc':
+      query = query.order('start_price_usd', { ascending: false, nullsFirst: false });
+      break;
+    case 'year_desc':
+      query = query.order('year', { ascending: false, nullsFirst: false });
+      break;
+    case 'year_asc':
+      query = query.order('year', { ascending: true, nullsFirst: false });
+      break;
+    case 'mileage_asc':
+      query = query.order('mileage', { ascending: true, nullsFirst: false });
+      break;
+    case 'mileage_desc':
+      query = query.order('mileage', { ascending: false, nullsFirst: false });
+      break;
+    default:
+      query = query.order('created_at', { ascending: false, nullsFirst: false });
+      break;
+  }
+
+  // Apply pagination
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  query = query.range(from, to);
+
+  const { data, error: queryError, count } = await query;
+
+  if (queryError) {
+    throw new Error(queryError.message);
+  }
+
+  // Filter out vehicles with empty or expired images
+  const validVehicles = (data as Vehicle[]).filter(hasValidImages);
+
+  return {
+    vehicles: validVehicles,
+    totalCount: count || 0,
+  };
 }
 
 export function useVehicles({
@@ -66,197 +189,68 @@ export function useVehicles({
   page = 1,
   limit = 36,
 }: UseVehiclesOptions = {}): UseVehiclesReturn {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
+  const queryClient = useQueryClient();
 
-  // Create supabase client once and store in ref to prevent re-renders
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-  if (!supabaseRef.current) {
-    supabaseRef.current = createClient();
-  }
-  const supabase = supabaseRef.current;
-
-  // Track if component is mounted
-  const isMountedRef = useRef(true);
-
-  // Track current request to prevent race conditions
-  const requestIdRef = useRef(0);
-
-  // Stable reference to filters
+  // Stable filters reference for query key
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
 
-  const fetchVehicles = useCallback(async () => {
-    const currentFilters = filtersRef.current;
-    const cacheKey = getCacheKey(currentFilters, page, limit);
+  const queryKey = vehicleKeys.list(filters, page, limit);
 
-    // Check cache first
-    const cached = vehicleCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      if (isMountedRef.current) {
-        setVehicles(cached.vehicles);
-        setTotalCount(cached.totalCount);
-        setIsLoading(false);
-      }
-      return;
-    }
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: queryRefetch,
+  } = useQuery({
+    queryKey,
+    queryFn: () => fetchVehicles(filters, page, limit),
+    // Keep previous data while fetching new data (smooth pagination)
+    placeholderData: (previousData) => previousData,
+    // Data is fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
+    // Keep in cache for 30 minutes
+    gcTime: 30 * 60 * 1000,
+  });
 
-    // Increment request ID
-    const thisRequestId = ++requestIdRef.current;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      let query = supabase
-        .from('vehicles')
-        .select('*', { count: 'exact' });
-
-      // Apply filters
-      if (currentFilters?.source && currentFilters.source !== 'all') {
-        query = query.eq('source', currentFilters.source);
-      }
-
-      if (currentFilters?.makes && currentFilters.makes.length > 0) {
-        query = query.in('make', currentFilters.makes);
-      }
-
-      if (currentFilters?.models && currentFilters.models.length > 0) {
-        query = query.in('model', currentFilters.models);
-      }
-
-      if (currentFilters?.yearFrom) {
-        query = query.gte('year', currentFilters.yearFrom);
-      }
-
-      if (currentFilters?.yearTo) {
-        query = query.lte('year', currentFilters.yearTo);
-      }
-
-      if (currentFilters?.priceFrom) {
-        query = query.gte('current_price_usd', currentFilters.priceFrom);
-      }
-
-      if (currentFilters?.priceTo) {
-        query = query.lte('current_price_usd', currentFilters.priceTo);
-      }
-
-      if (currentFilters?.mileageMax) {
-        query = query.lte('mileage', currentFilters.mileageMax);
-      }
-
-      if (currentFilters?.transmission) {
-        query = query.eq('transmission', currentFilters.transmission);
-      }
-
-      if (currentFilters?.fuelType) {
-        query = query.eq('fuel_type', currentFilters.fuelType);
-      }
-
-      if (currentFilters?.driveType) {
-        query = query.eq('drive_type', currentFilters.driveType);
-      }
-
-      if (currentFilters?.color) {
-        query = query.ilike('color', `%${currentFilters.color}%`);
-      }
-
-      if (currentFilters?.bodyType) {
-        query = query.eq('body_type', currentFilters.bodyType);
-      }
-
-      if (currentFilters?.status) {
-        query = query.eq('status', currentFilters.status);
-      }
-
-      // Apply search (searches make and model)
-      if (currentFilters?.search && currentFilters.search.trim()) {
-        const searchTerm = currentFilters.search.trim().toLowerCase();
-        query = query.or(`make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
-      }
-
-      // Apply sorting
-      switch (currentFilters?.sortBy) {
-        case 'price_asc':
-          query = query.order('start_price_usd', { ascending: true, nullsFirst: false });
-          break;
-        case 'price_desc':
-          query = query.order('start_price_usd', { ascending: false, nullsFirst: false });
-          break;
-        case 'year_desc':
-          query = query.order('year', { ascending: false, nullsFirst: false });
-          break;
-        case 'year_asc':
-          query = query.order('year', { ascending: true, nullsFirst: false });
-          break;
-        case 'mileage_asc':
-          query = query.order('mileage', { ascending: true, nullsFirst: false });
-          break;
-        case 'mileage_desc':
-          query = query.order('mileage', { ascending: false, nullsFirst: false });
-          break;
-        default:
-          query = query.order('created_at', { ascending: false, nullsFirst: false });
-          break;
-      }
-
-      // Apply pagination
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      query = query.range(from, to);
-
-      const { data, error: queryError, count } = await query;
-
-      // Check if this is still the current request and component is mounted
-      if (thisRequestId !== requestIdRef.current || !isMountedRef.current) {
-        return;
-      }
-
-      if (queryError) {
-        throw new Error(queryError.message);
-      }
-
-      // Filter out vehicles with empty or expired images
-      const validVehicles = (data as Vehicle[]).filter(hasValidImages);
-
-      // Update cache
-      vehicleCache.set(cacheKey, {
-        vehicles: validVehicles,
-        totalCount: count || 0,
-        timestamp: Date.now(),
-      });
-
-      setVehicles(validVehicles);
-      setTotalCount(count || 0);
-    } catch (err) {
-      if (thisRequestId === requestIdRef.current && isMountedRef.current) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch vehicles'));
-      }
-    } finally {
-      if (thisRequestId === requestIdRef.current && isMountedRef.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [supabase, page, limit]);
-
-  // Effect for initial load and when dependencies change
+  // Prefetch next page for smoother pagination
   useEffect(() => {
-    isMountedRef.current = true;
-    fetchVehicles();
+    if (data && data.vehicles.length === limit) {
+      const nextPageKey = vehicleKeys.list(filters, page + 1, limit);
+      queryClient.prefetchQuery({
+        queryKey: nextPageKey,
+        queryFn: () => fetchVehicles(filters, page + 1, limit),
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [data, filters, page, limit, queryClient]);
 
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [fetchVehicles, filters]);
+  // Wrapper for refetch to match the original interface
+  const refetch = async () => {
+    await queryRefetch();
+  };
 
   return {
-    vehicles,
-    isLoading,
-    error,
-    totalCount,
-    hasMore: vehicles.length === limit,
-    refetch: fetchVehicles,
+    vehicles: data?.vehicles ?? [],
+    isLoading: isLoading || isFetching,
+    error: error as Error | null,
+    totalCount: data?.totalCount ?? 0,
+    hasMore: (data?.vehicles.length ?? 0) === limit,
+    refetch,
+  };
+}
+
+/**
+ * Hook to invalidate vehicle cache (use after mutations)
+ */
+export function useInvalidateVehicles() {
+  const queryClient = useQueryClient();
+
+  return {
+    invalidateAll: () => queryClient.invalidateQueries({ queryKey: vehicleKeys.all }),
+    invalidateLists: () => queryClient.invalidateQueries({ queryKey: vehicleKeys.lists() }),
+    invalidateDetail: (id: string) =>
+      queryClient.invalidateQueries({ queryKey: vehicleKeys.detail(id) }),
   };
 }

@@ -1,16 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { useCurrency, useTranslation } from '@/components/providers/LocaleProvider';
-import { parseImagesField, getProxiedImageUrl } from '@/lib/utils/imageProxy';
+import { parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
-
-const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -32,7 +30,6 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: VehicleCardProps) {
-  const [imgError, setImgError] = useState(false);
   const { formatPrice } = useCurrency();
   const { t } = useTranslation();
   const vehicleStatus = vehicle.status || 'available';
@@ -41,22 +38,19 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
   const isReserved = vehicleStatus === 'reserved';
   const isSold = vehicleStatus === 'sold';
   const images = parseImagesField(vehicle.images);
-  const rawImage = images[0];
-  const proxiedImage = rawImage ? getProxiedImageUrl(rawImage) : null;
-  const mainImage = imgError || !proxiedImage ? PLACEHOLDER_IMAGE : proxiedImage;
+  const mainImage = images[0] || null;
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
       <div className="bg-[var(--card-bg)] rounded-xl overflow-hidden border border-[var(--card-border)] hover:border-mandarin/50 transition-all duration-300 hover:shadow-lg hover:shadow-mandarin/10">
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <OptimizedImage
             src={mainImage}
             alt={`${vehicle.make} ${vehicle.model}`}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={() => setImgError(true)}
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
 
           {/* Overlay gradient */}
