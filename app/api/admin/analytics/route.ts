@@ -412,11 +412,47 @@ export async function GET() {
       totalVehicles: number;
     }> = [];
 
+    // Calculate cumulative vehicle count from sync logs
+    // Start with current total and work backwards
+    const currentTotalVehicles = vehiclesTotal || 0;
+
+    // Create a map of daily net changes from sync logs (added - removed)
+    const dailyNetChange: Record<string, number> = {};
+    syncLogsData.forEach(log => {
+      if (!log.date) return;
+      if (!dailyNetChange[log.date]) {
+        dailyNetChange[log.date] = 0;
+      }
+      dailyNetChange[log.date] += (log.vehicles_added - log.vehicles_removed);
+    });
+
     // Generate data for last 90 days
+    // First pass: collect all dates
+    const dates: string[] = [];
     for (let i = 89; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      dates.push(date.toISOString().split('T')[0]);
+    }
+
+    // Calculate cumulative totals working backwards from today
+    const cumulativeTotals: Record<string, number> = {};
+    let runningTotal = currentTotalVehicles;
+
+    // Work backwards from today
+    for (let i = dates.length - 1; i >= 0; i--) {
+      const dateStr = dates[i];
+      cumulativeTotals[dateStr] = runningTotal;
+      // Subtract today's net change to get yesterday's total
+      if (i > 0) {
+        runningTotal -= (dailyNetChange[dateStr] || 0);
+      }
+    }
+
+    // Now generate the time series data
+    for (let i = 0; i < dates.length; i++) {
+      const dateStr = dates[i];
+      const date = new Date(dateStr);
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const dayEnd = new Date(dayStart);
       dayEnd.setDate(dayEnd.getDate() + 1);
@@ -436,12 +472,6 @@ export async function GET() {
         return d >= dayStart && d < dayEnd;
       }).length || 0;
 
-      // Total vehicles present on the platform up to this day (cumulative)
-      const totalVehiclesOnDay = vehicles?.filter(v => {
-        const d = new Date(v.created_at);
-        return d < dayEnd;
-      }).length || 0;
-
       // Estimate views based on vehicle views (distribute proportionally)
       const viewsOnDay = Math.floor((totalViews / 90) * (0.5 + Math.random()));
 
@@ -456,7 +486,7 @@ export async function GET() {
         views: viewsOnDay,
         syncAdded: syncData.added,
         syncUpdated: syncData.updated,
-        totalVehicles: totalVehiclesOnDay,
+        totalVehicles: cumulativeTotals[dateStr] || currentTotalVehicles,
       });
     }
 
