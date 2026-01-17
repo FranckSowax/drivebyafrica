@@ -13,6 +13,8 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -50,6 +52,7 @@ const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
 export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const searchParams = useSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [idCopied, setIdCopied] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
   const { formatPrice } = useCurrency();
@@ -81,6 +84,13 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
       await navigator.clipboard.writeText(window.location.href);
       toast.success('Lien copié!');
     }
+  };
+
+  const copyVehicleId = async () => {
+    await navigator.clipboard.writeText(vehicle.id);
+    setIdCopied(true);
+    toast.success('ID copié!');
+    setTimeout(() => setIdCopied(false), 2000);
   };
 
   const nextImage = () => {
@@ -285,6 +295,19 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   <p className="text-[var(--text-muted)] mt-1">
                     {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
                   </p>
+                  {/* Vehicle ID - copyable */}
+                  <button
+                    onClick={copyVehicleId}
+                    className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono bg-[var(--surface)] px-2 py-1 rounded"
+                    title="Cliquez pour copier l'ID complet"
+                  >
+                    {idCopied ? (
+                      <Check className="w-3 h-3 text-jewel" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                    <span>ID: {vehicle.id.slice(0, 8)}...</span>
+                  </button>
                 </div>
               </div>
 
