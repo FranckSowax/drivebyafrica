@@ -184,6 +184,7 @@ const sourceFlags: Record<string, { flag: string; name: string }> = {
   'korea': { flag: '🇰🇷', name: 'Corée du Sud' },
   'china': { flag: '🇨🇳', name: 'Chine' },
   'dubai': { flag: '🇦🇪', name: 'Dubaï' },
+  'unknown': { flag: '🌍', name: 'Autre' },
 };
 
 // Chart colors

@@ -54,9 +54,15 @@ export async function GET() {
 
     // Vehicles by source (normalize source names)
     const normalizeSource = (source: string): string => {
-      if (source === 'che168' || source === 'dongchedi') return 'china';
-      if (source === 'dubicars') return 'dubai';
-      return source;
+      const s = (source || '').toLowerCase().trim();
+      // China sources
+      if (s === 'che168' || s === 'dongchedi' || s === 'china' || s === 'chine') return 'china';
+      // Dubai sources
+      if (s === 'dubicars' || s === 'dubai' || s === 'uae' || s === 'emirates') return 'dubai';
+      // Korea sources
+      if (s === 'korea' || s === 'south korea' || s === 'corée' || s === 'coree') return 'korea';
+      // Default - if unknown, return as-is but lowercased
+      return s || 'unknown';
     };
     const vehiclesBySource: Record<string, number> = {};
     vehicles?.forEach(v => {
@@ -498,11 +504,44 @@ export async function GET() {
       vehicles: number;
     }> = [];
 
+    // Aggregate sync logs by month for vehicle counts
+    const syncByMonth: Record<string, { added: number; removed: number }> = {};
+    syncLogsData.forEach(log => {
+      if (!log.date) return;
+      const monthKey = log.date.substring(0, 7); // YYYY-MM
+      if (!syncByMonth[monthKey]) {
+        syncByMonth[monthKey] = { added: 0, removed: 0 };
+      }
+      syncByMonth[monthKey].added += log.vehicles_added;
+      syncByMonth[monthKey].removed += log.vehicles_removed;
+    });
+
+    // Calculate cumulative vehicle totals for each month (working backwards from current)
+    const monthKeys: string[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthKeys.push(monthDate.toISOString().substring(0, 7));
+    }
+
+    // Calculate cumulative totals working backwards
+    const monthlyCumulativeTotals: Record<string, number> = {};
+    let monthlyRunningTotal = currentTotalVehicles;
+    for (let i = monthKeys.length - 1; i >= 0; i--) {
+      const monthKey = monthKeys[i];
+      monthlyCumulativeTotals[monthKey] = monthlyRunningTotal;
+      // Subtract this month's net change to get previous month's total
+      if (i > 0) {
+        const monthSync = syncByMonth[monthKey] || { added: 0, removed: 0 };
+        monthlyRunningTotal -= (monthSync.added - monthSync.removed);
+      }
+    }
+
     // Get data for last 6 months
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
       const monthName = monthDate.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+      const monthKey = monthDate.toISOString().substring(0, 7);
 
       const usersInMonth = profiles?.filter(p => {
         const d = new Date(p.created_at);
@@ -514,16 +553,14 @@ export async function GET() {
         return d >= monthDate && d <= monthEnd;
       }).length || 0;
 
-      const vehiclesInMonth = vehicles?.filter(v => {
-        const d = new Date(v.created_at);
-        return d >= monthDate && d <= monthEnd;
-      }).length || 0;
+      // Use cumulative vehicle total at end of month instead of created_at count
+      const vehiclesAtEndOfMonth = monthlyCumulativeTotals[monthKey] || currentTotalVehicles;
 
       monthlyData.push({
         month: monthName,
         users: usersInMonth,
         quotes: quotesInMonth,
-        vehicles: vehiclesInMonth,
+        vehicles: vehiclesAtEndOfMonth,
       });
     }
 
