@@ -196,18 +196,18 @@ export default function AdminQuotesPage() {
     }
   };
 
+  // Format with regular spaces as thousand separators
+  const formatWithSpaces = (num: number): string => {
+    return Math.round(num)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+
   const formatCurrency = (value: number, currency: 'USD' | 'XAF' = 'XAF') => {
     if (currency === 'USD') {
-      return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(value);
+      return `$${formatWithSpaces(value)}`;
     }
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'decimal',
-      maximumFractionDigits: 0,
-    }).format(value) + ' FCFA';
+    return `${formatWithSpaces(value)} FCFA`;
   };
 
   const handleReassign = async () => {

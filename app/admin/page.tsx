@@ -204,16 +204,22 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [fetchData]);
 
+  // Format with regular spaces as thousand separators
+  const formatWithSpaces = (num: number): string => {
+    return Math.round(num)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+
   const formatCurrency = (value: number, currency: 'USD' | 'XAF' = 'USD') => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: currency,
-      maximumFractionDigits: 0,
-    }).format(value);
+    if (currency === 'USD') {
+      return `$${formatWithSpaces(value)}`;
+    }
+    return `${formatWithSpaces(value)} FCFA`;
   };
 
   const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('fr-FR').format(value);
+    return formatWithSpaces(value);
   };
 
   const getGrowthColor = (growth: number) => {

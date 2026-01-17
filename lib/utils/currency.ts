@@ -32,38 +32,42 @@ export function getRate(currency: string): number {
   return DEFAULT_EXCHANGE_RATES[currency] || 1;
 }
 
+/**
+ * Format number with proper thousand separators (regular spaces)
+ */
+function formatWithSpaces(num: number): string {
+  return Math.round(num)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 export function formatCurrency(
   amount: number,
   currency: Currency = 'XAF',
-  locale: string = 'fr-FR'
+  _locale: string = 'fr-FR'
 ): string {
   // Pour XAF/XOF, on utilise un format personnalisé avec "FCFA"
   if (currency === 'XAF' || currency === 'XOF') {
-    const formatted = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Math.round(amount));
-    // Remplacer les espaces insécables (8239, 160) par des espaces normaux pour un affichage cohérent
-    const withNormalSpaces = formatted.replace(/[\u202F\u00A0]/g, ' ');
-    return `${withNormalSpaces} FCFA`;
+    return `${formatWithSpaces(amount)} FCFA`;
   }
 
-  try {
-    const formatter = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-    return formatter.format(amount);
-  } catch {
-    // Fallback for unknown currency codes
-    const formatted = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(Math.round(amount));
-    return `${formatted} ${currency}`;
+  // NGN - symbol prefix
+  if (currency === 'NGN') {
+    return `₦${formatWithSpaces(amount)}`;
   }
+
+  // USD - dollar prefix
+  if (currency === 'USD') {
+    return `$${formatWithSpaces(amount)}`;
+  }
+
+  // EUR - symbol suffix
+  if (currency === 'EUR') {
+    return `${formatWithSpaces(amount)} €`;
+  }
+
+  // Default - currency code suffix
+  return `${formatWithSpaces(amount)} ${currency}`;
 }
 
 export function convertCurrency(

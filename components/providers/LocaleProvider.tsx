@@ -181,58 +181,50 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     [currencyInfo]
   );
 
+  // Format number with proper thousand separators (regular spaces)
+  const formatWithSpaces = useCallback((num: number): string => {
+    // Format with regular spaces as thousand separators
+    return Math.round(num)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }, []);
+
   // Format price in selected currency
   const formatPrice = useCallback(
     (amountUsd: number): string => {
       const converted = convertFromUsd(amountUsd);
       const code = currencyInfo?.code || 'USD';
       const symbol = currencyInfo?.symbol || '$';
-      const locale = language === 'fr' ? 'fr-FR' : 'en-US';
 
-      // For CFA currencies, use custom format
+      // For CFA currencies, use custom format with regular spaces
       if (code === 'XAF' || code === 'XOF') {
-        const formatted = new Intl.NumberFormat(locale, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(Math.round(converted));
-        return `${formatted} FCFA`;
+        return `${formatWithSpaces(converted)} FCFA`;
       }
 
-      // For other currencies with symbols
+      // For other currencies with symbols (prefix)
       if (code === 'NGN') {
-        const formatted = new Intl.NumberFormat(locale, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(Math.round(converted));
-        return `${symbol}${formatted}`;
+        return `${symbol}${formatWithSpaces(converted)}`;
       }
 
-      // For currencies with special symbols
+      // For currencies with special symbols (suffix)
       if (['GNF', 'RWF', 'BIF'].includes(code)) {
-        const formatted = new Intl.NumberFormat(locale, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(Math.round(converted));
-        return `${formatted} ${symbol}`;
+        return `${formatWithSpaces(converted)} ${symbol}`;
       }
 
-      // For USD and EUR, use standard formatter
-      try {
-        return new Intl.NumberFormat(locale, {
-          style: 'currency',
-          currency: code,
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(converted);
-      } catch {
-        const formatted = new Intl.NumberFormat(locale, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(Math.round(converted));
-        return `${symbol}${formatted}`;
+      // For USD
+      if (code === 'USD') {
+        return `$${formatWithSpaces(converted)}`;
       }
+
+      // For EUR
+      if (code === 'EUR') {
+        return `${formatWithSpaces(converted)} €`;
+      }
+
+      // Default: symbol prefix
+      return `${symbol}${formatWithSpaces(converted)}`;
     },
-    [convertFromUsd, currencyInfo, language]
+    [convertFromUsd, currencyInfo, formatWithSpaces]
   );
 
   // Get raw converted value

@@ -114,11 +114,11 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
   }, []);
 
   const formatCurrency = useCallback((amount: number) => {
-    const formatted = new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-    return formatted.replace(/[\u202F\u00A0]/g, ' ') + ' FCFA';
+    // Format with regular spaces as thousand separators
+    const formatted = Math.round(amount)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `${formatted} FCFA`;
   }, []);
 
   const formatDate = useCallback((dateStr: string) => {

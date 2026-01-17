@@ -327,7 +327,7 @@ function QuoteCard({ quote }: { quote: any }) {
       </div>
       <div className="text-right ml-4">
         <p className="text-sm font-bold text-mandarin">
-          {new Intl.NumberFormat('fr-FR').format(quote.total_cost_xaf || 0)} FCFA
+          {Math.round(quote.total_cost_xaf || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA
         </p>
         <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[quote.status] || statusColors.pending}`}>
           {statusLabels[quote.status] || 'En attente'}

@@ -191,7 +191,10 @@ export default function AdminAnalyticsPage() {
   }, [fetchData]);
 
   const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('fr-FR').format(value);
+    // Format with regular spaces as thousand separators
+    return Math.round(value)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   };
 
   // Filter time series data based on selected range

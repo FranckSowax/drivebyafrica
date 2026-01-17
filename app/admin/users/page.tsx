@@ -124,11 +124,11 @@ export default function AdminUsersPage() {
   }, [fetchUsers]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(value);
+    // Format with regular spaces as thousand separators
+    const formatted = Math.round(value)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `$${formatted}`;
   };
 
   const openWhatsApp = (phone: string, userName: string) => {
