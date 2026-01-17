@@ -25,6 +25,7 @@ import { useCurrency } from '@/components/providers/LocaleProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatMileage } from '@/lib/utils/formatters';
 import { parseImagesField, getProxiedImageUrls } from '@/lib/utils/imageProxy';
+import { getExportTax } from '@/lib/utils/pricing';
 import { cn } from '@/lib/utils';
 
 interface ProposedVehicle {
@@ -322,12 +323,12 @@ export default function ReassignmentPage({ params }: { params: Promise<{ id: str
                     </h3>
                     <p className="text-[var(--text-muted)] text-sm">{vehicle.year}</p>
 
-                    {/* Price */}
+                    {/* Price - includes export tax silently */}
                     <div className="mt-3 p-3 bg-[var(--surface)] rounded-lg">
                       <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
                       <p className="text-xl font-bold text-mandarin">
                         {vehicle.current_price_usd
-                          ? formatPrice(vehicle.current_price_usd)
+                          ? formatPrice(vehicle.current_price_usd + getExportTax(vehicle.source))
                           : 'Sur demande'}
                       </p>
                     </div>
@@ -420,7 +421,7 @@ export default function ReassignmentPage({ params }: { params: Promise<{ id: str
               </p>
               <p className="text-mandarin font-bold">
                 {selectedVehicle.current_price_usd
-                  ? formatPrice(selectedVehicle.current_price_usd)
+                  ? formatPrice(selectedVehicle.current_price_usd + getExportTax(selectedVehicle.source))
                   : 'Prix sur demande'}
               </p>
             </div>

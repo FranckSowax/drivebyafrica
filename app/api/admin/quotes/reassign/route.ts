@@ -10,13 +10,48 @@ const REASSIGNMENT_REASONS = {
   other: 'Autre raison',
 };
 
-// USD to XAF exchange rate (approximate)
-const USD_TO_XAF = 615;
+// USD to XAF exchange rate (fallback if not fetched from DB)
+const DEFAULT_USD_TO_XAF = 615;
 
-// Format price in XAF
-function formatPriceXAF(priceUsd: number | null): string {
+// Export tax for China (added silently to price)
+const CHINA_EXPORT_TAX_USD = 980;
+
+// Cache for XAF rate
+let cachedXafRate: number | null = null;
+
+// Get XAF rate from database or use default
+async function getXafRate(): Promise<number> {
+  if (cachedXafRate) return cachedXafRate;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabaseAdmin as any)
+      .from('currency_rates')
+      .select('rate_to_usd')
+      .eq('code', 'XAF')
+      .single();
+
+    if (data?.rate_to_usd) {
+      cachedXafRate = data.rate_to_usd;
+      return data.rate_to_usd;
+    }
+  } catch (error) {
+    console.error('Error fetching XAF rate:', error);
+  }
+
+  return DEFAULT_USD_TO_XAF;
+}
+
+// Format price with export tax included (silently) and converted to XAF
+function formatPriceWithTax(priceUsd: number | null, source: string, xafRate: number): string {
   if (!priceUsd) return 'N/A';
-  const priceXaf = Math.round(priceUsd * USD_TO_XAF);
+
+  // Add export tax for China (silently)
+  const exportTax = source === 'china' ? CHINA_EXPORT_TAX_USD : 0;
+  const effectivePrice = priceUsd + exportTax;
+
+  // Convert to XAF
+  const priceXaf = Math.round(effectivePrice * xafRate);
   return priceXaf.toLocaleString('fr-FR') + ' FCFA';
 }
 
@@ -208,7 +243,8 @@ async function sendWhatsAppInteractiveMessage(
   vehicle: SimilarVehicle,
   baseUrl: string,
   reassignmentId: string,
-  index: number
+  index: number,
+  xafRate: number
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   // Link to the reassignment selection page
   const selectionUrl = `${baseUrl}/reassignment/${reassignmentId}`;
@@ -216,7 +252,7 @@ async function sendWhatsAppInteractiveMessage(
 
   const bodyText = `*Option ${index + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
 
-💰 Prix: *${formatPriceXAF(vehicle.current_price_usd)}*
+💰 Prix: *${formatPriceWithTax(vehicle.current_price_usd, vehicle.source, xafRate)}*
 📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
 🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}`;
 
@@ -256,7 +292,7 @@ async function sendWhatsAppInteractiveMessage(
     } else {
       // If interactive fails, try sending image with caption + text with link
       console.log('Interactive message failed, trying image + text fallback');
-      return sendImageWithLinkFallback(whapiToken, formattedPhone, vehicle, selectionUrl, imageUrl, index);
+      return sendImageWithLinkFallback(whapiToken, formattedPhone, vehicle, selectionUrl, imageUrl, index, xafRate);
     }
   } catch (error) {
     console.error('WhatsApp interactive send error:', error);
@@ -271,11 +307,12 @@ async function sendImageWithLinkFallback(
   vehicle: SimilarVehicle,
   selectionUrl: string,
   imageUrl: string | null,
-  index: number
+  index: number,
+  xafRate: number
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const caption = `*Option ${index + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
 
-💰 Prix: *${formatPriceXAF(vehicle.current_price_usd)}*
+💰 Prix: *${formatPriceWithTax(vehicle.current_price_usd, vehicle.source, xafRate)}*
 📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
 🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}
 
@@ -328,6 +365,9 @@ async function sendWhatsAppMessage(
   if (!whapiToken) {
     return { success: false, error: 'WHAPI_TOKEN non configuré' };
   }
+
+  // Get XAF rate for price conversion
+  const xafRate = await getXafRate();
 
   // Format phone number (remove spaces, add country code if needed)
   let formattedPhone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
@@ -384,7 +424,8 @@ L'équipe Driveby Africa`;
         vehicle,
         baseUrl,
         reassignmentId,
-        i
+        i,
+        xafRate
       );
 
       if (result.success) {
