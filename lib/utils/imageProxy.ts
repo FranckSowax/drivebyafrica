@@ -110,12 +110,18 @@ export function needsProxy(url: string): boolean {
 
 /**
  * Get the proxied URL for an image
- * Returns URL directly - byteimg.com images are accessible from browsers.
+ * Uses proxy for autoimg.cn (CHE168) which blocks requests with external Referer.
+ * byteimg.com (Dongchedi) images work directly.
  */
 export function getProxiedImageUrl(url: string): string {
   if (!url) return url;
 
-  // Return URL as-is - direct loading works for byteimg.com
+  // Use proxy for autoimg.cn (CHE168) - blocks external Referer
+  if (url.includes('autoimg.cn')) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+  }
+
+  // Return URL as-is for other domains (byteimg.com works directly)
   return url;
 }
 

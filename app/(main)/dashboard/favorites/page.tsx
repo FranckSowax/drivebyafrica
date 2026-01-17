@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatUsdToLocal } from '@/lib/utils/currency';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import {
   Heart,
   Car,
@@ -83,7 +84,7 @@ export default async function FavoritesPage() {
                   {vehicle.images?.[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={vehicle.images[0]}
+                      src={getProxiedImageUrl(vehicle.images[0])}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       className="absolute inset-0 w-full h-full object-cover"
                     />

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { useCurrency, useTranslation } from '@/components/providers/LocaleProvider';
-import { parseImagesField } from '@/lib/utils/imageProxy';
+import { parseImagesField, getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
@@ -42,7 +42,8 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
   const isSold = vehicleStatus === 'sold';
   const images = parseImagesField(vehicle.images);
   const rawImage = images[0];
-  const mainImage = imgError || !rawImage ? PLACEHOLDER_IMAGE : rawImage;
+  const proxiedImage = rawImage ? getProxiedImageUrl(rawImage) : null;
+  const mainImage = imgError || !proxiedImage ? PLACEHOLDER_IMAGE : proxiedImage;
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">

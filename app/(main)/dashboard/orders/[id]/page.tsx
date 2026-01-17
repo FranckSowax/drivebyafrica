@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import { formatUsdToLocal } from '@/lib/utils/currency';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -98,7 +99,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 {vehicleData?.images?.[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={vehicleData.images[0]}
+                    src={getProxiedImageUrl(vehicleData.images[0])}
                     alt={`${vehicleData.make} ${vehicleData.model}`}
                     className="absolute inset-0 w-full h-full object-cover"
                   />

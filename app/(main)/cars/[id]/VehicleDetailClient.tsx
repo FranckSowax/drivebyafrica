@@ -23,7 +23,7 @@ import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
-import { parseImagesField } from '@/lib/utils/imageProxy';
+import { parseImagesField, getProxiedImageUrls } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
@@ -58,9 +58,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const actionParam = searchParams.get('action');
   const shouldAutoOpenQuote = actionParam === 'quote';
 
-  // Parse images directly - no proxy needed
+  // Parse and proxy images (autoimg.cn needs proxy due to Referer blocking)
   const parsedImages = parseImagesField(vehicle.images);
-  const images = parsedImages.length > 0 ? parsedImages : [PLACEHOLDER_IMAGE];
+  const images = parsedImages.length > 0 ? getProxiedImageUrls(parsedImages) : [PLACEHOLDER_IMAGE];
   const source = vehicle.source as VehicleSource;
 
   // Vehicle status
