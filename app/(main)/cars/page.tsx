@@ -187,7 +187,7 @@ export default function CarsPage() {
             <div className="flex justify-between items-center mb-6">
               <p className="text-[var(--text-muted)]">
                 <span className="text-[var(--text-primary)] font-bold">
-                  {totalCount.toLocaleString()}
+                  {totalCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
                 </span>{' '}
                 véhicules disponibles
               </p>

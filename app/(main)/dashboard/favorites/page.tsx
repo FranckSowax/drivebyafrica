@@ -113,7 +113,7 @@ export default async function FavoritesPage() {
                     {vehicle.mileage && (
                       <>
                         <span>•</span>
-                        <span>{vehicle.mileage.toLocaleString()} km</span>
+                        <span>{vehicle.mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} km</span>
                       </>
                     )}
                   </div>

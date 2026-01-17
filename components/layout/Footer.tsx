@@ -146,7 +146,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-[var(--card-border)] flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-sm text-[var(--text-muted)]" suppressHydrationWarning>
             © {new Date().getFullYear()} Driveby Africa. Tous droits réservés.
           </p>
           <div className="flex items-center gap-4">

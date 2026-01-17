@@ -140,7 +140,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
             {vehicle.mileage && (
               <div className="flex items-center gap-1">
                 <Gauge className="w-4 h-4" />
-                <span>{vehicle.mileage.toLocaleString()} km</span>
+                <span>{vehicle.mileage.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} km</span>
               </div>
             )}
             <div className="flex items-center gap-1">

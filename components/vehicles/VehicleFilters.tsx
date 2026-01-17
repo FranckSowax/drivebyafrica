@@ -584,7 +584,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           step={5000}
           value={[0, filters.mileageMax || 500000]}
           onChange={([, max]) => setFilters({ mileageMax: max })}
-          formatValue={(val) => `${val.toLocaleString()} km`}
+          formatValue={(val) => `${val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} km`}
         />
 
         {/* Transmission */}
