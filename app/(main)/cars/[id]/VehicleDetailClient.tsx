@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -24,7 +23,7 @@ import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
-import { getProxiedImageUrls, parseImagesField } from '@/lib/utils/imageProxy';
+import { parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
@@ -59,9 +58,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const actionParam = searchParams.get('action');
   const shouldAutoOpenQuote = actionParam === 'quote';
 
-  // Transform images through proxy for signed URLs
+  // Parse images directly - no proxy needed
   const parsedImages = parseImagesField(vehicle.images);
-  const images = parsedImages.length > 0 ? getProxiedImageUrls(parsedImages) : [PLACEHOLDER_IMAGE];
+  const images = parsedImages.length > 0 ? parsedImages : [PLACEHOLDER_IMAGE];
   const source = vehicle.source as VehicleSource;
 
   // Vehicle status
@@ -69,9 +68,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const statusStyle = STATUS_STYLES[vehicleStatus] || STATUS_STYLES.available;
   const isReserved = vehicleStatus === 'reserved';
   const isSold = vehicleStatus === 'sold';
-
-  // Check if image is external (needs unoptimized flag)
-  const isImageExternal = (img: string) => img.startsWith('http') || img.includes('/api/image-proxy');
 
   const handleShare = async () => {
     try {
@@ -130,13 +126,11 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   exit={{ opacity: 0 }}
                   className="absolute inset-0"
                 >
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={images[currentImageIndex]}
                     alt={`${vehicle.make} ${vehicle.model}`}
-                    fill
-                    className="object-cover"
-                    priority
-                    unoptimized={isImageExternal(images[currentImageIndex])}
+                    className="w-full h-full object-cover"
                   />
                 </motion.div>
               </AnimatePresence>
@@ -199,12 +193,11 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                         : 'border-transparent opacity-60 hover:opacity-100'
                     )}
                   >
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      unoptimized={isImageExternal(image)}
+                      className="w-full h-full object-cover"
                     />
                   </button>
                 ))}

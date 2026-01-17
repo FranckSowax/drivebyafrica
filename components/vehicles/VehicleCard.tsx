@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Eye, Gauge, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { useCurrency, useTranslation } from '@/components/providers/LocaleProvider';
-import { getProxiedImageUrl, parseImagesField } from '@/lib/utils/imageProxy';
+import { parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
@@ -43,27 +42,20 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
   const isSold = vehicleStatus === 'sold';
   const images = parseImagesField(vehicle.images);
   const rawImage = images[0];
-  const proxiedImage = rawImage ? getProxiedImageUrl(rawImage) : null;
-  const mainImage = imgError || !proxiedImage ? PLACEHOLDER_IMAGE : proxiedImage;
-  // Use unoptimized for external images to avoid Next.js caching issues
-  const isExternal = mainImage.startsWith('http') || mainImage.includes('/api/image-proxy');
-  // Unique key for the image to prevent React from reusing stale image state
-  const imageKey = `${vehicle.id}-${rawImage?.slice(-20) || 'placeholder'}`;
+  const mainImage = imgError || !rawImage ? PLACEHOLDER_IMAGE : rawImage;
 
   return (
     <Link href={`/cars/${vehicle.id}`} className="group block">
       <div className="bg-[var(--card-bg)] rounded-xl overflow-hidden border border-[var(--card-border)] hover:border-mandarin/50 transition-all duration-300 hover:shadow-lg hover:shadow-mandarin/10">
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface)]">
-          <Image
-            key={imageKey}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={mainImage}
             alt={`${vehicle.make} ${vehicle.model}`}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            unoptimized={isExternal}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImgError(true)}
+            loading="lazy"
           />
 
           {/* Overlay gradient */}

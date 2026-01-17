@@ -110,20 +110,12 @@ export function needsProxy(url: string): boolean {
 
 /**
  * Get the proxied URL for an image
- * Uses our image proxy for Chinese CDN images (byteimg.com) which may have
- * regional restrictions or require specific headers to load properly.
+ * Returns URL directly - byteimg.com images are accessible from browsers.
  */
 export function getProxiedImageUrl(url: string): string {
   if (!url) return url;
 
-  // Use proxy for byteimg.com images (Dongchedi/CHE168)
-  // These images may be blocked by some networks or require specific headers
-  if (url.includes('byteimg.com')) {
-    // Encode the URL for the proxy
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
-  }
-
-  // Return URL as-is for other domains
+  // Return URL as-is - direct loading works for byteimg.com
   return url;
 }
 

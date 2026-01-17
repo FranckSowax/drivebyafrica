@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   Eye,
@@ -378,11 +377,11 @@ export function VehicleTable({
                   <td className="p-3">
                     <div className="relative w-16 h-12 rounded overflow-hidden bg-[var(--surface)]">
                       {vehicle.images?.[0] ? (
-                        <Image
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           src={vehicle.images[0]}
                           alt={`${vehicle.make} ${vehicle.model}`}
-                          fill
-                          className="object-cover"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]">
