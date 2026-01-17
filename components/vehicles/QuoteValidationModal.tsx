@@ -85,7 +85,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
 
       if (quoteError) throw quoteError;
 
-      // 2. Create order with deposit_received status (simulating paid deposit)
+      // 2. Create order with 'paid' status (simulating paid deposit)
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -97,9 +97,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
           destination_port: quote.destination_name || null,
           shipping_method: 'container_20ft',
           container_type: 'shared',
-          status: 'deposit_received', // Simulate deposit paid
-          deposit_amount_usd: 1000,
-          deposit_paid_at: new Date().toISOString(),
+          status: 'paid', // Valid status: paid (simulating deposit paid)
           documents: {},
         })
         .select()
@@ -111,14 +109,14 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
       await supabase.from('order_tracking').insert([
         {
           order_id: order.id,
-          status: 'created',
+          status: 'pending_payment',
           title: 'Commande créée',
           description: 'Votre commande a été créée avec succès.',
           completed_at: new Date(Date.now() - 60000).toISOString(), // 1 min ago
         },
         {
           order_id: order.id,
-          status: 'deposit_received',
+          status: 'paid',
           title: 'Acompte reçu (Demo)',
           description: 'Acompte de $1,000 simulé. Le véhicule est maintenant bloqué.',
           completed_at: new Date().toISOString(),
