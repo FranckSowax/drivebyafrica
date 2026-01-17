@@ -10,6 +10,16 @@ const REASSIGNMENT_REASONS = {
   other: 'Autre raison',
 };
 
+// USD to XAF exchange rate (approximate)
+const USD_TO_XAF = 615;
+
+// Format price in XAF
+function formatPriceXAF(priceUsd: number | null): string {
+  if (!priceUsd) return 'N/A';
+  const priceXaf = Math.round(priceUsd * USD_TO_XAF);
+  return priceXaf.toLocaleString('fr-FR') + ' FCFA';
+}
+
 interface SimilarVehicle {
   id: string;
   make: string;
@@ -197,19 +207,21 @@ async function sendWhatsAppInteractiveMessage(
   formattedPhone: string,
   vehicle: SimilarVehicle,
   baseUrl: string,
+  reassignmentId: string,
   index: number
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const vehicleUrl = `${baseUrl}/cars/${vehicle.id}`;
+  // Link to the reassignment selection page
+  const selectionUrl = `${baseUrl}/reassignment/${reassignmentId}`;
   const imageUrl = getFirstImageUrl(vehicle.images);
 
   const bodyText = `*Option ${index + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
 
-💰 Prix: *$${vehicle.current_price_usd?.toLocaleString() || 'N/A'}*
+💰 Prix: *${formatPriceXAF(vehicle.current_price_usd)}*
 📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
 🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}`;
 
   try {
-    // First try: Interactive message with image and quick reply button
+    // First try: Interactive message with image and URL button
     const response = await fetch('https://gate.whapi.cloud/messages/interactive', {
       method: 'POST',
       headers: {
@@ -218,7 +230,7 @@ async function sendWhatsAppInteractiveMessage(
       },
       body: JSON.stringify({
         to: formattedPhone,
-        type: 'button',
+        type: 'cta_url',
         body: {
           text: bodyText,
         },
@@ -226,15 +238,13 @@ async function sendWhatsAppInteractiveMessage(
           text: 'Driveby Africa - Import de véhicules',
         },
         action: {
-          buttons: [
-            {
-              type: 'quick_reply',
-              title: `Je choisis ${index + 1}`,
-              id: `select_vehicle_${vehicle.id}`,
-            },
-          ],
+          name: 'cta_url',
+          parameters: {
+            display_text: `Voir Option ${index + 1}`,
+            url: selectionUrl,
+          },
         },
-        ...(imageUrl && { media: imageUrl }),
+        ...(imageUrl && { header: { type: 'image', image: { link: imageUrl } } }),
       }),
     });
 
@@ -246,7 +256,7 @@ async function sendWhatsAppInteractiveMessage(
     } else {
       // If interactive fails, try sending image with caption + text with link
       console.log('Interactive message failed, trying image + text fallback');
-      return sendImageWithLinkFallback(whapiToken, formattedPhone, vehicle, vehicleUrl, imageUrl, index);
+      return sendImageWithLinkFallback(whapiToken, formattedPhone, vehicle, selectionUrl, imageUrl, index);
     }
   } catch (error) {
     console.error('WhatsApp interactive send error:', error);
@@ -259,17 +269,17 @@ async function sendImageWithLinkFallback(
   whapiToken: string,
   formattedPhone: string,
   vehicle: SimilarVehicle,
-  vehicleUrl: string,
+  selectionUrl: string,
   imageUrl: string | null,
   index: number
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const caption = `*Option ${index + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
 
-💰 Prix: *$${vehicle.current_price_usd?.toLocaleString() || 'N/A'}*
+💰 Prix: *${formatPriceXAF(vehicle.current_price_usd)}*
 📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
 🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}
 
-👉 Voir l'annonce: ${vehicleUrl}`;
+👉 Voir et choisir: ${selectionUrl}`;
 
   try {
     if (imageUrl) {
@@ -310,6 +320,7 @@ async function sendWhatsAppMessage(
   customerName: string,
   originalVehicle: string,
   proposedVehicles: SimilarVehicle[],
+  reassignmentId: string,
   baseUrl: string
 ): Promise<{ success: boolean; messageId?: string; error?: string; sentCount?: number }> {
   const whapiToken = process.env.WHAPI_TOKEN;
@@ -327,6 +338,9 @@ async function sendWhatsAppMessage(
   // Whapi expects number without +
   formattedPhone = formattedPhone.replace('+', '') + '@s.whatsapp.net';
 
+  // Selection page URL
+  const selectionUrl = `${baseUrl}/reassignment/${reassignmentId}`;
+
   // Message 1: Introduction message
   const introMessage = `Bonjour ${customerName},
 
@@ -336,7 +350,9 @@ Malheureusement, ce véhicule n'est plus disponible. 😔
 
 Cependant, nous avons trouvé ${proposedVehicles.length} alternative${proposedVehicles.length > 1 ? 's' : ''} similaire${proposedVehicles.length > 1 ? 's' : ''} qui pourrai${proposedVehicles.length > 1 ? 'ent' : 't'} vous intéresser ! 👇
 
-Votre acompte reste bien entendu réservé.
+Votre acompte de *$1,000* reste bien entendu réservé.
+
+👉 Cliquez sur les options ci-dessous ou accédez directement à la page de sélection: ${selectionUrl}
 
 L'équipe Driveby Africa`;
 
@@ -367,6 +383,7 @@ L'équipe Driveby Africa`;
         formattedPhone,
         vehicle,
         baseUrl,
+        reassignmentId,
         i
       );
 
@@ -618,6 +635,7 @@ export async function PUT(request: Request) {
         profile?.full_name || 'Client',
         originalVehicle,
         (reassignment as any).proposed_vehicles || [],
+        id, // reassignment ID for selection page link
         baseUrl
       );
 
