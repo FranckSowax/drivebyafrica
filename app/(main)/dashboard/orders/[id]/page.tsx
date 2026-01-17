@@ -103,9 +103,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
     const vehicleData = vehicleResult.data as Vehicle | null;
     const trackingData = (trackingResult.data || []) as OrderTracking[];
     const reassignmentData = reassignmentResult.data as QuoteReassignment | null;
-    const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
-
-    console.log('[OrderDetailPage] Status:', status);
+    console.log('[OrderDetailPage] Order status value:', orderData.status);
+    const orderStatus = orderData.status as OrderStatus;
+    const status = orderStatus && ORDER_STATUSES[orderStatus]
+      ? ORDER_STATUSES[orderStatus]
+      : { label: orderData.status || 'Inconnu', color: 'bg-gray-500', step: 0 };
+    console.log('[OrderDetailPage] Resolved status:', JSON.stringify(status));
 
     // Note: Auto-reassignment is disabled to avoid RLS issues
     // The reassignment should be created via the admin panel instead
@@ -120,6 +123,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
       console.error('[OrderDetailPage] Date format error:', dateError);
     }
 
+    console.log('[OrderDetailPage] Order data summary:', {
+      vehiclePriceUsd: orderData.vehicle_price_usd,
+      shippingPriceUsd: orderData.shipping_price_usd,
+      insurancePriceUsd: orderData.insurance_price_usd,
+      customsEstimateUsd: orderData.customs_estimate_usd,
+      totalPriceUsd: orderData.total_price_usd,
+      destinationCountry: orderData.destination_country,
+      destinationCity: orderData.destination_city,
+      destinationPort: orderData.destination_port,
+    });
     console.log('[OrderDetailPage] Rendering page...');
 
   return (
