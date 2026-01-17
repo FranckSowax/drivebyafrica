@@ -68,7 +68,7 @@ export default function SettingsPage() {
         whatsapp_number: data.whatsapp_number || '',
         country: data.country || 'Gabon',
         city: data.city || '',
-        preferred_language: data.preferred_language || 'fr',
+        preferred_language: 'fr', // Note: preferred_language is stored locally only for now
       });
     }
 
@@ -87,17 +87,18 @@ export default function SettingsPage() {
 
     const { error } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        id: user.id,
         full_name: profile.full_name,
         phone: profile.phone,
         whatsapp_number: profile.whatsapp_number,
         country: profile.country,
         city: profile.city,
-        preferred_language: profile.preferred_language,
-      })
-      .eq('id', user.id);
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
 
     if (error) {
+      console.error('Profile save error:', error);
       toast.error('Erreur lors de la sauvegarde');
     } else {
       toast.success('Profil mis a jour!');
