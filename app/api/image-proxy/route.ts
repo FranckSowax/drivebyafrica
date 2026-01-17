@@ -110,11 +110,11 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        // Disable CDN caching - each URL must be fetched individually
-        // Browser can still cache based on the URL
-        'Cache-Control': 'private, max-age=86400',
+        // Completely disable caching on both CDN and browser to fix same-image bug
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
         'CDN-Cache-Control': 'no-store',
         'Netlify-CDN-Cache-Control': 'no-store',
+        'Netlify-Vary': 'query',
         'Access-Control-Allow-Origin': '*',
       },
     });

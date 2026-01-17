@@ -32,3 +32,11 @@
   for = "/images/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+
+# Disable Netlify CDN caching for image proxy - must vary by URL parameter
+[[headers]]
+  for = "/api/image-proxy"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+    Netlify-CDN-Cache-Control = "no-store"
+    Netlify-Vary = "query"
