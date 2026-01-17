@@ -25,11 +25,15 @@ import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { PriceRequestButton } from '@/components/vehicles/PriceRequestButton';
 import { useCurrency } from '@/components/providers/LocaleProvider';
+import { useAuthStore } from '@/store/useAuthStore';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { parseImagesField, getProxiedImageUrls } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
+
+// Admin emails that can see the vehicle ID
+const ADMIN_EMAILS = ['franck.sowax@gmail.com', 'admin@drivebyafrica.com'];
 
 interface VehicleDetailClientProps {
   vehicle: Vehicle;
@@ -57,6 +61,10 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
   const { formatPrice } = useCurrency();
+  const user = useAuthStore((state) => state.user);
+
+  // Check if current user is admin
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
 
   // Check if we should auto-open the quote modal (after login redirect)
   const actionParam = searchParams.get('action');
@@ -296,19 +304,21 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   <p className="text-[var(--text-muted)] mt-1">
                     {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
                   </p>
-                  {/* Vehicle ID - copyable */}
-                  <button
-                    onClick={copyVehicleId}
-                    className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono bg-[var(--surface)] px-2 py-1 rounded"
-                    title="Cliquez pour copier l'ID complet"
-                  >
-                    {idCopied ? (
-                      <Check className="w-3 h-3 text-jewel" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                    <span>ID: {vehicle.id.slice(0, 8)}...</span>
-                  </button>
+                  {/* Vehicle ID - only visible to admins */}
+                  {isAdmin && (
+                    <button
+                      onClick={copyVehicleId}
+                      className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono bg-[var(--surface)] px-2 py-1 rounded"
+                      title="Cliquez pour copier l'ID complet"
+                    >
+                      {idCopied ? (
+                        <Check className="w-3 h-3 text-jewel" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                      <span>ID: {vehicle.id.slice(0, 8)}...</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
