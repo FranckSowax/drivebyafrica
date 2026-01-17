@@ -839,7 +839,7 @@ export default function AdminOrdersPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Prix véhicule</span>
                     <span className="text-[var(--text-primary)]">
-                      {formatInCustomerCurrency(selectedOrder.vehicle_price_usd + 980, selectedOrder.destination_country)}
+                      {formatInCustomerCurrency(selectedOrder.vehicle_price_usd, selectedOrder.destination_country)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
