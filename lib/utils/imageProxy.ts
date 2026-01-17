@@ -109,6 +109,19 @@ export function needsProxy(url: string): boolean {
 }
 
 /**
+ * Simple hash function for cache-busting
+ */
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
+/**
  * Get the proxied URL for an image
  * Uses proxy for autoimg.cn (CHE168) which blocks requests with external Referer.
  * byteimg.com (Dongchedi) images work directly.
@@ -118,7 +131,9 @@ export function getProxiedImageUrl(url: string): string {
 
   // Use proxy for autoimg.cn (CHE168) - blocks external Referer
   if (url.includes('autoimg.cn')) {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    // Add hash of URL as cache key to ensure Netlify CDN treats each URL uniquely
+    const hash = simpleHash(url);
+    return `/api/image-proxy?url=${encodeURIComponent(url)}&h=${hash}`;
   }
 
   // Return URL as-is for other domains (byteimg.com works directly)
