@@ -315,13 +315,10 @@ export default function AdminDashboardPage() {
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Tableau de bord</h1>
-          <p className="text-[var(--text-muted)] mt-1">
-            Vue d&apos;ensemble de Driveby Africa
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-8">
+        <p className="text-[var(--text-muted)]">
+          Vue d&apos;ensemble de Driveby Africa
+        </p>
         <Button
           variant="outline"
           onClick={fetchData}
