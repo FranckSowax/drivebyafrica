@@ -50,8 +50,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const orderData = order as Order;
 
   // Fetch vehicle and tracking
-  const [{ data: vehicle }, { data: tracking }] = await Promise.all([
-    supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).single(),
+  const [vehicleResult, trackingResult] = await Promise.all([
+    supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).maybeSingle(),
     supabase
       .from('order_tracking')
       .select('*')
@@ -59,8 +59,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
       .order('completed_at', { ascending: true }),
   ]);
 
-  const vehicleData = vehicle as Vehicle | null;
-  const trackingData = (tracking || []) as OrderTracking[];
+  const vehicleData = vehicleResult.data as Vehicle | null;
+  const trackingData = (trackingResult.data || []) as OrderTracking[];
   const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
 
   const createdAt = orderData.created_at
