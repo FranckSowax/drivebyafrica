@@ -17,8 +17,10 @@ import {
   Zap,
   AlertTriangle,
   DollarSign,
+  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/notifications';
 
 interface NavItem {
   href: string;
@@ -69,8 +71,8 @@ export function AdminSidebar() {
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-mandarin via-mandarin to-[#e85d04] z-40 flex flex-col shadow-xl [&_a]:no-underline">
-      {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-black/10">
+      {/* Logo & Notifications */}
+      <div className="h-16 flex items-center justify-between px-6 border-b border-black/10">
         <Link href="/admin" className="flex items-center gap-2 no-underline">
           <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center shadow-lg">
             <Zap className="w-5 h-5 text-mandarin" />
@@ -79,6 +81,8 @@ export function AdminSidebar() {
             Driveby<span className="!text-white">Admin</span>
           </span>
         </Link>
+        {/* Admin Notifications */}
+        <NotificationBell isAdmin className="text-black hover:text-white" />
       </div>
 
       {/* Main Navigation */}

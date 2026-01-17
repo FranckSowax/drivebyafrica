@@ -19,6 +19,7 @@ import {
 import { Avatar } from '@/components/ui/Avatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LocaleSwitcher } from '@/components/ui/LocaleSwitcher';
+import { NotificationBell } from '@/components/notifications';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -74,6 +75,9 @@ export function Header() {
 
             {user ? (
               <>
+                {/* Notifications */}
+                <NotificationBell />
+
                 {/* Favorites */}
                 <Link
                   href="/dashboard/favorites"

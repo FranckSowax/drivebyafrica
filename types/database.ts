@@ -100,6 +100,7 @@ export type Database = {
           balance: number;
           verification_status: string;
           avatar_url: string | null;
+          role: 'user' | 'admin' | 'super_admin';
           created_at: string;
           updated_at: string;
         };
@@ -114,6 +115,7 @@ export type Database = {
           balance?: number;
           verification_status?: string;
           avatar_url?: string | null;
+          role?: 'user' | 'admin' | 'super_admin';
           created_at?: string;
           updated_at?: string;
         };
@@ -128,6 +130,7 @@ export type Database = {
           balance?: number;
           verification_status?: string;
           avatar_url?: string | null;
+          role?: 'user' | 'admin' | 'super_admin';
           created_at?: string;
           updated_at?: string;
         };
@@ -584,6 +587,16 @@ export type Database = {
           read: boolean;
           sent_whatsapp: boolean;
           created_at: string;
+          // New columns
+          category: 'user' | 'admin' | 'system';
+          priority: 'low' | 'normal' | 'high' | 'urgent';
+          action_url: string | null;
+          action_label: string | null;
+          icon: string | null;
+          expires_at: string | null;
+          dismissed: boolean;
+          related_entity_type: string | null;
+          related_entity_id: string | null;
         };
         Insert: {
           id?: string;
@@ -595,6 +608,15 @@ export type Database = {
           read?: boolean;
           sent_whatsapp?: boolean;
           created_at?: string;
+          category?: 'user' | 'admin' | 'system';
+          priority?: 'low' | 'normal' | 'high' | 'urgent';
+          action_url?: string | null;
+          action_label?: string | null;
+          icon?: string | null;
+          expires_at?: string | null;
+          dismissed?: boolean;
+          related_entity_type?: string | null;
+          related_entity_id?: string | null;
         };
         Update: {
           id?: string;
@@ -606,6 +628,15 @@ export type Database = {
           read?: boolean;
           sent_whatsapp?: boolean;
           created_at?: string;
+          category?: 'user' | 'admin' | 'system';
+          priority?: 'low' | 'normal' | 'high' | 'urgent';
+          action_url?: string | null;
+          action_label?: string | null;
+          icon?: string | null;
+          expires_at?: string | null;
+          dismissed?: boolean;
+          related_entity_type?: string | null;
+          related_entity_id?: string | null;
         };
         Relationships: [
           {
@@ -615,6 +646,60 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      admin_notifications: {
+        Row: {
+          id: string;
+          type: string;
+          title: string;
+          message: string | null;
+          data: Json | null;
+          priority: 'low' | 'normal' | 'high' | 'urgent';
+          action_url: string | null;
+          action_label: string | null;
+          icon: string | null;
+          related_entity_type: string | null;
+          related_entity_id: string | null;
+          read_by: string[];
+          dismissed_by: string[];
+          created_at: string;
+          expires_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          type: string;
+          title: string;
+          message?: string | null;
+          data?: Json | null;
+          priority?: 'low' | 'normal' | 'high' | 'urgent';
+          action_url?: string | null;
+          action_label?: string | null;
+          icon?: string | null;
+          related_entity_type?: string | null;
+          related_entity_id?: string | null;
+          read_by?: string[];
+          dismissed_by?: string[];
+          created_at?: string;
+          expires_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          type?: string;
+          title?: string;
+          message?: string | null;
+          data?: Json | null;
+          priority?: 'low' | 'normal' | 'high' | 'urgent';
+          action_url?: string | null;
+          action_label?: string | null;
+          icon?: string | null;
+          related_entity_type?: string | null;
+          related_entity_id?: string | null;
+          read_by?: string[];
+          dismissed_by?: string[];
+          created_at?: string;
+          expires_at?: string | null;
+        };
+        Relationships: [];
       };
       transactions: {
         Row: {
@@ -966,6 +1051,7 @@ export type Quote = Database['public']['Tables']['quotes']['Row'];
 export type ChatConversation = Database['public']['Tables']['chat_conversations']['Row'];
 export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 export type QuoteReassignment = Database['public']['Tables']['quote_reassignments']['Row'];
+export type AdminNotification = Database['public']['Tables']['admin_notifications']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
