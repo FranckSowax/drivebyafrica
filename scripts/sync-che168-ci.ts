@@ -268,7 +268,8 @@ async function loadVehiclesFromCsv(): Promise<CsvVehicle[]> {
 }
 
 /**
- * Get existing China vehicles from database
+ * Get existing CHE168 vehicles from database (only auction_platform=che168)
+ * This ensures we don't touch Dongchedi vehicles
  */
 async function getExistingVehicles(): Promise<Set<string>> {
   const sourceIds = new Set<string>();
@@ -279,6 +280,7 @@ async function getExistingVehicles(): Promise<Set<string>> {
       .from('vehicles')
       .select('source_id')
       .eq('source', 'china')
+      .eq('auction_platform', 'che168')
       .range(offset, offset + 999);
 
     if (!data || data.length === 0) break;
@@ -482,7 +484,7 @@ async function main() {
     console.log(`  Found ${removedIds.size} from removed CSV, ${staleIds.length} stale listings`);
     console.log(`  Total to remove: ${allToRemove.size}`);
 
-    // Delete in batches
+    // Delete in batches - ONLY CHE168 vehicles (auction_platform=che168)
     const toRemoveArray = Array.from(allToRemove);
     for (let i = 0; i < toRemoveArray.length; i += 100) {
       const batch = toRemoveArray.slice(i, i + 100);
@@ -490,6 +492,7 @@ async function main() {
         .from('vehicles')
         .delete()
         .eq('source', 'china')
+        .eq('auction_platform', 'che168')
         .in('source_id', batch);
 
       if (!error) {
