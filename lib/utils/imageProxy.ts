@@ -110,14 +110,20 @@ export function needsProxy(url: string): boolean {
 
 /**
  * Get the proxied URL for an image
- * Note: Dongchedi images work directly in browsers, so we bypass the proxy
- * The proxy had issues with some signatures returning 403
+ * Uses our image proxy for Chinese CDN images (byteimg.com) which may have
+ * regional restrictions or require specific headers to load properly.
  */
 export function getProxiedImageUrl(url: string): string {
   if (!url) return url;
 
-  // Return URL as-is - browsers can load Dongchedi images directly
-  // The proxy was causing 403 errors for some images
+  // Use proxy for byteimg.com images (Dongchedi/CHE168)
+  // These images may be blocked by some networks or require specific headers
+  if (url.includes('byteimg.com')) {
+    // Encode the URL for the proxy
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+  }
+
+  // Return URL as-is for other domains
   return url;
 }
 
