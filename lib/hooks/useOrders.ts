@@ -356,10 +356,25 @@ export const ORDER_STATUSES = {
     color: 'bg-yellow-500',
     step: 1,
   },
+  paid: {
+    label: 'Paiement reçu',
+    color: 'bg-green-500',
+    step: 2,
+  },
+  processing: {
+    label: 'En traitement',
+    color: 'bg-blue-500',
+    step: 3,
+  },
   in_transit: {
     label: 'En transit',
     color: 'bg-orange-500',
     step: 8,
+  },
+  completed: {
+    label: 'Terminé',
+    color: 'bg-green-600',
+    step: 11,
   },
 } as const;
 
