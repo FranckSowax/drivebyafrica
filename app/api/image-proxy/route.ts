@@ -110,12 +110,12 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': cacheControl,
+        // Disable CDN caching - each URL must be fetched individually
+        // Browser can still cache based on the URL
+        'Cache-Control': 'private, max-age=86400',
+        'CDN-Cache-Control': 'no-store',
+        'Netlify-CDN-Cache-Control': 'no-store',
         'Access-Control-Allow-Origin': '*',
-        // Vary header ensures cache distinguishes by full URL
-        'Vary': 'Accept-Encoding',
-        // ETag based on URL hash for cache validation
-        'ETag': `"${Buffer.from(decodedUrl).toString('base64').slice(0, 32)}"`,
       },
     });
   } catch (error) {
