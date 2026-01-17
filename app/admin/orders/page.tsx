@@ -839,7 +839,7 @@ export default function AdminOrdersPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Prix véhicule</span>
                     <span className="text-[var(--text-primary)]">
-                      {formatCurrency(selectedOrder.vehicle_price_usd, 'USD')}
+                      {formatInCustomerCurrency(selectedOrder.vehicle_price_usd + 980, selectedOrder.destination_country)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -863,7 +863,7 @@ export default function AdminOrdersPage() {
                   <div className="flex justify-between text-sm pt-2">
                     <span className="text-green-500 font-medium">Acompte payé</span>
                     <span className="text-green-500 font-medium">
-                      {formatCurrency(selectedOrder.deposit_amount_usd, 'USD')}
+                      {formatInCustomerCurrency(selectedOrder.deposit_amount_usd, selectedOrder.destination_country)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm border-t border-[var(--card-border)] pt-2 mt-2">
