@@ -95,7 +95,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
           vehicle_price_usd: quote.vehicle_price_usd,
           destination_country: quote.destination_country,
           destination_port: quote.destination_name || null,
-          shipping_method: 'sea',
+          shipping_method: 'container_20ft',
           container_type: 'shared',
           status: 'deposit_received', // Simulate deposit paid
           deposit_amount_usd: 1000,
