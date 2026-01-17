@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -11,11 +12,13 @@ import {
   ShieldCheck,
   CreditCard,
   Smartphone,
-  Building2,
+  Play,
   Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface QuoteValidationModalProps {
   isOpen: boolean;
@@ -23,9 +26,13 @@ interface QuoteValidationModalProps {
   quote: {
     id: string;
     quote_number: string;
+    vehicle_id: string;
     vehicle_make: string;
     vehicle_model: string;
     vehicle_year: number;
+    vehicle_price_usd: number;
+    destination_country: string;
+    destination_name?: string;
     total_cost_xaf: number;
   } | null;
 }
@@ -33,7 +40,10 @@ interface QuoteValidationModalProps {
 // Montant de l'acompte fixe (taux special depot: 1000 USD = 600 000 FCFA)
 
 export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidationModalProps) {
+  const router = useRouter();
   const toast = useToast();
+  const supabase = createClient();
+  const { user } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleStripePayment = async () => {
@@ -53,11 +63,86 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
     );
   };
 
-  const handleCashPayment = () => {
-    toast.info(
-      'Paiement en agence',
-      'Retrouvez nos agences a Libreville (Gabon), Douala (Cameroun) et Dakar (Senegal)'
-    );
+  // Demo button - simulates deposit payment and creates order
+  const handleDemoPayment = async () => {
+    if (!quote || !user) {
+      toast.error('Erreur', 'Vous devez être connecté');
+      return;
+    }
+
+    setIsProcessing(true);
+    toast.info('Mode Demo', 'Simulation du paiement en cours...');
+
+    try {
+      // 1. Update quote status to 'accepted'
+      const { error: quoteError } = await supabase
+        .from('quotes')
+        .update({
+          status: 'accepted',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', quote.id);
+
+      if (quoteError) throw quoteError;
+
+      // 2. Create order with deposit_received status (simulating paid deposit)
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user.id,
+          vehicle_id: quote.vehicle_id,
+          quote_id: quote.id,
+          vehicle_price_usd: quote.vehicle_price_usd,
+          destination_country: quote.destination_country,
+          destination_port: quote.destination_name || null,
+          shipping_method: 'sea',
+          container_type: 'shared',
+          status: 'deposit_received', // Simulate deposit paid
+          deposit_amount_usd: 1000,
+          deposit_paid_at: new Date().toISOString(),
+          documents: {},
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 3. Create tracking entries
+      await supabase.from('order_tracking').insert([
+        {
+          order_id: order.id,
+          status: 'created',
+          title: 'Commande créée',
+          description: 'Votre commande a été créée avec succès.',
+          completed_at: new Date(Date.now() - 60000).toISOString(), // 1 min ago
+        },
+        {
+          order_id: order.id,
+          status: 'deposit_received',
+          title: 'Acompte reçu (Demo)',
+          description: 'Acompte de $1,000 simulé. Le véhicule est maintenant bloqué.',
+          completed_at: new Date().toISOString(),
+        }
+      ]);
+
+      // 4. Mark vehicle as reserved
+      await supabase
+        .from('vehicles')
+        .update({ status: 'reserved' })
+        .eq('id', quote.vehicle_id);
+
+      toast.success('Paiement simulé!', 'Redirection vers votre commande...');
+
+      // Close modal and redirect to order page
+      onClose();
+      router.push(`/dashboard/orders/${order.id}`);
+
+    } catch (error) {
+      console.error('Demo payment error:', error);
+      toast.error('Erreur', 'Une erreur est survenue lors de la simulation');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const steps = [
@@ -227,17 +312,18 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
                       </div>
                     </button>
 
-                    {/* Cash in agency */}
+                    {/* Demo - simulates payment */}
                     <button
-                      onClick={handleCashPayment}
-                      className="flex items-center gap-3 p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
+                      onClick={handleDemoPayment}
+                      disabled={isProcessing}
+                      className="flex items-center gap-3 p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all group disabled:opacity-50"
                     >
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                        <Building2 className="w-5 h-5 text-green-600" />
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                        <Play className="w-5 h-5 text-purple-600" />
                       </div>
                       <div className="text-left">
-                        <p className="text-sm font-bold text-gray-900">Cash en agence</p>
-                        <p className="text-xs text-gray-500">Gabon, Cameroun, Senegal</p>
+                        <p className="text-sm font-bold text-gray-900">Demo</p>
+                        <p className="text-xs text-gray-500">Simuler le paiement</p>
                       </div>
                     </button>
                   </div>
