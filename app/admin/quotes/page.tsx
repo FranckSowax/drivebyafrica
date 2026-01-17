@@ -36,16 +36,16 @@ interface Quote {
   vehicle_make: string;
   vehicle_model: string;
   vehicle_year: number;
-  vehicle_price_usd: number;
+  vehicle_price_usd: number | null;
   vehicle_source: string;
   destination_id: string;
   destination_name: string;
   destination_country: string;
   shipping_type: string;
-  shipping_cost_xaf: number;
-  insurance_cost_xaf: number;
-  inspection_fee_xaf: number;
-  total_cost_xaf: number;
+  shipping_cost_xaf: number | null;
+  insurance_cost_xaf: number | null;
+  inspection_fee_xaf: number | null;
+  total_cost_xaf: number | null;
   status: string;
   valid_until: string;
   created_at: string;
@@ -53,6 +53,11 @@ interface Quote {
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
+  // Price request fields
+  quote_type?: 'quote' | 'price_request';
+  admin_price_usd?: number | null;
+  admin_notes?: string | null;
+  notification_sent?: boolean;
 }
 
 interface Stats {
@@ -65,6 +70,7 @@ interface Stats {
   depositsThisMonth: number;
   depositsThisYear: number;
   totalDeposits: number;
+  priceRequests?: number;
 }
 
 interface Pagination {
@@ -110,6 +116,13 @@ const statusConfig = {
     border: 'border-orange-500/30',
     icon: ArrowRightLeft,
   },
+  price_received: {
+    label: 'Prix envoyé',
+    color: 'text-purple-500',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/30',
+    icon: DollarSign,
+  },
 };
 
 const countryFlags: Record<string, string> = {
@@ -141,6 +154,11 @@ export default function AdminQuotesPage() {
   const [reassignModalQuote, setReassignModalQuote] = useState<Quote | null>(null);
   const [reassignReason, setReassignReason] = useState<string>('sold');
   const [isReassigning, setIsReassigning] = useState(false);
+  // Price request state
+  const [priceModalQuote, setPriceModalQuote] = useState<Quote | null>(null);
+  const [priceInput, setPriceInput] = useState<string>('');
+  const [priceNotes, setPriceNotes] = useState<string>('');
+  const [isSettingPrice, setIsSettingPrice] = useState(false);
 
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
@@ -239,6 +257,50 @@ export default function AdminQuotesPage() {
       setIsReassigning(false);
     }
   };
+
+  // Handle setting price for price request
+  const handleSetPrice = async () => {
+    if (!priceModalQuote || !priceInput) return;
+
+    const priceUsd = parseInt(priceInput);
+    if (isNaN(priceUsd) || priceUsd <= 0) {
+      alert('Veuillez entrer un prix valide');
+      return;
+    }
+
+    setIsSettingPrice(true);
+    try {
+      const response = await fetch('/api/admin/quotes/set-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteId: priceModalQuote.id,
+          priceUsd,
+          notes: priceNotes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await fetchQuotes();
+        setPriceModalQuote(null);
+        setPriceInput('');
+        setPriceNotes('');
+        alert('Prix défini et notification envoyée au client!');
+      } else {
+        alert(`Erreur: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error setting price:', error);
+      alert('Erreur lors de la définition du prix');
+    } finally {
+      setIsSettingPrice(false);
+    }
+  };
+
+  // Check if quote is a price request
+  const isPriceRequest = (quote: Quote) => quote.quote_type === 'price_request';
 
   return (
     <div className="p-6 lg:p-8">
@@ -385,6 +447,7 @@ export default function AdminQuotesPage() {
           <option value="accepted">Acceptés</option>
           <option value="rejected">Refusés</option>
           <option value="reassigned">Réassignés</option>
+          <option value="price_request">Demandes de prix</option>
         </select>
       </div>
 
@@ -426,7 +489,14 @@ export default function AdminQuotesPage() {
                     >
                       <td className="py-4 px-4">
                         <div>
-                          <span className="text-sm font-mono text-mandarin">{quote.quote_number}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-mono text-mandarin">{quote.quote_number}</span>
+                            {isPriceRequest(quote) && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-500/20 text-purple-500 rounded">
+                                DEMANDE PRIX
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-[var(--text-muted)]">
                             {formatDistanceToNow(new Date(quote.created_at), { addSuffix: true, locale: fr })}
                           </p>
@@ -438,7 +508,7 @@ export default function AdminQuotesPage() {
                             {quote.vehicle_make} {quote.vehicle_model}
                           </p>
                           <p className="text-xs text-[var(--text-muted)]">
-                            {quote.vehicle_year} - {formatCurrency(quote.vehicle_price_usd, 'USD')}
+                            {quote.vehicle_year} - {quote.vehicle_price_usd ? formatCurrency(quote.vehicle_price_usd, 'USD') : <span className="text-purple-500">Prix à définir</span>}
                           </p>
                         </div>
                       </td>
@@ -463,7 +533,7 @@ export default function AdminQuotesPage() {
                       </td>
                       <td className="py-4 px-4 text-right">
                         <span className="text-sm font-semibold text-[var(--text-primary)]">
-                          {formatCurrency(quote.total_cost_xaf)}
+                          {quote.total_cost_xaf ? formatCurrency(quote.total_cost_xaf) : '-'}
                         </span>
                       </td>
                       <td className="py-4 px-4 text-center">
@@ -486,7 +556,24 @@ export default function AdminQuotesPage() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              {quote.status === 'pending' && (
+                              {/* Price request: show Set Price button */}
+                              {isPriceRequest(quote) && quote.status === 'pending' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPriceModalQuote(quote);
+                                    setPriceInput('');
+                                    setPriceNotes('');
+                                  }}
+                                  className="text-purple-500 hover:text-purple-600"
+                                  title="Définir le prix"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {/* Standard quote: show validate/reject */}
+                              {!isPriceRequest(quote) && quote.status === 'pending' && (
                                 <>
                                   <Button
                                     variant="ghost"
@@ -583,7 +670,7 @@ export default function AdminQuotesPage() {
                     {selectedQuote.vehicle_make} {selectedQuote.vehicle_model} {selectedQuote.vehicle_year}
                   </p>
                   <p className="text-sm text-[var(--text-muted)]">
-                    Prix: {formatCurrency(selectedQuote.vehicle_price_usd, 'USD')}
+                    Prix: {selectedQuote.vehicle_price_usd ? formatCurrency(selectedQuote.vehicle_price_usd, 'USD') : <span className="text-purple-500">À définir</span>}
                   </p>
                   <p className="text-xs text-[var(--text-muted)] mt-1">
                     Source: {selectedQuote.vehicle_source}
@@ -619,28 +706,40 @@ export default function AdminQuotesPage() {
                 </div>
               </div>
 
-              {/* Cost Breakdown */}
-              <div>
-                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Détails du coût</h4>
-                <div className="bg-[var(--surface)] rounded-xl p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-muted)]">Transport ({selectedQuote.shipping_type})</span>
-                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedQuote.shipping_cost_xaf)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-muted)]">Assurance</span>
-                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedQuote.insurance_cost_xaf)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[var(--text-muted)]">Frais d&apos;inspection</span>
-                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedQuote.inspection_fee_xaf)}</span>
-                  </div>
-                  <div className="border-t border-[var(--card-border)] pt-2 mt-2 flex justify-between font-semibold">
-                    <span className="text-[var(--text-primary)]">Total</span>
-                    <span className="text-mandarin">{formatCurrency(selectedQuote.total_cost_xaf)}</span>
+              {/* Cost Breakdown - only show if not a price request without costs */}
+              {(selectedQuote.shipping_cost_xaf || selectedQuote.quote_type !== 'price_request') && (
+                <div>
+                  <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Détails du coût</h4>
+                  <div className="bg-[var(--surface)] rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[var(--text-muted)]">Transport ({selectedQuote.shipping_type})</span>
+                      <span className="text-[var(--text-primary)]">{selectedQuote.shipping_cost_xaf ? formatCurrency(selectedQuote.shipping_cost_xaf) : '-'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[var(--text-muted)]">Assurance</span>
+                      <span className="text-[var(--text-primary)]">{selectedQuote.insurance_cost_xaf ? formatCurrency(selectedQuote.insurance_cost_xaf) : '-'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[var(--text-muted)]">Frais d&apos;inspection</span>
+                      <span className="text-[var(--text-primary)]">{selectedQuote.inspection_fee_xaf ? formatCurrency(selectedQuote.inspection_fee_xaf) : '-'}</span>
+                    </div>
+                    <div className="border-t border-[var(--card-border)] pt-2 mt-2 flex justify-between font-semibold">
+                      <span className="text-[var(--text-primary)]">Total</span>
+                      <span className="text-mandarin">{selectedQuote.total_cost_xaf ? formatCurrency(selectedQuote.total_cost_xaf) : '-'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Price Request Info */}
+              {isPriceRequest(selectedQuote) && !selectedQuote.vehicle_price_usd && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                  <p className="text-sm text-purple-500 font-medium">Demande de prix en attente</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Cliquez sur le bouton $ pour définir le prix et notifier le client.
+                  </p>
+                </div>
+              )}
 
               {/* Dates */}
               <div className="flex gap-4 text-sm">
@@ -712,7 +811,7 @@ export default function AdminQuotesPage() {
                   {reassignModalQuote.vehicle_make} {reassignModalQuote.vehicle_model} {reassignModalQuote.vehicle_year}
                 </p>
                 <p className="text-sm text-mandarin">
-                  {formatCurrency(reassignModalQuote.vehicle_price_usd, 'USD')}
+                  {reassignModalQuote.vehicle_price_usd ? formatCurrency(reassignModalQuote.vehicle_price_usd, 'USD') : 'Prix non défini'}
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1">
                   Client: {reassignModalQuote.customer_name}
@@ -769,6 +868,111 @@ export default function AdminQuotesPage() {
                     <>
                       <ArrowRightLeft className="w-4 h-4 mr-2" />
                       Reassigner
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Set Price Modal for Price Requests */}
+      {priceModalQuote && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-[var(--card-border)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <DollarSign className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                    Définir le prix
+                  </h3>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setPriceModalQuote(null)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <p className="font-semibold text-[var(--text-primary)]">
+                  {priceModalQuote.vehicle_make} {priceModalQuote.vehicle_model} {priceModalQuote.vehicle_year}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Client: {priceModalQuote.customer_name || 'Utilisateur'}
+                </p>
+                {priceModalQuote.customer_phone && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Tel: {priceModalQuote.customer_phone}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                  Prix FOB (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">$</span>
+                  <input
+                    type="number"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    placeholder="Ex: 15000"
+                    className="w-full pl-8 pr-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                  Notes (optionnel)
+                </label>
+                <textarea
+                  value={priceNotes}
+                  onChange={(e) => setPriceNotes(e.target.value)}
+                  placeholder="Informations supplémentaires sur le véhicule..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-purple-500 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                <p className="text-sm text-[var(--text-primary)]">
+                  <strong>Le client sera notifié par:</strong>
+                </p>
+                <ul className="text-xs text-[var(--text-muted)] mt-2 space-y-1 list-disc list-inside">
+                  <li>Notification dans son tableau de bord</li>
+                  <li>Message WhatsApp avec le prix et le lien vers le véhicule</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setPriceModalQuote(null)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  className="flex-1 bg-purple-500 hover:bg-purple-600"
+                  onClick={handleSetPrice}
+                  disabled={isSettingPrice || !priceInput}
+                >
+                  {isSettingPrice ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Envoi...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Envoyer le prix
                     </>
                   )}
                 </Button>

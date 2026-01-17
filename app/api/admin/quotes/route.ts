@@ -47,7 +47,12 @@ export async function GET(request: Request) {
 
     // Apply filters
     if (status && status !== 'all') {
-      query = query.eq('status', status);
+      // Special filter for price requests
+      if (status === 'price_request') {
+        query = query.eq('quote_type', 'price_request').eq('status', 'pending');
+      } else {
+        query = query.eq('status', status);
+      }
     }
 
     if (search) {
@@ -158,7 +163,7 @@ export async function PUT(request: Request) {
     }
 
     // Validate status
-    const validStatuses = ['pending', 'validated', 'accepted', 'rejected'];
+    const validStatuses = ['pending', 'validated', 'accepted', 'rejected', 'price_received', 'reassigned'];
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { error: 'Statut invalide' },

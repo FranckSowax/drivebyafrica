@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
+import { PriceRequestButton } from '@/components/vehicles/PriceRequestButton';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { parseImagesField, getProxiedImageUrls } from '@/lib/utils/imageProxy';
@@ -347,7 +348,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
 
               {/* Actions */}
               <div className="space-y-3">
-                {/* Shipping Estimator */}
+                {/* Shipping Estimator - only show if price is available */}
                 {vehicle.start_price_usd && (
                   <ShippingEstimator
                     vehiclePriceUSD={vehicle.start_price_usd}
@@ -357,6 +358,17 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     vehicleModel={vehicle.model || 'Unknown'}
                     vehicleYear={vehicle.year || new Date().getFullYear()}
                     autoOpenQuote={shouldAutoOpenQuote}
+                  />
+                )}
+
+                {/* Price Request Button - show for Dubai vehicles without price */}
+                {!vehicle.start_price_usd && source === 'dubai' && (
+                  <PriceRequestButton
+                    vehicleId={vehicle.id}
+                    vehicleMake={vehicle.make || 'Unknown'}
+                    vehicleModel={vehicle.model || 'Unknown'}
+                    vehicleYear={vehicle.year || new Date().getFullYear()}
+                    vehicleSource={source}
                   />
                 )}
 
