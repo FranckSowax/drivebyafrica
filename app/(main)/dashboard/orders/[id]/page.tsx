@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
+import { OrderDocuments } from '@/components/orders/OrderDocuments';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
@@ -15,7 +16,6 @@ import {
   MapPin,
   Calendar,
   Package,
-  FileText,
   MessageCircle,
   ExternalLink,
   AlertTriangle,
@@ -299,16 +299,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 value={orderData.vehicle_price_usd}
               />
               <PriceRow
-                label="Transport"
+                label="Transport maritime"
                 value={orderData.shipping_price_usd}
               />
               <PriceRow
-                label="Assurance"
+                label="Assurance tous risques"
                 value={orderData.insurance_price_usd}
               />
               <PriceRow
-                label="Douane (estimé)"
-                value={orderData.customs_estimate_usd}
+                label="Documentation"
+                value={orderData.documentation_fee_usd || 150}
               />
               <div className="pt-3 border-t border-nobel/20">
                 <div className="flex justify-between items-center">
@@ -323,11 +323,20 @@ export default async function OrderDetailPage({ params }: PageProps) {
             </div>
           </Card>
 
+          {/* Documents */}
+          <Card>
+            <h2 className="font-bold text-[var(--text-primary)] mb-4">Documents</h2>
+            <OrderDocuments
+              documents={orderData.uploaded_documents || []}
+              documentsSentAt={orderData.documents_sent_at}
+            />
+          </Card>
+
           {/* Actions */}
           <Card>
             <h2 className="font-bold text-[var(--text-primary)] mb-4">Actions</h2>
             <div className="space-y-3">
-              {orderData.status === 'pending_payment' && (
+              {(orderData.status === 'pending_payment' || orderData.status === 'deposit_pending') && (
                 <Link href={`/dashboard/orders/${orderData.id}/pay`}>
                   <Button variant="primary" className="w-full">
                     Payer maintenant
@@ -343,13 +352,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   Contacter le support
                 </Button>
               </Link>
-              <Button
-                variant="ghost"
-                className="w-full"
-                leftIcon={<FileText className="w-4 h-4" />}
-              >
-                Télécharger les documents
-              </Button>
             </div>
           </Card>
 
@@ -359,17 +361,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
               Besoin d&apos;aide avec votre commande?
             </p>
             <p className="text-sm text-[var(--text-primary)] mt-1">
-              Contactez-nous via WhatsApp pour une assistance rapide.
+              Notre équipe est disponible pour répondre à vos questions.
             </p>
-            <a
-              href="https://wa.me/+24177000000"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-jewel text-sm mt-3 hover:underline"
+            <Link
+              href={`/dashboard/messages?order=${orderData.id}`}
+              className="inline-flex items-center gap-2 text-mandarin text-sm mt-3 hover:underline"
             >
               <MessageCircle className="w-4 h-4" />
-              +241 77 00 00 00
-            </a>
+              Envoyer un message
+            </Link>
           </Card>
         </div>
       </div>

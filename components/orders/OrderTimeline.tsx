@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Check, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { Check, Clock, MapPin, CreditCard, Search, FileText, Ship, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import type { OrderTracking } from '@/types/database';
@@ -13,14 +13,16 @@ interface OrderTimelineProps {
   className?: string;
 }
 
+// Main workflow steps matching ORDER_STATUSES
 const TIMELINE_STEPS = [
-  { status: 'pending_payment', icon: Clock, label: 'Paiement' },
-  { status: 'payment_received', icon: Check, label: 'Confirmé' },
-  { status: 'auction_won', icon: Check, label: 'Enchère gagnée' },
-  { status: 'preparing_export', icon: Clock, label: 'Préparation' },
-  { status: 'in_transit', icon: MapPin, label: 'En transit' },
-  { status: 'customs_clearance', icon: AlertCircle, label: 'Douane' },
-  { status: 'delivered', icon: Check, label: 'Livré' },
+  { status: 'deposit_pending', icon: CreditCard, label: 'Acompte', step: 1 },
+  { status: 'deposit_received', icon: Check, label: 'Bloqué', step: 2 },
+  { status: 'inspection_pending', icon: Search, label: 'Inspection', step: 3 },
+  { status: 'payment_pending', icon: CreditCard, label: 'Paiement', step: 5 },
+  { status: 'preparing_export', icon: Package, label: 'Export', step: 7 },
+  { status: 'shipped', icon: Ship, label: 'Transit', step: 8 },
+  { status: 'documents_ready', icon: FileText, label: 'Documents', step: 9 },
+  { status: 'delivered', icon: Check, label: 'Livré', step: 10 },
 ];
 
 export function OrderTimeline({
@@ -30,6 +32,11 @@ export function OrderTimeline({
 }: OrderTimelineProps) {
   const currentStep = ORDER_STATUSES[currentStatus as OrderStatus]?.step || 0;
   const isCancelled = currentStatus === 'cancelled';
+  const isPendingReassignment = currentStatus === 'pending_reassignment';
+
+  // Find the index of current step in TIMELINE_STEPS
+  const currentStepIndex = TIMELINE_STEPS.findIndex(s => s.step >= currentStep);
+  const progressIndex = currentStepIndex === -1 ? TIMELINE_STEPS.length : currentStepIndex;
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -40,12 +47,12 @@ export function OrderTimeline({
           <div
             className={cn(
               'h-full transition-all duration-500',
-              isCancelled ? 'bg-red-500' : 'bg-mandarin'
+              isCancelled ? 'bg-red-500' : isPendingReassignment ? 'bg-yellow-500' : 'bg-mandarin'
             )}
             style={{
-              width: isCancelled
-                ? '100%'
-                : `${Math.min(100, ((currentStep - 1) / (TIMELINE_STEPS.length - 1)) * 100)}%`,
+              width: isCancelled || isPendingReassignment
+                ? '0%'
+                : `${Math.min(100, (progressIndex / (TIMELINE_STEPS.length - 1)) * 100)}%`,
             }}
           />
         </div>
@@ -53,9 +60,9 @@ export function OrderTimeline({
         {/* Steps */}
         <div className="relative flex justify-between">
           {TIMELINE_STEPS.map((step, index) => {
-            const stepNumber = index + 1;
-            const isCompleted = stepNumber < currentStep;
-            const isCurrent = stepNumber === currentStep;
+            const isCompleted = step.step < currentStep;
+            const isCurrent = step.step === currentStep ||
+              (currentStep > TIMELINE_STEPS[index]?.step && currentStep < (TIMELINE_STEPS[index + 1]?.step || 999));
             const Icon = step.icon;
 
             return (
@@ -67,9 +74,10 @@ export function OrderTimeline({
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center transition-all z-10',
                     isCompleted && 'bg-jewel text-white',
-                    isCurrent && !isCancelled && 'bg-mandarin text-white ring-4 ring-mandarin/20',
-                    isCancelled && stepNumber <= currentStep && 'bg-red-500 text-white',
-                    !isCompleted && !isCurrent && 'bg-surface text-nobel'
+                    isCurrent && !isCancelled && !isPendingReassignment && 'bg-mandarin text-white ring-4 ring-mandarin/20',
+                    isCancelled && 'bg-red-500/20 text-red-500',
+                    isPendingReassignment && index === 0 && 'bg-yellow-500 text-white ring-4 ring-yellow-500/20',
+                    !isCompleted && !isCurrent && !isCancelled && 'bg-surface text-nobel'
                   )}
                 >
                   {isCompleted ? (
@@ -81,7 +89,7 @@ export function OrderTimeline({
                 <span
                   className={cn(
                     'text-xs mt-2 text-center max-w-[60px]',
-                    (isCompleted || isCurrent) && !isCancelled ? 'text-white' : 'text-nobel'
+                    (isCompleted || isCurrent) && !isCancelled && !isPendingReassignment ? 'text-[var(--text-primary)]' : 'text-nobel'
                   )}
                 >
                   {step.label}

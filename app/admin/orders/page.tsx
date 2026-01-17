@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { DocumentUploader } from '@/components/admin/DocumentUploader';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -758,6 +759,15 @@ export default function AdminOrdersPage() {
                     <span className="text-green-500 font-medium">{formatCurrency(selectedOrder.deposit_amount_usd, 'USD')}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Document Upload Section */}
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <DocumentUploader
+                  orderId={selectedOrder.id}
+                  orderNumber={selectedOrder.order_number}
+                  existingDocuments={[]}
+                />
               </div>
             </div>
           </div>

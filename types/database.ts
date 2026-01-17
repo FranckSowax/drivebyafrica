@@ -341,6 +341,9 @@ export type Database = {
           customer_country: string | null;
           admin_notes: string | null;
           customer_notes: string | null;
+          documentation_fee_usd: number | null;
+          uploaded_documents: Json;
+          documents_sent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -395,6 +398,9 @@ export type Database = {
           customer_country?: string | null;
           admin_notes?: string | null;
           customer_notes?: string | null;
+          documentation_fee_usd?: number | null;
+          uploaded_documents?: Json;
+          documents_sent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -449,6 +455,9 @@ export type Database = {
           customer_country?: string | null;
           admin_notes?: string | null;
           customer_notes?: string | null;
+          documentation_fee_usd?: number | null;
+          uploaded_documents?: Json;
+          documents_sent_at?: string | null;
         };
         Relationships: [
           {
