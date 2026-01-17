@@ -1,27 +1,5 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
-
-async function createSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Reasons for reassignment
 const REASSIGNMENT_REASONS = {
@@ -46,7 +24,7 @@ interface SimilarVehicle {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseClientType = Awaited<ReturnType<typeof createSupabaseClient>>;
+type SupabaseClientType = typeof supabaseAdmin;
 
 // Find similar vehicles based on make, model, year, and price range
 async function findSimilarVehicles(
@@ -414,7 +392,7 @@ L'équipe Driveby Africa`;
 // GET: Fetch all reassignments
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -508,7 +486,7 @@ export async function GET(request: Request) {
 // POST: Create a new reassignment with auto-search for similar vehicles
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const body = await request.json();
     const { quoteId, reason } = body;
 
@@ -590,7 +568,7 @@ export async function POST(request: Request) {
 // PUT: Update reassignment (send WhatsApp, update status, etc.)
 export async function PUT(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const body = await request.json();
     const { id, action, ...updateData } = body;
 
@@ -691,7 +669,7 @@ export async function PUT(request: Request) {
 // Refresh similar vehicles
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = supabaseAdmin;
     const { id } = await request.json();
 
     if (!id) {
