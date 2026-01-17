@@ -76,6 +76,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         });
       }
     } catch (error) {
+      // Ignore AbortError - this happens in React Strict Mode due to double mount
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.debug('Auth initialization aborted (React Strict Mode)');
+        return;
+      }
       console.error('Auth initialization error:', error);
     } finally {
       set({ isLoading: false, isInitialized: true });
