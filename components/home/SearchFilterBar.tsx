@@ -20,6 +20,20 @@ import { useVehicles } from '@/lib/hooks/useVehicles';
 import { cn } from '@/lib/utils';
 import type { VehicleSource } from '@/types/vehicle';
 
+// Popular brands by origin - shown first in dropdown
+const POPULAR_BRANDS = {
+  japanese: ['Toyota', 'Honda', 'Nissan', 'Mazda', 'Lexus', 'Mitsubishi', 'Subaru', 'Suzuki'],
+  korean: ['Hyundai', 'Kia', 'Genesis', 'SsangYong'],
+  chinese: ['BYD', 'Geely', 'Chery', 'Great Wall', 'Haval', 'MG', 'NIO', 'XPeng', 'Li Auto', 'Zeekr', 'Changan', 'GAC', 'Dongfeng'],
+};
+
+// All popular brands flattened for quick lookup
+const ALL_POPULAR_BRANDS = new Set([
+  ...POPULAR_BRANDS.japanese,
+  ...POPULAR_BRANDS.korean,
+  ...POPULAR_BRANDS.chinese,
+]);
+
 // Fallback brands - Korean, Chinese and popular international brands
 const FALLBACK_BRANDS = [
   // Korean brands
@@ -193,6 +207,220 @@ function FilterDropdown({
   );
 }
 
+// Brand Dropdown with Popular Brands sections
+interface BrandDropdownProps {
+  value?: string;
+  allBrands: string[];
+  onChange: (value: string | undefined) => void;
+  isLoading?: boolean;
+}
+
+function BrandDropdown({
+  value,
+  allBrands,
+  onChange,
+  isLoading = false,
+}: BrandDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter brands available in the database for popular sections
+  const availablePopularBrands = useMemo(() => {
+    const brandsSet = new Set(allBrands.map(b => b.toLowerCase()));
+    return {
+      japanese: POPULAR_BRANDS.japanese.filter(b => brandsSet.has(b.toLowerCase())),
+      korean: POPULAR_BRANDS.korean.filter(b => brandsSet.has(b.toLowerCase())),
+      chinese: POPULAR_BRANDS.chinese.filter(b => brandsSet.has(b.toLowerCase())),
+    };
+  }, [allBrands]);
+
+  // Other brands (not in popular categories)
+  const otherBrands = useMemo(() => {
+    return allBrands
+      .filter(brand => !ALL_POPULAR_BRANDS.has(brand))
+      .sort((a, b) => a.localeCompare(b));
+  }, [allBrands]);
+
+  // Filtered results when searching
+  const filteredBrands = useMemo(() => {
+    if (!searchTerm) return null;
+    const term = searchTerm.toLowerCase();
+    return allBrands.filter(brand =>
+      brand.toLowerCase().includes(term)
+    );
+  }, [allBrands, searchTerm]);
+
+  const displayValue = value || 'Toutes';
+
+  const handleSelect = (brand: string) => {
+    onChange(brand);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const handleClear = () => {
+    onChange(undefined);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const renderBrandButton = (brand: string) => {
+    const isSelected = value === brand;
+    return (
+      <button
+        key={brand}
+        type="button"
+        onClick={() => handleSelect(brand)}
+        className={cn(
+          'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+          isSelected
+            ? 'bg-mandarin/10 text-mandarin font-medium'
+            : 'text-gray-700 dark:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-[var(--surface)]'
+        )}
+      >
+        <span className="flex-1 text-left">{brand}</span>
+        {isSelected && <Check className="w-4 h-4 flex-shrink-0" />}
+      </button>
+    );
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => !isLoading && setIsOpen(!isOpen)}
+        disabled={isLoading}
+        className={cn(
+          'flex items-center justify-between gap-2 px-4 py-3.5 rounded-xl border transition-all duration-200 min-w-[140px] w-full h-[58px]',
+          'bg-white dark:bg-[var(--surface)] hover:shadow-md',
+          isLoading && 'opacity-60 cursor-wait',
+          isOpen
+            ? 'border-mandarin shadow-lg shadow-mandarin/10'
+            : value
+            ? 'border-mandarin/50 shadow-sm'
+            : 'border-gray-200 dark:border-[var(--card-border)] shadow-sm'
+        )}
+      >
+        <div className="text-left flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-[var(--text-muted)] font-medium">Marque</p>
+          <p className={cn(
+            'text-sm font-semibold truncate',
+            value ? 'text-gray-900 dark:text-[var(--text-primary)]' : 'text-gray-400 dark:text-[var(--text-muted)]'
+          )}>
+            {isLoading ? 'Chargement...' : displayValue}
+          </p>
+        </div>
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 text-gray-400 animate-spin flex-shrink-0" />
+        ) : (
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0',
+              isOpen && 'rotate-180 text-mandarin'
+            )}
+          />
+        )}
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && !isLoading && (
+        <div className="absolute z-50 w-full min-w-[280px] py-2 bottom-full mb-2 bg-white dark:bg-[var(--card-bg)] border border-gray-200 dark:border-[var(--card-border)] rounded-xl shadow-2xl max-h-[400px] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+          {/* Search input */}
+          <div className="px-3 pb-2 border-b border-gray-100 dark:border-[var(--card-border)]">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher une marque..."
+              className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-[var(--surface)] border border-gray-200 dark:border-[var(--card-border)] rounded-lg focus:outline-none focus:border-mandarin focus:ring-2 focus:ring-mandarin/20"
+              autoFocus
+            />
+          </div>
+
+          <div className="overflow-y-auto max-h-[340px]">
+            {/* Clear option */}
+            {value && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-[var(--surface)] transition-colors border-b border-gray-100 dark:border-[var(--card-border)]"
+              >
+                <X className="w-4 h-4" />
+                Effacer la sélection
+              </button>
+            )}
+
+            {/* Search results */}
+            {filteredBrands ? (
+              filteredBrands.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-gray-400 text-center">
+                  Aucune marque trouvée
+                </div>
+              ) : (
+                filteredBrands.map(renderBrandButton)
+              )
+            ) : (
+              <>
+                {/* Popular Japanese brands */}
+                {availablePopularBrands.japanese.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
+                      <span>🇯🇵</span> Japonaises
+                    </div>
+                    {availablePopularBrands.japanese.map(renderBrandButton)}
+                  </div>
+                )}
+
+                {/* Popular Korean brands */}
+                {availablePopularBrands.korean.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
+                      <span>🇰🇷</span> Coréennes
+                    </div>
+                    {availablePopularBrands.korean.map(renderBrandButton)}
+                  </div>
+                )}
+
+                {/* Popular Chinese brands */}
+                {availablePopularBrands.chinese.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
+                      <span>🇨🇳</span> Chinoises
+                    </div>
+                    {availablePopularBrands.chinese.map(renderBrandButton)}
+                  </div>
+                )}
+
+                {/* Other brands */}
+                {otherBrands.length > 0 && (
+                  <div>
+                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
+                      <span>🌍</span> Autres marques
+                    </div>
+                    {otherBrands.map(renderBrandButton)}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Source/Country options
 const SOURCE_OPTIONS = [
   { value: 'korea', label: 'Corée du Sud' },
@@ -317,11 +545,8 @@ export function SearchFilterBar() {
     (filters.source && filters.source !== 'all')
   );
 
-  // Format count for display
+  // Format count for display - show exact number with space separator
   const formatCount = (count: number) => {
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1).replace('.0', '')}k`;
-    }
     return count.toLocaleString('fr-FR');
   };
 
@@ -359,12 +584,10 @@ export function SearchFilterBar() {
         {/* Filter Row */}
         <div className="p-4 lg:p-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {/* Brand */}
-            <FilterDropdown
-              label="Marque"
+            {/* Brand - with categorized popular brands */}
+            <BrandDropdown
               value={filters.makes?.[0]}
-              placeholder="Toutes"
-              options={brandOptions}
+              allBrands={vehicleFilters.brands.length > 0 ? vehicleFilters.brands : FALLBACK_BRANDS}
               onChange={(val) => setFilters({ makes: val ? [val] : [] })}
               isLoading={vehicleFilters.isLoading}
             />
@@ -445,14 +668,13 @@ export function SearchFilterBar() {
               variant="primary"
               size="lg"
               onClick={handleSearch}
-              className="h-[50px] px-6 shadow-lg shadow-mandarin/25"
+              className="h-[50px] px-5 shadow-lg shadow-mandarin/25"
             >
               {isFilteredLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  <Search className="w-5 h-5 mr-2" />
-                  <span>Rechercher</span>
+                  <Search className="w-5 h-5" />
                   {filteredCount > 0 && (
                     <span className="ml-2 px-2.5 py-0.5 bg-white/20 rounded-full text-xs font-bold">
                       {formatCount(filteredCount)}
