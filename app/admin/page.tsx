@@ -498,6 +498,21 @@ export default function AdminDashboardPage() {
             </h2>
             <p className="text-sm text-[var(--text-muted)]">Véhicules ajoutés par sync comparés aux demandes de devis</p>
           </div>
+          <div className="flex gap-2">
+            {(['7d', '30d', '90d'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  timeRange === range
+                    ? 'bg-mandarin text-white'
+                    : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {range === '7d' ? '7 jours' : range === '30d' ? '30 jours' : '3 mois'}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
