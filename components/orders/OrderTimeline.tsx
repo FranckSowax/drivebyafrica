@@ -119,9 +119,9 @@ interface TrackingEventProps {
 }
 
 function TrackingEvent({ event, isLatest }: TrackingEventProps) {
-  const formattedDate = format(new Date(event.completed_at), "d MMM yyyy 'à' HH:mm", {
-    locale: fr,
-  });
+  const formattedDate = event.completed_at
+    ? format(new Date(event.completed_at), "d MMM yyyy 'à' HH:mm", { locale: fr })
+    : '-';
 
   return (
     <div

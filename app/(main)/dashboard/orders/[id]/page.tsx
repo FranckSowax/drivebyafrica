@@ -63,9 +63,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const trackingData = (tracking || []) as OrderTracking[];
   const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
 
-  const createdAt = format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", {
-    locale: fr,
-  });
+  const createdAt = orderData.created_at
+    ? format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
+    : '-';
 
   return (
     <div className="space-y-6">
@@ -152,7 +152,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <div>
                 <p className="text-xs text-[var(--text-muted)] mb-1">Méthode</p>
                 <p className="text-[var(--text-primary)] capitalize">
-                  {orderData.shipping_method === 'sea' ? 'Maritime' : 'Aérien'}
+                  {orderData.shipping_method === 'roro' ? 'RoRo' :
+                   orderData.shipping_method?.includes('container') ? 'Container' :
+                   orderData.shipping_method === 'sea' ? 'Maritime' : 'Maritime'}
                   {orderData.container_type && ` (${orderData.container_type})`}
                 </p>
               </div>
