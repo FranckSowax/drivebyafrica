@@ -546,7 +546,10 @@ export default function AdminDashboardPage() {
                   borderRadius: '8px',
                 }}
                 labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                formatter={(value: number) => [value.toLocaleString('fr-FR'), 'Véhicules']}
+                formatter={(value?: number) => {
+                  if (typeof value !== 'number') return ['', 'Véhicules'];
+                  return [value.toLocaleString('fr-FR'), 'Véhicules'];
+                }}
               />
               <Area
                 type="monotone"
