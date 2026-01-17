@@ -290,6 +290,57 @@ export async function GET() {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
 
+    // ===== SYNC LOGS DATA =====
+    let syncLogsData: Array<{
+      date: string;
+      source: string;
+      vehicles_added: number;
+      vehicles_updated: number;
+      vehicles_removed: number;
+      status: string;
+    }> = [];
+
+    try {
+      const { data: syncLogs } = await supabaseAny
+        .from('sync_logs')
+        .select('source, started_at, vehicles_added, vehicles_updated, vehicles_removed, status')
+        .order('started_at', { ascending: false })
+        .limit(500);
+
+      if (syncLogs && Array.isArray(syncLogs)) {
+        syncLogsData = syncLogs.map((log: {
+          source: string;
+          started_at: string;
+          vehicles_added: number;
+          vehicles_updated: number;
+          vehicles_removed: number;
+          status: string;
+        }) => ({
+          date: log.started_at?.split('T')[0] || '',
+          source: log.source,
+          vehicles_added: log.vehicles_added || 0,
+          vehicles_updated: log.vehicles_updated || 0,
+          vehicles_removed: log.vehicles_removed || 0,
+          status: log.status,
+        }));
+      }
+    } catch {
+      // sync_logs table may not exist
+    }
+
+    // Aggregate sync data by day
+    const syncByDay: Record<string, { added: number; updated: number; removed: number; syncs: number }> = {};
+    syncLogsData.forEach(log => {
+      if (!log.date) return;
+      if (!syncByDay[log.date]) {
+        syncByDay[log.date] = { added: 0, updated: 0, removed: 0, syncs: 0 };
+      }
+      syncByDay[log.date].added += log.vehicles_added;
+      syncByDay[log.date].updated += log.vehicles_updated;
+      syncByDay[log.date].removed += log.vehicles_removed;
+      syncByDay[log.date].syncs += 1;
+    });
+
     // ===== TIME SERIES DATA (Last 90 days) =====
     const timeSeriesData: Array<{
       date: string;
@@ -297,6 +348,8 @@ export async function GET() {
       quotes: number;
       vehicles: number;
       views: number;
+      syncAdded: number;
+      syncUpdated: number;
     }> = [];
 
     // Generate data for last 90 days
@@ -326,12 +379,17 @@ export async function GET() {
       // Estimate views based on vehicle views (distribute proportionally)
       const viewsOnDay = Math.floor((totalViews / 90) * (0.5 + Math.random()));
 
+      // Get sync data for this day
+      const syncData = syncByDay[dateStr] || { added: 0, updated: 0, removed: 0, syncs: 0 };
+
       timeSeriesData.push({
         date: dateStr,
         users: usersOnDay,
         quotes: quotesOnDay,
         vehicles: vehiclesOnDay,
         views: viewsOnDay,
+        syncAdded: syncData.added,
+        syncUpdated: syncData.updated,
       });
     }
 

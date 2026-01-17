@@ -20,6 +20,7 @@ import {
   Clock,
   CheckCircle,
   Globe,
+  Zap,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -48,6 +49,8 @@ interface TimeSeriesData {
   quotes: number;
   vehicles: number;
   views: number;
+  syncAdded: number;
+  syncUpdated: number;
 }
 
 interface MonthlyData {
@@ -473,6 +476,70 @@ export default function AdminDashboardPage() {
                 strokeWidth={2}
               />
             </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* Sync Chart - Vehicles Synced vs Quotes */}
+      <Card className="p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Zap className="w-5 h-5 text-mandarin" />
+              Synchronisation vs Demandes
+            </h2>
+            <p className="text-sm text-[var(--text-muted)]">Véhicules ajoutés par sync comparés aux demandes de devis</p>
+          </div>
+        </div>
+        <div className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={filteredTimeSeries}>
+              <defs>
+                <linearGradient id="colorSyncAdded" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.3} />
+                </linearGradient>
+                <linearGradient id="colorQuotesBar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#F97316" stopOpacity={0.3} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                minTickGap={40}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '8px',
+                }}
+                labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              />
+              <Legend />
+              <Bar
+                dataKey="syncAdded"
+                name="Véhicules synchronisés"
+                fill="url(#colorSyncAdded)"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                dataKey="quotes"
+                name="Demandes de devis"
+                fill="url(#colorQuotesBar)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </Card>
