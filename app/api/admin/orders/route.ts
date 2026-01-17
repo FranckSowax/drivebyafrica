@@ -23,16 +23,21 @@ async function createSupabaseClient() {
   );
 }
 
-// Order statuses for tracking
+// Order statuses for tracking (13-step workflow)
 const ORDER_STATUSES = [
-  'deposit_paid',      // Acompte payé
-  'vehicle_purchased', // Véhicule acheté
-  'in_transit',        // En transit vers le port
-  'at_port',           // Au port d'origine
-  'shipping',          // En mer
-  'customs',           // En douane
-  'ready_pickup',      // Prêt pour retrait
-  'delivered',         // Livré
+  'deposit_paid',          // 1. Acompte payé
+  'vehicle_locked',        // 2. Véhicule bloqué
+  'inspection_sent',       // 3. Inspection envoyée
+  'full_payment_received', // 4. Totalité du paiement reçu
+  'vehicle_purchased',     // 5. Véhicule acheté
+  'export_customs',        // 6. Douane export
+  'in_transit',            // 7. En transit
+  'at_port',               // 8. Au port
+  'shipping',              // 9. En mer
+  'documents_ready',       // 10. Remise documentation
+  'customs',               // 11. En douane
+  'ready_pickup',          // 12. Prêt pour retrait
+  'delivered',             // 13. Livré
 ] as const;
 
 // GET: Fetch all orders (from accepted quotes)

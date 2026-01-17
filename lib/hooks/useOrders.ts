@@ -292,68 +292,88 @@ export function useOrderTracking(orderId: string) {
   };
 }
 
-// Order status helpers - Workflow:
-// 1. Deposit pending -> 2. Deposit received -> 3. Inspection -> 4. Payment -> 5. Export -> 6. Transit -> 7. Documents -> 8. Delivered
+// Order status helpers - 13-step workflow:
+// 1. Acompte payé -> 2. Véhicule bloqué -> 3. Inspection envoyée -> 4. Totalité paiement reçu ->
+// 5. Véhicule acheté -> 6. Douane export -> 7. En transit -> 8. Au port -> 9. En mer ->
+// 10. Remise documentation -> 11. En douane -> 12. Prêt pour retrait -> 13. Livré
 export const ORDER_STATUSES = {
-  // Main workflow statuses
-  deposit_pending: {
-    label: 'En attente de l\'acompte',
+  // Main workflow statuses (13 steps)
+  deposit_paid: {
+    label: 'Acompte payé',
     color: 'bg-yellow-500',
     step: 1,
-    description: 'Versez l\'acompte de 1000$ pour bloquer le véhicule',
+    description: 'L\'acompte de 1000$ a été versé',
   },
-  deposit_received: {
+  vehicle_locked: {
     label: 'Véhicule bloqué',
     color: 'bg-blue-500',
     step: 2,
     description: 'Le véhicule est réservé pour vous',
   },
-  inspection_pending: {
-    label: 'Inspection en cours',
-    color: 'bg-purple-500',
+  inspection_sent: {
+    label: 'Inspection envoyée',
+    color: 'bg-cyan-500',
     step: 3,
-    description: 'Notre équipe inspecte le véhicule',
+    description: 'Le rapport d\'inspection a été envoyé',
   },
-  inspection_complete: {
-    label: 'Rapport d\'inspection envoyé',
-    color: 'bg-indigo-500',
-    step: 4,
-    description: 'Consultez le rapport d\'inspection',
-  },
-  payment_pending: {
-    label: 'En attente du paiement',
-    color: 'bg-yellow-500',
-    step: 5,
-    description: 'Effectuez le paiement du solde',
-  },
-  payment_received: {
-    label: 'Paiement reçu',
+  full_payment_received: {
+    label: 'Totalité du paiement reçu',
     color: 'bg-green-500',
-    step: 6,
-    description: 'Votre paiement a été confirmé',
+    step: 4,
+    description: 'Le paiement complet a été confirmé',
   },
-  preparing_export: {
-    label: 'Préparation export',
+  vehicle_purchased: {
+    label: 'Véhicule acheté',
+    color: 'bg-emerald-500',
+    step: 5,
+    description: 'Le véhicule a été acheté',
+  },
+  export_customs: {
+    label: 'Douane export',
+    color: 'bg-amber-500',
+    step: 6,
+    description: 'Le véhicule passe la douane d\'exportation',
+  },
+  in_transit: {
+    label: 'En transit',
     color: 'bg-purple-500',
     step: 7,
-    description: 'Le véhicule est préparé pour l\'export',
+    description: 'Le véhicule est en transit vers le port',
   },
-  shipped: {
-    label: 'En transit',
-    color: 'bg-orange-500',
+  at_port: {
+    label: 'Au port',
+    color: 'bg-sky-500',
     step: 8,
-    description: 'Le véhicule est en route vers la destination',
+    description: 'Le véhicule est arrivé au port',
   },
-  documents_ready: {
-    label: 'Remise documentaire',
+  shipping: {
+    label: 'En mer',
     color: 'bg-indigo-500',
     step: 9,
-    description: 'Les documents sont disponibles',
+    description: 'Le véhicule est en mer',
+  },
+  documents_ready: {
+    label: 'Remise documentation',
+    color: 'bg-violet-500',
+    step: 10,
+    description: 'Les documents sont disponibles au téléchargement',
+  },
+  customs: {
+    label: 'En douane',
+    color: 'bg-orange-500',
+    step: 11,
+    description: 'Le véhicule est en cours de dédouanement',
+  },
+  ready_pickup: {
+    label: 'Prêt pour retrait',
+    color: 'bg-teal-500',
+    step: 12,
+    description: 'Le véhicule est prêt à être retiré',
   },
   delivered: {
     label: 'Livré',
     color: 'bg-green-600',
-    step: 10,
+    step: 13,
     description: 'Le véhicule a été livré',
   },
   // Special statuses
@@ -370,41 +390,83 @@ export const ORDER_STATUSES = {
     description: 'Le véhicule n\'est plus disponible, réassignation en cours',
   },
   // Legacy statuses for backwards compatibility
+  deposit_pending: {
+    label: 'En attente de l\'acompte',
+    color: 'bg-yellow-500',
+    step: 1,
+    description: 'Versez l\'acompte de 1000$',
+  },
+  deposit_received: {
+    label: 'Véhicule bloqué',
+    color: 'bg-blue-500',
+    step: 2,
+    description: 'Le véhicule est réservé',
+  },
+  inspection_pending: {
+    label: 'Inspection en cours',
+    color: 'bg-cyan-500',
+    step: 3,
+    description: 'Inspection en cours',
+  },
+  inspection_complete: {
+    label: 'Inspection envoyée',
+    color: 'bg-cyan-500',
+    step: 3,
+    description: 'Rapport d\'inspection disponible',
+  },
+  payment_pending: {
+    label: 'En attente du paiement',
+    color: 'bg-yellow-500',
+    step: 4,
+    description: 'Effectuez le paiement du solde',
+  },
+  payment_received: {
+    label: 'Paiement reçu',
+    color: 'bg-green-500',
+    step: 4,
+    description: 'Le paiement a été reçu',
+  },
+  preparing_export: {
+    label: 'Douane export',
+    color: 'bg-amber-500',
+    step: 6,
+    description: 'Préparation pour l\'export',
+  },
+  shipped: {
+    label: 'En transit',
+    color: 'bg-purple-500',
+    step: 7,
+    description: 'Le véhicule est en route',
+  },
+  customs_clearance: {
+    label: 'En douane',
+    color: 'bg-orange-500',
+    step: 11,
+    description: 'En cours de dédouanement',
+  },
+  completed: {
+    label: 'Livré',
+    color: 'bg-green-600',
+    step: 13,
+    description: 'La commande est terminée',
+  },
   pending_payment: {
     label: 'En attente de paiement',
     color: 'bg-yellow-500',
-    step: 1,
+    step: 4,
     description: 'En attente du paiement',
   },
   paid: {
     label: 'Paiement reçu',
     color: 'bg-green-500',
-    step: 6,
+    step: 4,
     description: 'Le paiement a été reçu',
   },
   processing: {
     label: 'En traitement',
-    color: 'bg-blue-500',
-    step: 7,
+    color: 'bg-emerald-500',
+    step: 5,
     description: 'La commande est en cours de traitement',
-  },
-  in_transit: {
-    label: 'En transit',
-    color: 'bg-orange-500',
-    step: 8,
-    description: 'Le véhicule est en transit',
-  },
-  customs_clearance: {
-    label: 'Remise documentaire',
-    color: 'bg-indigo-500',
-    step: 9,
-    description: 'Documents en cours de préparation',
-  },
-  completed: {
-    label: 'Terminé',
-    color: 'bg-green-600',
-    step: 10,
-    description: 'La commande est terminée',
   },
 } as const;
 

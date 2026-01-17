@@ -2,7 +2,23 @@
 
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Check, Clock, MapPin, CreditCard, Search, FileText, Ship, Package } from 'lucide-react';
+import {
+  Check,
+  MapPin,
+  CreditCard,
+  Search,
+  FileText,
+  Ship,
+  Package,
+  Lock,
+  ClipboardCheck,
+  ShoppingCart,
+  Building,
+  Truck,
+  Anchor,
+  FileCheck,
+  Home
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import type { OrderTracking } from '@/types/database';
@@ -13,16 +29,17 @@ interface OrderTimelineProps {
   className?: string;
 }
 
-// Main workflow steps matching ORDER_STATUSES
+// Main workflow steps matching 13-step ORDER_STATUSES
+// Showing 8 main steps for compact display
 const TIMELINE_STEPS = [
-  { status: 'deposit_pending', icon: CreditCard, label: 'Acompte', step: 1 },
-  { status: 'deposit_received', icon: Check, label: 'Bloqué', step: 2 },
-  { status: 'inspection_pending', icon: Search, label: 'Inspection', step: 3 },
-  { status: 'payment_pending', icon: CreditCard, label: 'Paiement', step: 5 },
-  { status: 'preparing_export', icon: Package, label: 'Export', step: 7 },
-  { status: 'shipped', icon: Ship, label: 'Transit', step: 8 },
-  { status: 'documents_ready', icon: FileText, label: 'Documents', step: 9 },
-  { status: 'delivered', icon: Check, label: 'Livré', step: 10 },
+  { status: 'deposit_paid', icon: CreditCard, label: 'Acompte', step: 1 },
+  { status: 'vehicle_locked', icon: Lock, label: 'Bloqué', step: 2 },
+  { status: 'inspection_sent', icon: ClipboardCheck, label: 'Inspection', step: 3 },
+  { status: 'full_payment_received', icon: CreditCard, label: 'Paiement', step: 4 },
+  { status: 'vehicle_purchased', icon: ShoppingCart, label: 'Acheté', step: 5 },
+  { status: 'shipping', icon: Ship, label: 'En mer', step: 9 },
+  { status: 'documents_ready', icon: FileText, label: 'Documents', step: 10 },
+  { status: 'delivered', icon: Home, label: 'Livré', step: 13 },
 ];
 
 export function OrderTimeline({
@@ -175,7 +192,7 @@ interface OrderStatusDisplayProps {
 }
 
 export function OrderStatusDisplay({ status, className }: OrderStatusDisplayProps) {
-  const statusInfo = ORDER_STATUSES[status as OrderStatus] || ORDER_STATUSES.pending_payment;
+  const statusInfo = ORDER_STATUSES[status as OrderStatus] || ORDER_STATUSES.deposit_paid;
 
   return (
     <div className={cn('flex items-center gap-2', className)}>

@@ -24,6 +24,11 @@ import {
   FileCheck,
   Home,
   ChevronRight as ChevronRightIcon,
+  Lock,
+  ClipboardCheck,
+  CreditCard,
+  FileText,
+  Building,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -94,13 +99,45 @@ const statusConfig = {
     icon: DollarSign,
     step: 1,
   },
-  vehicle_purchased: {
-    label: 'Véhicule acheté',
+  vehicle_locked: {
+    label: 'Véhicule bloqué',
     color: 'text-blue-500',
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/30',
-    icon: ShoppingCart,
+    icon: Lock,
     step: 2,
+  },
+  inspection_sent: {
+    label: 'Inspection envoyée',
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-500/30',
+    icon: ClipboardCheck,
+    step: 3,
+  },
+  full_payment_received: {
+    label: 'Totalité du paiement reçu',
+    color: 'text-green-500',
+    bg: 'bg-green-500/10',
+    border: 'border-green-500/30',
+    icon: CreditCard,
+    step: 4,
+  },
+  vehicle_purchased: {
+    label: 'Véhicule acheté',
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/30',
+    icon: ShoppingCart,
+    step: 5,
+  },
+  export_customs: {
+    label: 'Douane export',
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/30',
+    icon: Building,
+    step: 6,
   },
   in_transit: {
     label: 'En transit',
@@ -108,15 +145,15 @@ const statusConfig = {
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/30',
     icon: Truck,
-    step: 3,
+    step: 7,
   },
   at_port: {
     label: 'Au port',
-    color: 'text-cyan-500',
-    bg: 'bg-cyan-500/10',
-    border: 'border-cyan-500/30',
+    color: 'text-sky-500',
+    bg: 'bg-sky-500/10',
+    border: 'border-sky-500/30',
     icon: Anchor,
-    step: 4,
+    step: 8,
   },
   shipping: {
     label: 'En mer',
@@ -124,7 +161,15 @@ const statusConfig = {
     bg: 'bg-indigo-500/10',
     border: 'border-indigo-500/30',
     icon: Ship,
-    step: 5,
+    step: 9,
+  },
+  documents_ready: {
+    label: 'Remise documentation',
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/30',
+    icon: FileText,
+    step: 10,
   },
   customs: {
     label: 'En douane',
@@ -132,15 +177,15 @@ const statusConfig = {
     bg: 'bg-orange-500/10',
     border: 'border-orange-500/30',
     icon: FileCheck,
-    step: 6,
+    step: 11,
   },
   ready_pickup: {
     label: 'Prêt pour retrait',
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
+    color: 'text-teal-500',
+    bg: 'bg-teal-500/10',
+    border: 'border-teal-500/30',
     icon: MapPin,
-    step: 7,
+    step: 12,
   },
   delivered: {
     label: 'Livré',
@@ -148,7 +193,7 @@ const statusConfig = {
     bg: 'bg-jewel/10',
     border: 'border-jewel/30',
     icon: Home,
-    step: 8,
+    step: 13,
   },
 };
 
@@ -281,7 +326,7 @@ export default function AdminOrdersPage() {
 
   const getStatusProgress = (status: string) => {
     const config = statusConfig[status as keyof typeof statusConfig];
-    return config ? (config.step / 8) * 100 : 0;
+    return config ? (config.step / 13) * 100 : 0;
   };
 
   return (
@@ -400,10 +445,15 @@ export default function AdminOrdersPage() {
         >
           <option value="all">Tous les statuts</option>
           <option value="deposit_paid">Acompte payé</option>
+          <option value="vehicle_locked">Véhicule bloqué</option>
+          <option value="inspection_sent">Inspection envoyée</option>
+          <option value="full_payment_received">Totalité du paiement reçu</option>
           <option value="vehicle_purchased">Véhicule acheté</option>
+          <option value="export_customs">Douane export</option>
           <option value="in_transit">En transit</option>
           <option value="at_port">Au port</option>
           <option value="shipping">En mer</option>
+          <option value="documents_ready">Remise documentation</option>
           <option value="customs">En douane</option>
           <option value="ready_pickup">Prêt pour retrait</option>
           <option value="delivered">Livré</option>

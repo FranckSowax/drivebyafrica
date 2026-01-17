@@ -81,14 +81,13 @@ export async function POST(request: Request) {
     // Combine documents
     const allDocuments = [...existingDocs, ...newDocuments];
 
-    // Update order with new documents
+    // Update order with new documents (status is managed separately by admin)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: updatedOrder, error: updateError } = await (supabase as any)
       .from('orders')
       .update({
         uploaded_documents: allDocuments,
         documents_sent_at: now,
-        status: 'documents_ready',
       })
       .eq('id', orderId)
       .select()
