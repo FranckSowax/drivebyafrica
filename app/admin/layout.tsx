@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminTopBar } from '@/components/admin/AdminTopBar';
 
 export const metadata: Metadata = {
   title: 'Admin - Driveby Africa',
@@ -16,10 +17,16 @@ export default function AdminLayout({
       {/* Sidebar */}
       <AdminSidebar />
 
-      {/* Main Content */}
-      <main className="ml-64 min-h-screen">
-        {children}
-      </main>
+      {/* Main Content Area */}
+      <div className="ml-64 min-h-screen flex flex-col">
+        {/* Top Bar */}
+        <AdminTopBar />
+
+        {/* Page Content */}
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
