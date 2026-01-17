@@ -40,35 +40,63 @@ export async function GET() {
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
     // ===== VEHICLES STATS =====
-    const { data: vehicles, count: vehiclesTotal } = await supabase
+    // Get total count first
+    const { count: vehiclesTotal } = await supabase
       .from('vehicles')
-      .select('id, source, make, model, views_count, favorites_count, current_price_usd, created_at, auction_status', { count: 'exact' });
+      .select('*', { count: 'exact', head: true });
 
-    // Active vehicles (not sold)
-    const activeVehicles = vehicles?.filter(v => v.auction_status !== 'sold') || [];
-    const soldVehicles = vehicles?.filter(v => v.auction_status === 'sold') || [];
+    // Get a sample of vehicles for detailed stats (limited to 1000 by Supabase default)
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('id, source, make, model, views_count, favorites_count, current_price_usd, created_at, auction_status');
 
-    // Views and favorites totals
+    // Active vehicles (not sold) - count from DB directly
+    const { count: activeVehiclesCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .neq('auction_status', 'sold');
+
+    const { count: soldVehiclesCount } = await supabase
+      .from('vehicles')
+      .select('*', { count: 'exact', head: true })
+      .eq('auction_status', 'sold');
+
+    // For backwards compatibility
+    const activeVehicles = { length: activeVehiclesCount || 0 };
+    const soldVehicles = { length: soldVehiclesCount || 0 };
+
+    // Views and favorites totals - use RPC or estimate from sample
     const totalViews = vehicles?.reduce((sum, v) => sum + (v.views_count || 0), 0) || 0;
     const totalFavorites = vehicles?.reduce((sum, v) => sum + (v.favorites_count || 0), 0) || 0;
 
-    // Vehicles by source (normalize source names)
+    // Vehicles by source - query each source separately for accurate counts
     const normalizeSource = (source: string): string => {
       const s = (source || '').toLowerCase().trim();
-      // China sources
       if (s === 'che168' || s === 'dongchedi' || s === 'china' || s === 'chine') return 'china';
-      // Dubai sources
       if (s === 'dubicars' || s === 'dubai' || s === 'uae' || s === 'emirates') return 'dubai';
-      // Korea sources
       if (s === 'korea' || s === 'south korea' || s === 'corée' || s === 'coree') return 'korea';
-      // Default - if unknown, return as-is but lowercased
       return s || 'unknown';
     };
+
+    // Get accurate counts by querying each source
     const vehiclesBySource: Record<string, number> = {};
-    vehicles?.forEach(v => {
-      const normalizedSource = normalizeSource(v.source);
-      vehiclesBySource[normalizedSource] = (vehiclesBySource[normalizedSource] || 0) + 1;
-    });
+
+    // Count China sources
+    const { count: chinaCount1 } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'china');
+    const { count: chinaCount2 } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'che168');
+    const { count: chinaCount3 } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'dongchedi');
+    const chinaTotal = (chinaCount1 || 0) + (chinaCount2 || 0) + (chinaCount3 || 0);
+    if (chinaTotal > 0) vehiclesBySource['china'] = chinaTotal;
+
+    // Count Dubai sources
+    const { count: dubaiCount1 } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'dubai');
+    const { count: dubaiCount2 } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'dubicars');
+    const dubaiTotal = (dubaiCount1 || 0) + (dubaiCount2 || 0);
+    if (dubaiTotal > 0) vehiclesBySource['dubai'] = dubaiTotal;
+
+    // Count Korea sources
+    const { count: koreaCount } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'korea');
+    if (koreaCount && koreaCount > 0) vehiclesBySource['korea'] = koreaCount;
 
     // Top viewed vehicles
     const topViewedVehicles = [...(vehicles || [])]
