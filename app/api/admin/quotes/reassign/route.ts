@@ -25,15 +25,21 @@ async function getXafRate(): Promise<number> {
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabaseAdmin as any)
+    const { data, error } = await (supabaseAdmin as any)
       .from('currency_rates')
       .select('rate_to_usd')
-      .eq('code', 'XAF')
+      .eq('currency_code', 'XAF')
       .single();
 
+    if (error) {
+      console.error('Error fetching XAF rate from DB:', error);
+      return DEFAULT_USD_TO_XAF;
+    }
+
     if (data?.rate_to_usd) {
-      cachedXafRate = data.rate_to_usd;
-      return data.rate_to_usd;
+      cachedXafRate = Number(data.rate_to_usd);
+      console.log('XAF rate fetched from database:', cachedXafRate);
+      return cachedXafRate;
     }
   } catch (error) {
     console.error('Error fetching XAF rate:', error);
