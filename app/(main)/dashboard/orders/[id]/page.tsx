@@ -28,58 +28,99 @@ interface PageProps {
 }
 
 export default async function OrderDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  console.log('[OrderDetailPage] Starting page load');
 
-  if (!user) {
-    notFound();
-  }
+  try {
+    const { id } = await params;
+    console.log('[OrderDetailPage] Order ID:', id);
 
-  // Fetch order
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+    const supabase = await createClient();
+    console.log('[OrderDetailPage] Supabase client created');
 
-  if (error || !order) {
-    notFound();
-  }
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('[OrderDetailPage] User fetch result:', { userId: user?.id, error: userError?.message });
 
-  const orderData = order as Order;
+    if (!user) {
+      console.log('[OrderDetailPage] No user found, returning notFound');
+      notFound();
+    }
 
-  // Fetch vehicle, tracking, and check for existing reassignment
-  const [vehicleResult, trackingResult, reassignmentResult] = await Promise.all([
-    supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).maybeSingle(),
-    supabase
-      .from('order_tracking')
+    // Fetch order
+    console.log('[OrderDetailPage] Fetching order...');
+    const { data: order, error } = await supabase
+      .from('orders')
       .select('*')
-      .eq('order_id', id)
-      .order('completed_at', { ascending: true }),
-    // Check if a reassignment already exists for this order's quote
-    orderData.quote_id
-      ? supabase
-          .from('quote_reassignments')
-          .select('*')
-          .eq('original_quote_id', orderData.quote_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
 
-  const vehicleData = vehicleResult.data as Vehicle | null;
-  const trackingData = (trackingResult.data || []) as OrderTracking[];
-  let reassignmentData = reassignmentResult.data as QuoteReassignment | null;
-  const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
+    console.log('[OrderDetailPage] Order fetch result:', {
+      orderId: order?.id,
+      orderStatus: order?.status,
+      vehicleId: order?.vehicle_id,
+      error: error?.message
+    });
 
-  // Note: Auto-reassignment is disabled to avoid RLS issues
-  // The reassignment should be created via the admin panel instead
-  // If vehicle is not available, just show the warning message
+    if (error || !order) {
+      console.log('[OrderDetailPage] Order not found or error, returning notFound');
+      notFound();
+    }
 
-  const createdAt = orderData.created_at
-    ? format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })
-    : '-';
+    const orderData = order as Order;
+
+    // Fetch vehicle, tracking, and check for existing reassignment
+    console.log('[OrderDetailPage] Fetching related data...');
+    const [vehicleResult, trackingResult, reassignmentResult] = await Promise.all([
+      supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).maybeSingle(),
+      supabase
+        .from('order_tracking')
+        .select('*')
+        .eq('order_id', id)
+        .order('completed_at', { ascending: true }),
+      // Check if a reassignment already exists for this order's quote
+      orderData.quote_id
+        ? supabase
+            .from('quote_reassignments')
+            .select('*')
+            .eq('original_quote_id', orderData.quote_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    console.log('[OrderDetailPage] Vehicle result:', {
+      found: !!vehicleResult.data,
+      error: vehicleResult.error?.message
+    });
+    console.log('[OrderDetailPage] Tracking result:', {
+      count: trackingResult.data?.length,
+      error: trackingResult.error?.message
+    });
+    console.log('[OrderDetailPage] Reassignment result:', {
+      found: !!reassignmentResult.data,
+      error: (reassignmentResult as { error?: { message: string } }).error?.message
+    });
+
+    const vehicleData = vehicleResult.data as Vehicle | null;
+    const trackingData = (trackingResult.data || []) as OrderTracking[];
+    const reassignmentData = reassignmentResult.data as QuoteReassignment | null;
+    const status = ORDER_STATUSES[orderData.status as OrderStatus] || ORDER_STATUSES.pending_payment;
+
+    console.log('[OrderDetailPage] Status:', status);
+
+    // Note: Auto-reassignment is disabled to avoid RLS issues
+    // The reassignment should be created via the admin panel instead
+    // If vehicle is not available, just show the warning message
+
+    let createdAt = '-';
+    try {
+      if (orderData.created_at) {
+        createdAt = format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr });
+      }
+    } catch (dateError) {
+      console.error('[OrderDetailPage] Date format error:', dateError);
+    }
+
+    console.log('[OrderDetailPage] Rendering page...');
 
   return (
     <div className="space-y-6">
@@ -321,6 +362,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error('[OrderDetailPage] FATAL ERROR:', error);
+    console.error('[OrderDetailPage] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    throw error; // Re-throw to show error page
+  }
 }
 
 function PriceRow({
