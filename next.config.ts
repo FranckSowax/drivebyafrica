@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**.byteimg.com',
       },
+      // CHE168 China images (autoimg.cn CDN)
+      {
+        protocol: 'https',
+        hostname: '**.autoimg.cn',
+      },
     ],
   },
 };

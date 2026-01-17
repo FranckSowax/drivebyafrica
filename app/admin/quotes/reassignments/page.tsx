@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/Button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface ProposedVehicle {
   id: string;
@@ -394,13 +393,13 @@ export default function ReassignmentsPage() {
                             target="_blank"
                             className="relative group"
                           >
-                            <div className="w-16 h-12 bg-[var(--surface)] rounded-lg overflow-hidden">
+                            <div className="w-16 h-12 bg-[var(--surface)] rounded-lg overflow-hidden relative">
                               {v.images?.[0] ? (
-                                <Image
-                                  src={`/api/image-proxy?url=${encodeURIComponent(v.images[0])}`}
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={v.images[0]}
                                   alt={`${v.make} ${v.model}`}
-                                  fill
-                                  className="object-cover"
+                                  className="absolute inset-0 w-full h-full object-cover"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -572,11 +571,11 @@ export default function ReassignmentsPage() {
                       </div>
                       <div className="w-20 h-14 bg-[var(--card-bg)] rounded-lg overflow-hidden relative flex-shrink-0">
                         {v.images?.[0] ? (
-                          <Image
-                            src={`/api/image-proxy?url=${encodeURIComponent(v.images[0])}`}
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={v.images[0]}
                             alt={`${v.make} ${v.model}`}
-                            fill
-                            className="object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

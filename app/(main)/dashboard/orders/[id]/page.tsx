@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -97,12 +96,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <div className="flex gap-4">
               <div className="relative w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-surface">
                 {vehicleData?.images?.[0] ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={vehicleData.images[0]}
                     alt={`${vehicleData.make} ${vehicleData.model}`}
-                    fill
-                    className="object-cover"
-                    unoptimized={vehicleData.images[0].includes('byteimg.com') || vehicleData.images[0].includes('x-expires')}
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">

@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatUsdToLocal } from '@/lib/utils/currency';
@@ -82,12 +81,11 @@ export default async function FavoritesPage() {
                 {/* Vehicle Image */}
                 <div className="relative h-40 bg-[var(--surface)]">
                   {vehicle.images?.[0] ? (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={vehicle.images[0]}
                       alt={`${vehicle.make} ${vehicle.model}`}
-                      fill
-                      className="object-cover"
-                      unoptimized={vehicle.images[0].includes('byteimg.com') || vehicle.images[0].includes('x-expires')}
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
