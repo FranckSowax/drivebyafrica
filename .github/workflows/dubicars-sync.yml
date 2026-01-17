@@ -1,0 +1,54 @@
+name: Dubicars Daily Sync
+
+on:
+  # Run daily at 8:00 AM UTC (9:00 AM WAT) - 1 hour after CHE168
+  schedule:
+    - cron: '0 8 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      max_pages:
+        description: 'Maximum pages to fetch (20 vehicles/page)'
+        required: false
+        default: '2000'
+      remove_expired:
+        description: 'Remove expired/sold vehicles'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  DUBICARS_API_KEY: ${{ secrets.DONGCHEDI_API_KEY }}
+  ENCAR_API_KEY: ${{ secrets.DONGCHEDI_API_KEY }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # 1.5 hours max (more pages than CHE168)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Dubicars sync
+        run: |
+          npx tsx scripts/sync-dubicars-ci.ts \
+            --max-pages=${{ github.event.inputs.max_pages || '2000' }} \
+            --remove-expired=${{ github.event.inputs.remove_expired || 'true' }}
+
+      - name: Summary
+        run: |
+          echo "Dubicars sync completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"

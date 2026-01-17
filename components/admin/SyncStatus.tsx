@@ -68,7 +68,7 @@ interface DongchediSyncResult {
 export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [syncMode, setSyncMode] = useState<'full' | 'changes' | null>(null);
-  const [activeSource, setActiveSource] = useState<'encar' | 'dongchedi'>('encar');
+  const [activeSource, setActiveSource] = useState<'encar' | 'dongchedi' | 'dubicars'>('encar');
 
   // Dongchedi specific state
   const [dongchediStats, setDongchediStats] = useState<DongchediStats | null>(null);
@@ -78,10 +78,20 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
   const [dongchediError, setDongchediError] = useState<string | null>(null);
   const [maxPages, setMaxPages] = useState(100);
 
-  // Fetch Dongchedi stats on mount
+  // Dubicars specific state
+  const [dubicarsStats, setDubicarsStats] = useState<{ totalVehicles: number } | null>(null);
+  const [dubicarsLoading, setDubicarsLoading] = useState(false);
+  const [dubicarsSyncing, setDubicarsSyncing] = useState(false);
+  const [dubicarsResult, setDubicarsResult] = useState<DongchediSyncResult | null>(null);
+  const [dubicarsError, setDubicarsError] = useState<string | null>(null);
+  const [dubicarsMaxPages, setDubicarsMaxPages] = useState(500);
+
+  // Fetch Dongchedi/Dubicars stats on mount
   useEffect(() => {
     if (activeSource === 'dongchedi') {
       fetchDongchediStats();
+    } else if (activeSource === 'dubicars') {
+      fetchDubicarsStats();
     }
   }, [activeSource]);
 
@@ -96,6 +106,57 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
       console.error('Error fetching Dongchedi stats:', error);
     } finally {
       setDongchediLoading(false);
+    }
+  };
+
+  const fetchDubicarsStats = async () => {
+    setDubicarsLoading(true);
+    try {
+      // Get count from vehicles table
+      const response = await fetch('/api/admin/vehicles/stats');
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      setDubicarsStats({ totalVehicles: data.stats?.bySource?.dubai || 0 });
+    } catch (error) {
+      console.error('Error fetching Dubicars stats:', error);
+    } finally {
+      setDubicarsLoading(false);
+    }
+  };
+
+  const handleDubicarsSync = async () => {
+    setDubicarsSyncing(true);
+    setDubicarsError(null);
+    setDubicarsResult(null);
+
+    try {
+      const response = await fetch('/api/admin/sync/dubicars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxPages: dubicarsMaxPages }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setDubicarsResult({
+        success: true,
+        pagesProcessed: dubicarsMaxPages,
+        offersFound: data.stats.processed,
+        added: data.stats.added,
+        updated: data.stats.updated,
+        skipped: data.stats.skipped,
+        errors: data.stats.errors,
+      });
+      // Refresh stats after sync
+      fetchDubicarsStats();
+    } catch (error) {
+      setDubicarsError(error instanceof Error ? error.message : 'Sync failed');
+    } finally {
+      setDubicarsSyncing(false);
     }
   };
 
@@ -191,6 +252,18 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
         >
           <Server className="w-5 h-5" />
           <span>Dongchedi (Chine)</span>
+        </button>
+        <button
+          onClick={() => setActiveSource('dubicars')}
+          className={cn(
+            "flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all",
+            activeSource === 'dubicars'
+              ? "bg-gradient-to-r from-jewel to-emerald-600 text-white shadow-lg shadow-jewel/25"
+              : "bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--card-border)]"
+          )}
+        >
+          <Globe className="w-5 h-5" />
+          <span>Dubicars (Dubai)</span>
         </button>
       </div>
 
@@ -473,6 +546,144 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
               <p>
                 <strong>Avantages:</strong> Télécharge les photos fraîches depuis le CSV quotidien,
                 supprime automatiquement les véhicules avec photos expirées.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Dubicars Sync Panel */}
+      {activeSource === 'dubicars' && (
+        <Card>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+            <div>
+              <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Globe className="w-5 h-5 text-jewel" />
+                Synchronisation Dubicars
+              </h3>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                Véhicules d&apos;occasion importés de Dubai/UAE (via API Dubicars)
+              </p>
+            </div>
+
+            {/* Sync Controls */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Max Pages Input */}
+              <div className="flex items-center gap-2 bg-[var(--surface)] rounded-xl px-4 py-2 border border-[var(--card-border)]">
+                <Settings className="w-4 h-4 text-[var(--text-muted)]" />
+                <label className="text-sm text-[var(--text-muted)] whitespace-nowrap">Max pages:</label>
+                <input
+                  type="number"
+                  value={dubicarsMaxPages}
+                  onChange={(e) => setDubicarsMaxPages(Math.min(2000, Math.max(1, parseInt(e.target.value) || 1)))}
+                  min={1}
+                  max={2000}
+                  className="w-20 bg-transparent border-none text-[var(--text-primary)] font-medium focus:outline-none text-center"
+                />
+              </div>
+
+              {/* Sync Button */}
+              <Button
+                variant="primary"
+                onClick={handleDubicarsSync}
+                disabled={dubicarsSyncing}
+                leftIcon={dubicarsSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                className="bg-gradient-to-r from-jewel to-emerald-600 hover:from-jewel/90 hover:to-emerald-600/90"
+              >
+                {dubicarsSyncing ? 'Synchronisation...' : 'Lancer la Sync'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-[var(--surface)] rounded-xl mb-6">
+            <div className="text-center p-4 bg-[var(--card-bg)] rounded-lg border border-[var(--card-border)]">
+              <p className="text-xs text-[var(--text-muted)] mb-1">Véhicules Dubai</p>
+              <p className="text-2xl font-bold text-jewel">
+                {dubicarsLoading ? '...' : dubicarsStats?.totalVehicles?.toLocaleString() || '0'}
+              </p>
+            </div>
+            <div className="text-center p-4 bg-[var(--card-bg)] rounded-lg border border-[var(--card-border)]">
+              <p className="text-xs text-[var(--text-muted)] mb-1">Véhicules/Page</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">20</p>
+            </div>
+            <div className="text-center p-4 bg-[var(--card-bg)] rounded-lg border border-[var(--card-border)]">
+              <p className="text-xs text-[var(--text-muted)] mb-1">Max Estimé</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">
+                {(dubicarsMaxPages * 20).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Info Banner */}
+          <div className="p-4 bg-jewel/10 border border-jewel/20 rounded-xl mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-jewel flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-jewel font-medium mb-1">Marché Dubai/UAE</p>
+                <p className="text-[var(--text-muted)]">
+                  Les prix sont en AED (Dirham) et convertis automatiquement en USD.
+                  Les images sont hébergées directement sur dubicars.com.
+                  API disponible: ~34,000 véhicules.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sync Result */}
+          {dubicarsResult && (
+            <div className="p-4 bg-jewel/10 border border-jewel/20 rounded-xl mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle className="w-5 h-5 text-jewel" />
+                <span className="font-medium text-jewel">Synchronisation terminée</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-[var(--text-muted)]">Trouvés</p>
+                  <p className="text-[var(--text-primary)] font-bold">{dubicarsResult.offersFound.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-[var(--text-muted)]">Ajoutés</p>
+                  <p className="text-jewel font-bold">+{dubicarsResult.added}</p>
+                </div>
+                <div>
+                  <p className="text-[var(--text-muted)]">Mis à jour</p>
+                  <p className="text-royal-blue font-bold">~{dubicarsResult.updated}</p>
+                </div>
+                <div>
+                  <p className="text-[var(--text-muted)]">Ignorés</p>
+                  <p className="text-[var(--text-muted)] font-bold">{dubicarsResult.skipped}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {dubicarsError && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <div className="flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-red-500" />
+                <span className="text-red-500 font-medium">Erreur</span>
+              </div>
+              <p className="text-sm text-red-400 mt-2">{dubicarsError}</p>
+            </div>
+          )}
+
+          {/* GitHub Actions Info */}
+          <div className="mt-6 pt-6 border-t border-[var(--card-border)]">
+            <h4 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-jewel" />
+              Sync Automatique (GitHub Actions)
+            </h4>
+            <div className="text-sm text-[var(--text-muted)] space-y-2">
+              <p>
+                <strong>Programmation:</strong> Tous les jours à 8h00 UTC (9h00 WAT)
+              </p>
+              <p>
+                <strong>Max pages:</strong> 2000 (≈40,000 véhicules)
+              </p>
+              <p>
+                <strong>Suppression auto:</strong> Les véhicules vendus ou expirés sont automatiquement supprimés.
               </p>
             </div>
           </div>
