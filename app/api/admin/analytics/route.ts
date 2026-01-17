@@ -219,7 +219,11 @@ export async function GET() {
     const quotesWithPrices = quotes?.filter((q: { vehicle_price_usd: number | null }) => q.vehicle_price_usd !== null) || [];
     const totalDrivebyPriceUSD = quotesWithPrices.reduce((sum: number, q: { vehicle_price_usd: number }) => sum + (q.vehicle_price_usd || 0), 0);
 
-    // Calculate total source prices (only for quotes with matching vehicles)
+    // Count how many vehicles still exist (have source prices)
+    const vehiclesFoundCount = quotesWithPrices.filter((q: { vehicle_id: string }) => vehicleSourcePrices[q.vehicle_id]).length;
+    const vehiclesMissingCount = quotesWithPrices.length - vehiclesFoundCount;
+
+    // Calculate total source prices (only for quotes with matching vehicles that still exist)
     const totalSourcePriceUSD = quotesWithPrices.reduce((sum: number, q: { vehicle_id: string }) => {
       const sourcePrice = vehicleSourcePrices[q.vehicle_id] || 0;
       return sum + sourcePrice;
@@ -232,8 +236,9 @@ export async function GET() {
       const sourcePrice = vehicleSourcePrices[q.vehicle_id] || 0;
       return sum + sourcePrice;
     }, 0);
+    const acceptedVehiclesFoundCount = acceptedWithPrices.filter((q: { vehicle_id: string }) => vehicleSourcePrices[q.vehicle_id]).length;
 
-    // Calculate margin
+    // Calculate margin - only if we have valid source prices
     const totalMarginUSD = totalDrivebyPriceUSD - totalSourcePriceUSD;
     const acceptedMarginUSD = acceptedDrivebyPriceUSD - acceptedSourcePriceUSD;
     const marginPercentage = totalSourcePriceUSD > 0 ? Math.round((totalMarginUSD / totalSourcePriceUSD) * 100) : 0;
@@ -516,10 +521,13 @@ export async function GET() {
         totalMarginUSD,
         marginPercentage,
         quotesWithPricesCount: quotesWithPrices.length,
+        vehiclesFoundCount,
+        vehiclesMissingCount,
         acceptedDrivebyPriceUSD,
         acceptedSourcePriceUSD,
         acceptedMarginUSD,
         acceptedCount: acceptedWithPrices.length,
+        acceptedVehiclesFoundCount,
       },
 
       // Period comparisons

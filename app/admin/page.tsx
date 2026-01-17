@@ -127,10 +127,13 @@ interface AnalyticsData {
     totalMarginUSD: number;
     marginPercentage: number;
     quotesWithPricesCount: number;
+    vehiclesFoundCount: number;
+    vehiclesMissingCount: number;
     acceptedDrivebyPriceUSD: number;
     acceptedSourcePriceUSD: number;
     acceptedMarginUSD: number;
     acceptedCount: number;
+    acceptedVehiclesFoundCount: number;
   };
   chat: {
     totalConversations: number;
@@ -666,10 +669,25 @@ export default function AdminDashboardPage() {
               <Car className="w-5 h-5 text-jewel" />
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">Prix Véhicules</h2>
             </div>
-            <span className="px-2 py-1 bg-jewel/10 text-jewel text-xs font-medium rounded-full">
-              {data.vehiclePricing?.quotesWithPricesCount || 0} devis
-            </span>
+            <div className="flex items-center gap-2">
+              {data.vehiclePricing?.vehiclesMissingCount > 0 && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                  {data.vehiclePricing.vehiclesMissingCount} supprimés
+                </span>
+              )}
+              <span className="px-2 py-1 bg-jewel/10 text-jewel text-xs font-medium rounded-full">
+                {data.vehiclePricing?.vehiclesFoundCount || 0}/{data.vehiclePricing?.quotesWithPricesCount || 0} véhicules
+              </span>
+            </div>
           </div>
+          {data.vehiclePricing?.vehiclesMissingCount > 0 && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-700">
+                {data.vehiclePricing.vehiclesMissingCount} véhicule(s) n&apos;existent plus sur la plateforme.
+                Les prix source ne peuvent pas être calculés pour ces véhicules.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-sm text-[var(--text-muted)]">Prix Driveby (total)</p>
@@ -679,29 +697,37 @@ export default function AdminDashboardPage() {
               <p className="text-xs text-[var(--text-muted)] mt-1">Prix affiché sur les devis</p>
             </div>
             <div>
-              <p className="text-sm text-[var(--text-muted)]">Prix Source (total)</p>
+              <p className="text-sm text-[var(--text-muted)]">Prix Source ({data.vehiclePricing?.vehiclesFoundCount || 0} véhicules)</p>
               <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">
-                {formatCurrency(data.vehiclePricing?.totalSourcePriceUSD || 0, 'USD')}
+                {data.vehiclePricing?.vehiclesFoundCount > 0
+                  ? formatCurrency(data.vehiclePricing?.totalSourcePriceUSD || 0, 'USD')
+                  : 'N/A'}
               </p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Prix d&apos;origine</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                {data.vehiclePricing?.vehiclesFoundCount > 0
+                  ? "Prix d'origine"
+                  : "Véhicules supprimés"}
+              </p>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[var(--text-muted)]">Marge potentielle</p>
-                <p className="text-xl font-bold text-jewel">
-                  {formatCurrency(data.vehiclePricing?.totalMarginUSD || 0, 'USD')}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-[var(--text-muted)]">Taux marge</p>
-                <p className="text-xl font-bold text-jewel">
-                  +{data.vehiclePricing?.marginPercentage || 0}%
-                </p>
+          {data.vehiclePricing?.vehiclesFoundCount > 0 && (
+            <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[var(--text-muted)]">Marge ({data.vehiclePricing.vehiclesFoundCount} véhicules)</p>
+                  <p className="text-xl font-bold text-jewel">
+                    {formatCurrency(data.vehiclePricing?.totalMarginUSD || 0, 'USD')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-[var(--text-muted)]">Taux marge</p>
+                  <p className="text-xl font-bold text-jewel">
+                    +{data.vehiclePricing?.marginPercentage || 0}%
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Messages Card */}
