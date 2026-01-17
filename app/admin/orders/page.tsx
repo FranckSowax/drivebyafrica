@@ -213,6 +213,34 @@ const countryFlags: Record<string, string> = {
   'Maroc': '🇲🇦',
 };
 
+// Map countries to their currencies
+const countryCurrency: Record<string, { code: string; symbol: string; rate: number }> = {
+  // Central Africa (XAF)
+  'Gabon': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  'Cameroun': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  'Congo': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  'Centrafrique': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  'Tchad': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  'Guinée équatoriale': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  // West Africa (XOF)
+  "Côte d'Ivoire": { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Sénégal': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Togo': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Bénin': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Mali': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Burkina Faso': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Niger': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  'Guinée-Bissau': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  // Nigeria (NGN)
+  'Nigeria': { code: 'NGN', symbol: '₦', rate: 1550 },
+  // Other countries default to USD
+  'Ghana': { code: 'USD', symbol: '$', rate: 1 },
+  'Kenya': { code: 'USD', symbol: '$', rate: 1 },
+  'Tanzanie': { code: 'USD', symbol: '$', rate: 1 },
+  'Afrique du Sud': { code: 'USD', symbol: '$', rate: 1 },
+  'Maroc': { code: 'USD', symbol: '$', rate: 1 },
+};
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -269,11 +297,26 @@ export default function AdminOrdersPage() {
       .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   };
 
-  const formatCurrency = (value: number, currency: 'USD' | 'XAF' = 'XAF') => {
+  const formatCurrency = (value: number, currency: 'USD' | 'XAF' | 'XOF' | 'NGN' = 'XAF') => {
     if (currency === 'USD') {
       return `$${formatWithSpaces(value)}`;
     }
+    if (currency === 'NGN') {
+      return `₦${formatWithSpaces(value)}`;
+    }
     return `${formatWithSpaces(value)} FCFA`;
+  };
+
+  // Get customer currency info from country
+  const getCustomerCurrency = (country: string) => {
+    return countryCurrency[country] || { code: 'XAF', symbol: 'FCFA', rate: 615 };
+  };
+
+  // Format price in customer's currency
+  const formatInCustomerCurrency = (amountUsd: number, country: string) => {
+    const currency = getCustomerCurrency(country);
+    const converted = amountUsd * currency.rate;
+    return formatCurrency(converted, currency.code as 'USD' | 'XAF' | 'XOF' | 'NGN');
   };
 
   const openWhatsApp = (phone: string, customerName: string, orderNumber: string) => {
@@ -786,27 +829,51 @@ export default function AdminOrdersPage() {
 
               {/* Financial Summary */}
               <div className="bg-[var(--surface)] rounded-xl p-4">
-                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-3">Résumé financier</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-[var(--text-muted)]">Résumé financier</h4>
+                  <span className="text-xs px-2 py-1 bg-[var(--card-bg)] rounded text-[var(--text-muted)]">
+                    {getCustomerCurrency(selectedOrder.destination_country).code}
+                  </span>
+                </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Prix véhicule</span>
-                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedOrder.vehicle_price_usd, 'USD')}</span>
+                    <span className="text-[var(--text-primary)]">
+                      {formatInCustomerCurrency(selectedOrder.vehicle_price_usd, selectedOrder.destination_country)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Transport</span>
-                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedOrder.shipping_cost_xaf)}</span>
+                    <span className="text-[var(--text-primary)]">
+                      {formatInCustomerCurrency(selectedOrder.shipping_cost_xaf / 615, selectedOrder.destination_country)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Assurance</span>
-                    <span className="text-[var(--text-primary)]">{formatCurrency(selectedOrder.insurance_cost_xaf)}</span>
+                    <span className="text-[var(--text-primary)]">
+                      {formatInCustomerCurrency(selectedOrder.insurance_cost_xaf / 615, selectedOrder.destination_country)}
+                    </span>
                   </div>
                   <div className="border-t border-[var(--card-border)] pt-2 mt-2 flex justify-between font-semibold">
                     <span className="text-[var(--text-primary)]">Total</span>
-                    <span className="text-mandarin">{formatCurrency(selectedOrder.total_cost_xaf)}</span>
+                    <span className="text-mandarin">
+                      {formatInCustomerCurrency(selectedOrder.total_cost_xaf / 615, selectedOrder.destination_country)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm pt-2">
                     <span className="text-green-500 font-medium">Acompte payé</span>
-                    <span className="text-green-500 font-medium">{formatCurrency(selectedOrder.deposit_amount_usd, 'USD')}</span>
+                    <span className="text-green-500 font-medium">
+                      {formatInCustomerCurrency(selectedOrder.deposit_amount_usd, selectedOrder.destination_country)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-[var(--card-border)] pt-2 mt-2">
+                    <span className="text-yellow-500 font-medium">Solde restant</span>
+                    <span className="text-yellow-500 font-medium">
+                      {formatInCustomerCurrency(
+                        (selectedOrder.total_cost_xaf / 615) - selectedOrder.deposit_amount_usd,
+                        selectedOrder.destination_country
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
