@@ -41,22 +41,10 @@ const contactMethods = [
 
 const offices = [
   {
-    city: 'Libreville',
-    country: 'Gabon',
-    address: 'Boulevard Triomphal, Centre-ville',
-    phone: '+241 77 00 00 00',
-  },
-  {
-    city: 'Douala',
-    country: 'Cameroun',
-    address: 'Rue de la Joie, Akwa',
-    phone: '+237 6 00 00 00 00',
-  },
-  {
-    city: 'Séoul',
-    country: 'Corée du Sud',
-    address: 'Bureau de représentation',
-    phone: '+82 10 0000 0000',
+    city: 'Hong Kong',
+    country: 'Chine',
+    address: 'Central Business District',
+    phone: '+852 0000 0000',
   },
 ];
 

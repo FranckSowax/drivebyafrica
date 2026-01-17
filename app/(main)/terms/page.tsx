@@ -151,8 +151,8 @@ export default function TermsPage() {
 
                 <h2 className="text-xl font-bold text-white">11. Droit applicable</h2>
                 <p className="text-nobel">
-                  Ces conditions sont régies par le droit gabonais. Tout litige sera soumis à la compétence
-                  exclusive des tribunaux de Libreville, Gabon.
+                  Ces conditions sont régies par le droit de Hong Kong. Tout litige sera soumis à la compétence
+                  exclusive des tribunaux de Hong Kong.
                 </p>
 
                 <h2 className="text-xl font-bold text-white">12. Contact</h2>
@@ -162,7 +162,7 @@ export default function TermsPage() {
                 <ul className="text-nobel list-none pl-0 space-y-1">
                   <li>Email: legal@drivebyafrica.com</li>
                   <li>WhatsApp: +241 77 00 00 00</li>
-                  <li>Adresse: Boulevard Triomphal, Libreville, Gabon</li>
+                  <li>Adresse: Central Business District, Hong Kong</li>
                 </ul>
               </div>
             </Card>

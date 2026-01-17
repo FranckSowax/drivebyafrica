@@ -445,7 +445,7 @@ export default function NewQuotePage() {
 
       // Right column
       doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
-      doc.text('Gabon - Cameroun - Senegal', margin + contentWidth / 2, y + 20);
+      doc.text('Hong Kong', margin + contentWidth / 2, y + 20);
 
       // ========== BOTTOM ACCENT BAR ==========
       doc.setFillColor(249, 115, 22);

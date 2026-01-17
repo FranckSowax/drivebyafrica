@@ -72,7 +72,7 @@ export function Footer() {
               </a>
               <p className="flex items-center gap-2 text-[var(--text-muted)]">
                 <MapPin className="w-4 h-4" />
-                Libreville, Gabon
+                Hong Kong
               </p>
             </div>
           </div>

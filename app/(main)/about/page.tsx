@@ -107,7 +107,7 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-nobel">
                 <p>
-                  Fondée en 2019 à Libreville, Driveby Africa est née d&apos;un constat simple :
+                  Fondée en 2019 à Hong Kong, Driveby Africa est née d&apos;un constat simple :
                   l&apos;importation de véhicules vers l&apos;Afrique était trop complexe, opaque et coûteuse.
                 </p>
                 <p>

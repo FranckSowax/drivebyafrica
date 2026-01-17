@@ -379,7 +379,7 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
       doc.text('Email: contact@drivebyafrica.com', margin + 5, y + 14);
       doc.text('Site: www.drivebyafrica.com', margin + 5, y + 20);
       doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
-      doc.text('Gabon - Cameroun - Senegal', margin + contentWidth / 2, y + 20);
+      doc.text('Hong Kong', margin + contentWidth / 2, y + 20);
 
       // ========== BOTTOM ACCENT BAR ==========
       doc.setFillColor(21, 128, 61);
@@ -600,7 +600,7 @@ export function InvoiceModal({ isOpen, onClose, order }: InvoiceModalProps) {
                   </div>
                   <div className="space-y-1">
                     <p className="text-[8px] font-bold text-gray-400 uppercase">Bureaux</p>
-                    <p className="text-[10px] font-medium text-gray-900">Gabon - Cameroun</p>
+                    <p className="text-[10px] font-medium text-gray-900">Hong Kong</p>
                   </div>
                 </div>
               </div>

@@ -190,7 +190,7 @@ export default function PrivacyPage() {
                 <ul className="text-nobel list-none pl-0 space-y-1">
                   <li>Email: privacy@drivebyafrica.com</li>
                   <li>WhatsApp: +241 77 00 00 00</li>
-                  <li>Adresse: Boulevard Triomphal, Libreville, Gabon</li>
+                  <li>Adresse: Central Business District, Hong Kong</li>
                 </ul>
               </div>
             </Card>

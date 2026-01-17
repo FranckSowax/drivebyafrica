@@ -40,7 +40,7 @@ const jobs = [
     id: 1,
     title: 'Développeur Full Stack',
     department: 'Technologie',
-    location: 'Libreville, Gabon',
+    location: 'Hong Kong',
     type: 'CDI',
     description: 'Rejoignez notre équipe tech pour développer et maintenir notre plateforme Next.js/Supabase.',
     requirements: [
@@ -54,7 +54,7 @@ const jobs = [
     id: 2,
     title: 'Responsable Logistique',
     department: 'Opérations',
-    location: 'Douala, Cameroun',
+    location: 'Hong Kong',
     type: 'CDI',
     description: 'Gérez les opérations logistiques et le suivi des expéditions de véhicules.',
     requirements: [
@@ -68,7 +68,7 @@ const jobs = [
     id: 3,
     title: 'Chargé(e) de Clientèle',
     department: 'Service Client',
-    location: 'Libreville, Gabon',
+    location: 'Hong Kong',
     type: 'CDI',
     description: 'Accompagnez nos clients dans leur parcours d\'achat et d\'importation de véhicules.',
     requirements: [

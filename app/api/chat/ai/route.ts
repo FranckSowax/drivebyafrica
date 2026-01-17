@@ -27,7 +27,7 @@ INFORMATIONS CLE SUR DRIVEBY AFRICA:
 3. MODES DE PAIEMENT:
 - Carte bancaire (Visa, Mastercard) via Stripe
 - Mobile Money (Airtel, MTN, Orange)
-- Cash en agence (Libreville, Douala, Dakar)
+- Cash en agence (Hong Kong)
 
 4. GARANTIES:
 - Remboursement integral si le rapport d'inspection ne satisfait pas le client
@@ -181,7 +181,7 @@ function generateFallbackResponse(userMessage: string): string {
   }
 
   if (message.includes('paiement') || message.includes('payer')) {
-    return "Nous acceptons plusieurs modes de paiement:\n- Carte bancaire (Visa, Mastercard)\n- Mobile Money (Airtel, MTN, Orange)\n- Cash en agence (Libreville, Douala, Dakar)\n\nL'acompte de 1000 USD peut etre paye par l'un de ces moyens.";
+    return "Nous acceptons plusieurs modes de paiement:\n- Carte bancaire (Visa, Mastercard)\n- Mobile Money (Airtel, MTN, Orange)\n- Cash en agence (Hong Kong)\n\nL'acompte de 1000 USD peut etre paye par l'un de ces moyens.";
   }
 
   if (message.includes('garantie') || message.includes('remboursement')) {
