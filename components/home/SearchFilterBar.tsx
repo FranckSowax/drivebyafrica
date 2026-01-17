@@ -284,14 +284,14 @@ function BrandDropdown({
         type="button"
         onClick={() => handleSelect(brand)}
         className={cn(
-          'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+          'w-full flex items-center justify-between gap-3 px-4 py-3 lg:py-2.5 text-sm transition-colors',
           isSelected
             ? 'bg-mandarin/10 text-mandarin font-medium'
-            : 'text-gray-700 dark:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-[var(--surface)]'
+            : 'text-gray-700 dark:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-[var(--surface)] active:bg-gray-100'
         )}
       >
-        <span className="flex-1 text-left">{brand}</span>
-        {isSelected && <Check className="w-4 h-4 flex-shrink-0" />}
+        <span className="text-left">{brand}</span>
+        {isSelected && <Check className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0" />}
       </button>
     );
   };
@@ -334,88 +334,116 @@ function BrandDropdown({
         )}
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - Mobile: fullscreen modal, Desktop: dropdown aligned right */}
       {isOpen && !isLoading && (
-        <div className="absolute z-50 w-full min-w-[280px] py-2 bottom-full mb-2 bg-white dark:bg-[var(--card-bg)] border border-gray-200 dark:border-[var(--card-border)] rounded-xl shadow-2xl max-h-[400px] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
-          {/* Search input */}
-          <div className="px-3 pb-2 border-b border-gray-100 dark:border-[var(--card-border)]">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher une marque..."
-              className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-[var(--surface)] border border-gray-200 dark:border-[var(--card-border)] rounded-lg focus:outline-none focus:border-mandarin focus:ring-2 focus:ring-mandarin/20"
-              autoFocus
-            />
-          </div>
+        <>
+          {/* Mobile backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsOpen(false)}
+          />
 
-          <div className="overflow-y-auto max-h-[340px]">
-            {/* Clear option */}
-            {value && (
+          {/* Dropdown content */}
+          <div className={cn(
+            'z-50 bg-white dark:bg-[var(--card-bg)] border border-gray-200 dark:border-[var(--card-border)] shadow-2xl overflow-hidden',
+            // Mobile: fullscreen modal from bottom
+            'fixed inset-x-0 bottom-0 rounded-t-2xl max-h-[85vh]',
+            // Desktop: positioned dropdown aligned to right
+            'lg:absolute lg:inset-auto lg:bottom-full lg:right-0 lg:mb-2 lg:w-[320px] lg:rounded-xl lg:max-h-[450px]',
+            'animate-in fade-in lg:slide-in-from-bottom-2 slide-in-from-bottom-4 duration-200'
+          )}>
+            {/* Mobile header with close button */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-[var(--card-border)] lg:hidden">
+              <h3 className="font-semibold text-gray-900 dark:text-[var(--text-primary)]">Sélectionner une marque</h3>
               <button
                 type="button"
-                onClick={handleClear}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-[var(--surface)] transition-colors border-b border-gray-100 dark:border-[var(--card-border)]"
+                onClick={() => setIsOpen(false)}
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[var(--surface)]"
               >
-                <X className="w-4 h-4" />
-                Effacer la sélection
+                <X className="w-5 h-5 text-gray-500" />
               </button>
-            )}
+            </div>
 
-            {/* Search results */}
-            {filteredBrands ? (
-              filteredBrands.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-gray-400 text-center">
-                  Aucune marque trouvée
-                </div>
+            {/* Search input */}
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-[var(--card-border)]">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher une marque..."
+                className="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-[var(--surface)] border border-gray-200 dark:border-[var(--card-border)] rounded-lg focus:outline-none focus:border-mandarin focus:ring-2 focus:ring-mandarin/20"
+                autoFocus
+              />
+            </div>
+
+            <div className="overflow-y-auto max-h-[60vh] lg:max-h-[350px]">
+              {/* Clear option */}
+              {value && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-[var(--surface)] transition-colors border-b border-gray-100 dark:border-[var(--card-border)]"
+                >
+                  <X className="w-4 h-4" />
+                  Effacer la sélection
+                </button>
+              )}
+
+              {/* Search results */}
+              {filteredBrands ? (
+                filteredBrands.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-gray-400 text-center">
+                    Aucune marque trouvée
+                  </div>
+                ) : (
+                  filteredBrands.map(renderBrandButton)
+                )
               ) : (
-                filteredBrands.map(renderBrandButton)
-              )
-            ) : (
-              <>
-                {/* Popular Japanese brands */}
-                {availablePopularBrands.japanese.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
-                      <span>🇯🇵</span> Japonaises
+                <>
+                  {/* Popular Japanese brands */}
+                  {availablePopularBrands.japanese.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2 sticky top-0">
+                        <span>🇯🇵</span> Japonaises
+                      </div>
+                      {availablePopularBrands.japanese.map(renderBrandButton)}
                     </div>
-                    {availablePopularBrands.japanese.map(renderBrandButton)}
-                  </div>
-                )}
+                  )}
 
-                {/* Popular Korean brands */}
-                {availablePopularBrands.korean.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
-                      <span>🇰🇷</span> Coréennes
+                  {/* Popular Korean brands */}
+                  {availablePopularBrands.korean.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2 sticky top-0">
+                        <span>🇰🇷</span> Coréennes
+                      </div>
+                      {availablePopularBrands.korean.map(renderBrandButton)}
                     </div>
-                    {availablePopularBrands.korean.map(renderBrandButton)}
-                  </div>
-                )}
+                  )}
 
-                {/* Popular Chinese brands */}
-                {availablePopularBrands.chinese.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
-                      <span>🇨🇳</span> Chinoises
+                  {/* Popular Chinese brands */}
+                  {availablePopularBrands.chinese.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2 sticky top-0">
+                        <span>🇨🇳</span> Chinoises
+                      </div>
+                      {availablePopularBrands.chinese.map(renderBrandButton)}
                     </div>
-                    {availablePopularBrands.chinese.map(renderBrandButton)}
-                  </div>
-                )}
+                  )}
 
-                {/* Other brands */}
-                {otherBrands.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2">
-                      <span>🌍</span> Autres marques
+                  {/* Other brands */}
+                  {otherBrands.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 dark:bg-[var(--surface)] flex items-center gap-2 sticky top-0">
+                        <span>🌍</span> Autres marques
+                      </div>
+                      {otherBrands.map(renderBrandButton)}
                     </div>
-                    {otherBrands.map(renderBrandButton)}
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
