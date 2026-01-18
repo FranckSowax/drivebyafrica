@@ -71,7 +71,7 @@ export default function AboutPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-cod-gray via-cod-gray to-mandarin/20" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6 uppercase">
               Votre partenaire pour{' '}
               <span className="text-mandarin">l&apos;importation automobile</span>
             </h1>
@@ -102,7 +102,7 @@ export default function AboutPage() {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-white mb-6">
+              <h2 className="text-3xl font-bold text-white mb-6 uppercase">
                 Notre <span className="text-mandarin">histoire</span>
               </h2>
               <div className="space-y-4 text-nobel">
@@ -124,12 +124,12 @@ export default function AboutPage() {
             </div>
             <div className="relative">
               <div className="aspect-video bg-surface rounded-2xl overflow-hidden">
-                <div className="w-full h-full bg-gradient-to-br from-mandarin/20 to-royal-blue/20 flex items-center justify-center">
-                  <div className="text-center">
-                    <Globe className="w-16 h-16 text-mandarin mx-auto mb-4" />
-                    <p className="text-white font-semibold">Présent dans 12 pays africains</p>
-                  </div>
-                </div>
+                <Image
+                  src="/CLOCK DRIVEBY.jpg"
+                  alt="Histoire de Driveby Africa"
+                  fill
+                  className="object-cover"
+                />
               </div>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default function AboutPage() {
       <section className="py-20 bg-surface/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4 uppercase">
               Nos <span className="text-mandarin">valeurs</span>
             </h2>
             <p className="text-nobel max-w-xl mx-auto">
@@ -168,7 +168,7 @@ export default function AboutPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4 uppercase">
               Notre <span className="text-mandarin">équipe</span>
             </h2>
             <p className="text-nobel max-w-xl mx-auto">
@@ -195,7 +195,7 @@ export default function AboutPage() {
         <div className="container mx-auto px-4">
           <div className="relative overflow-hidden bg-gradient-to-r from-mandarin to-orange-600 rounded-2xl p-8 lg:p-12">
             <div className="relative z-10 max-w-xl">
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4 uppercase">
                 Prêt à nous faire confiance?
               </h2>
               <p className="text-white/80 mb-8">
