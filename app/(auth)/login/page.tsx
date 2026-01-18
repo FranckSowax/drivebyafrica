@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Phone } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
@@ -18,29 +18,17 @@ const emailSchema = z.object({
   password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
 });
 
-const phoneSchema = z.object({
-  phone: z.string().min(8, 'Numéro de téléphone invalide'),
-});
-
 type EmailFormData = z.infer<typeof emailSchema>;
-type PhoneFormData = z.infer<typeof phoneSchema>;
-
-type AuthMethod = 'email' | 'phone' | 'google';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const toast = useToast();
-  const [authMethod, setAuthMethod] = useState<AuthMethod>('email');
   const [isLoading, setIsLoading] = useState(false);
 
   const emailForm = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
-  });
-
-  const phoneForm = useForm<PhoneFormData>({
-    resolver: zodResolver(phoneSchema),
   });
 
   const supabase = createClient();
@@ -61,29 +49,6 @@ function LoginForm() {
       toast.success('Connexion réussie!');
       router.push(redirect);
       router.refresh();
-    } catch {
-      toast.error('Erreur', 'Une erreur est survenue');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePhoneLogin = async (data: PhoneFormData) => {
-    setIsLoading(true);
-    try {
-      const phone = data.phone.startsWith('+') ? data.phone : `+241${data.phone}`;
-
-      const { error } = await supabase.auth.signInWithOtp({
-        phone,
-      });
-
-      if (error) {
-        toast.error('Erreur', error.message);
-        return;
-      }
-
-      toast.success('Code envoyé!', 'Vérifiez vos SMS');
-      router.push(`/verify?phone=${encodeURIComponent(phone)}&redirect=${encodeURIComponent(redirect)}`);
     } catch {
       toast.error('Erreur', 'Une erreur est survenue');
     } finally {
@@ -120,92 +85,41 @@ function LoginForm() {
         </p>
       </div>
 
-      {/* Auth Method Tabs */}
-      <div className="flex rounded-lg bg-surface p-1">
-        <button
-          onClick={() => setAuthMethod('email')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            authMethod === 'email'
-              ? 'bg-mandarin text-white'
-              : 'text-nobel hover:text-white'
-          }`}
-        >
-          <Mail className="w-4 h-4" />
-          Email
-        </button>
-        <button
-          onClick={() => setAuthMethod('phone')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            authMethod === 'phone'
-              ? 'bg-mandarin text-white'
-              : 'text-nobel hover:text-white'
-          }`}
-        >
-          <Phone className="w-4 h-4" />
-          Téléphone
-        </button>
-      </div>
-
       {/* Email Form */}
-      {authMethod === 'email' && (
-        <form onSubmit={emailForm.handleSubmit(handleEmailLogin)} className="space-y-4">
-          <Input
-            label="Email"
-            type="email"
-            placeholder="votre@email.com"
-            leftIcon={<Mail className="w-4 h-4" />}
-            error={emailForm.formState.errors.email?.message}
-            {...emailForm.register('email')}
-          />
-          <Input
-            label="Mot de passe"
-            type="password"
-            placeholder="••••••••"
-            leftIcon={<Lock className="w-4 h-4" />}
-            error={emailForm.formState.errors.password?.message}
-            {...emailForm.register('password')}
-          />
-          <div className="flex justify-end">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-mandarin hover:underline"
-            >
-              Mot de passe oublié?
-            </Link>
-          </div>
-          <Button
-            type="submit"
-            variant="primary"
-            className="w-full"
-            isLoading={isLoading}
+      <form onSubmit={emailForm.handleSubmit(handleEmailLogin)} className="space-y-4">
+        <Input
+          label="Email"
+          type="email"
+          placeholder="votre@email.com"
+          leftIcon={<Mail className="w-4 h-4" />}
+          error={emailForm.formState.errors.email?.message}
+          {...emailForm.register('email')}
+        />
+        <Input
+          label="Mot de passe"
+          type="password"
+          placeholder="••••••••"
+          leftIcon={<Lock className="w-4 h-4" />}
+          error={emailForm.formState.errors.password?.message}
+          {...emailForm.register('password')}
+        />
+        <div className="flex justify-end">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-mandarin hover:underline"
           >
-            Se connecter
-          </Button>
-        </form>
-      )}
-
-      {/* Phone Form */}
-      {authMethod === 'phone' && (
-        <form onSubmit={phoneForm.handleSubmit(handlePhoneLogin)} className="space-y-4">
-          <Input
-            label="Numéro de téléphone"
-            type="tel"
-            placeholder="+241 XX XX XX XX"
-            leftIcon={<Phone className="w-4 h-4" />}
-            hint="Vous recevrez un code de vérification par SMS"
-            error={phoneForm.formState.errors.phone?.message}
-            {...phoneForm.register('phone')}
-          />
-          <Button
-            type="submit"
-            variant="primary"
-            className="w-full"
-            isLoading={isLoading}
-          >
-            Recevoir le code
-          </Button>
-        </form>
-      )}
+            Mot de passe oublié?
+          </Link>
+        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          isLoading={isLoading}
+        >
+          Se connecter
+        </Button>
+      </form>
 
       {/* Divider */}
       <div className="relative">
@@ -223,7 +137,7 @@ function LoginForm() {
         variant="outline"
         className="w-full"
         onClick={handleGoogleLogin}
-        isLoading={isLoading && authMethod === 'google'}
+        isLoading={isLoading}
         leftIcon={
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
