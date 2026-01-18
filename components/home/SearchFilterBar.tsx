@@ -18,6 +18,8 @@ import { useFilterStore } from '@/store/useFilterStore';
 import { useVehicleFilters, translateFilter } from '@/lib/hooks/useVehicleFilters';
 import { useVehicles } from '@/lib/hooks/useVehicles';
 import { cn } from '@/lib/utils';
+import { formatCurrency, getRate } from '@/lib/utils/currency';
+import { useLocaleStore } from '@/store/useLocaleStore';
 import type { VehicleSource } from '@/types/vehicle';
 
 // Popular brands by origin - shown first in dropdown
@@ -456,19 +458,8 @@ const SOURCE_OPTIONS = [
   { value: 'dubai', label: 'Dubaï' },
 ];
 
-// Price options - extended range
-const PRICE_OPTIONS = [
-  { value: '5000', label: '5 000 USD' },
-  { value: '10000', label: '10 000 USD' },
-  { value: '15000', label: '15 000 USD' },
-  { value: '20000', label: '20 000 USD' },
-  { value: '30000', label: '30 000 USD' },
-  { value: '50000', label: '50 000 USD' },
-  { value: '75000', label: '75 000 USD' },
-  { value: '100000', label: '100 000 USD' },
-  { value: '150000', label: '150 000 USD' },
-  { value: '200000', label: '200 000 USD' },
-];
+// Price options in USD - will be converted to user's currency for display
+const PRICE_VALUES_USD = [5000, 10000, 15000, 20000, 30000, 50000, 75000, 100000, 150000, 200000];
 
 // Year options - from oldest to newest (2000 to 2026)
 const YEAR_OPTIONS = (() => {
@@ -513,6 +504,7 @@ export function SearchFilterBar() {
   const router = useRouter();
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
+  const { currency, currencyInfo } = useLocaleStore();
 
   // Get total vehicle count (no filters)
   const { totalCount: totalVehicles, isLoading: isTotalLoading } = useVehicles({
@@ -527,6 +519,18 @@ export function SearchFilterBar() {
     page: 1,
     limit: 1
   });
+
+  // Build price options dynamically based on user's currency
+  const priceOptions = useMemo(() => {
+    const rate = currencyInfo?.rateToUsd || getRate(currency);
+    return PRICE_VALUES_USD.map(usdValue => {
+      const convertedValue = Math.round(usdValue * rate);
+      return {
+        value: usdValue.toString(), // Store USD value for filtering
+        label: formatCurrency(convertedValue, currency),
+      };
+    });
+  }, [currency, currencyInfo?.rateToUsd]);
 
   // Build brand options from Supabase data with fallback
   const brandOptions = useMemo(() => {
@@ -626,7 +630,7 @@ export function SearchFilterBar() {
               label="Budget max"
               value={filters.priceTo?.toString()}
               placeholder="Tous"
-              options={PRICE_OPTIONS}
+              options={priceOptions}
               onChange={(val) => setFilters({ priceTo: val ? parseInt(val) : undefined })}
             />
 
