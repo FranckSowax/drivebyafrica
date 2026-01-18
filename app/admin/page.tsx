@@ -52,6 +52,9 @@ interface TimeSeriesData {
   syncAdded: number;
   syncUpdated: number;
   totalVehicles: number;
+  koreaVehicles: number;
+  chinaVehicles: number;
+  dubaiVehicles: number;
 }
 
 interface MonthlyData {
@@ -501,7 +504,7 @@ export default function AdminDashboardPage() {
               <Car className="w-5 h-5 text-mandarin" />
               Véhicules sur la plateforme
             </h2>
-            <p className="text-sm text-[var(--text-muted)]">Nombre total de véhicules disponibles chaque jour</p>
+            <p className="text-sm text-[var(--text-muted)]">Évolution du nombre de véhicules par source</p>
           </div>
           <div className="flex gap-2">
             {(['7d', '30d', '90d'] as const).map((range) => (
@@ -519,13 +522,44 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         </div>
-        <div className="h-[280px]">
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 mb-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#F97316]" />
+            <span className="text-[var(--text-muted)]">Total</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#3B82F6]" />
+            <span className="text-[var(--text-muted)]">Corée (Encar)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#EF4444]" />
+            <span className="text-[var(--text-muted)]">Chine (CHE168 + Dongchedi)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#10B981]" />
+            <span className="text-[var(--text-muted)]">Dubaï (Dubicars)</span>
+          </div>
+        </div>
+        <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={filteredTimeSeries}>
               <defs>
                 <linearGradient id="colorTotalVehicles" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#F97316" stopOpacity={0.05} />
+                  <stop offset="5%" stopColor="#F97316" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#F97316" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="colorKoreaVehicles" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="colorChinaVehicles" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="colorDubaiVehicles" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
@@ -550,17 +584,46 @@ export default function AdminDashboardPage() {
                   borderRadius: '8px',
                 }}
                 labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                formatter={(value?: number) => {
-                  if (typeof value !== 'number') return ['', 'Véhicules'];
-                  return [value.toLocaleString('fr-FR'), 'Véhicules'];
+                formatter={(value: number, name: string) => {
+                  const labels: Record<string, string> = {
+                    totalVehicles: 'Total',
+                    koreaVehicles: 'Corée',
+                    chinaVehicles: 'Chine',
+                    dubaiVehicles: 'Dubaï',
+                  };
+                  return [value?.toLocaleString('fr-FR') ?? '0', labels[name] || name];
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="totalVehicles"
-                name="Véhicules"
+                name="totalVehicles"
                 stroke="#F97316"
                 fill="url(#colorTotalVehicles)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="koreaVehicles"
+                name="koreaVehicles"
+                stroke="#3B82F6"
+                fill="url(#colorKoreaVehicles)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="chinaVehicles"
+                name="chinaVehicles"
+                stroke="#EF4444"
+                fill="url(#colorChinaVehicles)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="dubaiVehicles"
+                name="dubaiVehicles"
+                stroke="#10B981"
+                fill="url(#colorDubaiVehicles)"
                 strokeWidth={2}
               />
             </AreaChart>

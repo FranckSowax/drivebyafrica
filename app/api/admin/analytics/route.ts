@@ -449,6 +449,9 @@ export async function GET() {
       syncAdded: number;
       syncUpdated: number;
       totalVehicles: number;
+      koreaVehicles: number;
+      chinaVehicles: number;
+      dubaiVehicles: number;
     }> = [];
 
     // Calculate cumulative vehicle count from sync logs
@@ -456,20 +459,25 @@ export async function GET() {
     const currentTotalVehicles = vehiclesTotal || 0;
 
     // Try to fetch from vehicle_count_history table (daily snapshots at noon GMT)
-    let vehicleCountHistory: Record<string, number> = {};
+    let vehicleCountHistory: Record<string, { total: number; korea: number; china: number; dubai: number }> = {};
     try {
       const ninetyDaysAgo = new Date(now);
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
       const { data: historyData } = await supabaseAny
         .from('vehicle_count_history')
-        .select('date, total_count')
+        .select('date, total_count, korea_count, china_count, dubai_count')
         .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: true });
 
       if (historyData && Array.isArray(historyData)) {
-        historyData.forEach((h: { date: string; total_count: number }) => {
-          vehicleCountHistory[h.date] = h.total_count;
+        historyData.forEach((h: { date: string; total_count: number; korea_count: number; china_count: number; dubai_count: number }) => {
+          vehicleCountHistory[h.date] = {
+            total: h.total_count,
+            korea: h.korea_count,
+            china: h.china_count,
+            dubai: h.dubai_count,
+          };
         });
       }
     } catch {
@@ -539,9 +547,15 @@ export async function GET() {
       const syncData = syncByDay[dateStr] || { added: 0, updated: 0, removed: 0, syncs: 0 };
 
       // Use vehicle_count_history if available, otherwise fallback to cumulative calculation
-      const totalVehiclesOnDay = vehicleCountHistory[dateStr]
+      const historyEntry = vehicleCountHistory[dateStr];
+      const totalVehiclesOnDay = historyEntry?.total
         || cumulativeTotals[dateStr]
         || currentTotalVehicles;
+
+      // For source-specific counts, use history if available, otherwise use current distribution
+      const koreaVehiclesOnDay = historyEntry?.korea ?? (vehiclesBySource['korea'] || 0);
+      const chinaVehiclesOnDay = historyEntry?.china ?? (vehiclesBySource['china'] || 0);
+      const dubaiVehiclesOnDay = historyEntry?.dubai ?? (vehiclesBySource['dubai'] || 0);
 
       timeSeriesData.push({
         date: dateStr,
@@ -552,6 +566,9 @@ export async function GET() {
         syncAdded: syncData.added,
         syncUpdated: syncData.updated,
         totalVehicles: totalVehiclesOnDay,
+        koreaVehicles: koreaVehiclesOnDay,
+        chinaVehicles: chinaVehiclesOnDay,
+        dubaiVehicles: dubaiVehiclesOnDay,
       });
     }
 
