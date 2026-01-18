@@ -584,8 +584,8 @@ export default function AdminDashboardPage() {
                   borderRadius: '8px',
                 }}
                 labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                formatter={(value: number | undefined, name: string) => {
-                  if (value === undefined) return ['', ''];
+                formatter={(value: number | undefined, name?: string) => {
+                  if (value === undefined || !name) return ['', ''];
                   const labels: Record<string, string> = {
                     totalVehicles: 'Total',
                     koreaVehicles: 'Corée',
