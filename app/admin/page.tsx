@@ -584,14 +584,15 @@ export default function AdminDashboardPage() {
                   borderRadius: '8px',
                 }}
                 labelFormatter={(value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                formatter={(value: number, name: string) => {
+                formatter={(value: number | undefined, name: string) => {
+                  if (value === undefined) return ['', ''];
                   const labels: Record<string, string> = {
                     totalVehicles: 'Total',
                     koreaVehicles: 'Corée',
                     chinaVehicles: 'Chine',
                     dubaiVehicles: 'Dubaï',
                   };
-                  return [value?.toLocaleString('fr-FR') ?? '0', labels[name] || name];
+                  return [value.toLocaleString('fr-FR'), labels[name] || name];
                 }}
               />
               <Area
