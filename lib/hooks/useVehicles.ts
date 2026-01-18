@@ -212,6 +212,8 @@ export function useVehicles({
     staleTime: 5 * 60 * 1000,
     // Keep in cache for 30 minutes
     gcTime: 30 * 60 * 1000,
+    // Disable retry to prevent infinite loops on 416 errors
+    retry: false,
   });
 
   // Prefetch next page for smoother pagination
@@ -237,12 +239,16 @@ export function useVehicles({
     await queryRefetch();
   };
 
+  // Calculate if there are more pages based on totalCount
+  const currentOffset = (page - 1) * limit + (data?.vehicles.length ?? 0);
+  const hasMorePages = currentOffset < (data?.totalCount ?? 0);
+
   return {
     vehicles: data?.vehicles ?? [],
     isLoading: isLoading || isFetching,
     error: error as Error | null,
     totalCount: data?.totalCount ?? 0,
-    hasMore: (data?.vehicles.length ?? 0) === limit,
+    hasMore: hasMorePages,
     refetch,
   };
 }
