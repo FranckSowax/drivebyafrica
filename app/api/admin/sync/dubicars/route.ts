@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dubicars';
 const API_KEY = process.env.DUBICARS_API_KEY || process.env.ENCAR_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
-const AED_TO_USD = 0.30;
+// AED to USD conversion rate (1 AED = 0.2723 USD, pegged rate)
+const AED_TO_USD = 0.2723;
 
 // Transmission type mapping
 const transmissionMap: Record<string, string> = {
@@ -102,7 +103,7 @@ function mapToDbRecord(offer: ApiOffer) {
   const sourceId = `dubicars_${v.inner_id}`;
   const images = parseImages(v.images);
 
-  // Parse price (AED to USD)
+  // Parse price (AED to USD conversion)
   let priceUsd: number | null = null;
   if (v.price && v.price !== '-1') {
     const priceAed = parseFloat(v.price);
