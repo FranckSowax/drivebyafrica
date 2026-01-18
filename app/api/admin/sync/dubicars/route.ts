@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dubicars';
 const API_KEY = process.env.DUBICARS_API_KEY || process.env.ENCAR_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
-const AED_TO_USD = 0.27;
+const AED_TO_USD = 0.30;
 
 // Transmission type mapping
 const transmissionMap: Record<string, string> = {
