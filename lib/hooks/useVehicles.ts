@@ -215,14 +215,20 @@ export function useVehicles({
   });
 
   // Prefetch next page for smoother pagination
+  // Only prefetch if there are more items beyond current page
   useEffect(() => {
     if (data && data.vehicles.length === limit) {
-      const nextPageKey = vehicleKeys.list(filters, page + 1, limit);
-      queryClient.prefetchQuery({
-        queryKey: nextPageKey,
-        queryFn: () => fetchVehicles(filters, page + 1, limit),
-        staleTime: 5 * 60 * 1000,
-      });
+      const currentOffset = (page - 1) * limit + data.vehicles.length;
+      const hasMoreItems = currentOffset < data.totalCount;
+
+      if (hasMoreItems) {
+        const nextPageKey = vehicleKeys.list(filters, page + 1, limit);
+        queryClient.prefetchQuery({
+          queryKey: nextPageKey,
+          queryFn: () => fetchVehicles(filters, page + 1, limit),
+          staleTime: 5 * 60 * 1000,
+        });
+      }
     }
   }, [data, filters, page, limit, queryClient]);
 
