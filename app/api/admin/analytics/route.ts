@@ -455,7 +455,28 @@ export async function GET() {
     // Start with current total and work backwards
     const currentTotalVehicles = vehiclesTotal || 0;
 
-    // Create a map of daily net changes from sync logs (added - removed)
+    // Try to fetch from vehicle_count_history table (daily snapshots at noon GMT)
+    let vehicleCountHistory: Record<string, number> = {};
+    try {
+      const ninetyDaysAgo = new Date(now);
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const { data: historyData } = await supabaseAny
+        .from('vehicle_count_history')
+        .select('date, total_count')
+        .gte('date', ninetyDaysAgo.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      if (historyData && Array.isArray(historyData)) {
+        historyData.forEach((h: { date: string; total_count: number }) => {
+          vehicleCountHistory[h.date] = h.total_count;
+        });
+      }
+    } catch {
+      // vehicle_count_history table may not exist yet
+    }
+
+    // Fallback: Create a map of daily net changes from sync logs (added - removed)
     const dailyNetChange: Record<string, number> = {};
     syncLogsData.forEach(log => {
       if (!log.date) return;
@@ -474,7 +495,7 @@ export async function GET() {
       dates.push(date.toISOString().split('T')[0]);
     }
 
-    // Calculate cumulative totals working backwards from today
+    // Calculate cumulative totals working backwards from today (fallback method)
     const cumulativeTotals: Record<string, number> = {};
     let runningTotal = currentTotalVehicles;
 
@@ -517,6 +538,11 @@ export async function GET() {
       // Get sync data for this day
       const syncData = syncByDay[dateStr] || { added: 0, updated: 0, removed: 0, syncs: 0 };
 
+      // Use vehicle_count_history if available, otherwise fallback to cumulative calculation
+      const totalVehiclesOnDay = vehicleCountHistory[dateStr]
+        || cumulativeTotals[dateStr]
+        || currentTotalVehicles;
+
       timeSeriesData.push({
         date: dateStr,
         users: usersOnDay,
@@ -525,7 +551,7 @@ export async function GET() {
         views: viewsOnDay,
         syncAdded: syncData.added,
         syncUpdated: syncData.updated,
-        totalVehicles: cumulativeTotals[dateStr] || currentTotalVehicles,
+        totalVehicles: totalVehiclesOnDay,
       });
     }
 
