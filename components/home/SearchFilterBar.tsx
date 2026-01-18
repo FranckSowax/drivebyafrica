@@ -601,16 +601,19 @@ export function SearchFilterBar() {
                 </p>
               </div>
             </div>
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Réinitialiser
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleReset}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
+                hasActiveFilters
+                  ? 'text-mandarin bg-mandarin/10 hover:bg-mandarin/20'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-[var(--surface)]'
+              )}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Réinitialiser
+            </button>
           </div>
         </div>
 
