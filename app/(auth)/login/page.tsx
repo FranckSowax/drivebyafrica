@@ -23,7 +23,8 @@ type EmailFormData = z.infer<typeof emailSchema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/dashboard';
+  // Default to home page, not dashboard - user returns to where they were
+  const redirect = searchParams.get('redirect') || '/';
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
 

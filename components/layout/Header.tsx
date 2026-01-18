@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
@@ -42,6 +43,15 @@ export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, profile, signOut } = useAuthStore();
   const { theme, mounted } = useTheme();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Build current URL with search params for redirect after login
+  const currentUrl = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname;
+  const loginUrl = `/login?redirect=${encodeURIComponent(currentUrl)}`;
+  const registerUrl = `/register?redirect=${encodeURIComponent(currentUrl)}`;
 
   // Use dark logo as default during SSR to prevent flash
   // The inline script sets the correct theme before React hydrates
@@ -180,14 +190,14 @@ export function Header() {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Mobile: Icon buttons only */}
                 <Link
-                  href="/login"
+                  href={loginUrl}
                   className="sm:hidden inline-flex items-center justify-center p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface)] active:bg-[var(--surface)] transition-colors"
                   aria-label="Connexion"
                 >
                   <LogIn className="w-5 h-5" />
                 </Link>
                 <Link
-                  href="/register"
+                  href={registerUrl}
                   className="sm:hidden inline-flex items-center justify-center p-2 rounded-lg bg-mandarin text-white hover:bg-orange-600 active:bg-orange-700 transition-colors"
                   aria-label="Inscription"
                 >
@@ -196,13 +206,13 @@ export function Header() {
 
                 {/* Desktop: Text buttons */}
                 <Link
-                  href="/login"
+                  href={loginUrl}
                   className="hidden sm:inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg h-9 px-4 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface)] active:bg-[var(--surface)]"
                 >
                   Connexion
                 </Link>
                 <Link
-                  href="/register"
+                  href={registerUrl}
                   className="hidden sm:inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg h-9 px-4 text-sm bg-mandarin text-white hover:bg-orange-600 active:bg-orange-700 shadow-md"
                 >
                   Inscription

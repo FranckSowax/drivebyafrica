@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Home, Car, Calculator, Heart, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -11,13 +11,19 @@ const navItems = [
   { href: '/cars', label: 'Véhicules', icon: Car },
   { href: '/calculator', label: 'Estimer', icon: Calculator },
   { href: '/dashboard/favorites', label: 'Favoris', icon: Heart, requiresAuth: true },
-  { href: '/dashboard', label: 'Compte', icon: User },
+  { href: '/dashboard', label: 'Compte', icon: User, requiresAuth: true },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
+
+  // Build current URL with search params for redirect after login
+  const currentUrl = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname;
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -29,8 +35,8 @@ export function MobileNav() {
   const handleNavClick = (e: React.MouseEvent, item: typeof navItems[0]) => {
     if (item.requiresAuth && !user) {
       e.preventDefault();
-      // Redirect to login with return URL to favorites
-      router.push(`/login?redirect=${encodeURIComponent(item.href)}`);
+      // Redirect to login with return URL to current page
+      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
     }
   };
 

@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
   // Redirect logged-in users away from auth pages
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register' || request.nextUrl.pathname === '/forgot-password')) {
     const url = request.nextUrl.clone();
-    // Respect the redirect parameter if present, otherwise go to dashboard
+    // Respect the redirect parameter if present, otherwise go to home page
     const redirectTo = request.nextUrl.searchParams.get('redirect');
     if (redirectTo && redirectTo.startsWith('/')) {
       // Decode the redirect URL and parse it
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
       url.pathname = redirectUrl.pathname;
       url.search = redirectUrl.search;
     } else {
-      url.pathname = '/dashboard';
+      url.pathname = '/';
     }
     return NextResponse.redirect(url);
   }
