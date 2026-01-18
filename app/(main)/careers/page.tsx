@@ -120,8 +120,8 @@ export default function CareersPage() {
               <Briefcase className="w-4 h-4 text-mandarin" />
               <span className="text-sm text-mandarin">Nous recrutons</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Rejoignez l&apos;aventure <span className="text-mandarin">Driveby Africa</span>
+            <h1 className="text-4xl sm:text-5xl font-bold text-mandarin mb-6">
+              Rejoignez l&apos;aventure Driveby Africa
             </h1>
             <p className="text-lg text-nobel mb-8">
               Participez à la révolution de l&apos;importation automobile en Afrique.
@@ -159,8 +159,8 @@ export default function CareersPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Pourquoi nous <span className="text-mandarin">rejoindre</span>
+            <h2 className="text-3xl font-bold text-mandarin mb-4">
+              Pourquoi nous rejoindre
             </h2>
             <p className="text-nobel max-w-xl mx-auto">
               Nous offrons un environnement de travail stimulant et des avantages attractifs
@@ -185,8 +185,8 @@ export default function CareersPage() {
       <section id="jobs" className="py-20 bg-surface/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Nos <span className="text-mandarin">offres d&apos;emploi</span>
+            <h2 className="text-3xl font-bold text-mandarin mb-4">
+              Nos offres d&apos;emploi
             </h2>
             <p className="text-nobel max-w-xl mx-auto">
               Trouvez le poste qui correspond à vos compétences et ambitions
@@ -234,8 +234,8 @@ export default function CareersPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-white mb-4">
-                Notre <span className="text-mandarin">culture</span>
+              <h2 className="text-3xl font-bold text-mandarin mb-4">
+                Notre culture
               </h2>
             </div>
 

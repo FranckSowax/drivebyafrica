@@ -110,8 +110,8 @@ export default function HowItWorksPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-cod-gray via-cod-gray to-mandarin/20" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Comment <span className="text-mandarin">ça marche</span>
+            <h1 className="text-4xl sm:text-5xl font-bold text-mandarin mb-6">
+              Comment ça marche
             </h1>
             <p className="text-lg text-nobel mb-8">
               Un processus simple en 6 étapes pour importer votre véhicule depuis
@@ -144,7 +144,7 @@ export default function HowItWorksPage() {
                       <step.icon className="w-6 h-6 text-mandarin" />
                     </div>
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-4">{step.title}</h2>
+                  <h2 className="text-2xl font-bold text-mandarin mb-4">{step.title}</h2>
                   <p className="text-nobel mb-6">{step.description}</p>
                   <ul className="space-y-3">
                     {step.details.map((detail) => (
@@ -172,8 +172,8 @@ export default function HowItWorksPage() {
       <section className="py-20 bg-surface/30">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white text-center mb-12">
-              Questions <span className="text-mandarin">fréquentes</span>
+            <h2 className="text-3xl font-bold text-mandarin text-center mb-12">
+              Questions fréquentes
             </h2>
             <div className="space-y-4">
               {faqs.map((faq) => (
@@ -200,7 +200,7 @@ export default function HowItWorksPage() {
           <div className="grid md:grid-cols-2 gap-8">
             <Card hover className="p-8">
               <MessageCircle className="w-12 h-12 text-mandarin mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Besoin d&apos;aide?</h3>
+              <h3 className="text-xl font-bold text-mandarin mb-2">Besoin d&apos;aide?</h3>
               <p className="text-nobel mb-6">
                 Notre équipe est disponible 24/7 par WhatsApp pour répondre à toutes vos questions.
               </p>
@@ -212,7 +212,7 @@ export default function HowItWorksPage() {
             </Card>
             <Card hover className="p-8">
               <Package className="w-12 h-12 text-royal-blue mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Calculez votre budget</h3>
+              <h3 className="text-xl font-bold text-mandarin mb-2">Calculez votre budget</h3>
               <p className="text-nobel mb-6">
                 Utilisez notre calculateur pour estimer le coût total de votre importation.
               </p>

@@ -81,8 +81,8 @@ export default function ContactPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-cod-gray via-cod-gray to-mandarin/20" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Contactez <span className="text-mandarin">notre équipe</span>
+            <h1 className="text-4xl sm:text-5xl font-bold text-mandarin mb-6">
+              Contactez notre équipe
             </h1>
             <p className="text-lg text-nobel">
               Une question? Besoin d&apos;aide? Notre équipe est disponible 24/7
@@ -124,7 +124,7 @@ export default function ContactPage() {
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Form */}
               <Card className="p-6 lg:p-8">
-                <h2 className="text-2xl font-bold text-white mb-6">
+                <h2 className="text-2xl font-bold text-mandarin mb-6">
                   Envoyez-nous un message
                 </h2>
 
@@ -247,7 +247,7 @@ export default function ContactPage() {
                       <Clock className="w-6 h-6 text-mandarin" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">Heures d&apos;ouverture</h3>
+                      <h3 className="font-semibold text-mandarin">Heures d&apos;ouverture</h3>
                       <p className="text-sm text-nobel">Bureau principal</p>
                     </div>
                   </div>
@@ -280,7 +280,7 @@ export default function ContactPage() {
                       <MapPin className="w-6 h-6 text-royal-blue" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">Nos bureaux</h3>
+                      <h3 className="font-semibold text-mandarin">Nos bureaux</h3>
                       <p className="text-sm text-nobel">Présence internationale</p>
                     </div>
                   </div>
@@ -300,7 +300,7 @@ export default function ContactPage() {
 
                 {/* Quick Links */}
                 <Card className="p-6 bg-gradient-to-r from-mandarin/10 to-orange-600/10">
-                  <h3 className="font-semibold text-white mb-4">Liens rapides</h3>
+                  <h3 className="font-semibold text-mandarin mb-4">Liens rapides</h3>
                   <div className="space-y-2">
                     <Link href="/faq" className="flex items-center gap-2 text-nobel hover:text-white transition-colors">
                       <ArrowRight className="w-4 h-4" />
