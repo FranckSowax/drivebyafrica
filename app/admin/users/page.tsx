@@ -107,6 +107,7 @@ export default function AdminUsersPage() {
   const [countryDistribution, setCountryDistribution] = useState<Record<string, number>>({});
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -122,6 +123,12 @@ export default function AdminUsersPage() {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setError(null);
+
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -132,7 +139,17 @@ export default function AdminUsersPage() {
         params.set('search', searchQuery);
       }
 
-      const response = await fetch(`/api/admin/users?${params}`);
+      const response = await fetch(`/api/admin/users?${params}`, {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erreur ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.users) {
@@ -140,9 +157,20 @@ export default function AdminUsersPage() {
         setStats(data.stats);
         setCountryDistribution(data.countryDistribution || {});
         setPagination(data.pagination);
+      } else {
+        throw new Error('Format de réponse invalide');
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('La requête a pris trop de temps. Veuillez réessayer.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Erreur lors du chargement des utilisateurs');
+      }
     } finally {
       setLoading(false);
     }
@@ -394,9 +422,20 @@ export default function AdminUsersPage() {
 
       {/* Users Table */}
       <Card>
-        {loading && users.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-mandarin" />
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+            <p className="text-red-400 font-medium mb-2">Erreur de chargement</p>
+            <p className="text-[var(--text-muted)] text-sm mb-4">{error}</p>
+            <Button onClick={fetchUsers} variant="outline" size="sm">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Réessayer
+            </Button>
+          </div>
+        ) : loading && users.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-mandarin mb-4" />
+            <p className="text-[var(--text-muted)] text-sm">Chargement des utilisateurs...</p>
           </div>
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">

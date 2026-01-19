@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
 import { createClient } from '@supabase/supabase-js';
 
+// Create admin client with service role key for full access
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
 // GET: Fetch all users with their stats
 export async function GET(request: Request) {
   try {
@@ -11,7 +20,8 @@ export async function GET(request: Request) {
       return adminCheck.response;
     }
 
-    const supabase = adminCheck.supabase;
+    // Use service role client for full access to all profiles
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const page = parseInt(searchParams.get('page') || '1');
@@ -149,7 +159,8 @@ export async function PUT(request: Request) {
       return adminCheck.response;
     }
 
-    const supabase = adminCheck.supabase;
+    // Use service role client for full access
+    const supabase = createAdminClient();
     const body = await request.json();
     const { userId, role } = body;
 
