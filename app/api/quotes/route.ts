@@ -112,29 +112,68 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const status = searchParams.get('status');
+    const offset = (page - 1) * limit;
 
-    const { data: quotes, error } = await supabase
+    // Build query with pagination
+    let query = supabase
       .from('quotes')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .order('created_at', { ascending: false });
+
+    // Filter by status if provided
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: quotes, error, count } = await query;
 
     if (error) {
       console.error('Quote API Supabase error (GET):', error);
       // Table doesn't exist yet - return empty array
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        return NextResponse.json({ quotes: [] });
+        return NextResponse.json({ quotes: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } });
       }
       // Permission denied - RLS policy issue, return empty array
       if (error.code === '42501' || error.message?.includes('permission denied')) {
-        return NextResponse.json({ quotes: [] });
+        return NextResponse.json({ quotes: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } });
       }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ quotes });
+    // Get user-specific stats using database function if available
+    let stats = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: statsData, error: rpcError } = await (supabase.rpc as any)('get_user_quote_stats', { p_user_id: user.id });
+      if (!rpcError && statsData) {
+        stats = statsData;
+      }
+    } catch {
+      // Function not available yet, skip stats
+    }
+
+    return NextResponse.json({
+      quotes,
+      stats,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+        hasMore: offset + (quotes?.length || 0) < (count || 0),
+      },
+    }, {
+      headers: {
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+      },
+    });
   } catch (error) {
     console.error('Quote API server error (GET):', error);
     return NextResponse.json(

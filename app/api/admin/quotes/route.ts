@@ -56,65 +56,85 @@ export async function GET(request: Request) {
 
     // Get user profiles for each quote
     const userIds = [...new Set(quotes?.map(q => q.user_id) || [])];
-    let profiles: Record<string, { full_name: string | null; phone: string | null; whatsapp_number: string | null }> = {};
+    type ProfileData = { full_name: string | null; phone: string | null; whatsapp_number: string | null; email?: string | null };
+    let profiles: Record<string, ProfileData> = {};
+    let userEmails: Record<string, string> = {};
 
     if (userIds.length > 0) {
+      // Try to get profiles with email column (after migration)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, full_name, phone, whatsapp_number')
-        .in('id', userIds);
+        .select('id, full_name, phone, whatsapp_number, email')
+        .in('id', userIds) as { data: Array<{ id: string; full_name: string | null; phone: string | null; whatsapp_number: string | null; email?: string | null }> | null };
 
       if (profilesData) {
         profiles = profilesData.reduce((acc, p) => {
-          acc[p.id] = { full_name: p.full_name, phone: p.phone, whatsapp_number: p.whatsapp_number };
+          acc[p.id] = {
+            full_name: p.full_name,
+            phone: p.phone,
+            whatsapp_number: p.whatsapp_number,
+            email: p.email || null
+          };
           return acc;
-        }, {} as Record<string, { full_name: string | null; phone: string | null; whatsapp_number: string | null }>);
+        }, {} as Record<string, ProfileData>);
+
+        // Check if any profile has email - if not, we need to fall back to auth lookup
+        const hasEmails = profilesData.some(p => p.email);
+        if (!hasEmails) {
+          // Fallback: fetch only needed users by their IDs (much better than listUsers)
+          for (const userId of userIds) {
+            try {
+              const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+              if (authUser?.user?.email) {
+                userEmails[userId] = authUser.user.email;
+              }
+            } catch {
+              // Skip if user not found
+            }
+          }
+        }
       }
     }
-
-    // Get user emails from auth.users via service role
-    const { data: authUsers } = await supabase.auth.admin.listUsers();
-    const userEmails: Record<string, string> = {};
-    authUsers?.users?.forEach(u => {
-      userEmails[u.id] = u.email || '';
-    });
 
     // Enrich quotes with user info
     const enrichedQuotes = quotes?.map(quote => ({
       ...quote,
       customer_name: profiles[quote.user_id]?.full_name || 'Utilisateur',
       customer_phone: profiles[quote.user_id]?.phone || profiles[quote.user_id]?.whatsapp_number || '',
-      customer_email: userEmails[quote.user_id] || '',
+      customer_email: profiles[quote.user_id]?.email || userEmails[quote.user_id] || '',
     })) || [];
 
-    // Calculate stats
-    const { data: statsData } = await supabase
-      .from('quotes')
-      .select('status, created_at');
-
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    const stats = {
-      total: statsData?.length || 0,
-      pending: statsData?.filter(q => q.status === 'pending').length || 0,
-      validated: statsData?.filter(q => q.status === 'validated').length || 0,
-      accepted: statsData?.filter(q => q.status === 'accepted').length || 0,
-      rejected: statsData?.filter(q => q.status === 'rejected').length || 0,
-      // Deposit stats ($1000 per accepted quote)
-      depositsToday: (statsData?.filter(q =>
-        q.status === 'accepted' && new Date(q.created_at) >= startOfDay
-      ).length || 0) * 1000,
-      depositsThisMonth: (statsData?.filter(q =>
-        q.status === 'accepted' && new Date(q.created_at) >= startOfMonth
-      ).length || 0) * 1000,
-      depositsThisYear: (statsData?.filter(q =>
-        q.status === 'accepted' && new Date(q.created_at) >= startOfYear
-      ).length || 0) * 1000,
-      totalDeposits: (statsData?.filter(q => q.status === 'accepted').length || 0) * 1000,
+    // Calculate stats using database function (O(1) instead of O(n) client-side filtering)
+    let stats = {
+      total: 0,
+      pending: 0,
+      validated: 0,
+      accepted: 0,
+      rejected: 0,
+      expired: 0,
+      depositsToday: 0,
+      depositsThisMonth: 0,
+      depositsThisYear: 0,
+      totalDeposits: 0,
     };
+
+    try {
+      // Call database function for efficient stats (typed as any since function may not exist in types yet)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: statsData, error: rpcError } = await (supabase.rpc as any)('get_quote_stats');
+      if (!rpcError && statsData) {
+        stats = statsData;
+      } else {
+        throw new Error('RPC not available');
+      }
+    } catch {
+      // Fallback if database function doesn't exist yet (pre-migration)
+      const { count: totalCount } = await supabase
+        .from('quotes')
+        .select('*', { count: 'exact', head: true });
+      stats.total = totalCount || 0;
+    }
 
     return NextResponse.json({
       quotes: enrichedQuotes,
