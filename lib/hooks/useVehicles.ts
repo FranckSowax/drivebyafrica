@@ -137,7 +137,18 @@ async function fetchVehicles(
 
   const { data, error: queryError, count } = await query;
 
+  // Debug logging
+  console.log('[useVehicles] Query result:', {
+    dataLength: data?.length || 0,
+    count,
+    error: queryError?.message,
+    filters,
+    page,
+    limit
+  });
+
   if (queryError) {
+    console.error('[useVehicles] Query error:', queryError);
     throw new Error(queryError.message);
   }
 
