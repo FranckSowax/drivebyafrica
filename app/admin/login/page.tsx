@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Loader2, Lock, Mail, AlertCircle, Shield, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
+import { Turnstile } from '@/components/ui/Turnstile';
 
 type LoginStep = 'idle' | 'authenticating' | 'verifying' | 'redirecting' | 'success';
 
@@ -16,8 +17,12 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<LoginStep>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const { isAdmin, isLoading: authLoading, isAuthenticated, signIn } = useAdminAuth();
+
+  // Check if Turnstile is configured
+  const turnstileConfigured = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   // Rediriger si déjà connecté en tant qu'admin
   useEffect(() => {
@@ -31,6 +36,13 @@ export default function AdminLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Only require Turnstile verification if it's configured
+    if (turnstileConfigured && !turnstileToken) {
+      setError('Veuillez compléter la vérification de sécurité');
+      return;
+    }
+
     setStep('authenticating');
 
     // Étape 1: Authentification
@@ -173,9 +185,16 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
+            {/* Turnstile verification - Light theme for admin */}
+            <Turnstile
+              onVerify={setTurnstileToken}
+              onExpire={() => setTurnstileToken(null)}
+              theme="light"
+            />
+
             <Button
               type="submit"
-              disabled={isProcessing}
+              disabled={isProcessing || (turnstileConfigured && !turnstileToken)}
               className="w-full bg-royal-blue hover:bg-royal-blue/90 text-white font-semibold py-3"
             >
               {isProcessing ? (

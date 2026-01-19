@@ -7,6 +7,7 @@ interface TurnstileProps {
   onVerify: (token: string) => void;
   onError?: () => void;
   onExpire?: () => void;
+  theme?: 'dark' | 'light' | 'auto';
 }
 
 /**
@@ -17,7 +18,7 @@ interface TurnstileProps {
  * 2. Add NEXT_PUBLIC_TURNSTILE_SITE_KEY to your .env.local
  * 3. Add TURNSTILE_SECRET_KEY to your server environment
  */
-export function Turnstile({ onVerify, onError, onExpire }: TurnstileProps) {
+export function Turnstile({ onVerify, onError, onExpire, theme = 'dark' }: TurnstileProps) {
   const [isLoading, setIsLoading] = useState(true);
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -51,7 +52,7 @@ export function Turnstile({ onVerify, onError, onExpire }: TurnstileProps) {
   return (
     <div className="flex justify-center my-4">
       {isLoading && (
-        <div className="text-sm text-nobel animate-pulse">
+        <div className={`text-sm animate-pulse ${theme === 'light' ? 'text-gray-500' : 'text-nobel'}`}>
           Chargement de la vérification...
         </div>
       )}
@@ -61,7 +62,7 @@ export function Turnstile({ onVerify, onError, onExpire }: TurnstileProps) {
         onError={handleError}
         onExpire={handleExpire}
         options={{
-          theme: 'dark',
+          theme,
           size: 'normal',
         }}
       />
