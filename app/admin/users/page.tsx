@@ -23,11 +23,16 @@ import {
   MessageCircle,
   TrendingUp,
   UserPlus,
+  Shield,
+  UserCog,
+  Check,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+type UserRole = 'user' | 'admin' | 'super_admin' | 'collaborator';
 
 interface User {
   id: string;
@@ -39,6 +44,7 @@ interface User {
   preferred_currency: string;
   avatar_url: string | null;
   verification_status: string;
+  role: UserRole;
   created_at: string;
   updated_at: string;
   quotes_count: number;
@@ -46,6 +52,20 @@ interface User {
   favorites_count: number;
   total_spent_usd: number;
 }
+
+const roleLabels: Record<UserRole, string> = {
+  user: 'Utilisateur',
+  admin: 'Admin',
+  super_admin: 'Super Admin',
+  collaborator: 'Collaborateur',
+};
+
+const roleColors: Record<UserRole, string> = {
+  user: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+  admin: 'bg-royal-blue/10 text-royal-blue border-royal-blue/20',
+  super_admin: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  collaborator: 'bg-mandarin/10 text-mandarin border-mandarin/20',
+};
 
 interface Stats {
   total: number;
@@ -90,6 +110,15 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    phone: '',
+  });
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -159,6 +188,69 @@ export default function AdminUsersPage() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
+  // Update user role
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
+    setIsUpdatingRole(true);
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: newRole }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erreur lors de la mise à jour');
+      }
+
+      // Update local state
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, role: newRole } : u
+      ));
+      if (selectedUser?.id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, role: newRole } : null);
+      }
+    } catch (error) {
+      console.error('Error updating role:', error);
+      alert(error instanceof Error ? error.message : 'Erreur lors de la mise à jour du rôle');
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
+  // Create collaborator
+  const createCollaborator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la création');
+      }
+
+      // Reset form and close modal
+      setCreateForm({ email: '', password: '', fullName: '', phone: '' });
+      setShowCreateModal(false);
+
+      // Refresh users list
+      fetchUsers();
+
+      alert(`Collaborateur créé avec succès!\nEmail: ${data.user.email}`);
+    } catch (error) {
+      console.error('Error creating collaborator:', error);
+      alert(error instanceof Error ? error.message : 'Erreur lors de la création du collaborateur');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
@@ -174,10 +266,19 @@ export default function AdminUsersPage() {
             </p>
           </div>
         </div>
-        <Button onClick={fetchUsers} disabled={loading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-mandarin hover:bg-mandarin/90"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Créer un collaborateur
+          </Button>
+          <Button onClick={fetchUsers} disabled={loading} variant="outline">
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -308,6 +409,7 @@ export default function AdminUsersPage() {
               <thead>
                 <tr className="border-b border-[var(--card-border)]">
                   <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Utilisateur</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Rôle</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Contact</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Pays</th>
                   <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">Devis</th>
@@ -340,6 +442,13 @@ export default function AdminUsersPage() {
                             </p>
                           </div>
                         </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${roleColors[user.role] || roleColors.user}`}>
+                          {user.role === 'collaborator' && <UserCog className="w-3 h-3" />}
+                          {(user.role === 'admin' || user.role === 'super_admin') && <Shield className="w-3 h-3" />}
+                          {roleLabels[user.role] || 'Utilisateur'}
+                        </span>
                       </td>
                       <td className="py-4 px-4">
                         <div className="space-y-1">
@@ -479,6 +588,59 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Role Management */}
+              <div>
+                <h4 className="text-sm font-medium text-[var(--text-muted)] mb-3">Rôle de l&apos;utilisateur</h4>
+                <div className="bg-[var(--surface)] rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${roleColors[selectedUser.role]?.split(' ')[0] || 'bg-gray-500/10'}`}>
+                        {selectedUser.role === 'collaborator' ? (
+                          <UserCog className="w-5 h-5" />
+                        ) : (
+                          <Shield className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {roleLabels[selectedUser.role] || 'Utilisateur'}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {selectedUser.role === 'collaborator' && 'Accès au portail collaborateur'}
+                          {selectedUser.role === 'admin' && 'Accès au panneau admin'}
+                          {selectedUser.role === 'super_admin' && 'Tous les droits'}
+                          {selectedUser.role === 'user' && 'Utilisateur standard'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
+                    <p className="text-xs text-[var(--text-muted)] mb-2">Changer le rôle:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['user', 'collaborator', 'admin', 'super_admin'] as UserRole[]).map((role) => (
+                        <button
+                          key={role}
+                          onClick={() => updateUserRole(selectedUser.id, role)}
+                          disabled={isUpdatingRole || selectedUser.role === role}
+                          className={`
+                            flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all
+                            ${selectedUser.role === role
+                              ? `${roleColors[role]} cursor-default`
+                              : 'border-[var(--card-border)] text-[var(--text-muted)] hover:border-mandarin hover:text-mandarin'
+                            }
+                            ${isUpdatingRole ? 'opacity-50 cursor-wait' : ''}
+                          `}
+                        >
+                          {selectedUser.role === role && <Check className="w-3 h-3" />}
+                          {roleLabels[role]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Contact Info */}
               <div>
                 <h4 className="text-sm font-medium text-[var(--text-muted)] mb-3">Contact</h4>
@@ -551,6 +713,123 @@ export default function AdminUsersPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Collaborator Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-[var(--card-border)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-mandarin/10 rounded-lg">
+                    <UserPlus className="w-5 h-5 text-mandarin" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                      Créer un collaborateur
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Nouveau compte avec accès au portail collaborateur
+                    </p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setShowCreateModal(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            <form onSubmit={createCollaborator} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Nom complet *
+                </label>
+                <input
+                  type="text"
+                  value={createForm.fullName}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Ex: Zhang Wei"
+                  required
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="collaborateur@example.com"
+                  required
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Mot de passe temporaire *
+                </label>
+                <input
+                  type="text"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Minimum 8 caractères"
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
+                />
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Le collaborateur devra changer ce mot de passe à sa première connexion
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Téléphone (optionnel)
+                </label>
+                <input
+                  type="tel"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+86 123 456 7890"
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isCreating}
+                  className="flex-1 bg-mandarin hover:bg-mandarin/90"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Création...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Créer le compte
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

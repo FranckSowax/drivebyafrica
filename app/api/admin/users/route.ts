@@ -1,32 +1,17 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
-
-async function createSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
+import { requireAdmin } from '@/lib/auth/admin-check';
+import { createClient } from '@supabase/supabase-js';
 
 // GET: Fetch all users with their stats
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const supabase = adminCheck.supabase;
     const { searchParams } = new URL(request.url);
 
     const page = parseInt(searchParams.get('page') || '1');
@@ -103,6 +88,7 @@ export async function GET(request: Request) {
       preferred_currency: p.preferred_currency || 'XAF',
       avatar_url: p.avatar_url,
       verification_status: p.verification_status || 'pending',
+      role: p.role || 'user',
       created_at: p.created_at,
       updated_at: p.updated_at,
       // Stats
@@ -149,6 +135,153 @@ export async function GET(request: Request) {
     console.error('Error fetching users:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des utilisateurs' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: Update user role
+export async function PUT(request: Request) {
+  try {
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const supabase = adminCheck.supabase;
+    const body = await request.json();
+    const { userId, role } = body;
+
+    if (!userId || !role) {
+      return NextResponse.json(
+        { error: 'userId et role sont requis' },
+        { status: 400 }
+      );
+    }
+
+    // Validate role
+    const validRoles = ['user', 'admin', 'super_admin', 'collaborator'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: 'Rôle invalide' },
+        { status: 400 }
+      );
+    }
+
+    // Update user role
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({ success: true, message: 'Rôle mis à jour avec succès' });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors de la mise à jour du rôle' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST: Create a new collaborator account
+export async function POST(request: Request) {
+  try {
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const body = await request.json();
+    const { email, password, fullName, phone } = body;
+
+    if (!email || !password || !fullName) {
+      return NextResponse.json(
+        { error: 'Email, mot de passe et nom complet sont requis' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: 'Le mot de passe doit contenir au moins 8 caractères' },
+        { status: 400 }
+      );
+    }
+
+    // Use service role client for admin operations
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Auto-confirm email for collaborators
+    });
+
+    if (authError) {
+      console.error('Auth error:', authError);
+      if (authError.message.includes('already registered')) {
+        return NextResponse.json(
+          { error: 'Cet email est déjà utilisé' },
+          { status: 400 }
+        );
+      }
+      throw authError;
+    }
+
+    if (!authData.user) {
+      return NextResponse.json(
+        { error: 'Échec de la création du compte' },
+        { status: 500 }
+      );
+    }
+
+    // Create or update profile with collaborator role
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: authData.user.id,
+        full_name: fullName,
+        phone: phone || null,
+        role: 'collaborator',
+        country: 'China', // Default for collaborators
+        verification_status: 'verified',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+    if (profileError) {
+      console.error('Profile error:', profileError);
+      // Try to delete the auth user if profile creation fails
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      throw profileError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Collaborateur créé avec succès',
+      user: {
+        id: authData.user.id,
+        email: authData.user.email,
+        fullName,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating collaborator:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors de la création du collaborateur' },
       { status: 500 }
     );
   }
