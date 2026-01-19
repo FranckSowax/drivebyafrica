@@ -106,11 +106,31 @@ function buildQueryString(
     params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
   }
 
-  // Apply sorting - only id sort works without timeout on 80k+ rows
-  // All other sorts (price, year, mileage, created_at) cause statement timeouts
-  // because they lack proper indexes. Use id.desc as it uses the primary key index.
-  // TODO: Add database indexes for other sort columns to enable them
-  const orderBy = 'id.desc';
+  // Apply sorting - use id as secondary sort for consistency
+  let orderBy = 'id.desc';
+  switch (filters?.sortBy) {
+    case 'newest':
+      orderBy = 'id.desc';
+      break;
+    case 'price_asc':
+      orderBy = 'start_price_usd.asc.nullslast,id.desc';
+      break;
+    case 'price_desc':
+      orderBy = 'start_price_usd.desc.nullsfirst,id.desc';
+      break;
+    case 'year_desc':
+      orderBy = 'year.desc.nullslast,id.desc';
+      break;
+    case 'year_asc':
+      orderBy = 'year.asc.nullslast,id.desc';
+      break;
+    case 'mileage_asc':
+      orderBy = 'mileage.asc.nullslast,id.desc';
+      break;
+    case 'mileage_desc':
+      orderBy = 'mileage.desc.nullsfirst,id.desc';
+      break;
+  }
   params.set('order', orderBy);
 
   // Apply pagination using offset/limit

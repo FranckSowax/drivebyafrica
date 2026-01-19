@@ -11,11 +11,14 @@ import { useVehicles } from '@/lib/hooks/useVehicles';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { useFilterStore } from '@/store/useFilterStore';
 
-// Note: Only 'newest' sort works on 80k+ rows without database indexes
-// Other sorts (price, year, mileage) cause statement timeouts
-// TODO: Re-enable once database indexes are added
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Plus récents' },
+  { value: 'price_asc', label: 'Prix croissant' },
+  { value: 'price_desc', label: 'Prix décroissant' },
+  { value: 'year_desc', label: 'Année (récent)' },
+  { value: 'year_asc', label: 'Année (ancien)' },
+  { value: 'mileage_asc', label: 'Kilométrage (bas)' },
+  { value: 'mileage_desc', label: 'Kilométrage (haut)' },
 ];
 
 const ITEMS_PER_PAGE = 36;
