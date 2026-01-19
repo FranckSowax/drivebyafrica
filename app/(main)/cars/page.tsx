@@ -49,15 +49,7 @@ export default function CarsPage() {
   }, [filters.search, isHydrated]);
 
   // Use vehicles hook with current filters
-  const {
-    vehicles,
-    isLoading,
-    isFetching,
-    isError,
-    error,
-    totalCount,
-    refetch
-  } = useVehicles({
+  const { vehicles, isLoading, totalCount, refetch } = useVehicles({
     filters: isHydrated ? filters : undefined,
     page,
     limit: ITEMS_PER_PAGE,
@@ -205,12 +197,8 @@ export default function CarsPage() {
             <VehicleGrid
               vehicles={vehicles}
               isLoading={isLoading}
-              isFetching={isFetching}
-              isError={isError}
-              error={error}
               favorites={favorites}
               onFavorite={toggleFavorite}
-              onRetry={refetch}
             />
 
             {/* Pagination */}

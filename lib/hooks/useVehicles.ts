@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
@@ -19,33 +19,24 @@ function isImageValid(imageUrl: string | undefined): boolean {
   // Encar/Korea images are usually permanent
   if (imageUrl.includes('encar') || imageUrl.includes('ci.encar.com')) return true;
 
-  // CHE168 images (autoimg.cn) - usually permanent when proxied
-  if (imageUrl.includes('autoimg.cn')) return true;
-
-  // Check x-expires timestamp for Dongchedi images (byteimg.com)
+  // Check x-expires timestamp for Dongchedi images
   const expiresMatch = imageUrl.match(/x-expires=(\d+)/);
   if (expiresMatch) {
     const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
-    // Consider valid if expiry is in the future (with 5 min buffer)
-    return expiresTimestamp > Date.now() + 300000;
+    return expiresTimestamp > Date.now();
   }
 
-  // DubiCars and other URLs - assume valid
+  // Other URLs are considered valid
   return true;
 }
 
 /**
- * Check if a vehicle has valid displayable images
- * Filters out vehicles with NO images OR only expired images
+ * Check if a vehicle has valid images
  */
 function hasValidImages(vehicle: Vehicle): boolean {
   const images = parseImagesField(vehicle.images);
-
-  // No images at all
   if (images.length === 0) return false;
-
-  // Check if at least one image is valid (not expired)
-  return images.some(img => isImageValid(img));
+  return isImageValid(images[0]);
 }
 
 interface UseVehiclesOptions {
@@ -57,13 +48,10 @@ interface UseVehiclesOptions {
 interface UseVehiclesReturn {
   vehicles: Vehicle[];
   isLoading: boolean;
-  isFetching: boolean;
   error: Error | null;
-  isError: boolean;
   totalCount: number;
   hasMore: boolean;
   refetch: () => Promise<void>;
-  failureCount: number;
 }
 
 // Query key factory for better cache management
@@ -187,7 +175,7 @@ async function fetchVehicles(
     throw new Error(queryError.message);
   }
 
-  // Filter out vehicles with NO images OR only expired images
+  // Filter out vehicles with empty or expired images
   const validVehicles = (data as Vehicle[]).filter(hasValidImages);
 
   return {
@@ -215,24 +203,17 @@ export function useVehicles({
     isFetching,
     error,
     refetch: queryRefetch,
-    isError,
-    failureCount,
   } = useQuery({
     queryKey,
     queryFn: () => fetchVehicles(filters, page, limit),
     // Keep previous data while fetching new data (smooth pagination)
     placeholderData: (previousData) => previousData,
-    // Data is fresh for 2 minutes (reduced for fresher data)
-    staleTime: 2 * 60 * 1000,
-    // Keep in cache for 10 minutes
-    gcTime: 10 * 60 * 1000,
-    // Enable retry with exponential backoff (3 attempts)
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-    // Refetch on window focus for fresh data
-    refetchOnWindowFocus: true,
-    // Refetch on reconnect
-    refetchOnReconnect: true,
+    // Data is fresh for 5 minutes
+    staleTime: 5 * 60 * 1000,
+    // Keep in cache for 30 minutes
+    gcTime: 30 * 60 * 1000,
+    // Disable retry to prevent infinite loops on 416 errors
+    retry: false,
   });
 
   // Prefetch next page for smoother pagination
@@ -253,10 +234,10 @@ export function useVehicles({
     }
   }, [data, filters, page, limit, queryClient]);
 
-  // Wrapper for refetch that also clears errors
-  const refetch = useCallback(async () => {
+  // Wrapper for refetch to match the original interface
+  const refetch = async () => {
     await queryRefetch();
-  }, [queryRefetch]);
+  };
 
   // Calculate if there are more pages based on totalCount
   const currentOffset = (page - 1) * limit + (data?.vehicles.length ?? 0);
@@ -264,14 +245,11 @@ export function useVehicles({
 
   return {
     vehicles: data?.vehicles ?? [],
-    isLoading,
-    isFetching,
+    isLoading: isLoading || isFetching,
     error: error as Error | null,
-    isError,
     totalCount: data?.totalCount ?? 0,
     hasMore: hasMorePages,
     refetch,
-    failureCount,
   };
 }
 
