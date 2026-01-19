@@ -1,42 +1,37 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
 
 /**
  * Check if an image URL is valid (not expired)
- * Dongchedi images have x-expires timestamp in URL
+ * NOTE: We no longer filter out vehicles - just flag them
  */
-function isImageValid(imageUrl: string | undefined): boolean {
+function isImageExpired(imageUrl: string | undefined): boolean {
   if (!imageUrl) return false;
-
-  // Supabase storage URLs are permanent
-  if (imageUrl.includes('supabase')) return true;
-
-  // Encar/Korea images are usually permanent
-  if (imageUrl.includes('encar') || imageUrl.includes('ci.encar.com')) return true;
 
   // Check x-expires timestamp for Dongchedi images
   const expiresMatch = imageUrl.match(/x-expires=(\d+)/);
   if (expiresMatch) {
     const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
-    return expiresTimestamp > Date.now();
+    // Add 1 hour buffer before considering expired
+    return expiresTimestamp < Date.now() - 3600000;
   }
 
-  // Other URLs are considered valid
-  return true;
+  return false;
 }
 
 /**
- * Check if a vehicle has valid images
+ * Check if a vehicle has any images (doesn't filter based on expiry)
+ * Vehicles without ANY images are filtered out
+ * Vehicles with expired images still show (with placeholder fallback in UI)
  */
-function hasValidImages(vehicle: Vehicle): boolean {
+function hasAnyImages(vehicle: Vehicle): boolean {
   const images = parseImagesField(vehicle.images);
-  if (images.length === 0) return false;
-  return isImageValid(images[0]);
+  return images.length > 0;
 }
 
 interface UseVehiclesOptions {
@@ -48,10 +43,13 @@ interface UseVehiclesOptions {
 interface UseVehiclesReturn {
   vehicles: Vehicle[];
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
+  isError: boolean;
   totalCount: number;
   hasMore: boolean;
   refetch: () => Promise<void>;
+  failureCount: number;
 }
 
 // Query key factory for better cache management
@@ -175,11 +173,12 @@ async function fetchVehicles(
     throw new Error(queryError.message);
   }
 
-  // Filter out vehicles with empty or expired images
-  const validVehicles = (data as Vehicle[]).filter(hasValidImages);
+  // Only filter out vehicles with NO images at all
+  // Vehicles with expired images will still show (UI handles fallback)
+  const vehiclesWithImages = (data as Vehicle[]).filter(hasAnyImages);
 
   return {
-    vehicles: validVehicles,
+    vehicles: vehiclesWithImages,
     totalCount: count || 0,
   };
 }
@@ -203,17 +202,24 @@ export function useVehicles({
     isFetching,
     error,
     refetch: queryRefetch,
+    isError,
+    failureCount,
   } = useQuery({
     queryKey,
     queryFn: () => fetchVehicles(filters, page, limit),
     // Keep previous data while fetching new data (smooth pagination)
     placeholderData: (previousData) => previousData,
-    // Data is fresh for 5 minutes
-    staleTime: 5 * 60 * 1000,
-    // Keep in cache for 30 minutes
-    gcTime: 30 * 60 * 1000,
-    // Disable retry to prevent infinite loops on 416 errors
-    retry: false,
+    // Data is fresh for 2 minutes (reduced for fresher data)
+    staleTime: 2 * 60 * 1000,
+    // Keep in cache for 10 minutes
+    gcTime: 10 * 60 * 1000,
+    // Enable retry with exponential backoff (3 attempts)
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    // Refetch on window focus for fresh data
+    refetchOnWindowFocus: true,
+    // Refetch on reconnect
+    refetchOnReconnect: true,
   });
 
   // Prefetch next page for smoother pagination
@@ -234,10 +240,10 @@ export function useVehicles({
     }
   }, [data, filters, page, limit, queryClient]);
 
-  // Wrapper for refetch to match the original interface
-  const refetch = async () => {
+  // Wrapper for refetch that also clears errors
+  const refetch = useCallback(async () => {
     await queryRefetch();
-  };
+  }, [queryRefetch]);
 
   // Calculate if there are more pages based on totalCount
   const currentOffset = (page - 1) * limit + (data?.vehicles.length ?? 0);
@@ -245,11 +251,14 @@ export function useVehicles({
 
   return {
     vehicles: data?.vehicles ?? [],
-    isLoading: isLoading || isFetching,
+    isLoading,
+    isFetching,
     error: error as Error | null,
+    isError,
     totalCount: data?.totalCount ?? 0,
     hasMore: hasMorePages,
     refetch,
+    failureCount,
   };
 }
 
