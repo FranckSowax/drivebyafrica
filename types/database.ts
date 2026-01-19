@@ -100,7 +100,7 @@ export type Database = {
           balance: number;
           verification_status: string;
           avatar_url: string | null;
-          role: 'user' | 'admin' | 'super_admin';
+          role: 'user' | 'admin' | 'super_admin' | 'collaborator';
           created_at: string;
           updated_at: string;
         };
@@ -115,7 +115,7 @@ export type Database = {
           balance?: number;
           verification_status?: string;
           avatar_url?: string | null;
-          role?: 'user' | 'admin' | 'super_admin';
+          role?: 'user' | 'admin' | 'super_admin' | 'collaborator';
           created_at?: string;
           updated_at?: string;
         };
@@ -130,7 +130,7 @@ export type Database = {
           balance?: number;
           verification_status?: string;
           avatar_url?: string | null;
-          role?: 'user' | 'admin' | 'super_admin';
+          role?: 'user' | 'admin' | 'super_admin' | 'collaborator';
           created_at?: string;
           updated_at?: string;
         };
@@ -1028,6 +1028,139 @@ export type Database = {
           }
         ];
       };
+      shipping_routes: {
+        Row: {
+          id: string;
+          destination_name: string;
+          destination_country: string;
+          destination_port: string | null;
+          origin_country: string;
+          origin_port: string | null;
+          shipping_cost_usd: number;
+          insurance_rate: number;
+          transit_days: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          destination_name: string;
+          destination_country: string;
+          destination_port?: string | null;
+          origin_country: string;
+          origin_port?: string | null;
+          shipping_cost_usd: number;
+          insurance_rate?: number;
+          transit_days: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          destination_name?: string;
+          destination_country?: string;
+          destination_port?: string | null;
+          origin_country?: string;
+          origin_port?: string | null;
+          shipping_cost_usd?: number;
+          insurance_rate?: number;
+          transit_days?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      collaborator_notifications: {
+        Row: {
+          id: string;
+          type: string;
+          title: string;
+          message: string | null;
+          data: Json | null;
+          priority: 'low' | 'normal' | 'high' | 'urgent';
+          action_url: string | null;
+          related_entity_type: string | null;
+          related_entity_id: string | null;
+          read_by: string[];
+          dismissed_by: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          type: string;
+          title: string;
+          message?: string | null;
+          data?: Json | null;
+          priority?: 'low' | 'normal' | 'high' | 'urgent';
+          action_url?: string | null;
+          related_entity_type?: string | null;
+          related_entity_id?: string | null;
+          read_by?: string[];
+          dismissed_by?: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          type?: string;
+          title?: string;
+          message?: string | null;
+          data?: Json | null;
+          priority?: 'low' | 'normal' | 'high' | 'urgent';
+          action_url?: string | null;
+          related_entity_type?: string | null;
+          related_entity_id?: string | null;
+          read_by?: string[];
+          dismissed_by?: string[];
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      collaborator_activity_log: {
+        Row: {
+          id: string;
+          collaborator_id: string;
+          action_type: string;
+          order_id: string | null;
+          quote_id: string | null;
+          details: Json | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          collaborator_id: string;
+          action_type: string;
+          order_id?: string | null;
+          quote_id?: string | null;
+          details?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          collaborator_id?: string;
+          action_type?: string;
+          order_id?: string | null;
+          quote_id?: string | null;
+          details?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "collaborator_activity_log_collaborator_id_fkey";
+            columns: ["collaborator_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1061,6 +1194,9 @@ export type ChatConversation = Database['public']['Tables']['chat_conversations'
 export type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 export type QuoteReassignment = Database['public']['Tables']['quote_reassignments']['Row'];
 export type AdminNotification = Database['public']['Tables']['admin_notifications']['Row'];
+export type ShippingRoute = Database['public']['Tables']['shipping_routes']['Row'];
+export type CollaboratorNotification = Database['public']['Tables']['collaborator_notifications']['Row'];
+export type CollaboratorActivityLog = Database['public']['Tables']['collaborator_activity_log']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];

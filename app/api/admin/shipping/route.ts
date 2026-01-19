@@ -1,6 +1,5 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 // Default shipping routes (used if database table doesn't exist) - prices doubled
 const DEFAULT_ROUTES = [
@@ -14,30 +13,15 @@ const DEFAULT_ROUTES = [
   { id: '8', destination_id: 'cotonou', destination_name: 'Cotonou', destination_country: 'Bénin', destination_flag: '🇧🇯', korea_cost_usd: 4100, china_cost_usd: 4700, dubai_cost_usd: 3700, is_active: true },
 ];
 
-// Create untyped Supabase client for tables not in Database type
-async function createUntypedClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
-
 export async function GET() {
   try {
-    const supabase = await createUntypedClient();
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const supabase = adminCheck.supabase;
 
     // Try to fetch from shipping_routes table
     const { data: routes, error } = await supabase
@@ -76,7 +60,13 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const supabase = await createUntypedClient();
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const supabase = adminCheck.supabase;
     const { routes } = await request.json();
 
     // Try to upsert routes
