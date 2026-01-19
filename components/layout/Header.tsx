@@ -22,17 +22,20 @@ export function Header() {
     : '/logo-driveby-africa-dark.png';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 sm:h-16 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)] transition-all duration-200">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 sm:h-16 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
       <div className="container mx-auto px-3 sm:px-4 h-full">
         <div className="flex items-center justify-between h-full gap-2">
-          {/* Logo - Fixed size to prevent compression */}
-          <Link href="/" className="flex-shrink-0 relative z-20 block hover:opacity-90 transition-opacity">
+          {/* Logo - Ensure clickable on mobile with proper touch target */}
+          <Link
+            href="/"
+            className="flex-shrink-0 block hover:opacity-90 active:opacity-70 transition-opacity touch-manipulation min-h-[44px] flex items-center"
+          >
             <Image
               src={logoSrc}
               alt="Driveby Africa"
               width={200}
               height={50}
-              className="h-8 sm:h-10 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain pointer-events-none"
               priority
             />
           </Link>
@@ -40,40 +43,34 @@ export function Header() {
           {/* Right Side - Responsive layout */}
           <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Locale Switcher (Language & Currency) */}
-            <div className="relative z-30">
-              <LocaleSwitcher />
-            </div>
+            <LocaleSwitcher />
 
             {/* Theme Toggle */}
-            <div className="hidden sm:block relative z-20">
+            <div className="hidden sm:block">
               <ThemeToggle />
             </div>
 
             {user ? (
               <>
                 {/* Notifications */}
-                <div className="relative z-20">
-                  <NotificationBell />
-                </div>
+                <NotificationBell />
 
                 {/* Favorites */}
                 <Link
                   href="/dashboard/favorites"
-                  className="relative z-20 p-2 text-[var(--text-muted)] hover:text-mandarin transition-colors hidden sm:block"
+                  className="p-2 text-[var(--text-muted)] hover:text-mandarin active:text-mandarin/70 transition-colors hidden sm:block touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label="Favoris"
                 >
                   <Heart className="w-5 h-5" />
                 </Link>
 
                 {/* User Menu */}
-                <div className="relative z-40 pl-1">
+                <div className="pl-1">
                   <UserMenu />
                 </div>
               </>
             ) : (
-              <div className="relative z-20">
-                <AuthButtons />
-              </div>
+              <AuthButtons />
             )}
           </div>
         </div>

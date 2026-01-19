@@ -235,23 +235,24 @@ export function LocaleSwitcher() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Trigger Button */}
+      {/* Trigger Button - Minimum 44px touch target for mobile */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-xl transition-all',
-          'hover:bg-[var(--surface)] active:scale-95',
+          'hover:bg-[var(--surface)] active:scale-95 touch-manipulation',
           'text-[var(--text-secondary)]',
+          'min-h-[44px]',
           isOpen && 'bg-[var(--surface)]'
         )}
         aria-label="Change language and currency"
       >
-        <Globe className="w-4 h-4" />
-        <span className="hidden sm:inline text-base">{currentLanguage?.flag}</span>
-        <span className="font-semibold text-[var(--text-primary)]">{displayCurrency}</span>
+        <Globe className="w-4 h-4 pointer-events-none" />
+        <span className="hidden sm:inline text-base pointer-events-none">{currentLanguage?.flag}</span>
+        <span className="font-semibold text-[var(--text-primary)] pointer-events-none">{displayCurrency}</span>
         <ChevronDown
           className={cn(
-            'w-3.5 h-3.5 transition-transform duration-200',
+            'w-3.5 h-3.5 transition-transform duration-200 pointer-events-none',
             isOpen && 'rotate-180'
           )}
         />
