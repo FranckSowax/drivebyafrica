@@ -2,7 +2,6 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
 
 interface UseVehiclesOptions {
@@ -31,149 +30,172 @@ export const vehicleKeys = {
 };
 
 /**
- * Fetch vehicles from Supabase with filters, pagination, and sorting
- * Includes retry logic for AbortError which can occur during initial page load
+ * Build PostgREST query string from filters
  */
-async function fetchVehicles(
+function buildQueryString(
   filters: VehicleFilters | undefined,
   page: number,
-  limit: number,
-  retryCount = 0
-): Promise<{ vehicles: Vehicle[]; totalCount: number }> {
-  const MAX_RETRIES = 3;
-  const supabase = createClient();
+  limit: number
+): string {
+  const params = new URLSearchParams();
 
-  let query = supabase.from('vehicles').select('*', { count: 'exact' });
+  // Select all columns
+  params.set('select', '*');
 
   // Apply filters
   if (filters?.source && filters.source !== 'all') {
-    query = query.eq('source', filters.source);
+    params.append('source', `eq.${filters.source}`);
   }
 
   if (filters?.makes && filters.makes.length > 0) {
-    query = query.in('make', filters.makes);
+    params.append('make', `in.(${filters.makes.join(',')})`);
   }
 
   if (filters?.models && filters.models.length > 0) {
-    query = query.in('model', filters.models);
+    params.append('model', `in.(${filters.models.join(',')})`);
   }
 
   if (filters?.yearFrom) {
-    query = query.gte('year', filters.yearFrom);
+    params.append('year', `gte.${filters.yearFrom}`);
   }
 
   if (filters?.yearTo) {
-    query = query.lte('year', filters.yearTo);
+    params.append('year', `lte.${filters.yearTo}`);
   }
 
   if (filters?.priceFrom) {
-    query = query.gte('current_price_usd', filters.priceFrom);
+    params.append('current_price_usd', `gte.${filters.priceFrom}`);
   }
 
   if (filters?.priceTo) {
-    query = query.lte('current_price_usd', filters.priceTo);
+    params.append('current_price_usd', `lte.${filters.priceTo}`);
   }
 
   if (filters?.mileageMax) {
-    query = query.lte('mileage', filters.mileageMax);
+    params.append('mileage', `lte.${filters.mileageMax}`);
   }
 
   if (filters?.transmission) {
-    query = query.eq('transmission', filters.transmission);
+    params.append('transmission', `eq.${filters.transmission}`);
   }
 
   if (filters?.fuelType) {
-    query = query.eq('fuel_type', filters.fuelType);
+    params.append('fuel_type', `eq.${filters.fuelType}`);
   }
 
   if (filters?.driveType) {
-    query = query.eq('drive_type', filters.driveType);
+    params.append('drive_type', `eq.${filters.driveType}`);
   }
 
   if (filters?.color) {
-    query = query.ilike('color', `%${filters.color}%`);
+    params.append('color', `ilike.*${filters.color}*`);
   }
 
   if (filters?.bodyType) {
-    query = query.eq('body_type', filters.bodyType);
+    params.append('body_type', `eq.${filters.bodyType}`);
   }
 
   if (filters?.status) {
-    query = query.eq('status', filters.status);
+    params.append('status', `eq.${filters.status}`);
   }
 
   // Apply search (searches make and model)
   if (filters?.search && filters.search.trim()) {
-    const searchTerm = filters.search.trim().toLowerCase();
-    query = query.or(`make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`);
+    const searchTerm = filters.search.trim();
+    params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
   }
 
   // Apply sorting
+  let orderBy = 'created_at.desc';
   switch (filters?.sortBy) {
     case 'price_asc':
-      query = query.order('start_price_usd', { ascending: true, nullsFirst: false });
+      orderBy = 'start_price_usd.asc.nullslast';
       break;
     case 'price_desc':
-      query = query.order('start_price_usd', { ascending: false, nullsFirst: false });
+      orderBy = 'start_price_usd.desc.nullslast';
       break;
     case 'year_desc':
-      query = query.order('year', { ascending: false, nullsFirst: false });
+      orderBy = 'year.desc.nullslast';
       break;
     case 'year_asc':
-      query = query.order('year', { ascending: true, nullsFirst: false });
+      orderBy = 'year.asc.nullslast';
       break;
     case 'mileage_asc':
-      query = query.order('mileage', { ascending: true, nullsFirst: false });
+      orderBy = 'mileage.asc.nullslast';
       break;
     case 'mileage_desc':
-      query = query.order('mileage', { ascending: false, nullsFirst: false });
-      break;
-    default:
-      query = query.order('created_at', { ascending: false, nullsFirst: false });
+      orderBy = 'mileage.desc.nullslast';
       break;
   }
+  params.set('order', orderBy);
 
-  // Apply pagination
+  // Apply pagination using offset/limit
   const from = (page - 1) * limit;
-  const to = from + limit - 1;
-  query = query.range(from, to);
+  params.set('offset', from.toString());
+  params.set('limit', limit.toString());
 
-  const { data, error: queryError, count } = await query;
+  return params.toString();
+}
 
-  // Debug logging
-  console.log('[useVehicles] Query result:', {
-    dataLength: data?.length || 0,
-    count,
-    error: queryError?.message,
-    filters,
-    page,
-    limit,
-    retryCount
+/**
+ * Fetch vehicles directly via PostgREST API (bypasses Supabase client auth issues)
+ */
+async function fetchVehicles(
+  filters: VehicleFilters | undefined,
+  page: number,
+  limit: number
+): Promise<{ vehicles: Vehicle[]; totalCount: number }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase configuration missing');
+  }
+
+  const queryString = buildQueryString(filters, page, limit);
+  const url = `${supabaseUrl}/rest/v1/vehicles?${queryString}`;
+
+  console.log('[useVehicles] Fetching:', url);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'count=exact',
+    },
   });
 
-  // Handle AbortError by retrying (common during initial page load)
-  if (queryError) {
-    const isAbortError = queryError.message?.includes('AbortError') ||
-                         queryError.message?.includes('signal is aborted');
-
-    if (isAbortError && retryCount < MAX_RETRIES) {
-      console.log(`[useVehicles] AbortError detected, retrying... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      // Wait a bit before retrying
-      await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
-      return fetchVehicles(filters, page, limit, retryCount + 1);
-    }
-
-    console.error('[useVehicles] Query error:', queryError);
-    throw new Error(queryError.message);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[useVehicles] Fetch error:', response.status, errorText);
+    throw new Error(`Failed to fetch vehicles: ${response.status}`);
   }
 
-  // Return all vehicles - image validation moved to display layer
-  // This ensures vehicles are always fetched, even if some images are expired
-  const vehicles = (data as Vehicle[]) || [];
+  const data = await response.json();
+
+  // Get total count from Content-Range header
+  const contentRange = response.headers.get('Content-Range');
+  let totalCount = 0;
+  if (contentRange) {
+    // Format: "0-35/1234" or "*/0" if empty
+    const match = contentRange.match(/\/(\d+)/);
+    if (match) {
+      totalCount = parseInt(match[1], 10);
+    }
+  }
+
+  console.log('[useVehicles] Success:', {
+    dataLength: data?.length || 0,
+    totalCount,
+    page,
+    limit
+  });
 
   return {
-    vehicles,
-    totalCount: count || 0,
+    vehicles: (data as Vehicle[]) || [],
+    totalCount,
   };
 }
 
@@ -206,7 +228,7 @@ export function useVehicles({
     // Keep in cache for 10 minutes
     gcTime: 10 * 60 * 1000,
     // Enable retry for transient errors
-    retry: 2,
+    retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
