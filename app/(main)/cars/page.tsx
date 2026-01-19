@@ -49,8 +49,9 @@ export default function CarsPage() {
   }, [filters.search, isHydrated]);
 
   // Use vehicles hook with current filters
+  // Always pass filters to ensure data loads (defaultFilters are used before hydration)
   const { vehicles, isLoading, totalCount, refetch } = useVehicles({
-    filters: isHydrated ? filters : undefined,
+    filters,
     page,
     limit: ITEMS_PER_PAGE,
   });
