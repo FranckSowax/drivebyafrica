@@ -19,24 +19,29 @@ function isImageValid(imageUrl: string | undefined): boolean {
   // Encar/Korea images are usually permanent
   if (imageUrl.includes('encar') || imageUrl.includes('ci.encar.com')) return true;
 
-  // Check x-expires timestamp for Dongchedi images
+  // CHE168 images (autoimg.cn) are permanent - always valid
+  if (imageUrl.includes('autoimg.cn')) return true;
+
+  // Check x-expires timestamp for Dongchedi images (byteimg.com)
   const expiresMatch = imageUrl.match(/x-expires=(\d+)/);
   if (expiresMatch) {
     const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
-    return expiresTimestamp > Date.now();
+    // Add 5 minute buffer to avoid showing about-to-expire images
+    return expiresTimestamp > Date.now() + 300000;
   }
 
-  // Other URLs are considered valid
+  // Other URLs are considered valid (DubiCars, etc.)
   return true;
 }
 
 /**
- * Check if a vehicle has valid images
+ * Check if a vehicle has at least one valid displayable image
  */
 function hasValidImages(vehicle: Vehicle): boolean {
   const images = parseImagesField(vehicle.images);
   if (images.length === 0) return false;
-  return isImageValid(images[0]);
+  // Return true if ANY image is valid (not just the first one)
+  return images.some(img => isImageValid(img));
 }
 
 interface UseVehiclesOptions {
