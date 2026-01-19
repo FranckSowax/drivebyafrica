@@ -3,46 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
-
-/**
- * Check if an image URL is valid (not expired)
- * Dongchedi images have x-expires timestamp in URL
- */
-function isImageValid(imageUrl: string | undefined): boolean {
-  if (!imageUrl) return false;
-
-  // Supabase storage URLs are permanent
-  if (imageUrl.includes('supabase')) return true;
-
-  // Encar/Korea images are usually permanent
-  if (imageUrl.includes('encar') || imageUrl.includes('ci.encar.com')) return true;
-
-  // CHE168 images (autoimg.cn) are permanent - always valid
-  if (imageUrl.includes('autoimg.cn')) return true;
-
-  // Check x-expires timestamp for Dongchedi images (byteimg.com)
-  const expiresMatch = imageUrl.match(/x-expires=(\d+)/);
-  if (expiresMatch) {
-    const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
-    // Add 5 minute buffer to avoid showing about-to-expire images
-    return expiresTimestamp > Date.now() + 300000;
-  }
-
-  // Other URLs are considered valid (DubiCars, etc.)
-  return true;
-}
-
-/**
- * Check if a vehicle has at least one valid displayable image
- */
-function hasValidImages(vehicle: Vehicle): boolean {
-  const images = parseImagesField(vehicle.images);
-  if (images.length === 0) return false;
-  // Return true if ANY image is valid (not just the first one)
-  return images.some(img => isImageValid(img));
-}
 
 interface UseVehiclesOptions {
   filters?: VehicleFilters;
@@ -180,11 +141,12 @@ async function fetchVehicles(
     throw new Error(queryError.message);
   }
 
-  // Filter out vehicles with empty or expired images
-  const validVehicles = (data as Vehicle[]).filter(hasValidImages);
+  // Return all vehicles - image validation moved to display layer
+  // This ensures vehicles are always fetched, even if some images are expired
+  const vehicles = (data as Vehicle[]) || [];
 
   return {
-    vehicles: validVehicles,
+    vehicles,
     totalCount: count || 0,
   };
 }
