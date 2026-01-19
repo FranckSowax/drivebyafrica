@@ -68,9 +68,12 @@ export default function RegisterPage() {
 
   const supabase = createClient();
 
+  // Check if Turnstile is configured
+  const turnstileConfigured = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
   const onSubmit = async (data: RegisterFormData) => {
-    // Require Turnstile verification in production
-    if (!turnstileToken && process.env.NODE_ENV === 'production') {
+    // Only require Turnstile verification if it's configured
+    if (turnstileConfigured && !turnstileToken) {
       toast.error('Vérification requise', 'Veuillez compléter la vérification de sécurité');
       return;
     }
