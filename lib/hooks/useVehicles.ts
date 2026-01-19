@@ -100,7 +100,8 @@ function buildQueryString(
   }
 
   // Apply search (searches make and model)
-  if (filters?.search && filters.search.trim()) {
+  // Require minimum 3 characters to avoid expensive queries on short terms
+  if (filters?.search && filters.search.trim().length >= 3) {
     const searchTerm = filters.search.trim();
     params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
   }
@@ -155,8 +156,6 @@ async function fetchVehicles(
   const queryString = buildQueryString(filters, page, limit);
   const url = `${supabaseUrl}/rest/v1/vehicles?${queryString}`;
 
-  console.log('[useVehicles] Fetching:', url);
-
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -168,8 +167,6 @@ async function fetchVehicles(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[useVehicles] Fetch error:', response.status, errorText);
     throw new Error(`Failed to fetch vehicles: ${response.status}`);
   }
 
@@ -185,13 +182,6 @@ async function fetchVehicles(
       totalCount = parseInt(match[1], 10);
     }
   }
-
-  console.log('[useVehicles] Success:', {
-    dataLength: data?.length || 0,
-    totalCount,
-    page,
-    limit
-  });
 
   return {
     vehicles: (data as Vehicle[]) || [],
