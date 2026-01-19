@@ -1,99 +1,68 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
 }
 
+/**
+ * Garde d'authentification pour les pages admin
+ * Utilise le hook useAdminAuth pour une gestion robuste de la session
+ */
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const { isLoading, isAuthenticated, isAdmin, error } = useAdminAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      // Skip auth check for login page
-      if (pathname === '/admin/login') {
-        setIsAuthorized(true);
-        return;
-      }
+    // Ne pas rediriger si on est encore en train de charger
+    if (isLoading) return;
 
-      const { data: { user } } = await supabase.auth.getUser();
+    // Skip auth check for login page
+    if (pathname === '/admin/login') return;
 
-      if (!user) {
-        router.push('/admin/login');
-        return;
-      }
+    // Si non authentifié ou non admin, rediriger vers login
+    if (!isAuthenticated || !isAdmin) {
+      // Utiliser window.location pour une navigation complète
+      // Cela garantit que les cookies sont bien lus au prochain chargement
+      window.location.href = '/admin/login';
+    }
+  }, [isLoading, isAuthenticated, isAdmin, pathname]);
 
-      // Check if user is admin
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+  // Skip guard for login page
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
 
-      const role = profile?.role as string | undefined;
-      const isAdmin = role === 'admin' || role === 'super_admin';
-
-      if (!isAdmin) {
-        await supabase.auth.signOut();
-        router.push('/admin/login');
-        return;
-      }
-
-      setIsAuthorized(true);
-    };
-
-    checkAuth();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT' && pathname !== '/admin/login') {
-          router.push('/admin/login');
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          // Re-check admin status on sign in
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          const role = profile?.role as string | undefined;
-          const isAdmin = role === 'admin' || role === 'super_admin';
-
-          if (!isAdmin) {
-            await supabase.auth.signOut();
-            router.push('/admin/login');
-          } else {
-            setIsAuthorized(true);
-          }
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [pathname, router, supabase]);
-
-  // Show loading while checking auth
-  if (isAuthorized === null) {
+  // Afficher le loader pendant la vérification
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-cod-gray flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-royal-blue animate-spin" />
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-royal-blue animate-spin mx-auto" />
+          <p className="mt-4 text-[var(--text-muted)] text-sm">Vérification de l&apos;accès...</p>
+        </div>
       </div>
     );
   }
 
+  // Afficher un loader pendant la redirection si non autorisé
+  if (!isAuthenticated || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-royal-blue animate-spin mx-auto" />
+          <p className="mt-4 text-[var(--text-muted)] text-sm">
+            {error || 'Redirection vers la page de connexion...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Utilisateur authentifié et admin - afficher le contenu
   return <>{children}</>;
 }

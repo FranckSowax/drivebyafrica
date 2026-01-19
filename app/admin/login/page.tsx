@@ -1,74 +1,88 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Loader2, Lock, Mail, AlertCircle, Shield } from 'lucide-react';
+import { Loader2, Lock, Mail, AlertCircle, Shield, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
+
+type LoginStep = 'idle' | 'authenticating' | 'verifying' | 'redirecting' | 'success';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<LoginStep>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const { isAdmin, isLoading: authLoading, isAuthenticated, signIn } = useAdminAuth();
+
+  // Rediriger si déjà connecté en tant qu'admin
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && isAdmin) {
+      setStep('redirecting');
+      // Navigation directe vers le dashboard
+      window.location.href = '/admin';
+    }
+  }, [authLoading, isAuthenticated, isAdmin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
+    setStep('authenticating');
 
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    // Étape 1: Authentification
+    const result = await signIn(email, password);
 
-      if (authError) {
-        setError('Email ou mot de passe incorrect');
-        return;
-      }
+    if (!result.success) {
+      setError(result.error || 'Erreur de connexion');
+      setStep('idle');
+      return;
+    }
 
-      if (!data.user) {
-        setError('Erreur de connexion');
-        return;
-      }
+    // Étape 2: Vérification admin réussie
+    setStep('verifying');
 
-      // Check if user is admin
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
+    // Petit délai pour permettre aux cookies de se synchroniser
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (profileError || !profile) {
-        await supabase.auth.signOut();
-        setError('Profil non trouvé');
-        return;
-      }
+    // Étape 3: Redirection
+    setStep('redirecting');
 
-      if (profile.role !== 'admin' && profile.role !== 'super_admin') {
-        await supabase.auth.signOut();
-        setError('Accès réservé aux administrateurs');
-        return;
-      }
+    // Utiliser une navigation dure pour s'assurer que le serveur reçoit les cookies
+    window.location.href = '/admin';
+  };
 
-      // Successful login - redirect to admin dashboard
-      router.push('/admin');
-      router.refresh();
-    } catch {
-      setError('Erreur de connexion au serveur');
-    } finally {
-      setIsLoading(false);
+  const getStepMessage = () => {
+    switch (step) {
+      case 'authenticating':
+        return 'Authentification...';
+      case 'verifying':
+        return 'Vérification des droits...';
+      case 'redirecting':
+        return 'Redirection...';
+      case 'success':
+        return 'Connecté!';
+      default:
+        return 'Se connecter';
     }
   };
+
+  const isProcessing = step !== 'idle';
+
+  // Afficher un loader si on vérifie la session existante
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-gray-50">
+        <div className="w-full max-w-md text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-royal-blue mx-auto mb-4" />
+          <p className="text-gray-500">Vérification de la session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-gray-50">
@@ -81,6 +95,7 @@ export default function AdminLoginPage() {
             width={250}
             height={80}
             className="h-16 w-auto"
+            priority
           />
         </div>
 
@@ -88,7 +103,11 @@ export default function AdminLoginPage() {
         <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
           <div className="text-center mb-8">
             <div className="mx-auto w-16 h-16 bg-royal-blue/10 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-royal-blue" />
+              {step === 'success' ? (
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              ) : (
+                <Shield className="h-8 w-8 text-royal-blue" />
+              )}
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Administration
@@ -124,7 +143,8 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@drivebyafrica.com"
                   required
-                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-royal-blue focus:ring-royal-blue"
+                  disabled={isProcessing}
+                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-royal-blue focus:ring-royal-blue disabled:opacity-50"
                 />
               </div>
             </div>
@@ -147,26 +167,54 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-royal-blue focus:ring-royal-blue"
+                  disabled={isProcessing}
+                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-royal-blue focus:ring-royal-blue disabled:opacity-50"
                 />
               </div>
             </div>
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isProcessing}
               className="w-full bg-royal-blue hover:bg-royal-blue/90 text-white font-semibold py-3"
             >
-              {isLoading ? (
+              {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connexion...
+                  {getStepMessage()}
                 </>
               ) : (
                 'Se connecter'
               )}
             </Button>
           </form>
+
+          {/* Progress indicator */}
+          {isProcessing && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                <span className={step === 'authenticating' ? 'text-royal-blue font-medium' : ''}>
+                  Authentification
+                </span>
+                <span className={step === 'verifying' ? 'text-royal-blue font-medium' : ''}>
+                  Vérification
+                </span>
+                <span className={step === 'redirecting' || step === 'success' ? 'text-royal-blue font-medium' : ''}>
+                  Redirection
+                </span>
+              </div>
+              <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-royal-blue transition-all duration-300"
+                  style={{
+                    width: step === 'authenticating' ? '33%' :
+                           step === 'verifying' ? '66%' :
+                           step === 'redirecting' || step === 'success' ? '100%' : '0%'
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
