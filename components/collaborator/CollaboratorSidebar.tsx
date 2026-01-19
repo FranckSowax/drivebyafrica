@@ -50,11 +50,11 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
       <div className="p-6 border-b border-nobel/20">
         <Link href="/collaborator" className="flex items-center gap-3">
           <Image
-            src="/driveby-africa-logo-dark.svg"
+            src="/logo-driveby-africa-dark.png"
             alt="Driveby Africa"
-            width={150}
-            height={40}
-            className="h-8 w-auto"
+            width={180}
+            height={60}
+            className="h-10 w-auto"
           />
         </Link>
         <p className="text-xs text-gray-500 mt-2">{t('collaborator.portal')}</p>
