@@ -15,17 +15,17 @@ export function AuthButtons() {
       {/* Mobile: Icon buttons with proper touch targets (44x44 minimum) */}
       <Link
         href="/login"
-        className="sm:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface)] active:bg-[var(--surface)] active:scale-95 transition-all touch-manipulation"
+        className="sm:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface)] active:bg-[var(--surface)] active:scale-95 transition-all touch-manipulation relative z-20"
         aria-label="Connexion"
       >
-        <LogIn className="w-5 h-5 pointer-events-none" />
+        <LogIn className="w-5 h-5" />
       </Link>
       <Link
         href="/register"
-        className="sm:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] p-2 rounded-lg bg-mandarin text-white hover:bg-orange-600 active:bg-orange-700 active:scale-95 transition-all touch-manipulation"
+        className="sm:hidden inline-flex items-center justify-center min-w-[44px] min-h-[44px] p-2 rounded-lg bg-mandarin text-white hover:bg-orange-600 active:bg-orange-700 active:scale-95 transition-all touch-manipulation relative z-20"
         aria-label="Inscription"
       >
-        <UserPlus className="w-5 h-5 pointer-events-none" />
+        <UserPlus className="w-5 h-5" />
       </Link>
 
       {/* Desktop: Text buttons */}
