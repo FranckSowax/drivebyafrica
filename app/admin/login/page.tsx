@@ -76,11 +76,11 @@ export default function AdminLoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Image
-            src="/driveby-africa-logo-dark.svg"
+            src="/logo-driveby-africa-dark.png"
             alt="Driveby Africa"
-            width={200}
-            height={50}
-            className="h-12 w-auto"
+            width={250}
+            height={80}
+            className="h-16 w-auto"
           />
         </div>
 
@@ -124,7 +124,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@drivebyafrica.com"
                   required
-                  className="pl-10 bg-cod-gray border-nobel/30 text-white placeholder:text-gray-500"
+                  className="pl-10 bg-white border-nobel/30 text-black placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="pl-10 bg-cod-gray border-nobel/30 text-white placeholder:text-gray-500"
+                  className="pl-10 bg-white border-nobel/30 text-black placeholder:text-gray-400"
                 />
               </div>
             </div>
