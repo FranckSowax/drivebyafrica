@@ -62,7 +62,7 @@ const SOURCE_NAMES: Record<string, string> = {
   dubai: 'Dubai',
 };
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
   pending: {
     label: 'En attente',
     color: 'text-yellow-500',
@@ -87,6 +87,14 @@ const STATUS_CONFIG = {
     bg: 'bg-[var(--surface)]',
     icon: AlertCircle,
   },
+};
+
+// Default config for unknown statuses
+const DEFAULT_STATUS_CONFIG = {
+  label: 'Inconnu',
+  color: 'text-gray-500',
+  bg: 'bg-gray-500/10',
+  icon: AlertCircle,
 };
 
 // Logo base64 will be loaded dynamically
@@ -601,7 +609,7 @@ export default function QuotesPage() {
       ) : (
         <div className="space-y-4">
           {filteredQuotes.map((quote) => {
-            const status = STATUS_CONFIG[quote.status];
+            const status = STATUS_CONFIG[quote.status] || DEFAULT_STATUS_CONFIG;
             const StatusIcon = status.icon;
             const expired = isExpired(quote.valid_until) && quote.status === 'pending';
 
