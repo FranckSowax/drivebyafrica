@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -45,6 +45,13 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
   const supabase = createClient();
   const { user } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before using createPortal
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handleStripePayment = async () => {
     setIsProcessing(true);
@@ -170,7 +177,8 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
     }
   ];
 
-  if (!isOpen || !quote) return null;
+  // Don't render portal on server or before mount
+  if (!mounted || !isOpen || !quote) return null;
 
   return createPortal(
     <AnimatePresence>
