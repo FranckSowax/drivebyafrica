@@ -106,31 +106,11 @@ function buildQueryString(
     params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
   }
 
-  // Apply sorting - default to created_at which has an index
-  let orderBy = 'created_at.desc';
-  switch (filters?.sortBy) {
-    case 'newest':
-      orderBy = 'created_at.desc';
-      break;
-    case 'price_asc':
-      orderBy = 'start_price_usd.asc.nullslast';
-      break;
-    case 'price_desc':
-      orderBy = 'start_price_usd.desc.nullslast';
-      break;
-    case 'year_desc':
-      orderBy = 'year.desc.nullslast';
-      break;
-    case 'year_asc':
-      orderBy = 'year.asc.nullslast';
-      break;
-    case 'mileage_asc':
-      orderBy = 'mileage.asc.nullslast';
-      break;
-    case 'mileage_desc':
-      orderBy = 'mileage.desc.nullslast';
-      break;
-  }
+  // Apply sorting - only id sort works without timeout on 80k+ rows
+  // All other sorts (price, year, mileage, created_at) cause statement timeouts
+  // because they lack proper indexes. Use id.desc as it uses the primary key index.
+  // TODO: Add database indexes for other sort columns to enable them
+  const orderBy = 'id.desc';
   params.set('order', orderBy);
 
   // Apply pagination using offset/limit
