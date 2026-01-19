@@ -32,6 +32,37 @@ function getSupabaseClient(): SupabaseClient<Database> {
 }
 
 /**
+ * Vérifier le rôle admin via l'API (côté serveur)
+ * Plus fiable que la requête client car évite les problèmes RLS
+ */
+async function checkAdminRoleViaAPI(): Promise<{ isAdmin: boolean; role: AdminRole | null }> {
+  try {
+    console.log('[useAdminAuth] Checking role via API...');
+
+    const response = await fetch('/api/admin/check-role', {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      console.error('[useAdminAuth] API check failed:', response.status);
+      return { isAdmin: false, role: null };
+    }
+
+    const data = await response.json();
+    console.log('[useAdminAuth] API check result:', data);
+
+    return {
+      isAdmin: data.isAdmin === true,
+      role: data.role as AdminRole | null,
+    };
+  } catch (error) {
+    console.error('[useAdminAuth] API check error:', error);
+    return { isAdmin: false, role: null };
+  }
+}
+
+/**
  * Hook robuste pour l'authentification admin
  */
 export function useAdminAuth(): UseAdminAuthReturn {
@@ -56,42 +87,6 @@ export function useAdminAuth(): UseAdminAuthReturn {
     return supabaseRef.current;
   }, []);
 
-  // Vérifier le rôle admin dans profiles
-  const checkAdminRole = useCallback(async (userId: string): Promise<AdminRole | null> => {
-    const supabase = getClient();
-
-    try {
-      console.log('[useAdminAuth] Checking admin role for:', userId);
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('[useAdminAuth] Profile fetch error:', error.message, error.code);
-        return null;
-      }
-
-      if (!profile) {
-        console.error('[useAdminAuth] No profile found');
-        return null;
-      }
-
-      console.log('[useAdminAuth] Profile role:', profile.role);
-
-      const role = profile.role as string;
-      if (role === 'admin' || role === 'super_admin') {
-        return role as AdminRole;
-      }
-      return null;
-    } catch (err) {
-      console.error('[useAdminAuth] Error checking admin role:', err);
-      return null;
-    }
-  }, [getClient]);
-
   // Initialiser l'auth
   useEffect(() => {
     if (initializedRef.current) return;
@@ -104,13 +99,37 @@ export function useAdminAuth(): UseAdminAuthReturn {
       console.log('[useAdminAuth] Initializing...');
 
       try {
-        // Utiliser getUser() qui valide le token côté serveur
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        // Vérifier le rôle via l'API serveur (plus fiable)
+        const { isAdmin, role } = await checkAdminRoleViaAPI();
 
-        console.log('[useAdminAuth] getUser result:', user?.id, userError?.message);
+        // Récupérer les infos utilisateur localement
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (userError || !user) {
-          if (mounted) {
+        console.log('[useAdminAuth] Init complete - user:', user?.id, 'isAdmin:', isAdmin);
+
+        if (mounted) {
+          if (user && isAdmin) {
+            setState({
+              user,
+              session,
+              role,
+              isLoading: false,
+              isAuthenticated: true,
+              isAdmin: true,
+              error: null,
+            });
+          } else if (user && !isAdmin) {
+            setState({
+              user,
+              session,
+              role: null,
+              isLoading: false,
+              isAuthenticated: true,
+              isAdmin: false,
+              error: 'Accès non autorisé',
+            });
+          } else {
             setState({
               user: null,
               session: null,
@@ -121,25 +140,6 @@ export function useAdminAuth(): UseAdminAuthReturn {
               error: null,
             });
           }
-          return;
-        }
-
-        // Vérifier le rôle admin
-        const role = await checkAdminRole(user.id);
-        const { data: { session } } = await supabase.auth.getSession();
-
-        console.log('[useAdminAuth] Final state - role:', role, 'isAdmin:', role !== null);
-
-        if (mounted) {
-          setState({
-            user,
-            session,
-            role,
-            isLoading: false,
-            isAuthenticated: true,
-            isAdmin: role !== null,
-            error: role === null ? 'Accès non autorisé' : null,
-          });
         }
       } catch (err) {
         console.error('[useAdminAuth] Init error:', err);
@@ -159,7 +159,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
 
     initializeAuth();
 
-    // Écouter les changements
+    // Écouter les changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -180,7 +180,8 @@ export function useAdminAuth(): UseAdminAuthReturn {
         }
 
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          const role = await checkAdminRole(session.user.id);
+          // Vérifier le rôle via l'API
+          const { isAdmin, role } = await checkAdminRoleViaAPI();
 
           if (mounted) {
             setState({
@@ -189,8 +190,8 @@ export function useAdminAuth(): UseAdminAuthReturn {
               role,
               isLoading: false,
               isAuthenticated: true,
-              isAdmin: role !== null,
-              error: role === null ? 'Accès non autorisé' : null,
+              isAdmin,
+              error: isAdmin ? null : 'Accès non autorisé',
             });
           }
         }
@@ -201,7 +202,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [getClient, checkAdminRole]);
+  }, [getClient]);
 
   // Fonction de connexion
   const signIn = useCallback(async (
@@ -238,12 +239,12 @@ export function useAdminAuth(): UseAdminAuthReturn {
         return { success: false, error: 'Erreur de connexion' };
       }
 
-      console.log('[useAdminAuth] Signed in, checking role...');
+      console.log('[useAdminAuth] Signed in, checking role via API...');
 
-      // Vérifier le rôle admin
-      const role = await checkAdminRole(data.user.id);
+      // Vérifier le rôle via l'API serveur
+      const { isAdmin, role } = await checkAdminRoleViaAPI();
 
-      if (!role) {
+      if (!isAdmin) {
         console.log('[useAdminAuth] Not admin, signing out');
         await supabase.auth.signOut();
         setState({
@@ -280,7 +281,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
       }));
       return { success: false, error: 'Erreur de connexion au serveur' };
     }
-  }, [getClient, checkAdminRole]);
+  }, [getClient]);
 
   // Fonction de déconnexion
   const signOut = useCallback(async () => {
@@ -294,9 +295,11 @@ export function useAdminAuth(): UseAdminAuthReturn {
     const supabase = getClient();
     setState(prev => ({ ...prev, isLoading: true }));
 
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { isAdmin, role } = await checkAdminRoleViaAPI();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
 
-    if (error || !user) {
+    if (!user) {
       setState({
         user: null,
         session: null,
@@ -309,19 +312,16 @@ export function useAdminAuth(): UseAdminAuthReturn {
       return;
     }
 
-    const role = await checkAdminRole(user.id);
-    const { data: { session } } = await supabase.auth.getSession();
-
     setState({
       user,
       session,
       role,
       isLoading: false,
       isAuthenticated: true,
-      isAdmin: role !== null,
-      error: null,
+      isAdmin,
+      error: isAdmin ? null : 'Accès non autorisé',
     });
-  }, [getClient, checkAdminRole]);
+  }, [getClient]);
 
   return {
     ...state,
