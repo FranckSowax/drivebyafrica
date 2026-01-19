@@ -32,12 +32,15 @@ export const vehicleKeys = {
 
 /**
  * Fetch vehicles from Supabase with filters, pagination, and sorting
+ * Includes retry logic for AbortError which can occur during initial page load
  */
 async function fetchVehicles(
   filters: VehicleFilters | undefined,
   page: number,
-  limit: number
+  limit: number,
+  retryCount = 0
 ): Promise<{ vehicles: Vehicle[]; totalCount: number }> {
+  const MAX_RETRIES = 3;
   const supabase = createClient();
 
   let query = supabase.from('vehicles').select('*', { count: 'exact' });
@@ -144,10 +147,22 @@ async function fetchVehicles(
     error: queryError?.message,
     filters,
     page,
-    limit
+    limit,
+    retryCount
   });
 
+  // Handle AbortError by retrying (common during initial page load)
   if (queryError) {
+    const isAbortError = queryError.message?.includes('AbortError') ||
+                         queryError.message?.includes('signal is aborted');
+
+    if (isAbortError && retryCount < MAX_RETRIES) {
+      console.log(`[useVehicles] AbortError detected, retrying... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      // Wait a bit before retrying
+      await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
+      return fetchVehicles(filters, page, limit, retryCount + 1);
+    }
+
     console.error('[useVehicles] Query error:', queryError);
     throw new Error(queryError.message);
   }
@@ -186,12 +201,13 @@ export function useVehicles({
     queryFn: () => fetchVehicles(filters, page, limit),
     // Keep previous data while fetching new data (smooth pagination)
     placeholderData: (previousData) => previousData,
-    // Data is fresh for 5 minutes
-    staleTime: 5 * 60 * 1000,
-    // Keep in cache for 30 minutes
-    gcTime: 30 * 60 * 1000,
-    // Disable retry to prevent infinite loops on 416 errors
-    retry: false,
+    // Data is fresh for 2 minutes
+    staleTime: 2 * 60 * 1000,
+    // Keep in cache for 10 minutes
+    gcTime: 10 * 60 * 1000,
+    // Enable retry for transient errors
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
   // Prefetch next page for smoother pagination
