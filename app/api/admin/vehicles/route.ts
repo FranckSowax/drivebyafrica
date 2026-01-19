@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 // Client Supabase admin
 function getSupabaseAdmin() {
@@ -16,6 +17,12 @@ function getSupabaseAdmin() {
 
 // GET - List vehicles with filters
 export async function GET(request: NextRequest) {
+  // Vérification admin obligatoire
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) {
+    return adminCheck.response;
+  }
+
   const supabase = getSupabaseAdmin();
   const searchParams = request.nextUrl.searchParams;
 
@@ -79,6 +86,12 @@ export async function GET(request: NextRequest) {
 
 // PATCH - Update vehicle(s)
 export async function PATCH(request: NextRequest) {
+  // Vérification admin obligatoire
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) {
+    return adminCheck.response;
+  }
+
   const supabase = getSupabaseAdmin();
 
   try {
@@ -120,6 +133,12 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE - Delete vehicle(s)
 export async function DELETE(request: NextRequest) {
+  // Vérification admin obligatoire
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) {
+    return adminCheck.response;
+  }
+
   const supabase = getSupabaseAdmin();
 
   try {

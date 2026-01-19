@@ -5,7 +5,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dongchedi';
-const API_KEY = process.env.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
+const API_KEY = process.env.DONGCHEDI_API_KEY || '';
 const CNY_TO_USD = 0.14;
 
 // Blocked CDNs that return 403 from outside China

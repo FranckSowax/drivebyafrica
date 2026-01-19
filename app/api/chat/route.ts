@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import {
+  apiRateLimiter,
+  getClientIP,
+  checkRateLimit,
+  rateLimitResponse,
+  isRateLimitConfigured,
+} from '@/lib/rate-limit';
 
 // GET - Fetch user's conversations and messages
 export async function GET(request: Request) {
@@ -57,6 +64,15 @@ export async function GET(request: Request) {
 // POST - Create a new message or conversation
 export async function POST(request: Request) {
   try {
+    // Rate limiting check (if configured)
+    if (isRateLimitConfigured()) {
+      const ip = getClientIP(request);
+      const rateLimit = await checkRateLimit(apiRateLimiter, ip);
+      if (!rateLimit.success) {
+        return rateLimitResponse(rateLimit.reset);
+      }
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

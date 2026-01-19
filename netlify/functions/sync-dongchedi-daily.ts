@@ -7,9 +7,14 @@ export const config = {
 };
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dongchedi';
-const API_KEY = process.env.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
+const API_KEY = process.env.DONGCHEDI_API_KEY || '';
 const EXPORT_HOST = 'https://autobase-perez.auto-api.com';
-const EXPORT_AUTH = 'Basic ZXdpbmc6aVQ2ZzFmVnFxR1JBSGVZa1BGdFU=';
+// Build Basic Auth from environment variables
+const EXPORT_LOGIN = process.env.DONGCHEDI_EXPORT_LOGIN || '';
+const EXPORT_PASSWORD = process.env.DONGCHEDI_EXPORT_PASSWORD || '';
+const EXPORT_AUTH = EXPORT_LOGIN && EXPORT_PASSWORD
+  ? `Basic ${Buffer.from(`${EXPORT_LOGIN}:${EXPORT_PASSWORD}`).toString('base64')}`
+  : '';
 const CNY_TO_USD = 0.14;
 
 function formatPgArray(arr: string[] | undefined | null): string {

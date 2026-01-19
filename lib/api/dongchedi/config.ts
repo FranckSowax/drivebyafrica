@@ -11,12 +11,12 @@
 export const DONGCHEDI_CONFIG = {
   // API Endpoints
   API_BASE_URL: 'https://api1.auto-api.com/api/v2/dongchedi',
-  API_KEY: process.env.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU',
+  API_KEY: process.env.DONGCHEDI_API_KEY || '',
 
   // Daily Export Server (for CSV/JSON files with photo links)
   EXPORT_HOST: 'https://autobase-perez.auto-api.com',
-  EXPORT_LOGIN: 'ewing',
-  EXPORT_PASSWORD: 'iT6g1fVqqGRAHeYkPFtU',
+  EXPORT_LOGIN: process.env.DONGCHEDI_EXPORT_LOGIN || '',
+  EXPORT_PASSWORD: process.env.DONGCHEDI_EXPORT_PASSWORD || '',
 
   // Generate Basic Auth header for export downloads
   get EXPORT_AUTH_HEADER(): string {

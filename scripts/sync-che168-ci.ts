@@ -20,7 +20,11 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABAS
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/che168';
-const API_KEY = process.env.CHE168_API_KEY || process.env.ENCAR_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
+const API_KEY = process.env.CHE168_API_KEY || process.env.ENCAR_API_KEY;
+if (!API_KEY) {
+  console.error('❌ CHE168_API_KEY ou ENCAR_API_KEY non configurée');
+  process.exit(1);
+}
 const CNY_TO_USD = 0.138;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {

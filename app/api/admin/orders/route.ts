@@ -1,27 +1,5 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
-
-async function createSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 // Order statuses for tracking (13-step workflow)
 const ORDER_STATUSES = [
@@ -43,7 +21,13 @@ const ORDER_STATUSES = [
 // GET: Fetch all orders (from accepted quotes)
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const supabase = adminCheck.supabase;
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -194,7 +178,13 @@ export async function GET(request: Request) {
 // PUT: Update order tracking status
 export async function PUT(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const supabase = adminCheck.supabase;
     const body = await request.json();
     const { quoteId, orderStatus, note, eta } = body;
 

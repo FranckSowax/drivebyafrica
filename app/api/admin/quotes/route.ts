@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 // Quote status flow:
 // - pending: Default state when user creates a quote
@@ -8,6 +9,12 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
   try {
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
     const supabase = supabaseAdmin;
     const { searchParams } = new URL(request.url);
 
@@ -130,6 +137,12 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
     const supabase = supabaseAdmin;
     const { id, status } = await request.json();
 
@@ -176,6 +189,12 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
     const supabase = supabaseAdmin;
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

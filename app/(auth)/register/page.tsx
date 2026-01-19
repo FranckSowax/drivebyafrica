@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useToast } from '@/components/ui/Toast';
+import { Turnstile } from '@/components/ui/Turnstile';
 import { createClient } from '@/lib/supabase/client';
 
 const registerSchema = z
@@ -19,7 +20,12 @@ const registerSchema = z
     email: z.string().email('Email invalide'),
     whatsapp: z.string().min(8, 'Numéro WhatsApp requis').regex(/^\+?[0-9\s-]+$/, 'Format invalide'),
     country: z.string().min(1, 'Sélectionnez un pays'),
-    password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
+    password: z
+      .string()
+      .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+      .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une majuscule')
+      .regex(/[a-z]/, 'Le mot de passe doit contenir au moins une minuscule')
+      .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -47,6 +53,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const {
     register,
@@ -62,6 +69,12 @@ export default function RegisterPage() {
   const supabase = createClient();
 
   const onSubmit = async (data: RegisterFormData) => {
+    // Require Turnstile verification in production
+    if (!turnstileToken && process.env.NODE_ENV === 'production') {
+      toast.error('Vérification requise', 'Veuillez compléter la vérification de sécurité');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signUp({
@@ -175,6 +188,12 @@ export default function RegisterPage() {
           leftIcon={<Lock className="w-4 h-4" />}
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
+        />
+
+        {/* Anti-bot verification */}
+        <Turnstile
+          onVerify={setTurnstileToken}
+          onExpire={() => setTurnstileToken(null)}
         />
 
         <Button

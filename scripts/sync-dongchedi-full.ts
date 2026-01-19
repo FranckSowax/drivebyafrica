@@ -24,7 +24,11 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const BUCKET_NAME = 'dongchedi-photos';
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dongchedi';
-const API_KEY = process.env.DONGCHEDI_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
+const API_KEY = process.env.DONGCHEDI_API_KEY;
+if (!API_KEY) {
+  console.error('❌ DONGCHEDI_API_KEY non configurée');
+  process.exit(1);
+}
 const CNY_TO_USD = 0.14;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {

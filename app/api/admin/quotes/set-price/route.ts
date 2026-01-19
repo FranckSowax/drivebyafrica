@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
 const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
@@ -81,16 +82,13 @@ ${vehicleUrl}
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-
-    // Check admin authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
     }
 
-    // TODO: Add admin role check
-
+    const supabase = adminCheck.supabase;
     const body = await request.json();
     const { quoteId, priceUsd, notes } = body;
 

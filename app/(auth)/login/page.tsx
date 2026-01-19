@@ -10,6 +10,7 @@ import { Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
+import { Turnstile } from '@/components/ui/Turnstile';
 import { createClient } from '@/lib/supabase/client';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -27,6 +28,7 @@ function LoginForm() {
   const redirect = searchParams.get('redirect') || '/';
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const emailForm = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
@@ -35,6 +37,12 @@ function LoginForm() {
   const supabase = createClient();
 
   const handleEmailLogin = async (data: EmailFormData) => {
+    // Require Turnstile verification in production
+    if (!turnstileToken && process.env.NODE_ENV === 'production') {
+      toast.error('Vérification requise', 'Veuillez compléter la vérification de sécurité');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -112,6 +120,13 @@ function LoginForm() {
             Mot de passe oublié?
           </Link>
         </div>
+
+        {/* Anti-bot verification */}
+        <Turnstile
+          onVerify={setTurnstileToken}
+          onExpire={() => setTurnstileToken(null)}
+        />
+
         <Button
           type="submit"
           variant="primary"

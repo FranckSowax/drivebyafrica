@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dubicars';
-const API_KEY = process.env.DUBICARS_API_KEY || process.env.ENCAR_API_KEY || 'iT6g1fVqqGRAHeYkPFtU';
+const API_KEY = process.env.DUBICARS_API_KEY || process.env.ENCAR_API_KEY || '';
 // AED to USD conversion rate (1 AED = 0.2723 USD, pegged rate)
 const AED_TO_USD = 0.2723;
 
