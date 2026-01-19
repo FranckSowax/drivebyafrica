@@ -8,30 +8,44 @@ import type { Vehicle, VehicleFilters } from '@/types/vehicle';
 
 /**
  * Check if an image URL is valid (not expired)
- * NOTE: We no longer filter out vehicles - just flag them
+ * Dongchedi images have x-expires timestamp in URL
  */
-function isImageExpired(imageUrl: string | undefined): boolean {
+function isImageValid(imageUrl: string | undefined): boolean {
   if (!imageUrl) return false;
 
-  // Check x-expires timestamp for Dongchedi images
+  // Supabase storage URLs are permanent
+  if (imageUrl.includes('supabase')) return true;
+
+  // Encar/Korea images are usually permanent
+  if (imageUrl.includes('encar') || imageUrl.includes('ci.encar.com')) return true;
+
+  // CHE168 images (autoimg.cn) - usually permanent when proxied
+  if (imageUrl.includes('autoimg.cn')) return true;
+
+  // Check x-expires timestamp for Dongchedi images (byteimg.com)
   const expiresMatch = imageUrl.match(/x-expires=(\d+)/);
   if (expiresMatch) {
     const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
-    // Add 1 hour buffer before considering expired
-    return expiresTimestamp < Date.now() - 3600000;
+    // Consider valid if expiry is in the future (with 5 min buffer)
+    return expiresTimestamp > Date.now() + 300000;
   }
 
-  return false;
+  // DubiCars and other URLs - assume valid
+  return true;
 }
 
 /**
- * Check if a vehicle has any images (doesn't filter based on expiry)
- * Vehicles without ANY images are filtered out
- * Vehicles with expired images still show (with placeholder fallback in UI)
+ * Check if a vehicle has valid displayable images
+ * Filters out vehicles with NO images OR only expired images
  */
-function hasAnyImages(vehicle: Vehicle): boolean {
+function hasValidImages(vehicle: Vehicle): boolean {
   const images = parseImagesField(vehicle.images);
-  return images.length > 0;
+
+  // No images at all
+  if (images.length === 0) return false;
+
+  // Check if at least one image is valid (not expired)
+  return images.some(img => isImageValid(img));
 }
 
 interface UseVehiclesOptions {
@@ -173,12 +187,11 @@ async function fetchVehicles(
     throw new Error(queryError.message);
   }
 
-  // Only filter out vehicles with NO images at all
-  // Vehicles with expired images will still show (UI handles fallback)
-  const vehiclesWithImages = (data as Vehicle[]).filter(hasAnyImages);
+  // Filter out vehicles with NO images OR only expired images
+  const validVehicles = (data as Vehicle[]).filter(hasValidImages);
 
   return {
-    vehicles: vehiclesWithImages,
+    vehicles: validVehicles,
     totalCount: count || 0,
   };
 }

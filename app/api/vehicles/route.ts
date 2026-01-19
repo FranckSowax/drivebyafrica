@@ -117,21 +117,41 @@ export async function GET(request: Request) {
       );
     }
 
-    // Filter vehicles that have at least one image
-    const vehiclesWithImages = (vehicles || []).filter(vehicle => {
+    // Filter vehicles that have at least one valid (non-expired) image
+    const validVehicles = (vehicles || []).filter(vehicle => {
       if (!vehicle.images) return false;
       try {
         const images = typeof vehicle.images === 'string'
           ? JSON.parse(vehicle.images)
           : vehicle.images;
-        return Array.isArray(images) && images.length > 0;
+
+        if (!Array.isArray(images) || images.length === 0) return false;
+
+        // Check if at least one image is valid (not expired)
+        return images.some((img: string) => {
+          if (!img) return false;
+
+          // Permanent URLs
+          if (img.includes('supabase') || img.includes('encar') || img.includes('autoimg.cn')) {
+            return true;
+          }
+
+          // Check x-expires for Dongchedi (byteimg.com)
+          const expiresMatch = img.match(/x-expires=(\d+)/);
+          if (expiresMatch) {
+            const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
+            return expiresTimestamp > Date.now() + 300000; // 5 min buffer
+          }
+
+          return true; // Other URLs assumed valid
+        });
       } catch {
         return false;
       }
     });
 
     return NextResponse.json({
-      vehicles: vehiclesWithImages,
+      vehicles: validVehicles,
       totalCount: count || 0,
       page,
       limit,
