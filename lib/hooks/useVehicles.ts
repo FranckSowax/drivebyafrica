@@ -106,9 +106,12 @@ function buildQueryString(
     params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
   }
 
-  // Apply sorting
+  // Apply sorting - default to created_at which has an index
   let orderBy = 'created_at.desc';
   switch (filters?.sortBy) {
+    case 'newest':
+      orderBy = 'created_at.desc';
+      break;
     case 'price_asc':
       orderBy = 'start_price_usd.asc.nullslast';
       break;

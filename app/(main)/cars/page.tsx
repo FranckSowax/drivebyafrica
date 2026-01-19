@@ -12,6 +12,7 @@ import { useFavorites } from '@/lib/hooks/useFavorites';
 import { useFilterStore } from '@/store/useFilterStore';
 
 const SORT_OPTIONS = [
+  { value: 'newest', label: 'Plus récents' },
   { value: 'price_asc', label: 'Prix croissant' },
   { value: 'price_desc', label: 'Prix décroissant' },
   { value: 'year_desc', label: 'Année (récent)' },

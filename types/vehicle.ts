@@ -36,7 +36,7 @@ export interface VehicleFilters {
   bodyType?: BodyType | string;
   status?: VehicleStatus;
   search?: string;
-  sortBy?: 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc';
+  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'year_desc' | 'year_asc' | 'mileage_asc' | 'mileage_desc';
   notifyNewMatches?: boolean;
 }
 
