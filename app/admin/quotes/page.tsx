@@ -605,8 +605,8 @@ export default function AdminQuotesPage() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              {/* Price request: show Set Price button */}
-                              {isPriceRequest(quote) && quote.status === 'pending' && (
+                              {/* Price request or quote without price: show Set Price button */}
+                              {(isPriceRequest(quote) || !quote.vehicle_price_usd) && quote.status === 'pending' && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -758,13 +758,25 @@ export default function AdminQuotesPage() {
                 </div>
               )}
 
-              {/* Price Request Info */}
-              {isPriceRequest(selectedQuote) && !selectedQuote.vehicle_price_usd && (
+              {/* Price Request Info - Show for price requests OR quotes without price */}
+              {(isPriceRequest(selectedQuote) || !selectedQuote.vehicle_price_usd) && selectedQuote.status === 'pending' && (
                 <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
                   <p className="text-sm text-purple-500 font-medium">Demande de prix en attente</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Cliquez sur le bouton $ pour définir le prix et notifier le client.
+                  <p className="text-xs text-[var(--text-muted)] mt-1 mb-3">
+                    Définissez le prix FOB pour ce véhicule et notifiez le client.
                   </p>
+                  <Button
+                    className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+                    onClick={() => {
+                      setSelectedQuote(null);
+                      setPriceModalQuote(selectedQuote);
+                      setPriceInput('');
+                      setPriceNotes('');
+                    }}
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Définir le prix
+                  </Button>
                 </div>
               )}
 

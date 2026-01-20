@@ -813,6 +813,18 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
+              {/* Status Documents Section - Upload documents for current status */}
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <StatusDocumentsSection
+                  orderId={selectedOrder.id}
+                  orderNumber={selectedOrder.order_number}
+                  currentStatus={selectedOrder.order_status}
+                  uploadedDocuments={selectedOrder.uploaded_documents || []}
+                  onDocumentsUpdated={fetchOrders}
+                  isAdmin={true}
+                />
+              </div>
+
               {/* Customer Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[var(--surface)] rounded-xl p-4">
@@ -898,18 +910,6 @@ export default function AdminOrdersPage() {
                     </span>
                   </div>
                 </div>
-              </div>
-
-              {/* Status Documents Section */}
-              <div className="bg-[var(--surface)] rounded-xl p-4">
-                <StatusDocumentsSection
-                  orderId={selectedOrder.id}
-                  orderNumber={selectedOrder.order_number}
-                  currentStatus={selectedOrder.order_status}
-                  uploadedDocuments={selectedOrder.uploaded_documents || []}
-                  onDocumentsUpdated={fetchOrders}
-                  isAdmin={true}
-                />
               </div>
             </div>
           </div>
