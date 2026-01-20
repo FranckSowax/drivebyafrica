@@ -57,7 +57,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
         set({ profile });
       } else {
-        // No valid user - ensure state is clean
+        // Session invalid or expired - clean up completely
+        // This handles stale cookies from old sessions
+        if (userError) {
+          console.log('Auth initialize: clearing invalid session');
+          await supabase.auth.signOut();
+        }
         set({ user: null, profile: null });
       }
 
@@ -67,6 +72,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         supabase.auth.onAuthStateChange(async (event, session) => {
           console.log('Auth state changed:', event, !!session?.user);
 
+          // Handle sign out
+          if (event === 'SIGNED_OUT') {
+            set({ user: null, profile: null });
+            return;
+          }
+
+          // Handle sign in or token refresh
           if (session?.user) {
             set({ user: session.user });
             const { data: profile } = await supabase
@@ -87,7 +99,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return;
       }
       console.error('Auth initialization error:', error);
-      // On error, ensure clean state
+      // On error, clear any stale session and ensure clean state
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignore signOut errors
+      }
       set({ user: null, profile: null });
     } finally {
       set({ isLoading: false, isInitialized: true });
