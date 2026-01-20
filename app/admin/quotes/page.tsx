@@ -605,8 +605,8 @@ export default function AdminQuotesPage() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              {/* Price request or quote without price: show Set Price button */}
-                              {(isPriceRequest(quote) || !quote.vehicle_price_usd) && quote.status === 'pending' && (
+                              {/* Price request or quote without price: show Set Price button for any non-final status */}
+                              {(isPriceRequest(quote) || !quote.vehicle_price_usd) && ['pending', 'validated', 'accepted'].includes(quote.status) && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -759,9 +759,9 @@ export default function AdminQuotesPage() {
               )}
 
               {/* Price Request Info - Show for price requests OR quotes without price */}
-              {(isPriceRequest(selectedQuote) || !selectedQuote.vehicle_price_usd) && selectedQuote.status === 'pending' && (
+              {(isPriceRequest(selectedQuote) || !selectedQuote.vehicle_price_usd) && ['pending', 'validated', 'accepted'].includes(selectedQuote.status) && (
                 <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
-                  <p className="text-sm text-purple-500 font-medium">Demande de prix en attente</p>
+                  <p className="text-sm text-purple-500 font-medium">Prix non défini</p>
                   <p className="text-xs text-[var(--text-muted)] mt-1 mb-3">
                     Définissez le prix FOB pour ce véhicule et notifiez le client.
                   </p>
