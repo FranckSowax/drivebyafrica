@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, UserPlus, User, X } from 'lucide-react';
@@ -11,14 +10,13 @@ import { cn } from '@/lib/utils';
  * Auth buttons for login and registration
  *
  * Uses dropdown on desktop and bottom sheet on mobile for consistent UX
- * Handles navigation programmatically to avoid issues with Next.js Link in dropdowns
+ * Uses window.location.href for reliable navigation
  */
 export function AuthButtons() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileSheetRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   // Handle mounting for portal
   useEffect(() => {
@@ -59,12 +57,12 @@ export function AuthButtons() {
 
   const handleLogin = () => {
     setIsOpen(false);
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const handleRegister = () => {
     setIsOpen(false);
-    router.push('/register');
+    window.location.href = '/register';
   };
 
   return (
