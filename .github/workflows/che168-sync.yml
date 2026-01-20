@@ -11,7 +11,7 @@ on:
       max_pages:
         description: 'Maximum pages to fetch (20 vehicles/page)'
         required: false
-        default: '500'
+        default: '4000'
       use_csv:
         description: 'Use CSV export for faster sync'
         required: false
@@ -33,7 +33,7 @@ env:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # 1 hour max
+    timeout-minutes: 120  # 2 hours max (4000 pages ~80k vehicles)
 
     steps:
       - name: Checkout repository
@@ -74,7 +74,7 @@ jobs:
       - name: Run CHE168 sync
         run: |
           npx tsx scripts/sync-che168-ci.ts \
-            --max-pages=${{ github.event.inputs.max_pages || '500' }} \
+            --max-pages=${{ github.event.inputs.max_pages || '4000' }} \
             --use-csv=${{ github.event.inputs.use_csv || 'true' }} \
             --remove-expired=${{ github.event.inputs.remove_expired || 'true' }}
 

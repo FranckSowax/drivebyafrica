@@ -7,7 +7,7 @@
  * Usage: npx tsx scripts/sync-che168-ci.ts [options]
  *
  * Options:
- *   --max-pages=N         Max pages to fetch (default: 500 = ~10,000 vehicles)
+ *   --max-pages=N         Max pages to fetch (default: 4000 = ~80,000 vehicles)
  *   --use-csv=bool        Use CSV export for faster sync (default: true)
  */
 
@@ -42,7 +42,7 @@ const getArg = (name: string, defaultVal: string) => {
   return arg ? arg.split('=')[1] : defaultVal;
 };
 
-const MAX_PAGES = parseInt(getArg('max-pages', '500'));
+const MAX_PAGES = parseInt(getArg('max-pages', '4000'));
 const USE_CSV = getArg('use-csv', 'true') === 'true';
 const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
 
