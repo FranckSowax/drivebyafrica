@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -14,7 +15,6 @@ import {
   CreditCard,
   Globe,
   ChevronLeft,
-  Zap,
   AlertTriangle,
   DollarSign,
 } from 'lucide-react';
@@ -72,8 +72,14 @@ export function AdminSidebar() {
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-black/10">
         <Link href="/admin" className="flex items-center gap-2 no-underline">
-          <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center shadow-lg">
-            <Zap className="w-5 h-5 text-mandarin" />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+            <Image
+              src="/Favcon -driveby-africa-dark.png"
+              alt="Driveby Africa"
+              width={36}
+              height={36}
+              className="object-contain"
+            />
           </div>
           <span className="font-bold text-lg !text-black">
             Driveby<span className="!text-white">Admin</span>
