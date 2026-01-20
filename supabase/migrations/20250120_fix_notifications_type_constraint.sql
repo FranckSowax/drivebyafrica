@@ -25,6 +25,8 @@ ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
     'order_shipped',
     'order_delivered',
     'documents_uploaded',
+    'documents_ready',
+    'status_update',
     -- Reassignment types
     'reassignment_request',
     'reassignment_complete',
