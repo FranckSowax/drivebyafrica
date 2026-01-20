@@ -310,7 +310,10 @@ export async function PUT(request: Request) {
 
     const supabase = adminCheck.supabase;
     const body = await request.json();
-    const { orderId, quoteId, orderStatus, note, eta, sendWhatsApp = true } = body;
+    // Support both 'status' and 'orderStatus' field names
+    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true } = body;
+    const orderStatus = orderStatusField || statusField;
+    const noteText = note || notes;
 
     // Support both orderId (new system) and quoteId (legacy)
     const targetId = orderId || quoteId;
@@ -334,19 +337,48 @@ export async function PUT(request: Request) {
 
     // If orderId is provided, update the orders table directly
     if (orderId) {
-      // Get order with user profile and vehicle info for WhatsApp notification
+      // Get order first
       const { data: order, error: fetchError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          profiles!orders_user_id_fkey(full_name, whatsapp_number, phone, preferred_language),
-          vehicles!orders_vehicle_id_fkey(make, model, year)
-        `)
+        .select('*')
         .eq('id', orderId)
         .single();
 
       if (fetchError) {
         console.error('Error fetching order:', fetchError);
+        return NextResponse.json(
+          { error: 'Commande non trouvée' },
+          { status: 404 }
+        );
+      }
+
+      if (!order) {
+        return NextResponse.json(
+          { error: 'Commande non trouvée' },
+          { status: 404 }
+        );
+      }
+
+      // Fetch profile separately for WhatsApp notification
+      let profile: { full_name: string | null; whatsapp_number: string | null; phone: string | null } | null = null;
+      if (order.user_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, whatsapp_number, phone')
+          .eq('id', order.user_id)
+          .single();
+        profile = profileData;
+      }
+
+      // Fetch vehicle separately
+      let vehicle: { make: string; model: string; year: number | null } | null = null;
+      if (order.vehicle_id) {
+        const { data: vehicleData } = await supabase
+          .from('vehicles')
+          .select('make, model, year')
+          .eq('id', order.vehicle_id)
+          .single();
+        vehicle = vehicleData;
       }
 
       // Update order status in orders table
@@ -361,33 +393,66 @@ export async function PUT(request: Request) {
 
       if (updateError) {
         console.error('Error updating order:', updateError);
+        return NextResponse.json(
+          { error: 'Erreur lors de la mise à jour de la commande' },
+          { status: 500 }
+        );
       }
 
-      // Also create/update tracking entry
-      const newStep = {
-        status: orderStatus,
-        timestamp: now,
-        note: note || null,
-      };
+      // Also create tracking entry if order has a quote_id
+      // The order_tracking table uses quote_id, not order_id
+      if (order?.quote_id) {
+        // Check if tracking exists for this quote
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: existingTrackingData } = await (supabase as any)
+          .from('order_tracking')
+          .select('id, tracking_steps')
+          .eq('quote_id', order.quote_id)
+          .single();
 
-      // Insert tracking record
-      await supabase
-        .from('order_tracking')
-        .insert({
-          order_id: orderId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const existingTracking = existingTrackingData as { id: string; tracking_steps: any[] } | null;
+
+        const trackingStep = {
           status: orderStatus,
-          title: getStatusTitle(orderStatus),
-          description: note || getStatusDescription(orderStatus),
-          completed_at: now,
-        });
+          timestamp: now,
+          note: noteText || null,
+          updated_by: 'admin',
+        };
 
-      // Send WhatsApp notification
+        if (existingTracking) {
+          // Update existing tracking
+          const existingSteps = Array.isArray(existingTracking.tracking_steps)
+            ? existingTracking.tracking_steps
+            : [];
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('order_tracking')
+            .update({
+              order_status: orderStatus,
+              tracking_steps: [...existingSteps, trackingStep],
+              shipping_eta: eta || null,
+              updated_at: now,
+            })
+            .eq('quote_id', order.quote_id);
+        } else {
+          // Create new tracking
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('order_tracking')
+            .insert({
+              quote_id: order.quote_id,
+              order_status: orderStatus,
+              tracking_steps: [trackingStep],
+              shipping_eta: eta || null,
+            });
+        }
+      }
+
+      // Send WhatsApp notification (profile and vehicle were fetched earlier)
       let whatsappResult: { success: boolean; error?: string; messageId?: string; messagesCount?: number } = { success: false, error: 'Non envoyé' };
       if (sendWhatsApp && order) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const profile = (order as any).profiles;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const vehicle = (order as any).vehicles;
         const whatsappNumber = profile?.whatsapp_number || profile?.phone;
 
         if (whatsappNumber) {
@@ -410,7 +475,7 @@ export async function PUT(request: Request) {
             newStatus: orderStatus,
             documents: uploadedDocs,
             eta: eta || order.estimated_arrival,
-            language: profile?.preferred_language === 'en' ? 'en' : 'fr',
+            language: 'fr', // Default to French for African markets
           });
 
           console.log('WhatsApp notification result:', whatsappResult);
@@ -434,7 +499,7 @@ export async function PUT(request: Request) {
       .from('quotes')
       .select(`
         *,
-        profiles!quotes_user_id_fkey(full_name, whatsapp_number, phone, preferred_language)
+        profiles!quotes_user_id_fkey(full_name, whatsapp_number, phone)
       `)
       .eq('id', quoteId)
       .single();
@@ -449,7 +514,8 @@ export async function PUT(request: Request) {
     const newStep = {
       status: orderStatus,
       timestamp: now,
-      note: note || null,
+      note: noteText || null,
+      updated_by: 'admin',
     };
 
     let trackingData;
@@ -515,7 +581,7 @@ export async function PUT(request: Request) {
           newStatus: orderStatus,
           documents: uploadedDocs,
           eta: eta || existingTracking?.shipping_eta,
-          language: profile?.preferred_language === 'en' ? 'en' : 'fr',
+          language: 'fr', // Default to French for African markets
         });
 
         console.log('WhatsApp notification result (legacy):', whatsappResult);
