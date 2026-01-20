@@ -20,7 +20,15 @@ const ORDER_STATUSES = [
   'processing',            // Legacy: processing = vehicle_locked
 ] as const;
 
+// Map assigned_country values to vehicle_source values
+const COUNTRY_TO_SOURCE: Record<string, string[]> = {
+  china: ['china', 'che168', 'dongchedi'],
+  korea: ['korea', 'encar'],
+  dubai: ['dubai', 'dubicars'],
+};
+
 // GET: Fetch all orders from orders table + accepted quotes (hybrid approach)
+// Collaborators only see orders for vehicles from their assigned country
 export async function GET(request: Request) {
   try {
     // Verify collaborator authentication
@@ -30,6 +38,7 @@ export async function GET(request: Request) {
     }
 
     const supabase = authCheck.supabase;
+    const assignedCountry = authCheck.assignedCountry; // 'china', 'korea', 'dubai', or null
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -37,6 +46,9 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search');
     const offset = (page - 1) * limit;
+
+    // Get allowed vehicle sources based on assigned country
+    const allowedSources = assignedCountry ? COUNTRY_TO_SOURCE[assignedCountry] || [] : null;
 
     // First, get orders from the orders table (created when user validates quote)
     const { data: ordersData, error: ordersError } = await supabase
@@ -48,7 +60,7 @@ export async function GET(request: Request) {
       console.error('Error fetching orders:', ordersError);
     }
 
-    const orders = ordersData || [];
+    let orders = ordersData || [];
 
     // Get accepted quotes that don't have an order yet (legacy support)
     const orderQuoteIds = orders.filter(o => o.quote_id).map(o => o.quote_id);
@@ -79,6 +91,11 @@ export async function GET(request: Request) {
       `)
       .eq('status', 'accepted')
       .order('updated_at', { ascending: false });
+
+    // Filter quotes by vehicle_source if collaborator has assigned country
+    if (allowedSources && allowedSources.length > 0) {
+      quotesQuery = quotesQuery.in('vehicle_source', allowedSources);
+    }
 
     // Exclude quotes that already have orders
     if (orderQuoteIds.length > 0) {
@@ -241,6 +258,15 @@ export async function GET(request: Request) {
 
     // Combine all orders
     let allOrders = [...transformedOrders, ...transformedQuotes];
+
+    // Filter by collaborator's assigned country (vehicle source)
+    // This filters orders from the orders table that have vehicles from the assigned country
+    if (allowedSources && allowedSources.length > 0) {
+      allOrders = allOrders.filter(o => {
+        const source = o.vehicle_source?.toLowerCase() || '';
+        return allowedSources.some(s => source.includes(s) || s.includes(source));
+      });
+    }
 
     // Sort by created_at desc
     allOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

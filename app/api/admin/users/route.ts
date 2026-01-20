@@ -99,6 +99,7 @@ export async function GET(request: Request) {
       avatar_url: p.avatar_url,
       verification_status: p.verification_status || 'pending',
       role: p.role || 'user',
+      assigned_country: p.assigned_country || null, // Source country for collaborators
       created_at: p.created_at,
       updated_at: p.updated_at,
       // Stats
@@ -150,7 +151,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT: Update user role
+// PUT: Update user role and/or assigned country
 export async function PUT(request: Request) {
   try {
     // Vérification admin obligatoire
@@ -162,43 +163,75 @@ export async function PUT(request: Request) {
     // Use service role client for full access
     const supabase = createAdminClient();
     const body = await request.json();
-    const { userId, role } = body;
+    const { userId, role, assignedCountry } = body;
 
-    if (!userId || !role) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'userId et role sont requis' },
+        { error: 'userId est requis' },
         { status: 400 }
       );
     }
 
-    // Validate role
-    const validRoles = ['user', 'admin', 'super_admin', 'collaborator'];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: 'Rôle invalide' },
-        { status: 400 }
-      );
+    // Build update object
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    // Validate and add role if provided
+    if (role !== undefined) {
+      const validRoles = ['user', 'admin', 'super_admin', 'collaborator'];
+      if (!validRoles.includes(role)) {
+        return NextResponse.json(
+          { error: 'Rôle invalide' },
+          { status: 400 }
+        );
+      }
+      updateData.role = role;
+
+      // Clear assigned_country if role is not collaborator
+      if (role !== 'collaborator') {
+        updateData.assigned_country = null;
+      }
     }
 
-    // Update user role
+    // Validate and add assigned_country if provided
+    if (assignedCountry !== undefined) {
+      const validCountries = ['china', 'korea', 'dubai', null];
+      if (!validCountries.includes(assignedCountry)) {
+        return NextResponse.json(
+          { error: 'Pays assigné invalide. Valeurs autorisées: china, korea, dubai' },
+          { status: 400 }
+        );
+      }
+      updateData.assigned_country = assignedCountry;
+    }
+
+    // Update user
     const { error } = await supabase
       .from('profiles')
-      .update({ role, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', userId);
 
     if (error) {
       throw error;
     }
 
-    return NextResponse.json({ success: true, message: 'Rôle mis à jour avec succès' });
+    return NextResponse.json({ success: true, message: 'Utilisateur mis à jour avec succès' });
   } catch (error) {
-    console.error('Error updating user role:', error);
+    console.error('Error updating user:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la mise à jour du rôle' },
+      { error: 'Erreur lors de la mise à jour de l\'utilisateur' },
       { status: 500 }
     );
   }
 }
+
+// Source country labels for display
+const SOURCE_COUNTRY_LABELS: Record<string, string> = {
+  china: '🇨🇳 Chine',
+  korea: '🇰🇷 Corée du Sud',
+  dubai: '🇦🇪 Dubaï',
+};
 
 // POST: Create a new collaborator account
 export async function POST(request: Request) {
@@ -210,11 +243,27 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { email, password, fullName, phone } = body;
+    const { email, password, fullName, phone, assignedCountry } = body;
 
     if (!email || !password || !fullName) {
       return NextResponse.json(
         { error: 'Email, mot de passe et nom complet sont requis' },
+        { status: 400 }
+      );
+    }
+
+    // Validate assigned country for collaborators
+    if (!assignedCountry) {
+      return NextResponse.json(
+        { error: 'Le pays source est requis pour un collaborateur' },
+        { status: 400 }
+      );
+    }
+
+    const validCountries = ['china', 'korea', 'dubai'];
+    if (!validCountries.includes(assignedCountry)) {
+      return NextResponse.json(
+        { error: 'Pays source invalide. Valeurs autorisées: china, korea, dubai' },
         { status: 400 }
       );
     }
@@ -259,7 +308,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create or update profile with collaborator role
+    // Create or update profile with collaborator role and assigned country
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
@@ -267,7 +316,8 @@ export async function POST(request: Request) {
         full_name: fullName,
         phone: phone || null,
         role: 'collaborator',
-        country: 'China', // Default for collaborators
+        assigned_country: assignedCountry, // Source country for this collaborator
+        country: SOURCE_COUNTRY_LABELS[assignedCountry] || assignedCountry, // Display name
         verification_status: 'verified',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -282,11 +332,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Collaborateur créé avec succès',
+      message: `Collaborateur créé avec succès pour ${SOURCE_COUNTRY_LABELS[assignedCountry]}`,
       user: {
         id: authData.user.id,
         email: authData.user.email,
         fullName,
+        assignedCountry,
       },
     });
   } catch (error) {

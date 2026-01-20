@@ -119,7 +119,15 @@ export default function AdminUsersPage() {
     password: '',
     fullName: '',
     phone: '',
+    assignedCountry: '' as '' | 'china' | 'korea' | 'dubai',
   });
+
+  // Source country options for collaborators
+  const sourceCountryOptions = [
+    { value: 'china', label: '🇨🇳 Chine', description: 'Véhicules CHE168, Dongchedi' },
+    { value: 'korea', label: '🇰🇷 Corée du Sud', description: 'Véhicules Encar' },
+    { value: 'dubai', label: '🇦🇪 Dubaï', description: 'Véhicules Dubicars' },
+  ];
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -264,7 +272,7 @@ export default function AdminUsersPage() {
       }
 
       // Reset form and close modal
-      setCreateForm({ email: '', password: '', fullName: '', phone: '' });
+      setCreateForm({ email: '', password: '', fullName: '', phone: '', assignedCountry: '' });
       setShowCreateModal(false);
 
       // Refresh users list
@@ -839,6 +847,54 @@ export default function AdminUsersPage() {
                   placeholder="+86 123 456 7890"
                   className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Pays source (accès véhicules) *
+                </label>
+                <div className="space-y-2">
+                  {sourceCountryOptions.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`
+                        flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
+                        ${createForm.assignedCountry === option.value
+                          ? 'border-mandarin bg-mandarin/10'
+                          : 'border-[var(--card-border)] hover:border-mandarin/50'
+                        }
+                      `}
+                    >
+                      <input
+                        type="radio"
+                        name="assignedCountry"
+                        value={option.value}
+                        checked={createForm.assignedCountry === option.value}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, assignedCountry: e.target.value as 'china' | 'korea' | 'dubai' }))}
+                        className="sr-only"
+                        required
+                      />
+                      <div className={`
+                        w-5 h-5 rounded-full border-2 flex items-center justify-center
+                        ${createForm.assignedCountry === option.value
+                          ? 'border-mandarin'
+                          : 'border-[var(--card-border)]'
+                        }
+                      `}>
+                        {createForm.assignedCountry === option.value && (
+                          <div className="w-3 h-3 rounded-full bg-mandarin" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{option.label}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{option.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--text-muted)] mt-2">
+                  Le collaborateur aura accès uniquement aux commandes de véhicules provenant de ce pays
+                </p>
               </div>
 
               <div className="pt-4 flex gap-3">

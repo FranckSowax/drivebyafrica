@@ -8,6 +8,7 @@ export type CollaboratorCheckResult =
   | {
       isCollaborator: true;
       user: { id: string; email: string };
+      assignedCountry: string | null; // Source country: 'china', 'korea', 'dubai', or null for all
       supabase: Awaited<ReturnType<typeof createClient>>;
     }
   | {
@@ -32,7 +33,7 @@ export type AdminOrCollaboratorCheckResult =
 
 /**
  * Verify that the current user is a collaborator
- * Returns user info and supabase client if authorized
+ * Returns user info, assigned country, and supabase client if authorized
  * Returns error response if not authorized
  */
 export async function requireCollaborator(): Promise<CollaboratorCheckResult> {
@@ -51,14 +52,18 @@ export async function requireCollaborator(): Promise<CollaboratorCheckResult> {
     };
   }
 
-  // Check role in profiles table
+  // Check role and assigned_country in profiles table
+  // Note: assigned_country is a new column, using type assertion until types are regenerated
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, assigned_country')
     .eq('id', user.id)
     .single();
 
-  const role = profile?.role as string | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profileData = profile as any;
+  const role = profileData?.role as string | undefined;
+  const assignedCountry = (profileData?.assigned_country as string | null) || null;
   const isCollaboratorRole = role === 'collaborator';
 
   if (!isCollaboratorRole) {
@@ -74,6 +79,7 @@ export async function requireCollaborator(): Promise<CollaboratorCheckResult> {
   return {
     isCollaborator: true,
     user: { id: user.id, email: user.email || '' },
+    assignedCountry, // 'china', 'korea', 'dubai', or null
     supabase,
   };
 }
