@@ -494,15 +494,31 @@ export async function PUT(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
-    // Get quote with user info for WhatsApp notification
-    const { data: quote } = await supabase
+    // Get quote first (without join to avoid FK issues)
+    const { data: quote, error: quoteError } = await supabase
       .from('quotes')
-      .select(`
-        *,
-        profiles!quotes_user_id_fkey(full_name, whatsapp_number, phone)
-      `)
+      .select('*')
       .eq('id', quoteId)
       .single();
+
+    if (quoteError || !quote) {
+      console.error('Error fetching quote:', quoteError);
+      return NextResponse.json(
+        { error: 'Devis non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Fetch profile separately for WhatsApp notification
+    let quoteProfile: { full_name: string | null; whatsapp_number: string | null; phone: string | null } | null = null;
+    if (quote.user_id) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, whatsapp_number, phone')
+        .eq('id', quote.user_id)
+        .single();
+      quoteProfile = profileData;
+    }
 
     // Check if tracking record exists
     const { data: existingTracking } = await supabaseAny
@@ -559,9 +575,7 @@ export async function PUT(request: Request) {
     // Send WhatsApp notification for legacy quotes
     let whatsappResult: { success: boolean; error?: string; messageId?: string; messagesCount?: number } = { success: false, error: 'Non envoyé' };
     if (sendWhatsApp && quote) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const profile = (quote as any).profiles;
-      const whatsappNumber = profile?.whatsapp_number || profile?.phone;
+      const whatsappNumber = quoteProfile?.whatsapp_number || quoteProfile?.phone;
 
       if (whatsappNumber) {
         const vehicleName = `${quote.vehicle_make} ${quote.vehicle_model} ${quote.vehicle_year || ''}`;
@@ -574,7 +588,7 @@ export async function PUT(request: Request) {
 
         whatsappResult = await sendStatusChangeNotification({
           phone: whatsappNumber,
-          customerName: profile?.full_name || 'Client',
+          customerName: quoteProfile?.full_name || 'Client',
           orderNumber: quote.quote_number?.replace('QT-', 'ORD-') || `ORD-${quoteId.slice(0, 8).toUpperCase()}`,
           orderId: quoteId,
           vehicleName: vehicleName.trim(),
