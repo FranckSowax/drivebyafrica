@@ -1,6 +1,6 @@
 -- Fix notifications type constraint to include all notification types used in the system
 -- The original constraint only allowed: 'bid_update', 'auction_start', 'order_update', 'new_match', 'system'
--- But the notification functions use additional types like 'quote_accepted', 'quote_expired', etc.
+-- But the notification functions use additional types like 'quote_accepted', 'order_created', etc.
 
 -- Drop the existing constraint
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
@@ -21,6 +21,7 @@ ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
     'quote_priced',
     -- Order-related types
     'new_order',
+    'order_created',
     'order_shipped',
     'order_delivered',
     'documents_uploaded',
