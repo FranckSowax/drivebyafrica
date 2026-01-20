@@ -53,11 +53,20 @@ interface Quote {
   customer_name?: string;
   customer_phone?: string;
   customer_email?: string;
+  customer_currency?: string;
   // Price request fields
   quote_type?: 'quote' | 'price_request';
   admin_price_usd?: number | null;
   admin_notes?: string | null;
   notification_sent?: boolean;
+}
+
+interface Currency {
+  code: string;
+  name: string;
+  symbol: string;
+  rateToUsd: number;
+  countries: string[];
 }
 
 interface Stats {
@@ -159,6 +168,8 @@ export default function AdminQuotesPage() {
   const [priceInput, setPriceInput] = useState<string>('');
   const [priceNotes, setPriceNotes] = useState<string>('');
   const [isSettingPrice, setIsSettingPrice] = useState(false);
+  // Currency state for price conversion
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
@@ -194,6 +205,44 @@ export default function AdminQuotesPage() {
   useEffect(() => {
     fetchQuotes();
   }, [fetchQuotes]);
+
+  // Fetch currencies for price conversion
+  useEffect(() => {
+    const fetchCurrencies = async () => {
+      try {
+        const response = await fetch('/api/admin/currencies');
+        const data = await response.json();
+        if (data.currencies) {
+          setCurrencies(data.currencies);
+        }
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+      }
+    };
+    fetchCurrencies();
+  }, []);
+
+  // Get currency for a country
+  const getCurrencyForCountry = (country: string): Currency | null => {
+    // Find currency that includes this country
+    const currency = currencies.find(c =>
+      c.countries.some(ctry =>
+        ctry.toLowerCase().includes(country.toLowerCase()) ||
+        country.toLowerCase().includes(ctry.toLowerCase())
+      )
+    );
+    return currency || currencies.find(c => c.code === 'XAF') || null;
+  };
+
+  // Convert USD to local currency
+  const convertUsdToLocal = (usdAmount: number, country: string): { amount: number; currency: Currency } | null => {
+    const currency = getCurrencyForCountry(country);
+    if (!currency) return null;
+    return {
+      amount: usdAmount * currency.rateToUsd,
+      currency,
+    };
+  };
 
   const updateQuoteStatus = async (id: string, newStatus: string) => {
     setUpdatingId(id);
@@ -572,29 +621,7 @@ export default function AdminQuotesPage() {
                                   <DollarSign className="w-4 h-4" />
                                 </Button>
                               )}
-                              {/* Standard quote: show validate/reject */}
-                              {!isPriceRequest(quote) && quote.status === 'pending' && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => updateQuoteStatus(quote.id, 'validated')}
-                                    className="text-blue-500 hover:text-blue-600"
-                                    title="Valider"
-                                  >
-                                    <Check className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => updateQuoteStatus(quote.id, 'rejected')}
-                                    className="text-red-500 hover:text-red-600"
-                                    title="Refuser"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                </>
-                              )}
+                              {/* Note: L'utilisateur valide/refuse lui-même le devis, pas l'admin */}
                               {quote.status === 'validated' && (
                                 <Button
                                   variant="ghost"
@@ -910,6 +937,11 @@ export default function AdminQuotesPage() {
                     Tel: {priceModalQuote.customer_phone}
                   </p>
                 )}
+                {priceModalQuote.destination_country && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Destination: {priceModalQuote.destination_country}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -926,6 +958,26 @@ export default function AdminQuotesPage() {
                     className="w-full pl-8 pr-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-purple-500 focus:outline-none"
                   />
                 </div>
+                {/* Conversion en devise locale */}
+                {priceInput && priceModalQuote.destination_country && (() => {
+                  const conversion = convertUsdToLocal(parseFloat(priceInput), priceModalQuote.destination_country);
+                  if (conversion) {
+                    return (
+                      <div className="mt-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                        <p className="text-sm text-[var(--text-primary)]">
+                          <span className="text-[var(--text-muted)]">Prix client ({conversion.currency.code}):</span>{' '}
+                          <span className="font-bold text-green-500">
+                            {conversion.currency.symbol} {conversion.amount.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
+                          </span>
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">
+                          Taux: 1 USD = {conversion.currency.rateToUsd.toLocaleString('fr-FR')} {conversion.currency.code}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <div>
