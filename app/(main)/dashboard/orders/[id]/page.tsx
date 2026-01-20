@@ -20,8 +20,11 @@ import {
   ExternalLink,
   AlertTriangle,
 } from 'lucide-react';
-import type { Order, OrderTracking, QuoteReassignment } from '@/types/database';
+import type { Order, OrderTracking, QuoteReassignment, Quote } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
+
+// XAF to USD conversion rate (approximate)
+const XAF_TO_USD_RATE = 615;
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -68,15 +71,23 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
     const orderData = order as Order;
 
-    // Fetch vehicle, tracking, and check for existing reassignment
+    // Fetch vehicle, tracking, quote, and check for existing reassignment
     console.log('[OrderDetailPage] Fetching related data...');
-    const [vehicleResult, trackingResult, reassignmentResult] = await Promise.all([
+    const [vehicleResult, trackingResult, quoteResult, reassignmentResult] = await Promise.all([
       supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).maybeSingle(),
       supabase
         .from('order_tracking')
         .select('*')
         .eq('order_id', id)
         .order('completed_at', { ascending: true }),
+      // Fetch the original quote to get shipping and insurance costs
+      orderData.quote_id
+        ? supabase
+            .from('quotes')
+            .select('*')
+            .eq('id', orderData.quote_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       // Check if a reassignment already exists for this order's quote
       orderData.quote_id
         ? supabase
@@ -95,6 +106,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
       count: trackingResult.data?.length,
       error: trackingResult.error?.message
     });
+    console.log('[OrderDetailPage] Quote result:', {
+      found: !!quoteResult.data,
+      shippingCostXaf: (quoteResult.data as Quote | null)?.shipping_cost_xaf,
+      insuranceCostXaf: (quoteResult.data as Quote | null)?.insurance_cost_xaf,
+      error: (quoteResult as { error?: { message: string } }).error?.message
+    });
     console.log('[OrderDetailPage] Reassignment result:', {
       found: !!reassignmentResult.data,
       error: (reassignmentResult as { error?: { message: string } }).error?.message
@@ -102,7 +119,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
     const vehicleData = vehicleResult.data as Vehicle | null;
     const trackingData = (trackingResult.data || []) as OrderTracking[];
+    const quoteData = quoteResult.data as Quote | null;
     const reassignmentData = reassignmentResult.data as QuoteReassignment | null;
+
+    // Get shipping and insurance from quote (convert XAF to USD) or fallback to order data
+    const shippingPriceUsd = orderData.shipping_price_usd ||
+      (quoteData?.shipping_cost_xaf ? Math.round(quoteData.shipping_cost_xaf / XAF_TO_USD_RATE) : null);
+    const insurancePriceUsd = orderData.insurance_price_usd ||
+      (quoteData?.insurance_cost_xaf ? Math.round(quoteData.insurance_cost_xaf / XAF_TO_USD_RATE) : null);
     console.log('[OrderDetailPage] Order status value:', orderData.status);
     const orderStatus = orderData.status as OrderStatus;
     const status = orderStatus && ORDER_STATUSES[orderStatus]
@@ -243,7 +267,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
           {/* Tracking Timeline */}
           <Card>
             <h2 className="font-bold text-[var(--text-primary)] mb-6">Suivi de la commande</h2>
-            <OrderTimeline tracking={trackingData} currentStatus={orderData.status} />
+            <OrderTimeline
+              tracking={trackingData}
+              currentStatus={orderData.status}
+              documents={orderData.uploaded_documents}
+            />
           </Card>
 
           {/* Shipping Details */}
@@ -300,11 +328,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
               />
               <PriceRow
                 label="Transport maritime"
-                value={orderData.shipping_price_usd}
+                value={shippingPriceUsd}
+                showDash
               />
               <PriceRow
                 label="Assurance tous risques"
-                value={orderData.insurance_price_usd}
+                value={insurancePriceUsd}
+                showDash
               />
               <PriceRow
                 label="Documentation"
@@ -314,9 +344,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 <div className="flex justify-between items-center">
                   <span className="text-[var(--text-primary)] font-bold">Total</span>
                   <span className="text-xl font-bold text-mandarin">
-                    {orderData.total_price_usd
-                      ? formatUsdToLocal(orderData.total_price_usd)
-                      : '-'}
+                    {formatUsdToLocal(
+                      orderData.total_price_usd ||
+                      (orderData.vehicle_price_usd || 0) +
+                      (shippingPriceUsd || 0) +
+                      (insurancePriceUsd || 0) +
+                      (orderData.documentation_fee_usd || 150)
+                    )}
                   </span>
                 </div>
               </div>
@@ -330,29 +364,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
               documents={orderData.uploaded_documents || []}
               documentsSentAt={orderData.documents_sent_at}
             />
-          </Card>
-
-          {/* Actions */}
-          <Card>
-            <h2 className="font-bold text-[var(--text-primary)] mb-4">Actions</h2>
-            <div className="space-y-3">
-              {(orderData.status === 'pending_payment' || orderData.status === 'deposit_pending') && (
-                <Link href={`/dashboard/orders/${orderData.id}/pay`}>
-                  <Button variant="primary" className="w-full">
-                    Payer maintenant
-                  </Button>
-                </Link>
-              )}
-              <Link href={`/dashboard/messages?order=${orderData.id}`}>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  leftIcon={<MessageCircle className="w-4 h-4" />}
-                >
-                  Contacter le support
-                </Button>
-              </Link>
-            </div>
           </Card>
 
           {/* Need Help */}
@@ -385,16 +396,21 @@ export default async function OrderDetailPage({ params }: PageProps) {
 function PriceRow({
   label,
   value,
+  showDash = false,
 }: {
   label: string;
-  value: number | null;
+  value: number | null | undefined;
+  showDash?: boolean;
 }) {
+  // Always show this row, display value or dash
+  const displayValue = value && value > 0
+    ? formatUsdToLocal(value)
+    : showDash ? '-' : formatUsdToLocal(0);
+
   return (
     <div className="flex justify-between text-sm">
       <span className="text-[var(--text-muted)]">{label}</span>
-      <span className="text-[var(--text-primary)]">
-        {value ? formatUsdToLocal(value) : '-'}
-      </span>
+      <span className="text-[var(--text-primary)]">{displayValue}</span>
     </div>
   );
 }

@@ -17,16 +17,33 @@ import {
   Truck,
   Anchor,
   FileCheck,
-  Home
+  Home,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import type { OrderTracking } from '@/types/database';
+import type { Json } from '@/types/database';
+
+interface UploadedDocument {
+  id?: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploaded_at: string;
+  // Status document fields
+  requirement_id?: string;
+  status?: string;
+  visible_to_client?: boolean;
+}
 
 interface OrderTimelineProps {
   tracking: OrderTracking[];
   currentStatus: string;
   className?: string;
+  documents?: Json;
 }
 
 // Main workflow steps matching 13-step ORDER_STATUSES
@@ -46,14 +63,23 @@ export function OrderTimeline({
   tracking,
   currentStatus,
   className,
+  documents,
 }: OrderTimelineProps) {
   const currentStep = ORDER_STATUSES[currentStatus as OrderStatus]?.step || 0;
+
+  // Parse documents and filter only client-visible ones
+  const allDocs: UploadedDocument[] = Array.isArray(documents)
+    ? (documents as unknown as UploadedDocument[])
+    : [];
+  // Only show documents that are visible to client (or legacy docs without the field)
+  const docList = allDocs.filter(doc => doc.visible_to_client !== false);
   const isCancelled = currentStatus === 'cancelled';
   const isPendingReassignment = currentStatus === 'pending_reassignment';
 
-  // Find the index of current step in TIMELINE_STEPS
-  const currentStepIndex = TIMELINE_STEPS.findIndex(s => s.step >= currentStep);
-  const progressIndex = currentStepIndex === -1 ? TIMELINE_STEPS.length : currentStepIndex;
+  // Find the index of the completed step in TIMELINE_STEPS
+  // When step is 1 (deposit_paid), progress bar goes to index 0 (Acompte completed)
+  const completedStepIndex = TIMELINE_STEPS.findIndex(s => s.step > currentStep);
+  const progressIndex = completedStepIndex === -1 ? TIMELINE_STEPS.length : completedStepIndex;
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -77,9 +103,16 @@ export function OrderTimeline({
         {/* Steps */}
         <div className="relative flex justify-between">
           {TIMELINE_STEPS.map((step, index) => {
-            const isCompleted = step.step < currentStep;
-            const isCurrent = step.step === currentStep ||
-              (currentStep > TIMELINE_STEPS[index]?.step && currentStep < (TIMELINE_STEPS[index + 1]?.step || 999));
+            // Step is completed if it's at or below current step
+            // This means when deposit_paid (step 1), "Acompte" is green (completed)
+            const isCompleted = step.step <= currentStep;
+            // Step is "current" (orange) if it's the next step after current
+            // This means when deposit_paid (step 1), "Bloqué" (step 2) is orange
+            const nextStepValue = TIMELINE_STEPS[index]?.step || 999;
+            const isNextStep = step.step > currentStep &&
+              (index === 0 || TIMELINE_STEPS[index - 1]?.step <= currentStep);
+            const isCurrent = isNextStep ||
+              (currentStep > 0 && currentStep > TIMELINE_STEPS[index - 1]?.step && currentStep < nextStepValue);
             const Icon = step.icon;
 
             return (
@@ -124,12 +157,38 @@ export function OrderTimeline({
             Historique
           </h4>
           <div className="space-y-3">
-            {tracking.map((event, index) => (
-              <TrackingEvent
-                key={event.id}
-                event={event}
-                isLatest={index === tracking.length - 1}
-              />
+            {tracking.map((event, index) => {
+              // Find documents uploaded around this event's time (within 24h before or after)
+              const eventDate = new Date(event.completed_at);
+              const relatedDocs = docList.filter(doc => {
+                const docDate = new Date(doc.uploaded_at);
+                const timeDiff = Math.abs(docDate.getTime() - eventDate.getTime());
+                const hoursDiff = timeDiff / (1000 * 60 * 60);
+                return hoursDiff <= 24;
+              });
+
+              return (
+                <TrackingEvent
+                  key={event.id}
+                  event={event}
+                  isLatest={index === tracking.length - 1}
+                  documents={relatedDocs}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Documents uploaded but not associated with specific events */}
+      {docList.length > 0 && tracking.length === 0 && (
+        <div className="mt-8 space-y-4">
+          <h4 className="text-sm font-medium text-nobel uppercase tracking-wider">
+            Documents disponibles
+          </h4>
+          <div className="space-y-2">
+            {docList.map((doc, index) => (
+              <DocumentLink key={index} document={doc} />
             ))}
           </div>
         </div>
@@ -141,9 +200,10 @@ export function OrderTimeline({
 interface TrackingEventProps {
   event: OrderTracking;
   isLatest: boolean;
+  documents?: UploadedDocument[];
 }
 
-function TrackingEvent({ event, isLatest }: TrackingEventProps) {
+function TrackingEvent({ event, isLatest, documents = [] }: TrackingEventProps) {
   const formattedDate = event.completed_at
     ? format(new Date(event.completed_at), "d MMM yyyy 'à' HH:mm", { locale: fr })
     : '-';
@@ -180,8 +240,41 @@ function TrackingEvent({ event, isLatest }: TrackingEventProps) {
             {event.location}
           </p>
         )}
+        {/* Documents linked to this event */}
+        {documents.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {documents.map((doc, index) => (
+              <DocumentLink key={index} document={doc} compact />
+            ))}
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+// Document link component
+function DocumentLink({
+  document,
+  compact = false,
+}: {
+  document: UploadedDocument;
+  compact?: boolean;
+}) {
+  return (
+    <a
+      href={document.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        'flex items-center gap-2 text-sm text-mandarin hover:text-mandarin/80 transition-colors',
+        compact ? 'py-0.5' : 'py-1'
+      )}
+    >
+      <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+      <span className="truncate">{document.name}</span>
+      <Download className="w-3 h-3 flex-shrink-0 opacity-60" />
+    </a>
   );
 }
 

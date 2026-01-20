@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getStatusDocumentConfig } from '@/lib/order-documents-config';
 
-// Document type interface
+// Document type interface - Enhanced with status document support
 interface UploadedDocument {
+  id?: string;
   name: string;
   url: string;
   type: string;
   size: number;
   uploaded_at: string;
   uploaded_by: string;
+  // New fields for status-specific documents
+  requirement_id?: string;
+  status?: string;
+  visible_to_client?: boolean;
 }
 
 // Helper to check if user is admin
@@ -39,13 +45,23 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { orderId, documents, sendNotification = true, sendWhatsApp = true } = body;
+    const { orderId, documents, sendNotification = true, sendWhatsApp = true, requirementId, status: docStatus } = body;
 
     if (!orderId || !documents || !Array.isArray(documents) || documents.length === 0) {
       return NextResponse.json(
         { error: 'Order ID et documents requis' },
         { status: 400 }
       );
+    }
+
+    // Get visibility from status config if requirement is specified
+    let visibleToClient = true;
+    if (requirementId && docStatus) {
+      const config = getStatusDocumentConfig(docStatus);
+      const requirement = config?.requiredDocuments.find(r => r.id === requirementId);
+      if (requirement) {
+        visibleToClient = requirement.visibleToClient;
+      }
     }
 
     // Get the order
@@ -65,12 +81,16 @@ export async function POST(request: Request) {
     // Prepare documents array
     const now = new Date().toISOString();
     const newDocuments: UploadedDocument[] = documents.map((doc: { name: string; url: string; type: string; size: number }) => ({
+      id: crypto.randomUUID(),
       name: doc.name,
       url: doc.url,
       type: doc.type || 'application/pdf',
       size: doc.size || 0,
       uploaded_at: now,
       uploaded_by: user.id,
+      requirement_id: requirementId || undefined,
+      status: docStatus || undefined,
+      visible_to_client: visibleToClient,
     }));
 
     // Get existing documents
@@ -251,10 +271,11 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
     const documentUrl = searchParams.get('documentUrl');
+    const documentId = searchParams.get('documentId');
 
-    if (!orderId || !documentUrl) {
+    if (!orderId || (!documentUrl && !documentId)) {
       return NextResponse.json(
-        { error: 'Order ID et document URL requis' },
+        { error: 'Order ID et document URL/ID requis' },
         { status: 400 }
       );
     }
@@ -273,14 +294,17 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Filter out the document to delete
+    // Filter out the document to delete (by ID or URL)
     const currentDocs = Array.isArray(order.uploaded_documents)
       ? (order.uploaded_documents as unknown as UploadedDocument[])
       : [];
 
-    const updatedDocs = currentDocs.filter(
-      (doc) => doc.url !== documentUrl
-    );
+    const updatedDocs = currentDocs.filter((doc) => {
+      if (documentId && doc.id) {
+        return doc.id !== documentId;
+      }
+      return doc.url !== documentUrl;
+    });
 
     // Update order
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

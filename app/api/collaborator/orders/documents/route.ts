@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireCollaborator, logCollaboratorActivity } from '@/lib/auth/collaborator-check';
+import { getStatusDocumentConfig } from '@/lib/order-documents-config';
 
-// Document type interface
+// Document type interface - Enhanced with status document support
 interface UploadedDocument {
+  id?: string;
   name: string;
   url: string;
   type: string;
@@ -10,9 +12,13 @@ interface UploadedDocument {
   uploaded_at: string;
   uploaded_by: string;
   uploaded_by_role?: 'admin' | 'collaborator';
+  // New fields for status-specific documents
+  requirement_id?: string;
+  status?: string;
+  visible_to_client?: boolean;
 }
 
-// POST - Upload documents for an order (collaborators can upload but not delete)
+// POST - Upload documents for an order (collaborators can upload)
 export async function POST(request: Request) {
   try {
     // Verify collaborator authentication
@@ -23,7 +29,7 @@ export async function POST(request: Request) {
 
     const supabase = authCheck.supabase;
     const body = await request.json();
-    const { orderId, documents, sendNotification = true, sendWhatsApp = true } = body;
+    const { orderId, documents, sendNotification = true, sendWhatsApp = true, requirementId, status: docStatus } = body;
 
     if (!orderId || !documents || !Array.isArray(documents) || documents.length === 0) {
       return NextResponse.json(
@@ -32,24 +38,167 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the order (from quotes with status 'accepted')
+    // Get visibility from status config if requirement is specified
+    let visibleToClient = true;
+    if (requirementId && docStatus) {
+      const config = getStatusDocumentConfig(docStatus);
+      const requirement = config?.requiredDocuments.find(r => r.id === requirementId);
+      if (requirement) {
+        visibleToClient = requirement.visibleToClient;
+      }
+    }
+
+    // Try to get from orders table first (new system)
     const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*, profiles!orders_user_id_fkey(full_name, whatsapp_number, phone)')
+      .eq('id', orderId)
+      .single();
+
+    if (!orderError && order) {
+      // Found in orders table - use new system
+      const now = new Date().toISOString();
+      const newDocuments: UploadedDocument[] = documents.map((doc: { name: string; url: string; type: string; size: number }) => ({
+        id: crypto.randomUUID(),
+        name: doc.name,
+        url: doc.url,
+        type: doc.type || 'application/pdf',
+        size: doc.size || 0,
+        uploaded_at: now,
+        uploaded_by: authCheck.user.id,
+        uploaded_by_role: 'collaborator' as const,
+        requirement_id: requirementId || undefined,
+        status: docStatus || undefined,
+        visible_to_client: visibleToClient,
+      }));
+
+      // Get existing documents
+      const existingDocs = Array.isArray(order.uploaded_documents)
+        ? (order.uploaded_documents as unknown as UploadedDocument[])
+        : [];
+
+      const allDocuments = [...existingDocs, ...newDocuments];
+
+      // Update order with new documents
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase as any)
+        .from('orders')
+        .update({
+          uploaded_documents: allDocuments,
+          documents_sent_at: now,
+        })
+        .eq('id', orderId);
+
+      if (updateError) throw updateError;
+
+      // Get profile for notifications
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const profile = (order as any).profiles;
+      const customerName = profile?.full_name || 'Customer';
+      const whatsappNumber = profile?.whatsapp_number || profile?.phone;
+      const orderNumber = order.order_number || `ORD-${orderId.slice(0, 8).toUpperCase()}`;
+
+      // Send in-app notification to customer (only for client-visible docs)
+      if (sendNotification && visibleToClient) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).rpc('create_user_notification', {
+            p_user_id: order.user_id,
+            p_type: 'documents_ready',
+            p_title: 'Documents available / 文件已上传',
+            p_message: `Documents for your order #${orderNumber} are now available for download.`,
+            p_action_url: `/dashboard/orders/${orderId}`,
+            p_action_label: 'View documents',
+            p_icon: 'file-text',
+            p_priority: 'high',
+            p_related_entity_type: 'order',
+            p_related_entity_id: orderId,
+          });
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError);
+        }
+      }
+
+      // Send WhatsApp notification (only for client-visible docs)
+      let whatsappSent = false;
+      if (sendWhatsApp && whatsappNumber && visibleToClient) {
+        try {
+          const documentNames = newDocuments
+            .filter(d => d.visible_to_client)
+            .map(d => `- ${d.name}`)
+            .join('\n');
+
+          if (documentNames) {
+            const message = `🚗 *Driveby Africa*\n\nHello ${customerName},\n\nDocuments for your order are now available:\n\n${documentNames}\n\n📥 Download from your dashboard:\nhttps://drivebyafrica.netlify.app/dashboard/orders/${orderId}\n\nBest regards,\nDriveby Africa Team`;
+
+            const whatsappApiUrl = process.env.WHATSAPP_API_URL;
+            const whatsappApiKey = process.env.WHATSAPP_API_KEY;
+
+            if (whatsappApiUrl && whatsappApiKey) {
+              const response = await fetch(whatsappApiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${whatsappApiKey}`,
+                },
+                body: JSON.stringify({
+                  phone: whatsappNumber.replace(/[^0-9+]/g, ''),
+                  message,
+                }),
+              });
+
+              if (response.ok) {
+                whatsappSent = true;
+              }
+            }
+          }
+        } catch (whatsappError) {
+          console.error('Failed to send WhatsApp:', whatsappError);
+        }
+      }
+
+      // Log activity
+      await logCollaboratorActivity(
+        supabase,
+        authCheck.user.id,
+        'document_upload',
+        {
+          orderId,
+          documentNames: newDocuments.map(d => d.name),
+          documentCount: newDocuments.length,
+          requirementId,
+          status: docStatus,
+        },
+        request
+      );
+
+      return NextResponse.json({
+        success: true,
+        documentsCount: newDocuments.length,
+        notificationSent: sendNotification && visibleToClient,
+        whatsappSent,
+      });
+    }
+
+    // Fallback to legacy quotes system
+    const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .select('*, profiles!quotes_user_id_fkey(full_name, whatsapp_number, phone)')
       .eq('id', orderId)
       .eq('status', 'accepted')
       .single();
 
-    if (orderError || !order) {
+    if (quoteError || !quote) {
       return NextResponse.json(
         { error: 'Order not found', error_zh: '未找到订单' },
         { status: 404 }
       );
     }
 
-    // Prepare documents array
+    // Legacy: Prepare documents array
     const now = new Date().toISOString();
     const newDocuments: UploadedDocument[] = documents.map((doc: { name: string; url: string; type: string; size: number }) => ({
+      id: crypto.randomUUID(),
       name: doc.name,
       url: doc.url,
       type: doc.type || 'application/pdf',
@@ -57,6 +206,9 @@ export async function POST(request: Request) {
       uploaded_at: now,
       uploaded_by: authCheck.user.id,
       uploaded_by_role: 'collaborator' as const,
+      requirement_id: requirementId || undefined,
+      status: docStatus || undefined,
+      visible_to_client: visibleToClient,
     }));
 
     // Get existing documents from order_tracking or create new record
@@ -104,16 +256,16 @@ export async function POST(request: Request) {
 
     // Get profile for notifications
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = (order as any).profiles;
+    const profile = (quote as any).profiles;
     const customerName = profile?.full_name || 'Customer';
     const whatsappNumber = profile?.whatsapp_number || profile?.phone;
-    const orderNumber = order.quote_number?.replace('QT-', 'ORD-') || orderId.slice(0, 8);
+    const orderNumber = quote.quote_number?.replace('QT-', 'ORD-') || orderId.slice(0, 8);
 
     // Send in-app notification to customer
-    if (sendNotification) {
+    if (sendNotification && visibleToClient) {
       try {
         await supabaseAny.rpc('create_user_notification', {
-          p_user_id: order.user_id,
+          p_user_id: quote.user_id,
           p_type: 'documents_ready',
           p_title: 'Documents available / 文件已上传',
           p_message: `Documents for your order #${orderNumber} are now available for download.`,
@@ -126,38 +278,41 @@ export async function POST(request: Request) {
         });
       } catch (notifError) {
         console.error('Failed to send notification:', notifError);
-        // Continue even if notification fails
       }
     }
 
     // Send WhatsApp notification
     let whatsappSent = false;
-    if (sendWhatsApp && whatsappNumber) {
+    if (sendWhatsApp && whatsappNumber && visibleToClient) {
       try {
-        const documentNames = newDocuments.map(d => `- ${d.name}`).join('\n');
-        const message = `🚗 *Driveby Africa*\n\nHello ${customerName},\n\nDocuments for your order are now available:\n\n${documentNames}\n\n📥 Download from your dashboard:\nhttps://drivebyafrica.netlify.app/dashboard/orders/${orderId}\n\nBest regards,\nDriveby Africa Team`;
+        const documentNames = newDocuments
+          .filter(d => d.visible_to_client)
+          .map(d => `- ${d.name}`)
+          .join('\n');
 
-        const whatsappApiUrl = process.env.WHATSAPP_API_URL;
-        const whatsappApiKey = process.env.WHATSAPP_API_KEY;
+        if (documentNames) {
+          const message = `🚗 *Driveby Africa*\n\nHello ${customerName},\n\nDocuments for your order are now available:\n\n${documentNames}\n\n📥 Download from your dashboard:\nhttps://drivebyafrica.netlify.app/dashboard/orders/${orderId}\n\nBest regards,\nDriveby Africa Team`;
 
-        if (whatsappApiUrl && whatsappApiKey) {
-          const response = await fetch(whatsappApiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${whatsappApiKey}`,
-            },
-            body: JSON.stringify({
-              phone: whatsappNumber.replace(/[^0-9+]/g, ''),
-              message,
-            }),
-          });
+          const whatsappApiUrl = process.env.WHATSAPP_API_URL;
+          const whatsappApiKey = process.env.WHATSAPP_API_KEY;
 
-          if (response.ok) {
-            whatsappSent = true;
+          if (whatsappApiUrl && whatsappApiKey) {
+            const response = await fetch(whatsappApiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${whatsappApiKey}`,
+              },
+              body: JSON.stringify({
+                phone: whatsappNumber.replace(/[^0-9+]/g, ''),
+                message,
+              }),
+            });
+
+            if (response.ok) {
+              whatsappSent = true;
+            }
           }
-        } else {
-          console.log('WhatsApp message to send:', { to: whatsappNumber, message });
         }
       } catch (whatsappError) {
         console.error('Failed to send WhatsApp:', whatsappError);
@@ -173,6 +328,8 @@ export async function POST(request: Request) {
         orderId,
         documentNames: newDocuments.map(d => d.name),
         documentCount: newDocuments.length,
+        requirementId,
+        status: docStatus,
       },
       request
     );
@@ -180,7 +337,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       documentsCount: newDocuments.length,
-      notificationSent: sendNotification,
+      notificationSent: sendNotification && visibleToClient,
       whatsappSent,
     });
   } catch (error) {
@@ -212,7 +369,22 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get order tracking with documents
+    // Try orders table first
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('order_number, uploaded_documents, documents_sent_at')
+      .eq('id', orderId)
+      .single();
+
+    if (!orderError && order) {
+      return NextResponse.json({
+        documents: order.uploaded_documents || [],
+        sentAt: order.documents_sent_at,
+        orderNumber: order.order_number || `ORD-${orderId.slice(0, 8).toUpperCase()}`,
+      });
+    }
+
+    // Fallback to legacy order_tracking
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: tracking, error } = await (supabase as any)
       .from('order_tracking')
@@ -220,7 +392,7 @@ export async function GET(request: Request) {
       .eq('quote_id', orderId)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
 

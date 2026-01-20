@@ -464,9 +464,9 @@ export const ORDER_STATUSES = {
   },
   processing: {
     label: 'En traitement',
-    color: 'bg-emerald-500',
-    step: 5,
-    description: 'La commande est en cours de traitement',
+    color: 'bg-blue-500',
+    step: 2,
+    description: 'Le véhicule est bloqué, en attente de traitement',
   },
 } as const;
 

@@ -93,12 +93,18 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
       if (quoteError) throw quoteError;
 
       // 2. Create order with 'processing' status (simulating paid deposit)
+      // Generate order_number from quote_number (DBA-XXXX -> ORD-XXXX)
+      const orderNumber = quote.quote_number
+        ? `ORD-${quote.quote_number.replace(/^(DBA-|QT-)/i, '')}`
+        : `ORD-${Date.now().toString(36).toUpperCase()}`;
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           vehicle_id: quote.vehicle_id,
           quote_id: quote.id,
+          order_number: orderNumber,
           vehicle_price_usd: quote.vehicle_price_usd,
           destination_country: quote.destination_country,
           destination_port: quote.destination_name || null,

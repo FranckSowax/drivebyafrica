@@ -32,9 +32,10 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { DocumentUploader } from '@/components/admin/DocumentUploader';
+import { StatusDocumentsSection, MissingDocsBadge } from '@/components/admin/StatusDocumentsSection';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { UploadedStatusDocument } from '@/lib/order-documents-config';
 
 interface Order {
   id: string;
@@ -65,6 +66,7 @@ interface Order {
   deposit_amount_usd: number;
   created_at: string;
   updated_at: string;
+  uploaded_documents?: UploadedStatusDocument[];
 }
 
 interface TrackingStep {
@@ -586,9 +588,13 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="w-32 mx-auto">
+                        <div className="w-36 mx-auto">
                           <div className="flex items-center justify-between mb-1">
                             <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
+                            <MissingDocsBadge
+                              status={order.order_status}
+                              uploadedDocuments={order.uploaded_documents || []}
+                            />
                           </div>
                           <div className="w-full h-2 bg-[var(--surface)] rounded-full overflow-hidden">
                             <div
@@ -878,12 +884,15 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Document Upload Section */}
+              {/* Status Documents Section */}
               <div className="bg-[var(--surface)] rounded-xl p-4">
-                <DocumentUploader
+                <StatusDocumentsSection
                   orderId={selectedOrder.id}
                   orderNumber={selectedOrder.order_number}
-                  existingDocuments={[]}
+                  currentStatus={selectedOrder.order_status}
+                  uploadedDocuments={selectedOrder.uploaded_documents || []}
+                  onDocumentsUpdated={fetchOrders}
+                  isAdmin={true}
                 />
               </div>
             </div>
