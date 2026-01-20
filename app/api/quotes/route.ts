@@ -117,10 +117,10 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const offset = (page - 1) * limit;
 
-    // Build query with pagination
+    // Build query with pagination - include vehicle images
     let query = supabase
       .from('quotes')
-      .select('*', { count: 'exact' })
+      .select('*, vehicles:vehicle_id(images)', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 

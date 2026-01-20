@@ -28,6 +28,7 @@ import { QuotePDFModal } from '@/components/vehicles/QuotePDFModal';
 import { QuoteValidationModal } from '@/components/vehicles/QuoteValidationModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { getExportTax } from '@/lib/utils/pricing';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 
 interface Quote {
   id: string;
@@ -49,6 +50,9 @@ interface Quote {
   status: 'pending' | 'accepted' | 'rejected' | 'expired';
   valid_until: string;
   created_at: string;
+  vehicles?: {
+    images?: string[];
+  };
 }
 
 const SOURCE_FLAGS: Record<string, string> = {
@@ -580,7 +584,7 @@ export default function QuotesPage() {
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Mes devis</h1>
           <p className="text-[var(--text-muted)]">
-            Consultez et telechargez vos devis d'importation
+            Consultez et telechargez vos devis d&apos;importation
           </p>
         </div>
         <div className="flex gap-2">
@@ -662,53 +666,74 @@ export default function QuotesPage() {
             const canValidate = quote.status === 'pending' && !expired;
             const canDelete = quote.status !== 'accepted';
 
+            const vehicleImage = quote.vehicles?.images?.[0];
+
             return (
               <Card key={quote.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {/* Header with status badge */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{SOURCE_FLAGS[quote.vehicle_source] || '🚗'}</span>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.color}`}
-                    >
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {expired ? 'Expiré' : status.label}
-                    </span>
+                <div className="flex gap-4">
+                  {/* Vehicle thumbnail */}
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-[var(--surface)]">
+                    {vehicleImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={getProxiedImageUrl(vehicleImage)}
+                        alt={`${quote.vehicle_make} ${quote.vehicle_model}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Car className="w-8 h-8 text-[var(--text-muted)]" />
+                      </div>
+                    )}
+                    {/* Source flag overlay */}
+                    <div className="absolute top-1 left-1 w-6 h-6 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-full text-sm">
+                      {SOURCE_FLAGS[quote.vehicle_source] || '🚗'}
+                    </div>
                   </div>
-                  <span className="text-xs text-[var(--text-muted)] font-mono">
-                    {quote.quote_number}
-                  </span>
-                </div>
 
-                {/* Vehicle title */}
-                <button
-                  onClick={() => handleOpenQuote(quote)}
-                  className="text-left w-full group"
-                >
-                  <h3 className="font-bold text-[var(--text-primary)] group-hover:text-mandarin transition-colors text-base sm:text-lg leading-tight">
-                    {quote.vehicle_make} {quote.vehicle_model} ({quote.vehicle_year})
-                  </h3>
-                </button>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Header with status badge */}
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${status.bg} ${status.color}`}
+                      >
+                        <StatusIcon className="w-3 h-3" />
+                        {expired ? 'Expiré' : status.label}
+                      </span>
+                      <span className="text-xs text-[var(--text-muted)] font-mono">
+                        {quote.quote_number}
+                      </span>
+                    </div>
 
-                {/* Info row */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--text-muted)] mt-2">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {quote.destination_name || 'À définir'}, {quote.destination_country || 'À définir'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {formatDate(quote.created_at)}
-                  </span>
-                </div>
+                    {/* Vehicle title */}
+                    <button
+                      onClick={() => handleOpenQuote(quote)}
+                      className="text-left w-full group"
+                    >
+                      <h3 className="font-bold text-[var(--text-primary)] group-hover:text-mandarin transition-colors text-sm sm:text-base leading-tight truncate">
+                        {quote.vehicle_make} {quote.vehicle_model} ({quote.vehicle_year})
+                      </h3>
+                    </button>
 
-                {/* Price section */}
-                <div className="mt-4 p-3 bg-[var(--surface)] rounded-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[var(--text-muted)]">Total estimé</span>
-                    <span className="text-xl sm:text-2xl font-bold text-mandarin">
-                      {quote.total_cost_xaf > 0 ? formatCurrency(quote.total_cost_xaf) : 'À calculer'}
-                    </span>
+                    {/* Info row */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)] mt-1">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {quote.destination_name || 'À définir'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(quote.created_at)}
+                      </span>
+                    </div>
+
+                    {/* Price - inline, smaller */}
+                    <div className="mt-2">
+                      <span className="text-base sm:text-lg font-bold text-mandarin">
+                        {quote.total_cost_xaf > 0 ? formatCurrency(quote.total_cost_xaf) : 'À calculer'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
