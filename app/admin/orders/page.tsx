@@ -273,7 +273,9 @@ export default function AdminOrdersPage() {
         params.set('search', searchQuery);
       }
 
-      const response = await fetch(`/api/admin/orders?${params}`);
+      const response = await fetch(`/api/admin/orders?${params}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (data.orders) {
@@ -343,6 +345,7 @@ export default function AdminOrdersPage() {
       const response = await fetch('/api/admin/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           quoteId: selectedOrder.id,
           orderStatus: newStatus,

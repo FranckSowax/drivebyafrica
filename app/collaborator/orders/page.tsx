@@ -159,7 +159,9 @@ function CollaboratorOrdersContent() {
   const fetchOrders = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/collaborator/orders');
+      const response = await fetch('/api/collaborator/orders', {
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch orders');
 
       const data = await response.json();
@@ -242,6 +244,7 @@ function CollaboratorOrdersContent() {
       const response = await fetch('/api/collaborator/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           orderId: selectedOrder.id,
           status: newStatus,
@@ -288,6 +291,7 @@ function CollaboratorOrdersContent() {
 
       const response = await fetch('/api/collaborator/orders/documents', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
