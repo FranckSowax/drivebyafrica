@@ -182,3 +182,63 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const quoteId = searchParams.get('id');
+
+    if (!quoteId) {
+      return NextResponse.json({ error: 'ID du devis requis' }, { status: 400 });
+    }
+
+    // First, verify the quote belongs to the user and check its status
+    const { data: quote, error: fetchError } = await supabase
+      .from('quotes')
+      .select('id, status, user_id')
+      .eq('id', quoteId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError || !quote) {
+      return NextResponse.json({ error: 'Devis non trouvé' }, { status: 404 });
+    }
+
+    // Only allow deletion of pending or expired quotes
+    if (quote.status === 'accepted') {
+      return NextResponse.json(
+        { error: 'Impossible de supprimer un devis accepté' },
+        { status: 400 }
+      );
+    }
+
+    // Delete the quote
+    const { error: deleteError } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', quoteId)
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error('Quote delete error:', deleteError);
+      return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Devis supprimé avec succès' });
+  } catch (error) {
+    console.error('Quote API server error (DELETE):', error);
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur' },
+      { status: 500 }
+    );
+  }
+}

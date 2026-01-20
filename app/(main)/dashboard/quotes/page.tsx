@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Search,
   Ban,
+  Trash2,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Card } from '@/components/ui/Card';
@@ -115,6 +116,7 @@ export default function QuotesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState<string | null>(null);
+  const [deletingQuote, setDeletingQuote] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
@@ -159,6 +161,32 @@ export default function QuotesPage() {
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchQuotes();
+  };
+
+  const handleDeleteQuote = async (quoteId: string, quoteNumber: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le devis ${quoteNumber} ?`)) {
+      return;
+    }
+
+    setDeletingQuote(quoteId);
+    try {
+      const response = await fetch(`/api/quotes?id=${quoteId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Devis supprimé avec succès');
+        setQuotes(quotes.filter(q => q.id !== quoteId));
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      console.error('Error deleting quote:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeletingQuote(null);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -717,6 +745,24 @@ export default function QuotesPage() {
                           Vehicule
                         </Button>
                       </Link>
+                      {quote.status !== 'accepted' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteQuote(quote.id, quote.quote_number)}
+                          disabled={deletingQuote === quote.id}
+                          leftIcon={
+                            deletingQuote === quote.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )
+                          }
+                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        >
+                          <span className="hidden sm:inline">Supprimer</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
