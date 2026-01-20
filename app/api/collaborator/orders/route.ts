@@ -146,12 +146,12 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fetch quotes for order enrichment (shipping/insurance info)
-    let quotesMap: Record<string, { shipping_cost_xaf: number | null; insurance_cost_xaf: number | null; total_cost_xaf: number | null }> = {};
+    // Fetch quotes for order enrichment (shipping/insurance info + quote_number)
+    let quotesMap: Record<string, { shipping_cost_xaf: number | null; insurance_cost_xaf: number | null; total_cost_xaf: number | null; quote_number: string | null }> = {};
     if (quoteIdsFromOrders.length > 0) {
       const { data: quotesForOrders } = await supabase
         .from('quotes')
-        .select('id, shipping_cost_xaf, insurance_cost_xaf, total_cost_xaf')
+        .select('id, shipping_cost_xaf, insurance_cost_xaf, total_cost_xaf, quote_number')
         .in('id', quoteIdsFromOrders);
 
       if (quotesForOrders) {
@@ -160,6 +160,7 @@ export async function GET(request: Request) {
             shipping_cost_xaf: q.shipping_cost_xaf,
             insurance_cost_xaf: q.insurance_cost_xaf,
             total_cost_xaf: q.total_cost_xaf,
+            quote_number: q.quote_number,
           };
           return acc;
         }, {} as typeof quotesMap);
@@ -175,6 +176,7 @@ export async function GET(request: Request) {
       return {
         id: o.id,
         order_number: o.order_number || `ORD-${o.id.substring(0, 8).toUpperCase()}`,
+        quote_number: quote?.quote_number || null, // Include original quote_number for search
         quote_id: o.quote_id,
         user_id: o.user_id,
         vehicle_id: o.vehicle_id,
@@ -207,7 +209,8 @@ export async function GET(request: Request) {
     // Transform legacy quotes (quotes without orders)
     const transformedQuotes = (quotes || []).map(q => ({
       id: q.id,
-      order_number: `ORD-${q.quote_number?.replace('QT-', '')}`,
+      order_number: `ORD-${q.quote_number?.replace(/^(DBA-|QT-)/i, '') || q.id.slice(0, 8).toUpperCase()}`,
+      quote_number: q.quote_number, // Keep original quote number for search
       quote_id: q.id,
       user_id: q.user_id,
       vehicle_id: q.vehicle_id,
@@ -242,15 +245,19 @@ export async function GET(request: Request) {
     // Sort by created_at desc
     allOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    // Search filter
+    // Search filter - search by order_number, quote_number, vehicle, or customer
     if (search) {
       const searchLower = search.toLowerCase();
-      allOrders = allOrders.filter(o =>
-        o.order_number.toLowerCase().includes(searchLower) ||
-        o.vehicle_make.toLowerCase().includes(searchLower) ||
-        o.vehicle_model.toLowerCase().includes(searchLower) ||
-        o.customer_name.toLowerCase().includes(searchLower)
-      );
+      allOrders = allOrders.filter(o => {
+        const orderObj = o as typeof o & { quote_number?: string | null };
+        return (
+          orderObj.order_number?.toLowerCase().includes(searchLower) ||
+          orderObj.quote_number?.toLowerCase().includes(searchLower) ||
+          orderObj.vehicle_make?.toLowerCase().includes(searchLower) ||
+          orderObj.vehicle_model?.toLowerCase().includes(searchLower) ||
+          orderObj.customer_name?.toLowerCase().includes(searchLower)
+        );
+      });
     }
 
     // Filter by order status if specified
