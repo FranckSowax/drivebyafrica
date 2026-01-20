@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   FileText,
@@ -101,7 +102,8 @@ const DEFAULT_STATUS_CONFIG = {
 let logoBase64: string | null = null;
 
 export default function QuotesPage() {
-  const { user, profile } = useAuthStore();
+  const router = useRouter();
+  const { user, profile, isLoading: authLoading, isInitialized } = useAuthStore();
   const toast = useToast();
   const { availableCurrencies } = useCurrency();
 
@@ -122,10 +124,19 @@ export default function QuotesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    fetchQuotes();
-    loadLogo();
-  }, []);
+    if (isInitialized && !authLoading && !user) {
+      router.push('/login?redirect=/dashboard/quotes');
+    }
+  }, [user, authLoading, isInitialized, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchQuotes();
+      loadLogo();
+    }
+  }, [user]);
 
   const loadLogo = async () => {
     try {
@@ -544,6 +555,15 @@ export default function QuotesPage() {
     rejected: quotes.filter((q) => q.status === 'rejected').length,
     expired: quotes.filter((q) => q.status === 'expired').length,
   };
+
+  // Show loading while checking auth or if not authenticated (will redirect)
+  if (!isInitialized || authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-mandarin" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
