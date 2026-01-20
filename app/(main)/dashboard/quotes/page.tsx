@@ -684,7 +684,6 @@ export default function QuotesPage() {
                             size="sm"
                             onClick={() => handleValidateQuote(quote)}
                             leftIcon={<CheckCircle className="w-4 h-4" />}
-                            className="hidden sm:inline-flex"
                           >
                             Valider
                           </Button>
