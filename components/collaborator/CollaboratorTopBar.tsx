@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCollaboratorLocale } from './CollaboratorLocaleProvider';
 import { CollaboratorLanguageSwitcher } from './CollaboratorLanguageSwitcher';
-import { Bell, User, Check, X } from 'lucide-react';
+import { Bell, User, Check, X, LogOut, ChevronDown } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -23,6 +23,7 @@ interface CollaboratorTopBarProps {
   onMarkAsRead?: (id: string) => void;
   onMarkAllRead?: () => void;
   onDismiss?: (id: string) => void;
+  onLogout?: () => void;
 }
 
 export function CollaboratorTopBar({
@@ -33,16 +34,22 @@ export function CollaboratorTopBar({
   onMarkAsRead,
   onMarkAllRead,
   onDismiss,
+  onLogout,
 }: CollaboratorTopBarProps) {
   const { t } = useCollaboratorLocale();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
       }
     };
 
@@ -176,15 +183,52 @@ export function CollaboratorTopBar({
           )}
         </div>
 
-        {/* User */}
-        <div className="flex items-center gap-2 pl-3 border-l border-nobel/20">
-          <div className="h-8 w-8 rounded-full bg-mandarin/20 flex items-center justify-center">
-            <User className="h-4 w-4 text-mandarin" />
-          </div>
-          {userName && (
-            <span className="text-sm text-gray-300 hidden sm:inline">
-              {userName}
-            </span>
+        {/* User Menu */}
+        <div className="relative pl-3 border-l border-nobel/20" ref={userMenuRef}>
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className={cn(
+              'flex items-center gap-2 p-1.5 rounded-lg transition-colors',
+              'hover:bg-nobel/20',
+              showUserMenu && 'bg-nobel/20'
+            )}
+          >
+            <div className="h-8 w-8 rounded-full bg-mandarin/20 flex items-center justify-center">
+              <User className="h-4 w-4 text-mandarin" />
+            </div>
+            {userName && (
+              <span className="text-sm text-gray-300 hidden sm:inline max-w-[120px] truncate">
+                {userName}
+              </span>
+            )}
+            <ChevronDown className={cn(
+              'h-4 w-4 text-gray-400 transition-transform hidden sm:block',
+              showUserMenu && 'rotate-180'
+            )} />
+          </button>
+
+          {/* User dropdown menu */}
+          {showUserMenu && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-cod-gray border border-nobel/20 rounded-xl shadow-xl z-50 overflow-hidden">
+              {userName && (
+                <div className="px-4 py-3 border-b border-nobel/20">
+                  <p className="text-sm font-medium text-white truncate">{userName}</p>
+                  <p className="text-xs text-gray-500">{t('collaborator.portal')}</p>
+                </div>
+              )}
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    onLogout();
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 text-sm text-gray-300 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t('collaborator.logout')}
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

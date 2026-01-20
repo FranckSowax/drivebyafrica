@@ -162,6 +162,7 @@ export default function CollaboratorDashboardPage() {
           onMarkAsRead={markAsRead}
           onMarkAllRead={markAllAsRead}
           onDismiss={dismiss}
+          onLogout={handleLogout}
         />
 
         <main className="p-4 lg:p-6">

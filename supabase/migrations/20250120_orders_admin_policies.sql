@@ -37,9 +37,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Drop existing restrictive policies if they exist
+-- Drop existing policies if they exist (including old and new names)
 DROP POLICY IF EXISTS "Users can view own orders" ON orders;
 DROP POLICY IF EXISTS "Users can create orders" ON orders;
+DROP POLICY IF EXISTS "users_select_own_orders" ON orders;
+DROP POLICY IF EXISTS "users_insert_own_orders" ON orders;
+DROP POLICY IF EXISTS "admin_select_all_orders" ON orders;
+DROP POLICY IF EXISTS "admin_update_all_orders" ON orders;
+DROP POLICY IF EXISTS "admin_insert_orders" ON orders;
+DROP POLICY IF EXISTS "admin_delete_orders" ON orders;
+DROP POLICY IF EXISTS "collaborator_select_all_orders" ON orders;
+DROP POLICY IF EXISTS "collaborator_update_all_orders" ON orders;
 
 -- Recreate user policies with explicit names
 CREATE POLICY "users_select_own_orders" ON orders
