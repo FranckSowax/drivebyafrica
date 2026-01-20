@@ -202,6 +202,7 @@ export async function GET(request: Request) {
         created_at: o.created_at,
         updated_at: o.updated_at,
         source: 'orders_table',
+        isLegacyQuote: false,
         uploaded_documents: o.uploaded_documents || [],
       };
     });
@@ -236,6 +237,7 @@ export async function GET(request: Request) {
       created_at: q.created_at,
       updated_at: q.updated_at,
       source: 'quotes_table',
+      isLegacyQuote: true,
       uploaded_documents: [],
     }));
 

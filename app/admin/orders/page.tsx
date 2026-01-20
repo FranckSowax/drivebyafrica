@@ -41,6 +41,8 @@ interface Order {
   id: string;
   order_number: string;
   quote_number: string;
+  quote_id?: string | null; // For orders linked to quotes
+  isLegacyQuote?: boolean; // True if this is a legacy quote, not an order
   user_id: string;
   vehicle_id: string;
   vehicle_make: string;
@@ -342,16 +344,27 @@ export default function AdminOrdersPage() {
 
     setUpdatingStatus(true);
     try {
+      // Determine if this is a legacy quote or a real order
+      // If isLegacyQuote is true, send quoteId; otherwise send orderId
+      const requestBody = selectedOrder.isLegacyQuote
+        ? {
+            quoteId: selectedOrder.id,
+            orderStatus: newStatus,
+            note: statusNote || undefined,
+            eta: newEta || undefined,
+          }
+        : {
+            orderId: selectedOrder.id,
+            orderStatus: newStatus,
+            note: statusNote || undefined,
+            eta: newEta || undefined,
+          };
+
       const response = await fetch('/api/admin/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          quoteId: selectedOrder.id,
-          orderStatus: newStatus,
-          note: statusNote || undefined,
-          eta: newEta || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
