@@ -117,10 +117,10 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const offset = (page - 1) * limit;
 
-    // Build query with pagination - include vehicle images
+    // Build query with pagination
     let query = supabase
       .from('quotes')
-      .select('*, vehicles:vehicle_id(images)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -147,6 +147,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    // Fetch vehicle images separately to avoid join issues
+    let quotesWithImages = quotes || [];
+    if (quotes && quotes.length > 0) {
+      const vehicleIds = [...new Set(quotes.map(q => q.vehicle_id).filter(Boolean))];
+      if (vehicleIds.length > 0) {
+        const { data: vehicles } = await supabase
+          .from('vehicles')
+          .select('id, images')
+          .in('id', vehicleIds);
+
+        if (vehicles) {
+          const vehicleMap = new Map(vehicles.map(v => [v.id, v.images]));
+          quotesWithImages = quotes.map(q => ({
+            ...q,
+            vehicles: q.vehicle_id && vehicleMap.has(q.vehicle_id)
+              ? { images: vehicleMap.get(q.vehicle_id) }
+              : null
+          }));
+        }
+      }
+    }
+
     // Get user-specific stats using database function if available
     let stats = null;
     try {
@@ -160,14 +182,14 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      quotes,
+      quotes: quotesWithImages,
       stats,
       pagination: {
         page,
         limit,
         total: count || 0,
         totalPages: Math.ceil((count || 0) / limit),
-        hasMore: offset + (quotes?.length || 0) < (count || 0),
+        hasMore: offset + (quotesWithImages?.length || 0) < (count || 0),
       },
     }, {
       headers: {
