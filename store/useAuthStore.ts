@@ -36,24 +36,29 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const supabase = createClient();
 
     try {
-      // Get current session
+      // Use getUser() instead of getSession() to validate the session server-side
+      // getSession() can return cached/expired sessions, getUser() validates with the server
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      console.log('Auth initialize: session exists:', !!session?.user);
+      console.log('Auth initialize: user exists:', !!user, userError?.message || '');
 
-      if (session?.user) {
-        set({ user: session.user });
+      if (user && !userError) {
+        set({ user });
 
         // Fetch profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .single();
 
         set({ profile });
+      } else {
+        // No valid user - ensure state is clean
+        set({ user: null, profile: null });
       }
 
       // Listen for auth changes (only set up once)
@@ -61,9 +66,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         authListenerSetup = true;
         supabase.auth.onAuthStateChange(async (event, session) => {
           console.log('Auth state changed:', event, !!session?.user);
-          set({ user: session?.user ?? null });
 
           if (session?.user) {
+            set({ user: session.user });
             const { data: profile } = await supabase
               .from('profiles')
               .select('*')
@@ -71,7 +76,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
               .single();
             set({ profile });
           } else {
-            set({ profile: null });
+            set({ user: null, profile: null });
           }
         });
       }
@@ -82,6 +87,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return;
       }
       console.error('Auth initialization error:', error);
+      // On error, ensure clean state
+      set({ user: null, profile: null });
     } finally {
       set({ isLoading: false, isInitialized: true });
     }
