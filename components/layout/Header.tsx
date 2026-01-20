@@ -12,7 +12,7 @@ import { AuthButtons } from './AuthButtons';
 import { UserMenu } from './UserMenu';
 
 export function Header() {
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const { theme, mounted } = useTheme();
 
   // Use dark logo as default during SSR to prevent flash
@@ -20,6 +20,41 @@ export function Header() {
   const logoSrc = mounted
     ? (theme === 'dark' ? '/logo-driveby-africa.png' : '/logo-driveby-africa-dark.png')
     : '/logo-driveby-africa-dark.png';
+
+  // Render auth buttons or user menu based on auth state
+  const renderAuthSection = () => {
+    // Don't show anything until auth is initialized to prevent flicker
+    if (!isInitialized) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-[var(--surface)] animate-pulse" />
+      );
+    }
+
+    if (user) {
+      return (
+        <>
+          {/* Notifications */}
+          <NotificationBell />
+
+          {/* Favorites */}
+          <Link
+            href="/dashboard/favorites"
+            className="p-2 text-[var(--text-muted)] hover:text-mandarin active:text-mandarin/70 transition-colors hidden sm:block touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="Favoris"
+          >
+            <Heart className="w-5 h-5" />
+          </Link>
+
+          {/* User Menu */}
+          <div className="pl-1">
+            <UserMenu />
+          </div>
+        </>
+      );
+    }
+
+    return <AuthButtons />;
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-14 sm:h-16 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
@@ -50,28 +85,7 @@ export function Header() {
               <ThemeToggle />
             </div>
 
-            {user ? (
-              <>
-                {/* Notifications */}
-                <NotificationBell />
-
-                {/* Favorites */}
-                <Link
-                  href="/dashboard/favorites"
-                  className="p-2 text-[var(--text-muted)] hover:text-mandarin active:text-mandarin/70 transition-colors hidden sm:block touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label="Favoris"
-                >
-                  <Heart className="w-5 h-5" />
-                </Link>
-
-                {/* User Menu */}
-                <div className="pl-1">
-                  <UserMenu />
-                </div>
-              </>
-            ) : (
-              <AuthButtons />
-            )}
+            {renderAuthSection()}
           </div>
         </div>
       </div>
