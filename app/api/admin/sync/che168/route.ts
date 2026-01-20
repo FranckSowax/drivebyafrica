@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getChe168Client } from '@/lib/api/che168';
 import { mapChe168ToVehicle } from '@/lib/api/che168-sync';
+import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -147,6 +148,9 @@ export async function POST(request: NextRequest) {
       }, {
         onConflict: 'source',
       });
+
+    // Record vehicle count snapshot after sync
+    await recordVehicleCountSnapshot();
 
     return NextResponse.json({
       success: true,

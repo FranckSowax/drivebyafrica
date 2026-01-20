@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
 
 const API_BASE = 'https://api1.auto-api.com/api/v2/dubicars';
 const API_KEY = process.env.DUBICARS_API_KEY || process.env.ENCAR_API_KEY || '';
@@ -319,6 +320,9 @@ export async function POST(request: NextRequest) {
     }, {
       onConflict: 'source',
     });
+
+    // Record vehicle count snapshot after sync
+    await recordVehicleCountSnapshot();
 
     const duration = Math.round((Date.now() - startTime) / 1000);
 

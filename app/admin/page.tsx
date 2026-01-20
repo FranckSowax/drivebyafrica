@@ -506,7 +506,24 @@ export default function AdminDashboardPage() {
             </h2>
             <p className="text-sm text-[var(--text-muted)]">Évolution du nombre de véhicules par source</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/admin/vehicle-count', { method: 'POST' });
+                  if (res.ok) {
+                    fetchData();
+                  }
+                } catch (e) {
+                  console.error('Error recording count:', e);
+                }
+              }}
+              title="Enregistrer le comptage actuel"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
             {(['7d', '30d', '90d'] as const).map((range) => (
               <button
                 key={range}
@@ -596,36 +613,44 @@ export default function AdminDashboardPage() {
                 }}
               />
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="totalVehicles"
                 name="totalVehicles"
                 stroke="#F97316"
                 fill="url(#colorTotalVehicles)"
                 strokeWidth={2}
+                dot={{ r: 3, fill: '#F97316', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#F97316', stroke: '#fff', strokeWidth: 2 }}
               />
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="koreaVehicles"
                 name="koreaVehicles"
                 stroke="#3B82F6"
                 fill="url(#colorKoreaVehicles)"
                 strokeWidth={2}
+                dot={{ r: 3, fill: '#3B82F6', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#3B82F6', stroke: '#fff', strokeWidth: 2 }}
               />
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="chinaVehicles"
                 name="chinaVehicles"
                 stroke="#EF4444"
                 fill="url(#colorChinaVehicles)"
                 strokeWidth={2}
+                dot={{ r: 3, fill: '#EF4444', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#EF4444', stroke: '#fff', strokeWidth: 2 }}
               />
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="dubaiVehicles"
                 name="dubaiVehicles"
                 stroke="#10B981"
                 fill="url(#colorDubaiVehicles)"
                 strokeWidth={2}
+                dot={{ r: 3, fill: '#10B981', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#10B981', stroke: '#fff', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

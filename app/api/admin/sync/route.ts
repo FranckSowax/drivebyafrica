@@ -9,6 +9,7 @@ import {
   updateSyncLog,
 } from '@/lib/api/encar-sync';
 import { getEncarClient } from '@/lib/api/encar';
+import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
 
 // POST - Trigger sync
 export async function POST(request: NextRequest) {
@@ -71,6 +72,9 @@ export async function POST(request: NextRequest) {
         error: hasErrors ? `${result.errors} errors occurred` : undefined,
       });
     }
+
+    // Record vehicle count snapshot after sync
+    await recordVehicleCountSnapshot();
 
     return NextResponse.json({
       success: true,

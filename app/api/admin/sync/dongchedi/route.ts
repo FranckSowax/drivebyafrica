@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -237,6 +238,9 @@ export async function POST(request: NextRequest) {
         stats.updated += updateCount;
       }
     }
+
+    // Record vehicle count snapshot after sync
+    await recordVehicleCountSnapshot();
 
     return NextResponse.json({
       success: true,
