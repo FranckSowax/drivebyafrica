@@ -64,18 +64,30 @@ export async function POST(request: Request) {
       }
     }
 
-    // Get the order
+    // Get the order (without FK join to avoid schema cache issues)
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, profiles!orders_user_id_fkey(full_name, whatsapp_number, phone)')
+      .select('*')
       .eq('id', orderId)
       .single();
 
     if (orderError || !order) {
+      console.error('Error fetching order:', orderError);
       return NextResponse.json(
         { error: 'Commande non trouvée' },
         { status: 404 }
       );
+    }
+
+    // Fetch profile separately for notifications
+    let profile: { full_name: string | null; whatsapp_number: string | null; phone: string | null } | null = null;
+    if (order.user_id) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, whatsapp_number, phone')
+        .eq('id', order.user_id)
+        .single();
+      profile = profileData;
     }
 
     // Prepare documents array
@@ -117,9 +129,7 @@ export async function POST(request: Request) {
       throw updateError;
     }
 
-    // Get profile for notifications
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = (order as any).profiles;
+    // Use profile fetched earlier for notifications
     const customerName = profile?.full_name || 'Client';
     const whatsappNumber = profile?.whatsapp_number || profile?.phone;
 
