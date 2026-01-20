@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { useCollaboratorLocale } from './CollaboratorLocaleProvider';
 import {
   Car,
@@ -131,8 +132,9 @@ export function CollaboratorOrderCard({ order, onViewDetails, onContactWhatsApp 
           {/* Vehicle image */}
           <div className="w-20 h-20 flex-shrink-0 bg-nobel/20 rounded-lg overflow-hidden">
             {order.vehicle?.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={order.vehicle.image_url}
+                src={getProxiedImageUrl(order.vehicle.image_url)}
                 alt={`${order.vehicle?.make} ${order.vehicle?.model}`}
                 className="w-full h-full object-cover"
               />

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { cn } from '@/lib/utils';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
@@ -480,8 +481,9 @@ function CollaboratorOrdersContent() {
               <div className="flex gap-4">
                 <div className="w-24 h-24 flex-shrink-0 bg-nobel/20 rounded-lg overflow-hidden">
                   {selectedOrder.vehicle?.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={selectedOrder.vehicle.image_url}
+                      src={getProxiedImageUrl(selectedOrder.vehicle.image_url)}
                       alt="Vehicle"
                       className="w-full h-full object-cover"
                     />

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Package, MapPin, ChevronRight, Clock } from 'lucide-react';
@@ -10,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import { cn } from '@/lib/utils';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import type { Order } from '@/types/database';
 
 interface OrderCardProps {
@@ -38,17 +38,17 @@ export function OrderCard({
       <Card className={cn('hover:border-mandarin/50 transition-all group', className)}>
         <div className="flex gap-4">
           {/* Vehicle Image */}
-          <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden bg-surface">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-[var(--surface)]">
             {vehicleImage ? (
-              <Image
-                src={vehicleImage}
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={getProxiedImageUrl(vehicleImage)}
                 alt={vehicleTitle || 'Vehicle'}
-                fill
-                className="object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Package className="w-8 h-8 text-nobel" />
+                <Package className="w-8 h-8 text-[var(--text-muted)]" />
               </div>
             )}
           </div>
