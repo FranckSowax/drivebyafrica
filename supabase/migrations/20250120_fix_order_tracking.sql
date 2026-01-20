@@ -1,79 +1,136 @@
 -- Migration: Fix order_tracking table to support all 13 statuses
 -- This migration ensures the table exists and has the correct structure
 
--- First, drop and recreate the constraint to support all 13 statuses
-ALTER TABLE IF EXISTS order_tracking
-DROP CONSTRAINT IF EXISTS order_tracking_order_status_check;
-
--- Add the updated constraint with all 13 statuses
+-- Add missing columns first (before any constraints)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'order_tracking') THEN
-    ALTER TABLE order_tracking
-    ADD CONSTRAINT order_tracking_order_status_check
-    CHECK (order_status IN (
-      'deposit_paid',          -- 1. Acompte payé
-      'vehicle_locked',        -- 2. Véhicule bloqué
-      'inspection_sent',       -- 3. Inspection envoyée
-      'full_payment_received', -- 4. Totalité du paiement reçu
-      'vehicle_purchased',     -- 5. Véhicule acheté
-      'export_customs',        -- 6. Douane export
-      'in_transit',            -- 7. En transit
-      'at_port',               -- 8. Au port
-      'shipping',              -- 9. En mer
-      'documents_ready',       -- 10. Remise documentation
-      'customs',               -- 11. En douane
-      'ready_pickup',          -- 12. Prêt pour retrait
-      'delivered',             -- 13. Livré
-      'processing'             -- Legacy status
-    ));
+  -- Add order_status column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'order_status'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN order_status TEXT NOT NULL DEFAULT 'deposit_paid';
   END IF;
-END $$;
 
--- Create the table if it doesn't exist (with all 13 statuses)
-CREATE TABLE IF NOT EXISTS order_tracking (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE UNIQUE,
-    order_status TEXT NOT NULL DEFAULT 'deposit_paid' CHECK (order_status IN (
-      'deposit_paid',
-      'vehicle_locked',
-      'inspection_sent',
-      'full_payment_received',
-      'vehicle_purchased',
-      'export_customs',
-      'in_transit',
-      'at_port',
-      'shipping',
-      'documents_ready',
-      'customs',
-      'ready_pickup',
-      'delivered',
-      'processing'
-    )),
-    tracking_steps JSONB DEFAULT '[]'::jsonb,
-    shipping_eta DATE,
-    vessel_name TEXT,
-    container_number TEXT,
-    bill_of_lading TEXT,
-    customs_reference TEXT,
-    delivery_address TEXT,
-    delivery_contact TEXT,
-    admin_notes TEXT,
-    uploaded_documents JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+  -- Add tracking_steps column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'tracking_steps'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN tracking_steps JSONB DEFAULT '[]'::jsonb;
+  END IF;
 
--- Add uploaded_documents column if it doesn't exist
-DO $$
-BEGIN
+  -- Add shipping_eta column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'shipping_eta'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN shipping_eta DATE;
+  END IF;
+
+  -- Add vessel_name column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'vessel_name'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN vessel_name TEXT;
+  END IF;
+
+  -- Add container_number column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'container_number'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN container_number TEXT;
+  END IF;
+
+  -- Add bill_of_lading column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'bill_of_lading'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN bill_of_lading TEXT;
+  END IF;
+
+  -- Add customs_reference column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'customs_reference'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN customs_reference TEXT;
+  END IF;
+
+  -- Add delivery_address column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'delivery_address'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN delivery_address TEXT;
+  END IF;
+
+  -- Add delivery_contact column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'delivery_contact'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN delivery_contact TEXT;
+  END IF;
+
+  -- Add admin_notes column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'admin_notes'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN admin_notes TEXT;
+  END IF;
+
+  -- Add uploaded_documents column if it doesn't exist
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'order_tracking' AND column_name = 'uploaded_documents'
   ) THEN
     ALTER TABLE order_tracking ADD COLUMN uploaded_documents JSONB DEFAULT '[]'::jsonb;
   END IF;
+
+  -- Add created_at column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'created_at'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  END IF;
+
+  -- Add updated_at column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'order_tracking' AND column_name = 'updated_at'
+  ) THEN
+    ALTER TABLE order_tracking ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  END IF;
 END $$;
+
+-- Now drop and recreate the constraint for order_status
+ALTER TABLE order_tracking
+DROP CONSTRAINT IF EXISTS order_tracking_order_status_check;
+
+ALTER TABLE order_tracking
+ADD CONSTRAINT order_tracking_order_status_check
+CHECK (order_status IN (
+  'deposit_paid',
+  'vehicle_locked',
+  'inspection_sent',
+  'full_payment_received',
+  'vehicle_purchased',
+  'export_customs',
+  'in_transit',
+  'at_port',
+  'shipping',
+  'documents_ready',
+  'customs',
+  'ready_pickup',
+  'delivered',
+  'processing'
+));
 
 -- Create indexes if they don't exist
 CREATE INDEX IF NOT EXISTS idx_order_tracking_quote ON order_tracking(quote_id);
