@@ -1,36 +1,61 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { useAdminAuth } from '@/lib/hooks/useAdminAuth';
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
 }
 
 /**
- * Garde d'authentification pour les pages admin
- * Utilise le hook useAdminAuth pour une gestion robuste de la session
+ * Garde d'authentification simplifiée pour les pages admin
+ * Vérifie le rôle via l'API une seule fois
  */
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const pathname = usePathname();
-  const { isLoading, isAuthenticated, isAdmin, error } = useAdminAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Ne pas rediriger si on est encore en train de charger
-    if (isLoading) return;
-
     // Skip auth check for login page
-    if (pathname === '/admin/login') return;
-
-    // Si non authentifié ou non admin, rediriger vers login
-    if (!isAuthenticated || !isAdmin) {
-      // Utiliser window.location pour une navigation complète
-      // Cela garantit que les cookies sont bien lus au prochain chargement
-      window.location.href = '/admin/login';
+    if (pathname === '/admin/login') {
+      setIsLoading(false);
+      return;
     }
-  }, [isLoading, isAuthenticated, isAdmin, pathname]);
+
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/check-role', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          setError('Erreur de vérification');
+          window.location.href = '/admin/login';
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.isAdmin) {
+          setIsAdmin(true);
+          setIsLoading(false);
+        } else {
+          setError('Accès non autorisé');
+          window.location.href = '/admin/login';
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        setError('Erreur de connexion');
+        window.location.href = '/admin/login';
+      }
+    };
+
+    checkAuth();
+  }, [pathname]);
 
   // Skip guard for login page
   if (pathname === '/admin/login') {
@@ -50,7 +75,7 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   }
 
   // Afficher un loader pendant la redirection si non autorisé
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
         <div className="text-center">
