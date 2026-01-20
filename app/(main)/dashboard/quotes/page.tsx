@@ -16,7 +16,6 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Ban,
   Trash2,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -640,131 +639,127 @@ export default function QuotesPage() {
             const status = STATUS_CONFIG[quote.status] || DEFAULT_STATUS_CONFIG;
             const StatusIcon = status.icon;
             const expired = isExpired(quote.valid_until) && quote.status === 'pending';
+            const canValidate = quote.status === 'pending' && !expired;
+            const canDelete = quote.status !== 'accepted';
 
             return (
-              <Card key={quote.id} className="overflow-hidden">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  {/* Vehicle Info */}
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-[var(--surface)] rounded-lg">
-                        <Car className="w-5 h-5 text-mandarin" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg">
-                            {SOURCE_FLAGS[quote.vehicle_source] || '🚗'}
-                          </span>
-                          <button
-                            onClick={() => handleOpenQuote(quote)}
-                            className="font-bold text-[var(--text-primary)] hover:text-mandarin hover:underline transition-colors text-left truncate"
-                          >
-                            {quote.vehicle_make} {quote.vehicle_model}
-                          </button>
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}
-                          >
-                            <StatusIcon className="w-3 h-3" />
-                            {expired ? 'Expire' : status.label}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--text-muted)]">
-                          <span>{quote.vehicle_year}</span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {quote.destination_name}, {quote.destination_country}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {formatDate(quote.created_at)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[var(--text-muted)] mt-1">
-                          N° {quote.quote_number}
-                        </p>
-                      </div>
-                    </div>
+              <Card key={quote.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                {/* Header with status badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{SOURCE_FLAGS[quote.vehicle_source] || '🚗'}</span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.color}`}
+                    >
+                      <StatusIcon className="w-3.5 h-3.5" />
+                      {expired ? 'Expiré' : status.label}
+                    </span>
                   </div>
+                  <span className="text-xs text-[var(--text-muted)] font-mono">
+                    {quote.quote_number}
+                  </span>
+                </div>
 
-                  {/* Price and Actions */}
-                  <div className="flex items-center justify-between lg:justify-end gap-4 pt-4 lg:pt-0 border-t lg:border-0 border-[var(--card-border)]">
-                    <div className="lg:text-right">
-                      <p className="text-xs text-[var(--text-muted)]">Total estime</p>
-                      <p className="text-lg font-bold text-mandarin">
-                        {formatCurrency(quote.total_cost_xaf)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      {expired ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled
-                          leftIcon={<Ban className="w-4 h-4" />}
-                          className="text-[var(--text-muted)]"
-                        >
-                          Expire
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => handleValidateQuote(quote)}
-                            leftIcon={<CheckCircle className="w-4 h-4" />}
-                          >
-                            Valider
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenQuote(quote)}
-                            leftIcon={<Eye className="w-4 h-4" />}
-                          >
-                            Ouvrir
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generatePDF(quote)}
-                        disabled={generatingPDF === quote.id}
-                        leftIcon={
-                          generatingPDF === quote.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )
-                        }
-                      >
-                        PDF
-                      </Button>
-                      <Link href={`/cars/${quote.vehicle_id}`}>
-                        <Button variant="ghost" size="sm" leftIcon={<Car className="w-4 h-4" />}>
-                          Vehicule
-                        </Button>
-                      </Link>
-                      {quote.status !== 'accepted' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteQuote(quote.id, quote.quote_number)}
-                          disabled={deletingQuote === quote.id}
-                          leftIcon={
-                            deletingQuote === quote.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )
-                          }
-                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                        >
-                          <span className="hidden sm:inline">Supprimer</span>
-                        </Button>
-                      )}
-                    </div>
+                {/* Vehicle title */}
+                <button
+                  onClick={() => handleOpenQuote(quote)}
+                  className="text-left w-full group"
+                >
+                  <h3 className="font-bold text-[var(--text-primary)] group-hover:text-mandarin transition-colors text-base sm:text-lg leading-tight">
+                    {quote.vehicle_make} {quote.vehicle_model} ({quote.vehicle_year})
+                  </h3>
+                </button>
+
+                {/* Info row */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--text-muted)] mt-2">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {quote.destination_name || 'À définir'}, {quote.destination_country || 'À définir'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {formatDate(quote.created_at)}
+                  </span>
+                </div>
+
+                {/* Price section */}
+                <div className="mt-4 p-3 bg-[var(--surface)] rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[var(--text-muted)]">Total estimé</span>
+                    <span className="text-xl sm:text-2xl font-bold text-mandarin">
+                      {quote.total_cost_xaf > 0 ? formatCurrency(quote.total_cost_xaf) : 'À calculer'}
+                    </span>
                   </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {/* Primary action - Validate (only for pending non-expired) */}
+                  {canValidate && (
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => handleValidateQuote(quote)}
+                      leftIcon={<CheckCircle className="w-4 h-4" />}
+                      className="flex-1 sm:flex-none"
+                    >
+                      Valider le devis
+                    </Button>
+                  )}
+
+                  {/* View details */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenQuote(quote)}
+                    leftIcon={<Eye className="w-4 h-4" />}
+                  >
+                    Détails
+                  </Button>
+
+                  {/* Download PDF */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => generatePDF(quote)}
+                    disabled={generatingPDF === quote.id}
+                    leftIcon={
+                      generatingPDF === quote.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )
+                    }
+                  >
+                    PDF
+                  </Button>
+
+                  {/* View vehicle */}
+                  <Link href={`/cars/${quote.vehicle_id}`}>
+                    <Button variant="ghost" size="sm" leftIcon={<Car className="w-4 h-4" />}>
+                      Véhicule
+                    </Button>
+                  </Link>
+
+                  {/* Delete button - always visible for non-accepted quotes */}
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteQuote(quote.id, quote.quote_number)}
+                      disabled={deletingQuote === quote.id}
+                      leftIcon={
+                        deletingQuote === quote.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )
+                      }
+                      className="text-red-500 hover:text-red-600 hover:bg-red-500/10 ml-auto"
+                    >
+                      Supprimer
+                    </Button>
+                  )}
                 </div>
               </Card>
             );
