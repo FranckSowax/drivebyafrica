@@ -1,32 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
  * GET: Retrieve vehicle count history
  * POST: Record current vehicle count snapshot
  */
 
-// Helper to check admin
-async function isAdmin(supabase: Awaited<ReturnType<typeof createClient>>): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  return profile && ['admin', 'super_admin'].includes(profile.role as string);
-}
-
 export async function GET() {
   try {
-    const supabase = await createClient();
-
-    if (!(await isAdmin(supabase))) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get last 90 days of history
     const ninetyDaysAgo = new Date();
@@ -57,12 +42,7 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const supabase = await createClient();
-
-    if (!(await isAdmin(supabase))) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const today = new Date().toISOString().split('T')[0];
 
     // Get current counts
