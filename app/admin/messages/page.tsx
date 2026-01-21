@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Phone,
   ChevronLeft,
+  Bell,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -272,7 +273,7 @@ export default function AdminMessagesPage() {
       case 'active':
         return 'bg-green-100 text-green-700';
       case 'waiting_agent':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-orange-100 text-orange-700 ring-2 ring-orange-400 ring-offset-1';
       case 'closed':
         return 'bg-gray-100 text-gray-700';
       default:
@@ -393,6 +394,33 @@ export default function AdminMessagesPage() {
         </div>
       )}
 
+      {/* Agent Request Alert Banner */}
+      {stats && stats.waiting_agent > 0 && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-300 rounded-xl flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-200 rounded-full">
+              <Bell className="w-5 h-5 text-orange-700" />
+            </div>
+            <div>
+              <p className="font-semibold text-orange-800">
+                {stats.waiting_agent} client{stats.waiting_agent > 1 ? 's' : ''} attend{stats.waiting_agent > 1 ? 'ent' : ''} un agent
+              </p>
+              <p className="text-sm text-orange-600">
+                Cliquez sur une conversation orange pour répondre
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setStatusFilter('waiting_agent')}
+            className="bg-orange-500 hover:bg-orange-600"
+          >
+            Voir les demandes
+          </Button>
+        </div>
+      )}
+
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700">
           <AlertCircle className="w-5 h-5" />
@@ -447,7 +475,7 @@ export default function AdminMessagesPage() {
                   onClick={() => setSelectedConversation(conv)}
                   className={`w-full p-4 text-left border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)] transition-colors ${
                     selectedConversation?.id === conv.id ? 'bg-[var(--surface)]' : ''
-                  } ${conv.status === 'waiting_agent' ? 'bg-yellow-50/50' : ''}`}
+                  } ${conv.status === 'waiting_agent' ? 'bg-orange-50 border-l-4 border-l-orange-500' : ''}`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-[var(--surface)] rounded-full flex items-center justify-center flex-shrink-0 border border-[var(--card-border)]">

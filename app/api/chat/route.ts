@@ -104,6 +104,32 @@ export async function POST(request: Request) {
         metadata: { type: 'agent_request' },
       });
 
+      // Get user profile for notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', user.id)
+        .single();
+
+      // Create admin notification for agent request
+      await supabase.from('admin_notifications').insert({
+        type: 'agent_request',
+        title: 'Demande d\'agent - Chat',
+        message: `${profile?.full_name || 'Un client'} demande à parler à un agent Driveby.`,
+        priority: 'high',
+        action_url: '/admin/messages',
+        action_label: 'Voir les messages',
+        icon: 'message-circle',
+        related_entity_type: 'chat_conversation',
+        related_entity_id: conversationId,
+        data: {
+          user_id: user.id,
+          user_name: profile?.full_name || 'Client',
+          user_phone: profile?.phone || null,
+          conversation_id: conversationId,
+        },
+      });
+
       return NextResponse.json({ success: true, status: 'waiting_agent' });
     }
 

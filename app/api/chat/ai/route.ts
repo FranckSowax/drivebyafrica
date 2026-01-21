@@ -7,17 +7,34 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
+// Order status translations for AI context
+const ORDER_STATUS_FR: Record<string, string> = {
+  'pending_deposit': 'En attente de l\'acompte',
+  'deposit_paid': 'Acompte payé - En attente d\'inspection',
+  'inspection_in_progress': 'Inspection en cours',
+  'inspection_completed': 'Inspection terminée - Rapport disponible',
+  'pending_balance': 'En attente du paiement du solde',
+  'balance_paid': 'Solde payé - Préparation de l\'expédition',
+  'shipping_preparation': 'Préparation de l\'expédition',
+  'shipped': 'Expédié - En transit',
+  'in_transit': 'En transit maritime',
+  'customs_clearance': 'En dédouanement',
+  'ready_for_pickup': 'Prêt pour récupération',
+  'delivered': 'Livré',
+  'cancelled': 'Annulé',
+};
+
 // System prompt with Driveby Africa context
 const SYSTEM_PROMPT = `Tu es l'assistant virtuel de Driveby Africa, une plateforme d'importation de vehicules depuis la Coree du Sud, la Chine et Dubai vers l'Afrique (principalement Gabon, Cameroun, Senegal, Cote d'Ivoire).
 
 INFORMATIONS CLE SUR DRIVEBY AFRICA:
 
-1. PROCESSUS D'ACHAT:
+1. PROCESSUS D'ACHAT (13 étapes):
 - Etape 1: L'utilisateur choisit un vehicule et demande un devis
 - Etape 2: Paiement d'un acompte de 1000 USD (600 000 FCFA) pour bloquer le vehicule
 - Etape 3: Inspection detaillee du vehicule avec rapport envoye au client
 - Etape 4: Si satisfait, paiement du solde
-- Etape 5: Expedition et livraison au port de destination
+- Etape 5-13: Expedition et livraison au port de destination (préparation, chargement, transit, dédouanement, livraison)
 
 2. DELAIS DE LIVRAISON:
 - Coree du Sud: 4-6 semaines
@@ -43,9 +60,11 @@ REGLES DE REPONSE:
 - Reponds toujours en francais
 - Sois concis et utile (max 2-3 paragraphes)
 - Si la question concerne un vehicule specifique, utilise les donnees fournies
-- Si tu ne peux pas repondre, suggere de demander l'aide d'un agent humain
+- Si tu ne peux pas repondre, suggere de demander l'aide d'un agent humain en cliquant sur le bouton "Parler à un agent"
 - Ne jamais inventer de prix ou specifications de vehicules
-- Utilise un ton professionnel mais amical`;
+- Utilise un ton professionnel mais amical
+- Si le client demande le statut de sa commande, utilise les informations de commande fournies
+- Si le client n'a pas de commande en cours, propose-lui de parcourir le catalogue`;
 
 export async function POST(request: Request) {
   try {
@@ -66,6 +85,53 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fetch user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, country, phone')
+      .eq('id', user.id)
+      .single();
+
+    // Fetch user's recent orders
+    const { data: orders } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        order_number,
+        status,
+        vehicle_make,
+        vehicle_model,
+        vehicle_year,
+        vehicle_price_usd,
+        destination_country,
+        destination_name,
+        created_at,
+        updated_at
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Fetch user's recent quotes
+    const { data: quotes } = await supabase
+      .from('quotes')
+      .select(`
+        id,
+        quote_number,
+        status,
+        vehicle_make,
+        vehicle_model,
+        vehicle_year,
+        vehicle_price_usd,
+        total_cost_xaf,
+        destination_country,
+        valid_until,
+        created_at
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
     // Fetch recent conversation history for context
     const { data: recentMessages } = await supabase
       .from('chat_messages')
@@ -78,8 +144,46 @@ export async function POST(request: Request) {
     const { data: vehicles } = await supabase
       .from('vehicles')
       .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
-      .or('status.eq.available,status.is.null')
+      .eq('is_visible', true)
       .limit(20);
+
+    // Build customer context
+    let customerContext = '\n\nINFORMATIONS CLIENT:';
+    customerContext += `\nNom: ${profile?.full_name || 'Non renseigné'}`;
+    customerContext += `\nPays: ${profile?.country || 'Non renseigné'}`;
+
+    // Build orders context
+    let ordersContext = '';
+    if (orders && orders.length > 0) {
+      ordersContext = '\n\nCOMMANDES DU CLIENT:';
+      orders.forEach(order => {
+        const statusFr = ORDER_STATUS_FR[order.status] || order.status;
+        ordersContext += `\n- Commande ${order.order_number}: ${order.vehicle_make} ${order.vehicle_model} ${order.vehicle_year}`;
+        ordersContext += `\n  Statut: ${statusFr}`;
+        ordersContext += `\n  Destination: ${order.destination_name}, ${order.destination_country}`;
+        ordersContext += `\n  Prix: ${order.vehicle_price_usd?.toLocaleString()} USD`;
+        ordersContext += `\n  Date: ${new Date(order.created_at).toLocaleDateString('fr-FR')}`;
+      });
+    } else {
+      ordersContext = '\n\nCOMMANDES DU CLIENT: Aucune commande en cours.';
+    }
+
+    // Build quotes context
+    let quotesContext = '';
+    if (quotes && quotes.length > 0) {
+      quotesContext = '\n\nDEVIS DU CLIENT:';
+      quotes.forEach(quote => {
+        const isExpired = new Date(quote.valid_until) < new Date();
+        const statusText = quote.status === 'accepted' ? 'Accepté' :
+                          quote.status === 'expired' || isExpired ? 'Expiré' :
+                          quote.status === 'cancelled' ? 'Annulé' : 'En attente';
+        quotesContext += `\n- Devis ${quote.quote_number}: ${quote.vehicle_make} ${quote.vehicle_model} ${quote.vehicle_year}`;
+        quotesContext += `\n  Statut: ${statusText}`;
+        quotesContext += `\n  Destination: ${quote.destination_country}`;
+        quotesContext += `\n  Total: ${quote.total_cost_xaf?.toLocaleString()} FCFA`;
+        quotesContext += `\n  Valide jusqu'au: ${new Date(quote.valid_until).toLocaleDateString('fr-FR')}`;
+      });
+    }
 
     // Build vehicle context
     let vehicleContext = '';
@@ -87,6 +191,9 @@ export async function POST(request: Request) {
       vehicleContext = `\n\nVEHICULES DISPONIBLES (echantillon):
 ${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleString() || 'N/A'} km, ${v.current_price_usd?.toLocaleString() || 'N/A'} USD, ${v.fuel_type || 'N/A'}, ${v.transmission || 'N/A'}, origine: ${v.source || 'N/A'}`).join('\n')}`;
     }
+
+    // Combine all context
+    const fullContext = SYSTEM_PROMPT + customerContext + ordersContext + quotesContext + vehicleContext;
 
     // Build conversation history for Claude
     const conversationHistory = recentMessages
@@ -106,7 +213,7 @@ ${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleStri
     // Check if Anthropic API key is configured
     if (!process.env.ANTHROPIC_API_KEY) {
       // Fallback response without AI
-      const fallbackResponse = generateFallbackResponse(userMessage);
+      const fallbackResponse = generateFallbackResponse(userMessage, orders || [], quotes || []);
 
       const { data: botMessage, error: insertError } = await supabase
         .from('chat_messages')
@@ -127,8 +234,8 @@ ${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleStri
     // Call Claude API
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
-      max_tokens: 500,
-      system: SYSTEM_PROMPT + vehicleContext,
+      max_tokens: 600,
+      system: fullContext,
       messages: conversationHistory.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
@@ -161,16 +268,58 @@ ${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleStri
     return NextResponse.json(
       {
         error: 'Erreur lors de la generation de la reponse',
-        fallbackMessage: "Je rencontre des difficultes techniques. Vous pouvez demander l'aide d'un agent en cliquant sur le bouton ci-dessous, ou nous contacter directement via WhatsApp au +241 77 00 00 00."
+        fallbackMessage: "Je rencontre des difficultes techniques. Vous pouvez demander l'aide d'un agent en cliquant sur le bouton 'Parler à un agent', ou nous contacter directement via WhatsApp au +241 77 00 00 00."
       },
       { status: 500 }
     );
   }
 }
 
+// Order type for fallback function
+interface OrderData {
+  order_number: string | null;
+  status: string;
+  vehicle_make: string | null;
+  vehicle_model: string | null;
+  vehicle_year: number | null;
+}
+
+interface QuoteData {
+  quote_number: string | null;
+  status: string;
+  vehicle_make: string | null;
+  vehicle_model: string | null;
+  vehicle_year: number | null;
+  valid_until: string;
+}
+
 // Fallback response generator when AI is not available
-function generateFallbackResponse(userMessage: string): string {
+function generateFallbackResponse(userMessage: string, orders: OrderData[], quotes: QuoteData[]): string {
   const message = userMessage.toLowerCase();
+
+  // Check for order status queries
+  if (message.includes('commande') || message.includes('statut') || message.includes('suivi') || message.includes('où en est')) {
+    if (orders.length > 0) {
+      const latestOrder = orders[0];
+      const statusFr = ORDER_STATUS_FR[latestOrder.status] || latestOrder.status;
+      const vehicleInfo = [latestOrder.vehicle_make, latestOrder.vehicle_model, latestOrder.vehicle_year].filter(Boolean).join(' ');
+      return `Votre commande ${latestOrder.order_number || ''} pour le ${vehicleInfo || 'véhicule'} est actuellement au statut: ${statusFr}.\n\nPour plus de détails sur votre commande, vous pouvez consulter votre espace personnel ou demander l'aide d'un agent.`;
+    }
+    return "Je ne trouve pas de commande en cours sur votre compte. Si vous avez récemment passé commande, veuillez patienter quelques minutes ou demander l'aide d'un agent.";
+  }
+
+  // Check for quote queries
+  if (message.includes('devis')) {
+    if (quotes.length > 0) {
+      const latestQuote = quotes[0];
+      const isExpired = new Date(latestQuote.valid_until) < new Date();
+      if (latestQuote.status === 'pending' && !isExpired) {
+        const vehicleInfo = [latestQuote.vehicle_make, latestQuote.vehicle_model, latestQuote.vehicle_year].filter(Boolean).join(' ');
+        return `Vous avez un devis en attente (${latestQuote.quote_number || ''}) pour le ${vehicleInfo || 'véhicule'}. Ce devis est valide jusqu'au ${new Date(latestQuote.valid_until).toLocaleDateString('fr-FR')}.\n\nPour accepter ce devis et procéder au paiement de l'acompte, rendez-vous dans votre espace personnel.`;
+      }
+    }
+    return "Pour obtenir un devis, sélectionnez un véhicule dans notre catalogue et cliquez sur 'Demander un devis'. Vous recevrez une estimation détaillée incluant le prix du véhicule, le transport et l'assurance.";
+  }
 
   if (message.includes('prix') || message.includes('cout') || message.includes('combien')) {
     return "Les prix de nos vehicules varient selon le modele, l'annee et l'origine. Pour obtenir un devis precis, selectionnez un vehicule dans notre catalogue et cliquez sur 'Demander un devis'. L'acompte pour bloquer un vehicule est de 1000 USD (600 000 FCFA).";
@@ -193,8 +342,12 @@ function generateFallbackResponse(userMessage: string): string {
   }
 
   if (message.includes('bonjour') || message.includes('salut') || message.includes('hello')) {
-    return "Bonjour! Je suis l'assistant virtuel de Driveby Africa. Comment puis-je vous aider aujourd'hui? Je peux repondre a vos questions sur nos vehicules, le processus d'achat, les prix ou les delais de livraison.";
+    return "Bonjour! Je suis l'assistant virtuel de Driveby Africa. Comment puis-je vous aider aujourd'hui? Je peux repondre a vos questions sur nos vehicules, le processus d'achat, les prix, les delais de livraison ou le statut de vos commandes.";
   }
 
-  return "Merci pour votre message. Pour une reponse plus precise, vous pouvez:\n- Explorer notre catalogue de vehicules\n- Demander l'aide d'un agent humain\n- Nous contacter sur WhatsApp: +241 77 00 00 00\n\nComment puis-je vous aider?";
+  if (message.includes('agent') || message.includes('humain') || message.includes('personne')) {
+    return "Pour parler à un agent Driveby Africa, cliquez sur le bouton 'Parler à un agent' ci-dessous. Un membre de notre équipe vous répondra dans les plus brefs délais pendant nos heures d'ouverture (Lun-Ven 8h-18h, Sam 9h-14h).";
+  }
+
+  return "Merci pour votre message. Je peux vous aider avec:\n- Le statut de vos commandes\n- Vos devis en cours\n- Les prix et délais de livraison\n- Le processus d'achat\n\nSi vous avez besoin d'une assistance personnalisée, cliquez sur 'Parler à un agent'.";
 }
