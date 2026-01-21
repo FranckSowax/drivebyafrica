@@ -11,7 +11,7 @@ import { useCollaboratorNotifications } from '@/lib/hooks/useCollaboratorNotific
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { format, formatDistanceToNow } from 'date-fns';
-import { enUS, zhCN } from 'date-fns/locale';
+import { enUS, zhCN, fr } from 'date-fns/locale';
 import {
   Search,
   Loader2,
@@ -40,48 +40,67 @@ import {
   Building,
   Upload,
   ExternalLink,
+  Image as ImageIcon,
 } from 'lucide-react';
 
+// Order interface matching API response (flat structure)
 interface Order {
   id: string;
   order_number: string;
-  status: string;
-  total_price_usd: number;
-  deposit_amount_usd?: number;
-  shipping_country?: string;
-  shipping_city?: string;
-  eta?: string;
+  quote_number?: string | null;
+  quote_id?: string | null;
+  user_id: string;
+  vehicle_id: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_year: number;
+  vehicle_price_usd: number;
+  vehicle_source: string;
+  vehicle_image_url?: string | null;
+  destination_country: string;
+  destination_name: string;
+  shipping_cost_xaf?: number | null;
+  insurance_cost_xaf?: number | null;
+  total_cost_xaf?: number | null;
+  customer_name: string;
+  customer_phone: string;
+  customer_whatsapp: string;
+  customer_country: string;
+  order_status: string;
+  tracking_steps: TrackingStep[];
+  shipping_eta: string | null;
+  deposit_amount_usd: number;
   created_at: string;
-  updated_at?: string;
-  vehicle?: {
-    make?: string;
-    model?: string;
-    year?: number;
-    source?: string;
-    image_url?: string;
-    mileage?: number;
-    fuel_type?: string;
-    transmission?: string;
-    external_id?: string;
-  };
-  user?: {
-    id?: string;
-    full_name?: string;
-    email?: string;
-    phone?: string;
-  };
-  tracking?: {
-    id: string;
-    status: string;
-    notes?: string;
-    created_at: string;
-  }[];
-  documents?: {
-    id: string;
-    file_name: string;
-    file_url: string;
-    uploaded_at: string;
-  }[];
+  updated_at: string;
+  source: string;
+  uploaded_documents?: UploadedDocument[];
+}
+
+interface TrackingStep {
+  status: string;
+  timestamp: string;
+  note?: string;
+  updated_by?: string;
+}
+
+interface UploadedDocument {
+  id?: string;
+  name: string;
+  url: string;
+  type: string;
+  status?: string;
+  uploaded_at?: string;
+  visible_to_client?: boolean;
+}
+
+interface Stats {
+  total: number;
+  deposit_paid: number;
+  vehicle_purchased: number;
+  in_transit: number;
+  shipping: number;
+  delivered: number;
+  totalDeposits: number;
 }
 
 const statusConfig: Record<string, { label: string; labelZh: string; color: string; bg: string; icon: React.ComponentType<{ className?: string }>; step: number }> = {
@@ -204,7 +223,9 @@ const countryFlags: Record<string, string> = {
   'Kenya': '🇰🇪',
   'Tanzanie': '🇹🇿',
   'South Africa': '🇿🇦',
+  'Afrique du Sud': '🇿🇦',
   'Morocco': '🇲🇦',
+  'Maroc': '🇲🇦',
 };
 
 function CollaboratorOrdersContent() {
@@ -212,10 +233,11 @@ function CollaboratorOrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedOrderId = searchParams.get('order');
-  const dateLocale = locale === 'zh' ? zhCN : enUS;
+  const dateLocale = locale === 'zh' ? zhCN : locale === 'fr' ? fr : enUS;
 
   const [userName, setUserName] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -284,6 +306,7 @@ function CollaboratorOrdersContent() {
 
       const data = await response.json();
       setOrders(data.orders || []);
+      setStats(data.stats || null);
       setTotalPages(data.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -302,8 +325,8 @@ function CollaboratorOrdersContent() {
       const order = orders.find((o) => o.id === selectedOrderId);
       if (order) {
         setSelectedOrder(order);
-        setNewStatus(order.status);
-        setNewEta(order.eta || '');
+        setNewStatus(order.order_status);
+        setNewEta(order.shipping_eta || '');
         setShowDetailModal(true);
       }
     }
@@ -317,8 +340,8 @@ function CollaboratorOrdersContent() {
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
-    setNewStatus(order.status);
-    setNewEta(order.eta || '');
+    setNewStatus(order.order_status);
+    setNewEta(order.shipping_eta || '');
     setStatusNote('');
     setShowDetailModal(true);
     router.push(`/collaborator/orders?order=${order.id}`, { scroll: false });
@@ -352,6 +375,12 @@ function CollaboratorOrdersContent() {
 
       await fetchOrders();
       setStatusNote('');
+
+      // Refresh selected order with new data
+      const updatedOrder = orders.find(o => o.id === selectedOrder.id);
+      if (updatedOrder) {
+        setSelectedOrder({ ...updatedOrder, order_status: newStatus, shipping_eta: newEta || updatedOrder.shipping_eta });
+      }
     } catch (error) {
       console.error('Error updating status:', error);
     } finally {
@@ -364,7 +393,7 @@ function CollaboratorOrdersContent() {
 
     const file = e.target.files[0];
     if (file.type !== 'application/pdf') {
-      alert(t('documents.pdfOnly'));
+      alert(locale === 'zh' ? '仅限PDF文件' : 'PDF files only');
       return;
     }
 
@@ -394,16 +423,23 @@ function CollaboratorOrdersContent() {
   };
 
   const handleContactWhatsApp = (order: Order) => {
-    if (order.user?.phone) {
-      const phone = order.user.phone.replace(/\D/g, '');
+    const phone = order.customer_whatsapp || order.customer_phone;
+    if (phone) {
+      let formattedPhone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+      if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+241' + formattedPhone.replace(/^0+/, '');
+      }
+      formattedPhone = formattedPhone.replace('+', '');
+
       const message = encodeURIComponent(
-        `Hello ${order.user.full_name},\n\nRegarding your order ${order.order_number} at Driveby Africa.\n\n`
+        `Hello ${order.customer_name},\n\nRegarding your order ${order.order_number} at Driveby Africa.\n\n`
       );
-      window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
     }
   };
 
   const formatPrice = (price: number) => {
+    if (isNaN(price) || price === null || price === undefined) return '$0';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -448,7 +484,7 @@ function CollaboratorOrdersContent() {
               <div>
                 <h1 className="text-xl font-bold text-white">{t('orders.title')}</h1>
                 <p className="text-gray-400 text-sm">
-                  {orders.length} {locale === 'zh' ? '个订单' : 'orders'}
+                  {stats?.total || orders.length} {locale === 'zh' ? '个订单' : 'orders'}
                 </p>
               </div>
             </div>
@@ -457,6 +493,78 @@ function CollaboratorOrdersContent() {
               {locale === 'zh' ? '刷新' : 'Refresh'}
             </Button>
           </div>
+
+          {/* Stats Cards */}
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              <Card className="p-4 bg-cod-gray border-nobel/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-500/10 rounded-lg">
+                    <DollarSign className="w-5 h-5 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">{locale === 'zh' ? '已付定金' : 'Deposit Paid'}</p>
+                    <p className="text-xl font-bold text-white">{stats.deposit_paid}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 bg-cod-gray border-nobel/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-500/10 rounded-lg">
+                    <ShoppingCart className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">{locale === 'zh' ? '已购买' : 'Purchased'}</p>
+                    <p className="text-xl font-bold text-white">{stats.vehicle_purchased}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 bg-cod-gray border-nobel/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <Truck className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">{locale === 'zh' ? '运输中' : 'In Transit'}</p>
+                    <p className="text-xl font-bold text-white">{stats.in_transit}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 bg-cod-gray border-nobel/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/10 rounded-lg">
+                    <Ship className="w-5 h-5 text-indigo-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">{locale === 'zh' ? '海运中' : 'Shipping'}</p>
+                    <p className="text-xl font-bold text-white">{stats.shipping}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 bg-cod-gray border-nobel/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-jewel/10 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-jewel" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">{locale === 'zh' ? '已交付' : 'Delivered'}</p>
+                    <p className="text-xl font-bold text-white">{stats.delivered}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 bg-gradient-to-br from-mandarin/10 to-jewel/10 border-mandarin/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-mandarin/20 rounded-lg">
+                    <DollarSign className="w-5 h-5 text-mandarin" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">{locale === 'zh' ? '总定金' : 'Total Deposits'}</p>
+                    <p className="text-xl font-bold text-mandarin">{formatPrice(stats.totalDeposits)}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -499,8 +607,10 @@ function CollaboratorOrdersContent() {
             ) : orders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <AlertCircle className="w-12 h-12 text-gray-600 mb-4" />
-                <p className="text-gray-400">{t('orders.noOrders')}</p>
-                <p className="text-sm text-gray-500 mt-1">{t('orders.noOrdersHint')}</p>
+                <p className="text-gray-400">{locale === 'zh' ? '暂无订单' : 'No orders found'}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {locale === 'zh' ? '支付定金后订单将显示在这里' : 'Orders appear here once deposit is paid'}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -532,9 +642,9 @@ function CollaboratorOrdersContent() {
                   </thead>
                   <tbody>
                     {orders.map((order) => {
-                      const status = statusConfig[order.status] || statusConfig.deposit_paid;
-                      const flag = countryFlags[order.shipping_country || ''] || '🌍';
-                      const progress = getStatusProgress(order.status);
+                      const status = statusConfig[order.order_status] || statusConfig.deposit_paid;
+                      const flag = countryFlags[order.destination_country] || '🌍';
+                      const progress = getStatusProgress(order.order_status);
 
                       return (
                         <tr
@@ -550,20 +660,40 @@ function CollaboratorOrdersContent() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <div>
-                              <p className="text-sm font-medium text-white">
-                                {order.vehicle?.make} {order.vehicle?.model}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {order.vehicle?.year} - {formatPrice(order.total_price_usd)}
-                              </p>
+                            <div className="flex items-center gap-3">
+                              {/* Vehicle thumbnail */}
+                              <div className="w-14 h-10 rounded-lg overflow-hidden bg-nobel/20 flex-shrink-0">
+                                {order.vehicle_image_url ? (
+                                  <img
+                                    src={order.vehicle_image_url}
+                                    alt={`${order.vehicle_make} ${order.vehicle_model}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <ImageIcon className="w-5 h-5 text-gray-500" />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-white">
+                                  {order.vehicle_make} {order.vehicle_model}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {order.vehicle_year} - {formatPrice(order.vehicle_price_usd)}
+                                </p>
+                              </div>
                             </div>
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               <div>
-                                <p className="text-sm font-medium text-white">{order.user?.full_name}</p>
-                                {order.user?.phone && (
+                                <p className="text-sm font-medium text-white">{order.customer_name}</p>
+                                {(order.customer_whatsapp || order.customer_phone) && (
                                   <button
                                     onClick={() => handleContactWhatsApp(order)}
                                     className="flex items-center gap-1 text-xs text-green-500 hover:text-green-400 transition-colors"
@@ -579,8 +709,8 @@ function CollaboratorOrdersContent() {
                             <div className="flex items-center gap-2">
                               <span className="text-lg">{flag}</span>
                               <div>
-                                <p className="text-sm text-white">{order.shipping_city}</p>
-                                <p className="text-xs text-gray-500">{order.shipping_country}</p>
+                                <p className="text-sm text-white">{order.destination_name}</p>
+                                <p className="text-xs text-gray-500">{order.destination_country}</p>
                               </div>
                             </div>
                           </td>
@@ -588,7 +718,7 @@ function CollaboratorOrdersContent() {
                             <div className="w-36 mx-auto">
                               <div className="flex items-center justify-between mb-1">
                                 <span className={`text-xs font-medium ${status.color}`}>
-                                  {getStatusLabel(order.status)}
+                                  {getStatusLabel(order.order_status)}
                                 </span>
                               </div>
                               <div className="w-full h-2 bg-nobel/20 rounded-full overflow-hidden">
@@ -600,10 +730,10 @@ function CollaboratorOrdersContent() {
                             </div>
                           </td>
                           <td className="py-4 px-4 text-center">
-                            {order.eta ? (
+                            {order.shipping_eta ? (
                               <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
                                 <Calendar className="w-3.5 h-3.5" />
-                                {format(new Date(order.eta), 'dd/MM/yy')}
+                                {format(new Date(order.shipping_eta), 'dd/MM/yy')}
                               </div>
                             ) : (
                               <span className="text-xs text-gray-500">
@@ -618,16 +748,16 @@ function CollaboratorOrdersContent() {
                                 size="sm"
                                 onClick={() => handleViewDetails(order)}
                                 title={locale === 'zh' ? '查看/编辑' : 'View/Edit'}
-                                className="text-white hover:text-mandarin"
+                                className="text-white hover:text-mandarin hover:bg-mandarin/10"
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              {order.user?.phone && (
+                              {(order.customer_whatsapp || order.customer_phone) && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleContactWhatsApp(order)}
-                                  className="text-green-500 hover:text-green-400"
+                                  className="text-green-500 hover:text-green-400 hover:bg-green-500/10"
                                   title="WhatsApp"
                                 >
                                   <MessageCircle className="w-4 h-4" />
@@ -683,13 +813,25 @@ function CollaboratorOrdersContent() {
           <div className="bg-cod-gray border border-nobel/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-nobel/20">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-white">
-                    {locale === 'zh' ? '订单' : 'Order'} {selectedOrder.order_number}
-                  </h3>
-                  <p className="text-sm text-gray-400">
-                    {selectedOrder.vehicle?.make} {selectedOrder.vehicle?.model} {selectedOrder.vehicle?.year}
-                  </p>
+                <div className="flex items-center gap-4">
+                  {/* Vehicle image in modal header */}
+                  {selectedOrder.vehicle_image_url && (
+                    <div className="w-16 h-12 rounded-lg overflow-hidden bg-nobel/20 flex-shrink-0">
+                      <img
+                        src={selectedOrder.vehicle_image_url}
+                        alt={`${selectedOrder.vehicle_make} ${selectedOrder.vehicle_model}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-lg font-bold text-white">
+                      {locale === 'zh' ? '订单' : 'Order'} {selectedOrder.order_number}
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
+                    </p>
+                  </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleCloseModal} className="text-gray-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -707,9 +849,10 @@ function CollaboratorOrdersContent() {
                   <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-nobel/20" />
                   <div className="space-y-4">
                     {Object.entries(statusConfig).map(([key, config]) => {
-                      const isCompleted = config.step <= (statusConfig[selectedOrder.status]?.step || 1);
-                      const isCurrent = key === selectedOrder.status;
-                      const trackingStep = selectedOrder.tracking?.find(s => s.status === key);
+                      const currentStep = statusConfig[selectedOrder.order_status]?.step || 1;
+                      const isCompleted = config.step <= currentStep;
+                      const isCurrent = key === selectedOrder.order_status;
+                      const trackingStep = selectedOrder.tracking_steps?.find(s => s.status === key);
                       const StatusIcon = config.icon;
 
                       return (
@@ -741,10 +884,10 @@ function CollaboratorOrdersContent() {
                             {trackingStep && (
                               <div className="mt-1">
                                 <p className="text-xs text-gray-500">
-                                  {format(new Date(trackingStep.created_at), "dd/MM/yyyy HH:mm", { locale: dateLocale })}
+                                  {format(new Date(trackingStep.timestamp), "dd/MM/yyyy HH:mm", { locale: dateLocale })}
                                 </p>
-                                {trackingStep.notes && (
-                                  <p className="text-xs text-gray-300 mt-0.5">{trackingStep.notes}</p>
+                                {trackingStep.note && (
+                                  <p className="text-xs text-gray-300 mt-0.5">{trackingStep.note}</p>
                                 )}
                               </div>
                             )}
@@ -790,7 +933,7 @@ function CollaboratorOrdersContent() {
                     />
                     <Button
                       onClick={handleUpdateStatus}
-                      disabled={isUpdatingStatus || newStatus === selectedOrder.status}
+                      disabled={isUpdatingStatus || newStatus === selectedOrder.order_status}
                       className="bg-mandarin hover:bg-mandarin/90"
                     >
                       {isUpdatingStatus ? (
@@ -813,29 +956,33 @@ function CollaboratorOrdersContent() {
                   {locale === 'zh' ? '文档' : 'Documents'}
                 </h4>
 
-                {selectedOrder.documents && selectedOrder.documents.length > 0 ? (
+                {selectedOrder.uploaded_documents && selectedOrder.uploaded_documents.length > 0 ? (
                   <div className="space-y-2 mb-4">
-                    {selectedOrder.documents.map((doc) => (
+                    {selectedOrder.uploaded_documents.map((doc, idx) => (
                       <a
-                        key={doc.id}
-                        href={doc.file_url}
+                        key={doc.id || idx}
+                        href={doc.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-3 rounded-lg bg-cod-gray hover:bg-nobel/20 transition-colors"
                       >
                         <FileText className="h-5 w-5 text-mandarin" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white truncate">{doc.file_name}</p>
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(doc.uploaded_at), 'dd/MM/yyyy HH:mm')}
-                          </p>
+                          <p className="text-sm text-white truncate">{doc.name}</p>
+                          {doc.uploaded_at && (
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(doc.uploaded_at), 'dd/MM/yyyy HH:mm')}
+                            </p>
+                          )}
                         </div>
                         <ExternalLink className="h-4 w-4 text-gray-400" />
                       </a>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 mb-4">{t('documents.noDocuments')}</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {locale === 'zh' ? '暂无文档' : 'No documents yet'}
+                  </p>
                 )}
 
                 <label className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-nobel/30 text-gray-400 hover:border-mandarin/50 hover:text-mandarin cursor-pointer transition-colors">
@@ -868,9 +1015,9 @@ function CollaboratorOrdersContent() {
                   <h4 className="text-sm font-medium text-gray-400 mb-2">
                     {locale === 'zh' ? '客户' : 'Customer'}
                   </h4>
-                  <p className="font-medium text-white">{selectedOrder.user?.full_name}</p>
-                  <p className="text-sm text-gray-400">{selectedOrder.user?.email}</p>
-                  {selectedOrder.user?.phone && (
+                  <p className="font-medium text-white">{selectedOrder.customer_name}</p>
+                  <p className="text-sm text-gray-400">{selectedOrder.customer_country}</p>
+                  {(selectedOrder.customer_whatsapp || selectedOrder.customer_phone) && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -887,18 +1034,53 @@ function CollaboratorOrdersContent() {
                     {locale === 'zh' ? '目的地' : 'Destination'}
                   </h4>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">{countryFlags[selectedOrder.shipping_country || ''] || '🌍'}</span>
-                    <p className="font-medium text-white">{selectedOrder.shipping_city}</p>
+                    <span className="text-lg">{countryFlags[selectedOrder.destination_country] || '🌍'}</span>
+                    <p className="font-medium text-white">{selectedOrder.destination_name}</p>
                   </div>
-                  <p className="text-sm text-gray-400">{selectedOrder.shipping_country}</p>
-                  {selectedOrder.eta && (
+                  <p className="text-sm text-gray-400">{selectedOrder.destination_country}</p>
+                  {selectedOrder.shipping_eta && (
                     <div className="flex items-center gap-2 mt-2 text-sm">
                       <Calendar className="w-4 h-4 text-mandarin" />
                       <span className="text-white">
-                        ETA: {format(new Date(selectedOrder.eta), 'dd MMM yyyy', { locale: dateLocale })}
+                        ETA: {format(new Date(selectedOrder.shipping_eta), 'dd MMM yyyy', { locale: dateLocale })}
                       </span>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Financial Summary */}
+              <div className="bg-nobel/10 rounded-xl p-4">
+                <h4 className="text-sm font-medium text-gray-400 mb-3">
+                  {locale === 'zh' ? '财务摘要' : 'Financial Summary'}
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">{locale === 'zh' ? '车辆价格' : 'Vehicle Price'}</span>
+                    <span className="text-white">{formatPrice(selectedOrder.vehicle_price_usd)}</span>
+                  </div>
+                  {selectedOrder.shipping_cost_xaf && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{locale === 'zh' ? '运费' : 'Shipping'}</span>
+                      <span className="text-white">{formatPrice(selectedOrder.shipping_cost_xaf / 615)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.insurance_cost_xaf && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{locale === 'zh' ? '保险' : 'Insurance'}</span>
+                      <span className="text-white">{formatPrice(selectedOrder.insurance_cost_xaf / 615)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.total_cost_xaf && (
+                    <div className="border-t border-nobel/20 pt-2 mt-2 flex justify-between font-semibold">
+                      <span className="text-white">{locale === 'zh' ? '总计' : 'Total'}</span>
+                      <span className="text-mandarin">{formatPrice(selectedOrder.total_cost_xaf / 615)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm pt-2">
+                    <span className="text-green-500 font-medium">{locale === 'zh' ? '已付定金' : 'Deposit Paid'}</span>
+                    <span className="text-green-500 font-medium">{formatPrice(selectedOrder.deposit_amount_usd)}</span>
+                  </div>
                 </div>
               </div>
             </div>
