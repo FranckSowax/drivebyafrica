@@ -24,7 +24,6 @@ import { Button } from '@/components/ui/Button';
 import { Slider } from '@/components/ui/Slider';
 import { useFilterStore } from '@/store/useFilterStore';
 import { useVehicleFilters, translateFilter, getColorHex } from '@/lib/hooks/useVehicleFilters';
-import { formatUsdToFcfaShort } from '@/lib/utils/currency';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
 import type { VehicleSource } from '@/types/vehicle';
@@ -321,14 +320,51 @@ interface VehicleFiltersProps {
 export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
-  const { availableCurrencies } = useCurrency();
+  const { currencyInfo, formatPrice } = useCurrency();
   const currentYear = new Date().getFullYear();
 
-  // Get XAF rate dynamically
-  const xafRate = useMemo(() => {
-    const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
-    return xafCurrency?.rateToUsd || 615;
-  }, [availableCurrencies]);
+  // Price filter constants (in USD)
+  const PRICE_MIN_USD = 0;
+  const PRICE_MAX_USD = 200000;
+  const MILEAGE_MIN = 0;
+  const MILEAGE_MAX = 500000;
+
+  // Format price for filter display using selected currency
+  const formatPriceShort = useCallback((amountUsd: number): string => {
+    const rate = currencyInfo?.rateToUsd || 1;
+    const converted = amountUsd * rate;
+    const code = currencyInfo?.code || 'USD';
+
+    // Format number with K/M suffix
+    const formatShort = (n: number): string => {
+      if (n >= 1000000) {
+        return `${(n / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+      }
+      if (n >= 1000) {
+        return `${(n / 1000).toFixed(0)}K`;
+      }
+      return n.toString();
+    };
+
+    // Add currency symbol/suffix
+    if (code === 'XAF' || code === 'XOF') {
+      return `${formatShort(converted)} FCFA`;
+    }
+    if (code === 'EUR') {
+      return `${formatShort(converted)} €`;
+    }
+    if (code === 'USD') {
+      return `$${formatShort(converted)}`;
+    }
+    return `${currencyInfo?.symbol || '$'}${formatShort(converted)}`;
+  }, [currencyInfo]);
+
+  // Get currency label for filter section
+  const currencyLabel = useMemo(() => {
+    const code = currencyInfo?.code || 'USD';
+    if (code === 'XAF' || code === 'XOF') return 'FCFA';
+    return code;
+  }, [currencyInfo]);
 
   // Build options from Supabase data
   const brandOptions = useMemo(() =>
@@ -572,27 +608,36 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           formatValue={(val) => val.toString()}
         />
 
-        {/* Price Range (FCFA) */}
+        {/* Price Range */}
         <RangeFilter
-          label="Prix (FCFA)"
+          label={`Prix (${currencyLabel})`}
           icon={<DollarSign className="w-4 h-4" />}
-          min={0}
-          max={200000}
+          min={PRICE_MIN_USD}
+          max={PRICE_MAX_USD}
           step={1000}
-          value={[filters.priceFrom || 0, filters.priceTo || 200000]}
-          onChange={([from, to]) => setFilters({ priceFrom: from, priceTo: to })}
-          formatValue={(val) => formatUsdToFcfaShort(val, xafRate)}
+          value={[filters.priceFrom ?? PRICE_MIN_USD, filters.priceTo ?? PRICE_MAX_USD]}
+          onChange={([from, to]) => {
+            // Only set filter if different from defaults
+            const newPriceFrom = from === PRICE_MIN_USD ? undefined : from;
+            const newPriceTo = to === PRICE_MAX_USD ? undefined : to;
+            setFilters({ priceFrom: newPriceFrom, priceTo: newPriceTo });
+          }}
+          formatValue={formatPriceShort}
         />
 
         {/* Mileage Range */}
         <RangeFilter
           label="Kilométrage"
           icon={<Gauge className="w-4 h-4" />}
-          min={0}
-          max={500000}
+          min={MILEAGE_MIN}
+          max={MILEAGE_MAX}
           step={5000}
-          value={[0, filters.mileageMax || 500000]}
-          onChange={([, max]) => setFilters({ mileageMax: max })}
+          value={[MILEAGE_MIN, filters.mileageMax ?? MILEAGE_MAX]}
+          onChange={([, max]) => {
+            // Only set filter if different from default
+            const newMileageMax = max === MILEAGE_MAX ? undefined : max;
+            setFilters({ mileageMax: newMileageMax });
+          }}
           formatValue={(val) => `${val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} km`}
         />
 
