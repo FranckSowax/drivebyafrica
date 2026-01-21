@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
         id,
         source_id,
         source,
+        source_url,
         make,
         model,
         year,

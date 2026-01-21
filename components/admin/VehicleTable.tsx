@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Eye,
@@ -65,7 +65,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export function VehicleTable({
-  vehicles,
+  vehicles = [],
   total,
   page,
   totalPages,
@@ -79,6 +79,22 @@ export function VehicleTable({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStatus, setEditStatus] = useState<string>('');
+  const [localSearch, setLocalSearch] = useState(filters.search);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== filters.search) {
+        onFilterChange({ search: localSearch });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch]);
+
+  // Sync local search with filters
+  useEffect(() => {
+    setLocalSearch(filters.search);
+  }, [filters.search]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
