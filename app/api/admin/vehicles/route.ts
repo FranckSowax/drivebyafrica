@@ -15,6 +15,36 @@ function getSupabaseAdmin() {
   return createClient<Database>(supabaseUrl, supabaseServiceKey);
 }
 
+// Helper to apply filters to a query
+function applyFilters(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: any,
+  params: {
+    source?: string | null;
+    status?: string | null;
+    isVisible?: string | null;
+    search?: string | null;
+  }
+) {
+  if (params.source && params.source !== 'all') {
+    query = query.eq('source', params.source);
+  }
+
+  if (params.status && params.status !== 'all') {
+    query = query.eq('status', params.status);
+  }
+
+  if (params.isVisible !== null && params.isVisible !== 'all') {
+    query = query.eq('is_visible', params.isVisible === 'true');
+  }
+
+  if (params.search) {
+    query = query.or(`make.ilike.%${params.search}%,model.ilike.%${params.search}%,source_id.ilike.%${params.search}%`);
+  }
+
+  return query;
+}
+
 // GET - List vehicles with filters
 export async function GET(request: NextRequest) {
   // Vérification admin obligatoire
@@ -35,48 +65,70 @@ export async function GET(request: NextRequest) {
   const sortOrder = searchParams.get('sortOrder') || 'desc';
   const isVisible = searchParams.get('isVisible');
 
+  const filterParams = { source, status, isVisible, search };
+
   try {
-    let query = supabase
+    // Run count query and data query in parallel for better performance
+    // Count query uses head: true to only get the count without fetching data
+    let countQuery = supabase
       .from('vehicles')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact', head: true });
+    countQuery = applyFilters(countQuery, filterParams);
 
-    // Apply filters
-    if (source && source !== 'all') {
-      query = query.eq('source', source);
-    }
-
-    if (status && status !== 'all') {
-      query = query.eq('status', status);
-    }
-
-    if (isVisible !== null && isVisible !== 'all') {
-      query = query.eq('is_visible', isVisible === 'true');
-    }
-
-    if (search) {
-      query = query.or(`make.ilike.%${search}%,model.ilike.%${search}%,source_id.ilike.%${search}%`);
-    }
+    // Data query - select only needed columns for admin list view (faster than *)
+    let dataQuery = supabase
+      .from('vehicles')
+      .select(`
+        id,
+        source_id,
+        source,
+        make,
+        model,
+        year,
+        mileage,
+        price_usd,
+        current_price_usd,
+        start_price_usd,
+        status,
+        is_visible,
+        thumbnail_url,
+        created_at,
+        updated_at
+      `);
+    dataQuery = applyFilters(dataQuery, filterParams);
 
     // Apply sorting
     const ascending = sortOrder === 'asc';
-    query = query.order(sortBy, { ascending, nullsFirst: false });
+    dataQuery = dataQuery.order(sortBy, { ascending, nullsFirst: false });
 
     // Apply pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    query = query.range(from, to);
+    dataQuery = dataQuery.range(from, to);
 
-    const { data, error, count } = await query;
+    // Execute both queries in parallel
+    const [countResult, dataResult] = await Promise.all([
+      countQuery,
+      dataQuery,
+    ]);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (countResult.error) {
+      console.error('Count query error:', countResult.error);
+      return NextResponse.json({ error: countResult.error.message }, { status: 500 });
     }
 
+    if (dataResult.error) {
+      console.error('Data query error:', dataResult.error);
+      return NextResponse.json({ error: dataResult.error.message }, { status: 500 });
+    }
+
+    const count = countResult.count || 0;
+
     return NextResponse.json({
-      vehicles: data,
-      total: count || 0,
+      vehicles: dataResult.data,
+      total: count,
       page,
-      totalPages: Math.ceil((count || 0) / limit),
+      totalPages: Math.ceil(count / limit),
     });
   } catch (error) {
     console.error('Error fetching vehicles:', error);
