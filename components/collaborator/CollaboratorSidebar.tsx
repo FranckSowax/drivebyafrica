@@ -47,7 +47,7 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="p-6 border-b border-nobel/20">
+      <div className="p-6 border-b border-gray-700">
         <Link href="/collaborator" className="flex items-center gap-3">
           <Image
             src="/logo-driveby-africa-dark.png"
@@ -57,11 +57,11 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
             className="h-10 w-auto"
           />
         </Link>
-        <p className="text-xs text-gray-500 mt-2">{t('collaborator.portal')}</p>
+        <p className="text-xs text-gray-400 mt-2">{t('collaborator.portal')}</p>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -72,14 +72,14 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
               href={item.href}
               onClick={() => setIsMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
+                'flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
                 'text-sm font-medium',
                 active
-                  ? 'bg-mandarin text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-nobel/20'
+                  ? 'bg-mandarin text-white shadow-lg shadow-mandarin/20'
+                  : 'text-white hover:text-mandarin hover:bg-gray-700/50'
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={cn('h-5 w-5', active ? 'text-white' : 'text-mandarin')} />
               <span>{t(`collaborator.${item.key}`)}</span>
             </Link>
           );
@@ -87,15 +87,15 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-nobel/20">
+      <div className="p-4 border-t border-gray-700">
         <button
           onClick={() => {
             setIsMobileOpen(false);
             onLogout();
           }}
           className={cn(
-            'flex items-center gap-3 px-4 py-3 rounded-lg w-full',
-            'text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10',
+            'flex items-center gap-3 px-4 py-3 rounded-xl w-full',
+            'text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-red-500/10',
             'transition-all'
           )}
         >
@@ -128,7 +128,7 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          'lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-cod-gray border-r border-nobel/20',
+          'lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-gray-800 border-r border-gray-700',
           'flex flex-col transform transition-transform duration-300',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -147,7 +147,7 @@ export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebar
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 bg-cod-gray border-r border-nobel/20',
+          'hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 bg-gray-800 border-r border-gray-700',
           'flex-col',
           className
         )}

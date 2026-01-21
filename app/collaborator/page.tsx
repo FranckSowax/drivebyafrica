@@ -567,11 +567,11 @@ export default function CollaboratorDashboardPage() {
                     </Button>
                   </Link>
                   <Link href="/collaborator/orders?status=deposit_paid">
-                    <Button variant="outline" className="border-nobel/30 text-white hover:bg-nobel/20">
+                    <Button variant="outline" className="border-nobel/40 bg-white text-cod-gray hover:bg-gray-100">
                       <Clock className="w-4 h-4 mr-2" />
                       {locale === 'zh' ? '待处理订单' : 'Pending Orders'}
                       {dailyStats.pendingAction > 0 && (
-                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">
+                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-amber-500 text-white rounded">
                           {dailyStats.pendingAction}
                         </span>
                       )}
