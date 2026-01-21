@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 interface PaginationProps {
   currentPage: number;
@@ -16,12 +17,26 @@ export function Pagination({
   onPageChange,
   className,
 }: PaginationProps) {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+
   if (totalPages <= 1) return null;
 
   // Generate page numbers to display
+  // Desktop: show more pages (1 2 3 4 5 ... last)
+  // Mobile: show fewer pages (1 ... current ... last)
   const getPageNumbers = (): (number | 'ellipsis')[] => {
     const pages: (number | 'ellipsis')[] = [];
-    const showEllipsisThreshold = 7;
+
+    // Desktop shows more pages, mobile shows fewer
+    const siblingsCount = isDesktop ? 2 : 1;
+    const showEllipsisThreshold = isDesktop ? 9 : 7;
 
     if (totalPages <= showEllipsisThreshold) {
       // Show all pages if total is small
@@ -29,29 +44,41 @@ export function Pagination({
         pages.push(i);
       }
     } else {
-      // Always show first page
-      pages.push(1);
+      // Always show first pages on desktop (1, 2, 3, 4, 5)
+      const firstPagesCount = isDesktop ? 5 : 1;
 
-      if (currentPage > 3) {
-        pages.push('ellipsis');
-      }
-
-      // Show pages around current page
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        if (!pages.includes(i)) {
+      if (currentPage <= firstPagesCount + siblingsCount) {
+        // Near the start: show first pages + ellipsis + last
+        const endOfFirstSection = isDesktop ? Math.max(5, currentPage + siblingsCount) : currentPage + siblingsCount;
+        for (let i = 1; i <= Math.min(endOfFirstSection, totalPages - 1); i++) {
           pages.push(i);
         }
-      }
-
-      if (currentPage < totalPages - 2) {
         pages.push('ellipsis');
-      }
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - firstPagesCount - siblingsCount) {
+        // Near the end: show first + ellipsis + last pages
+        pages.push(1);
+        pages.push('ellipsis');
+        const startOfLastSection = isDesktop
+          ? Math.min(totalPages - 4, currentPage - siblingsCount)
+          : currentPage - siblingsCount;
+        for (let i = Math.max(2, startOfLastSection); i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Middle: show first + ellipsis + current area + ellipsis + last
+        pages.push(1);
+        if (isDesktop) pages.push(2);
+        pages.push('ellipsis');
 
-      // Always show last page
-      if (!pages.includes(totalPages)) {
+        for (let i = currentPage - siblingsCount; i <= currentPage + siblingsCount; i++) {
+          if (i > (isDesktop ? 2 : 1) && i < totalPages) {
+            pages.push(i);
+          }
+        }
+
+        pages.push('ellipsis');
+        if (isDesktop) pages.push(totalPages - 1);
         pages.push(totalPages);
       }
     }
