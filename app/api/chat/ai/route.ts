@@ -24,6 +24,69 @@ const ORDER_STATUS_FR: Record<string, string> = {
   'cancelled': 'Annulé',
 };
 
+// Common car brand names and their variations for search
+const BRAND_ALIASES: Record<string, string[]> = {
+  'kia': ['kia', 'k3', 'k5', 'k7', 'k9', 'sportage', 'sorento', 'seltos', 'carnival', 'stinger', 'niro', 'ev6', 'telluride'],
+  'hyundai': ['hyundai', 'tucson', 'santa fe', 'santafe', 'elantra', 'sonata', 'ioniq', 'kona', 'palisade', 'venue', 'creta'],
+  'toyota': ['toyota', 'camry', 'corolla', 'rav4', 'highlander', 'land cruiser', 'prado', 'fortuner', 'hilux', 'yaris'],
+  'honda': ['honda', 'civic', 'accord', 'cr-v', 'crv', 'hr-v', 'hrv', 'pilot', 'odyssey', 'fit'],
+  'nissan': ['nissan', 'altima', 'maxima', 'sentra', 'rogue', 'murano', 'pathfinder', 'armada', 'kicks', 'qashqai'],
+  'bmw': ['bmw', 'serie 3', 'serie 5', 'serie 7', 'x1', 'x3', 'x5', 'x6', 'x7', 'ix'],
+  'mercedes': ['mercedes', 'mercedes-benz', 'benz', 'classe c', 'classe e', 'classe s', 'gle', 'glc', 'gla', 'amg'],
+  'audi': ['audi', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'q3', 'q5', 'q7', 'q8', 'e-tron', 'etron'],
+  'volkswagen': ['volkswagen', 'vw', 'golf', 'passat', 'tiguan', 'touareg', 'atlas', 'jetta', 'arteon', 'id.4'],
+  'ford': ['ford', 'mustang', 'f-150', 'f150', 'explorer', 'escape', 'edge', 'bronco', 'ranger'],
+  'chevrolet': ['chevrolet', 'chevy', 'malibu', 'camaro', 'silverado', 'equinox', 'traverse', 'tahoe'],
+  'lexus': ['lexus', 'rx', 'nx', 'es', 'ls', 'is', 'gx', 'lx', 'ux'],
+  'porsche': ['porsche', 'cayenne', 'macan', 'panamera', '911', 'taycan'],
+  'land rover': ['land rover', 'range rover', 'defender', 'discovery', 'evoque', 'velar'],
+  'nio': ['nio', 'et5', 'et7', 'es6', 'es7', 'es8', 'ec6', 'ec7'],
+  'byd': ['byd', 'han', 'tang', 'song', 'seal', 'dolphin', 'atto'],
+  'geely': ['geely', 'coolray', 'azkarra', 'okavango', 'emgrand'],
+  'changan': ['changan', 'cs55', 'cs75', 'cs85', 'uni-k', 'uni-t'],
+  'great wall': ['great wall', 'haval', 'h6', 'h9', 'tank'],
+  'volvo': ['volvo', 'xc40', 'xc60', 'xc90', 's60', 's90', 'v60', 'v90'],
+  'mazda': ['mazda', 'cx-5', 'cx5', 'cx-30', 'cx30', 'cx-9', 'cx9', 'mazda3', 'mazda6'],
+  'subaru': ['subaru', 'outback', 'forester', 'crosstrek', 'impreza', 'wrx', 'legacy'],
+  'mitsubishi': ['mitsubishi', 'outlander', 'pajero', 'eclipse cross', 'asx', 'montero'],
+  'jeep': ['jeep', 'wrangler', 'grand cherokee', 'cherokee', 'compass', 'renegade', 'gladiator'],
+  'peugeot': ['peugeot', '208', '308', '408', '508', '2008', '3008', '5008'],
+  'renault': ['renault', 'megane', 'clio', 'captur', 'kadjar', 'koleos', 'arkana'],
+  'tesla': ['tesla', 'model s', 'model 3', 'model x', 'model y'],
+};
+
+// Extract brand and model keywords from user message
+function extractVehicleKeywords(message: string): { brands: string[], keywords: string[] } {
+  const lowerMessage = message.toLowerCase();
+  const foundBrands: string[] = [];
+  const keywords: string[] = [];
+
+  // Check for brand mentions
+  for (const [brand, aliases] of Object.entries(BRAND_ALIASES)) {
+    for (const alias of aliases) {
+      if (lowerMessage.includes(alias)) {
+        if (!foundBrands.includes(brand)) {
+          foundBrands.push(brand);
+        }
+        // Also capture the specific model/alias as keyword
+        if (alias !== brand && alias.length > 2) {
+          keywords.push(alias);
+        }
+      }
+    }
+  }
+
+  // Extract potential model names (alphanumeric patterns like K3, X5, etc.)
+  const modelPatterns = lowerMessage.match(/\b[a-z]?\d+[a-z]?\b/gi) || [];
+  modelPatterns.forEach(pattern => {
+    if (pattern.length >= 2 && !keywords.includes(pattern.toLowerCase())) {
+      keywords.push(pattern.toLowerCase());
+    }
+  });
+
+  return { brands: foundBrands, keywords };
+}
+
 // System prompt with Driveby Africa context
 const SYSTEM_PROMPT = `Tu es l'assistant virtuel de Driveby Africa, une plateforme d'importation de vehicules depuis la Coree du Sud, la Chine et Dubai vers l'Afrique (principalement Gabon, Cameroun, Senegal, Cote d'Ivoire).
 
@@ -59,12 +122,14 @@ INFORMATIONS CLE SUR DRIVEBY AFRICA:
 REGLES DE REPONSE:
 - Reponds toujours en francais
 - Sois concis et utile (max 2-3 paragraphes)
-- Si la question concerne un vehicule specifique, utilise les donnees fournies
+- Si la question concerne un vehicule specifique, utilise les donnees fournies dans VEHICULES TROUVES
+- Si aucun vehicule n'est trouve pour la marque demandee, dis clairement que tu n'as pas trouve ce modele et propose des alternatives disponibles
 - Si tu ne peux pas repondre, suggere de demander l'aide d'un agent humain en cliquant sur le bouton "Parler à un agent"
-- Ne jamais inventer de prix ou specifications de vehicules
+- Ne jamais inventer de prix ou specifications de vehicules - utilise UNIQUEMENT les donnees de VEHICULES TROUVES
 - Utilise un ton professionnel mais amical
 - Si le client demande le statut de sa commande, utilise les informations de commande fournies
-- Si le client n'a pas de commande en cours, propose-lui de parcourir le catalogue`;
+- Si le client n'a pas de commande en cours, propose-lui de parcourir le catalogue
+- Quand tu proposes des vehicules, inclus le lien vers la page du vehicule: /cars/[id]`;
 
 export async function POST(request: Request) {
   try {
@@ -140,12 +205,81 @@ export async function POST(request: Request) {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    // Fetch some vehicle data for context
-    const { data: vehicles } = await supabase
+    // Extract vehicle keywords from user message
+    const { brands, keywords } = extractVehicleKeywords(userMessage);
+
+    // Smart vehicle search based on user query
+    let vehicles: {
+      id: string;
+      make: string | null;
+      model: string | null;
+      year: number | null;
+      current_price_usd: number | null;
+      mileage: number | null;
+      fuel_type: string | null;
+      transmission: string | null;
+      source: string | null;
+    }[] = [];
+
+    // If user mentions specific brands or models, search for them
+    if (brands.length > 0 || keywords.length > 0) {
+      // Build search conditions
+      const searchConditions: string[] = [];
+
+      // Add brand searches (case-insensitive)
+      for (const brand of brands) {
+        searchConditions.push(`make.ilike.%${brand}%`);
+      }
+
+      // Add keyword searches in model
+      for (const keyword of keywords) {
+        searchConditions.push(`model.ilike.%${keyword}%`);
+      }
+
+      // Search with OR conditions
+      if (searchConditions.length > 0) {
+        const { data: searchResults } = await supabase
+          .from('vehicles')
+          .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
+          .eq('is_visible', true)
+          .or(searchConditions.join(','))
+          .order('created_at', { ascending: false })
+          .limit(15);
+
+        if (searchResults && searchResults.length > 0) {
+          vehicles = searchResults;
+        }
+      }
+    }
+
+    // If no specific search or no results, also fetch some popular/recent vehicles
+    if (vehicles.length < 5) {
+      const { data: generalVehicles } = await supabase
+        .from('vehicles')
+        .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
+        .eq('is_visible', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (generalVehicles) {
+        // Add general vehicles that are not already in results
+        const existingIds = new Set(vehicles.map(v => v.id));
+        for (const v of generalVehicles) {
+          if (!existingIds.has(v.id)) {
+            vehicles.push(v);
+          }
+        }
+      }
+    }
+
+    // Get available brands for suggestions
+    const { data: availableBrands } = await supabase
       .from('vehicles')
-      .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
+      .select('make')
       .eq('is_visible', true)
-      .limit(20);
+      .not('make', 'is', null);
+
+    const uniqueBrands = [...new Set(availableBrands?.map(v => v.make).filter(Boolean) || [])];
 
     // Build customer context
     let customerContext = '\n\nINFORMATIONS CLIENT:';
@@ -185,11 +319,51 @@ export async function POST(request: Request) {
       });
     }
 
-    // Build vehicle context
+    // Build vehicle context with search info
     let vehicleContext = '';
+    const searchedBrandsText = brands.length > 0 ? brands.join(', ') : '';
+    const searchedKeywordsText = keywords.length > 0 ? keywords.join(', ') : '';
+
+    if (brands.length > 0 || keywords.length > 0) {
+      vehicleContext = `\n\nRECHERCHE EFFECTUEE:`;
+      if (searchedBrandsText) vehicleContext += `\n- Marques recherchees: ${searchedBrandsText}`;
+      if (searchedKeywordsText) vehicleContext += `\n- Mots-cles recherches: ${searchedKeywordsText}`;
+    }
+
     if (vehicles && vehicles.length > 0) {
-      vehicleContext = `\n\nVEHICULES DISPONIBLES (echantillon):
-${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleString() || 'N/A'} km, ${v.current_price_usd?.toLocaleString() || 'N/A'} USD, ${v.fuel_type || 'N/A'}, ${v.transmission || 'N/A'}, origine: ${v.source || 'N/A'}`).join('\n')}`;
+      // Separate found vehicles by whether they match the search
+      const matchingVehicles = vehicles.filter(v => {
+        const makeModel = `${v.make || ''} ${v.model || ''}`.toLowerCase();
+        return brands.some(b => makeModel.includes(b)) || keywords.some(k => makeModel.includes(k));
+      });
+
+      const otherVehicles = vehicles.filter(v => {
+        const makeModel = `${v.make || ''} ${v.model || ''}`.toLowerCase();
+        return !brands.some(b => makeModel.includes(b)) && !keywords.some(k => makeModel.includes(k));
+      });
+
+      if (matchingVehicles.length > 0) {
+        vehicleContext += `\n\nVEHICULES TROUVES CORRESPONDANT A LA RECHERCHE (${matchingVehicles.length} resultats):`;
+        matchingVehicles.forEach(v => {
+          vehicleContext += `\n- ID: ${v.id} | ${v.make} ${v.model} ${v.year} | ${v.mileage?.toLocaleString() || 'N/A'} km | ${v.current_price_usd?.toLocaleString() || 'N/A'} USD | ${v.fuel_type || 'N/A'} | ${v.transmission || 'N/A'} | Origine: ${v.source || 'N/A'}`;
+        });
+      } else if (brands.length > 0 || keywords.length > 0) {
+        vehicleContext += `\n\nAUCUN VEHICULE TROUVE pour "${searchedBrandsText || searchedKeywordsText}".`;
+      }
+
+      if (otherVehicles.length > 0) {
+        vehicleContext += `\n\nAUTRES VEHICULES DISPONIBLES (suggestions):`;
+        otherVehicles.slice(0, 5).forEach(v => {
+          vehicleContext += `\n- ID: ${v.id} | ${v.make} ${v.model} ${v.year} | ${v.mileage?.toLocaleString() || 'N/A'} km | ${v.current_price_usd?.toLocaleString() || 'N/A'} USD | ${v.fuel_type || 'N/A'} | Origine: ${v.source || 'N/A'}`;
+        });
+      }
+    } else if (brands.length > 0 || keywords.length > 0) {
+      vehicleContext += `\n\nAUCUN VEHICULE TROUVE pour "${searchedBrandsText || searchedKeywordsText}".`;
+    }
+
+    // Add available brands info
+    if (uniqueBrands.length > 0) {
+      vehicleContext += `\n\nMARQUES DISPONIBLES DANS LE CATALOGUE: ${uniqueBrands.slice(0, 20).join(', ')}${uniqueBrands.length > 20 ? '...' : ''}`;
     }
 
     // Combine all context
