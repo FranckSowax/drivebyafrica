@@ -95,10 +95,18 @@ export function ShippingEstimator({
   const {
     getQuoteCurrencyCode,
     convertToQuoteCurrency,
+    currency,
+    currencyInfo,
+    isQuoteCurrency,
+    convertFromUsd,
   } = useCurrency();
 
   // Get quote currency code (USD, EUR, or XAF)
   const quoteCurrencyCode = getQuoteCurrencyCode();
+
+  // Get current display currency info (for real-time conversion)
+  const displayCurrency = currency;
+  const displayCurrencyRate = currencyInfo?.rateToUsd || 1;
 
   // État pour les destinations chargées depuis l'API
   const [destinations, setDestinations] = useState<Destination[]>(FALLBACK_DESTINATIONS);
@@ -334,21 +342,28 @@ export function ShippingEstimator({
       return;
     }
 
-    // Fetch real-time price before opening quote modal
-    setIsLoadingRealTimePrice(true);
-    try {
-      const response = await fetch(`/api/vehicles/${vehicleId}/realtime-price`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.priceUsd) {
-          setRealTimePriceUSD(data.priceUsd);
-          console.log('ShippingEstimator: Got real-time price:', data.priceUsd, 'vs stored:', vehiclePriceUSD);
+    // For non-quote currencies (NGN, GHS, etc.), convert the displayed price back to USD
+    // using real-time exchange rates for accurate quote generation
+    if (!isQuoteCurrency()) {
+      setIsLoadingRealTimePrice(true);
+      try {
+        // Calculate the displayed price in local currency
+        const displayedPriceLocal = convertFromUsd(vehiclePriceUSD);
+
+        // Fetch real-time rate and convert back to USD
+        const response = await fetch(`/api/exchange-rate?from=${displayCurrency}&amount=${displayedPriceLocal}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.convertedAmount) {
+            setRealTimePriceUSD(Math.round(data.convertedAmount));
+            console.log(`ShippingEstimator: Converted ${displayedPriceLocal} ${displayCurrency} to ${data.convertedAmount} USD (rate: ${data.rate})`);
+          }
         }
+      } catch (error) {
+        console.warn('Failed to fetch real-time rate, using stored price:', error);
+      } finally {
+        setIsLoadingRealTimePrice(false);
       }
-    } catch (error) {
-      console.warn('Failed to fetch real-time price, using stored price:', error);
-    } finally {
-      setIsLoadingRealTimePrice(false);
     }
 
     // Open the quote modal
