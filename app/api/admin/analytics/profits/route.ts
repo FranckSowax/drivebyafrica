@@ -1,45 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
 
-// Fixed exchange rates for source price calculation (used when syncing from sources)
-const FIXED_EXCHANGE_RATES: Record<string, number> = {
-  CNY: 7.25, // 1 USD = 7.25 CNY (fixed rate for China)
-  KRW: 1350, // 1 USD = 1350 KRW (fixed rate for Korea)
-  AED: 3.67, // 1 USD = 3.67 AED (fixed rate for Dubai)
-};
-
-// Real-time exchange rate fetch (cached)
-async function getRealTimeRate(currency: string): Promise<number | null> {
-  try {
-    const response = await fetch(
-      `https://api.exchangerate-api.com/v4/latest/USD`,
-      { next: { revalidate: 3600 } } // Cache for 1 hour
-    );
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.rates?.[currency] || null;
-  } catch {
-    return null;
-  }
-}
-
-interface OrderWithVehicle {
-  id: string;
-  order_number: string;
-  vehicle_id: string;
-  vehicle_make: string;
-  vehicle_model: string;
-  vehicle_year: number;
-  vehicle_price_usd: number; // Price shown to customer (Driveby price)
-  vehicle_source: string;
-  destination_country: string;
-  order_status: string;
-  created_at: string;
-  // From vehicles table
-  original_price?: number | null;
-  original_currency?: string | null;
-  start_price_usd?: number | null;
-}
+// Note: We use start_price_usd from vehicles table as the source price
+// This is the price already converted to USD during sync from source APIs
 
 interface ProfitAnalysis {
   orderId: string;
@@ -52,16 +15,11 @@ interface ProfitAnalysis {
   orderStatus: string;
   createdAt: string;
   // Prices
-  drivebyPriceUSD: number; // Price shown to customer
-  sourcePriceOriginal: number | null; // Original price in source currency
-  sourceCurrency: string | null;
-  sourcePriceUSDFixed: number | null; // Source price converted to USD at fixed rate
-  sourcePriceUSDRealtime: number | null; // Source price converted to USD at real-time rate
+  drivebyPriceUSD: number; // Price shown to customer (Driveby price)
+  sourcePriceUSD: number | null; // Source price in USD (start_price_usd from vehicles)
   // Profits
-  profitUSDFixed: number | null; // Driveby price - source price (fixed rate)
-  profitUSDRealtime: number | null; // Driveby price - source price (real-time rate)
-  profitPercentageFixed: number | null;
-  profitPercentageRealtime: number | null;
+  profitUSD: number | null; // Driveby price - source price
+  profitPercentage: number | null; // Profit margin percentage
 }
 
 // GET: Fetch profit analysis for all orders
@@ -156,60 +114,29 @@ export async function GET() {
       };
     });
 
-    // Fetch real-time exchange rates
-    const realTimeRates: Record<string, number | null> = {};
-    const currencies = ['CNY', 'KRW', 'AED'];
-    for (const currency of currencies) {
-      realTimeRates[currency] = await getRealTimeRate(currency);
-    }
-
     // Calculate profits for each order
     const profitAnalysis: ProfitAnalysis[] = [];
     let totalDrivebyPriceUSD = 0;
-    let totalSourcePriceUSDFixed = 0;
-    let totalSourcePriceUSDRealtime = 0;
+    let totalSourcePriceUSD = 0;
     let ordersWithPriceData = 0;
 
     for (const order of orders) {
-      const originalPrice = order.original_price || null;
-      const originalCurrency = order.original_currency || null;
+      const vehiclePriceUSD = order.vehicle_price_usd || 0; // Driveby price shown to customer
+      const sourcePriceUSD = order.start_price_usd || null; // Source price from vehicles table
 
-      let sourcePriceUSDFixed: number | null = null;
-      let sourcePriceUSDRealtime: number | null = null;
-      let profitUSDFixed: number | null = null;
-      let profitUSDRealtime: number | null = null;
-      let profitPercentageFixed: number | null = null;
-      let profitPercentageRealtime: number | null = null;
+      let profitUSD: number | null = null;
+      let profitPercentage: number | null = null;
 
-      const vehiclePriceUSD = order.vehicle_price_usd || 0;
-
-      // Calculate source price in USD using fixed rate
-      if (originalPrice && originalCurrency && FIXED_EXCHANGE_RATES[originalCurrency]) {
-        sourcePriceUSDFixed = originalPrice / FIXED_EXCHANGE_RATES[originalCurrency];
-        profitUSDFixed = vehiclePriceUSD - sourcePriceUSDFixed;
-        profitPercentageFixed = sourcePriceUSDFixed > 0
-          ? Math.round((profitUSDFixed / sourcePriceUSDFixed) * 100 * 10) / 10
-          : null;
-      }
-
-      // Calculate source price in USD using real-time rate
-      if (originalPrice && originalCurrency && realTimeRates[originalCurrency]) {
-        sourcePriceUSDRealtime = originalPrice / realTimeRates[originalCurrency]!;
-        profitUSDRealtime = vehiclePriceUSD - sourcePriceUSDRealtime;
-        profitPercentageRealtime = sourcePriceUSDRealtime > 0
-          ? Math.round((profitUSDRealtime / sourcePriceUSDRealtime) * 100 * 10) / 10
-          : null;
+      // Calculate profit if we have source price
+      if (sourcePriceUSD !== null && sourcePriceUSD > 0) {
+        profitUSD = vehiclePriceUSD - sourcePriceUSD;
+        profitPercentage = Math.round((profitUSD / sourcePriceUSD) * 100 * 10) / 10;
+        totalSourcePriceUSD += sourcePriceUSD;
+        ordersWithPriceData++;
       }
 
       // Accumulate totals
       totalDrivebyPriceUSD += vehiclePriceUSD;
-      if (sourcePriceUSDFixed !== null) {
-        totalSourcePriceUSDFixed += sourcePriceUSDFixed;
-        ordersWithPriceData++;
-      }
-      if (sourcePriceUSDRealtime !== null) {
-        totalSourcePriceUSDRealtime += sourcePriceUSDRealtime;
-      }
 
       profitAnalysis.push({
         orderId: order.id,
@@ -222,35 +149,25 @@ export async function GET() {
         orderStatus: order.order_status,
         createdAt: order.created_at,
         drivebyPriceUSD: vehiclePriceUSD,
-        sourcePriceOriginal: originalPrice,
-        sourceCurrency: originalCurrency,
-        sourcePriceUSDFixed,
-        sourcePriceUSDRealtime,
-        profitUSDFixed,
-        profitUSDRealtime,
-        profitPercentageFixed,
-        profitPercentageRealtime,
+        sourcePriceUSD,
+        profitUSD,
+        profitPercentage,
       });
     }
 
     // Calculate summary stats
-    const totalProfitUSDFixed = totalDrivebyPriceUSD - totalSourcePriceUSDFixed;
-    const totalProfitUSDRealtime = totalDrivebyPriceUSD - totalSourcePriceUSDRealtime;
-    const avgProfitPercentageFixed = totalSourcePriceUSDFixed > 0
-      ? Math.round((totalProfitUSDFixed / totalSourcePriceUSDFixed) * 100 * 10) / 10
-      : null;
-    const avgProfitPercentageRealtime = totalSourcePriceUSDRealtime > 0
-      ? Math.round((totalProfitUSDRealtime / totalSourcePriceUSDRealtime) * 100 * 10) / 10
+    const totalProfitUSD = totalDrivebyPriceUSD - totalSourcePriceUSD;
+    const avgProfitPercentage = totalSourcePriceUSD > 0
+      ? Math.round((totalProfitUSD / totalSourcePriceUSD) * 100 * 10) / 10
       : null;
 
     // Group by source for breakdown
     const bySource: Record<string, {
       count: number;
       totalDrivebyUSD: number;
-      totalSourceUSDFixed: number;
-      totalSourceUSDRealtime: number;
-      totalProfitUSDFixed: number;
-      totalProfitUSDRealtime: number;
+      totalSourceUSD: number;
+      totalProfitUSD: number;
+      avgProfitPercentage: number | null;
     }> = {};
 
     for (const analysis of profitAnalysis) {
@@ -259,21 +176,25 @@ export async function GET() {
         bySource[source] = {
           count: 0,
           totalDrivebyUSD: 0,
-          totalSourceUSDFixed: 0,
-          totalSourceUSDRealtime: 0,
-          totalProfitUSDFixed: 0,
-          totalProfitUSDRealtime: 0,
+          totalSourceUSD: 0,
+          totalProfitUSD: 0,
+          avgProfitPercentage: null,
         };
       }
       bySource[source].count++;
       bySource[source].totalDrivebyUSD += analysis.drivebyPriceUSD || 0;
-      if (analysis.sourcePriceUSDFixed !== null) {
-        bySource[source].totalSourceUSDFixed += analysis.sourcePriceUSDFixed;
-        bySource[source].totalProfitUSDFixed += analysis.profitUSDFixed || 0;
+      if (analysis.sourcePriceUSD !== null) {
+        bySource[source].totalSourceUSD += analysis.sourcePriceUSD;
+        bySource[source].totalProfitUSD += analysis.profitUSD || 0;
       }
-      if (analysis.sourcePriceUSDRealtime !== null) {
-        bySource[source].totalSourceUSDRealtime += analysis.sourcePriceUSDRealtime;
-        bySource[source].totalProfitUSDRealtime += analysis.profitUSDRealtime || 0;
+    }
+
+    // Calculate average profit percentage per source
+    for (const source of Object.keys(bySource)) {
+      if (bySource[source].totalSourceUSD > 0) {
+        bySource[source].avgProfitPercentage = Math.round(
+          (bySource[source].totalProfitUSD / bySource[source].totalSourceUSD) * 100 * 10
+        ) / 10;
       }
     }
 
@@ -282,18 +203,11 @@ export async function GET() {
         totalOrders: profitAnalysis.length,
         ordersWithPriceData,
         totalDrivebyPriceUSD: Math.round(totalDrivebyPriceUSD),
-        totalSourcePriceUSDFixed: Math.round(totalSourcePriceUSDFixed),
-        totalSourcePriceUSDRealtime: Math.round(totalSourcePriceUSDRealtime),
-        totalProfitUSDFixed: Math.round(totalProfitUSDFixed),
-        totalProfitUSDRealtime: Math.round(totalProfitUSDRealtime),
-        avgProfitPercentageFixed,
-        avgProfitPercentageRealtime,
+        totalSourcePriceUSD: Math.round(totalSourcePriceUSD),
+        totalProfitUSD: Math.round(totalProfitUSD),
+        avgProfitPercentage,
       },
       bySource,
-      exchangeRates: {
-        fixed: FIXED_EXCHANGE_RATES,
-        realtime: realTimeRates,
-      },
       orders: profitAnalysis,
       generatedAt: new Date().toISOString(),
     });

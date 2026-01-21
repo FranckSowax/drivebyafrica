@@ -65,25 +65,17 @@ interface ProfitData {
     totalOrders: number;
     ordersWithPriceData: number;
     totalDrivebyPriceUSD: number;
-    totalSourcePriceUSDFixed: number;
-    totalSourcePriceUSDRealtime: number;
-    totalProfitUSDFixed: number;
-    totalProfitUSDRealtime: number;
-    avgProfitPercentageFixed: number | null;
-    avgProfitPercentageRealtime: number | null;
+    totalSourcePriceUSD: number;
+    totalProfitUSD: number;
+    avgProfitPercentage: number | null;
   };
   bySource: Record<string, {
     count: number;
     totalDrivebyUSD: number;
-    totalSourceUSDFixed: number;
-    totalSourceUSDRealtime: number;
-    totalProfitUSDFixed: number;
-    totalProfitUSDRealtime: number;
+    totalSourceUSD: number;
+    totalProfitUSD: number;
+    avgProfitPercentage: number | null;
   }>;
-  exchangeRates: {
-    fixed: Record<string, number>;
-    realtime: Record<string, number | null>;
-  };
   orders: Array<{
     orderId: string;
     orderNumber: string;
@@ -95,14 +87,9 @@ interface ProfitData {
     orderStatus: string;
     createdAt: string;
     drivebyPriceUSD: number;
-    sourcePriceOriginal: number | null;
-    sourceCurrency: string | null;
-    sourcePriceUSDFixed: number | null;
-    sourcePriceUSDRealtime: number | null;
-    profitUSDFixed: number | null;
-    profitUSDRealtime: number | null;
-    profitPercentageFixed: number | null;
-    profitPercentageRealtime: number | null;
+    sourcePriceUSD: number | null;
+    profitUSD: number | null;
+    profitPercentage: number | null;
   }>;
 }
 
@@ -874,74 +861,29 @@ export default function AdminAnalyticsPage() {
               <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--card-border)]">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="w-4 h-4 text-mandarin" />
-                  <span className="text-xs text-[var(--text-muted)]">Prix Source Total (fixe)</span>
+                  <span className="text-xs text-[var(--text-muted)]">Prix Source Total</span>
                 </div>
                 <p className="text-2xl font-bold text-mandarin">
-                  ${formatNumber(profitData.summary.totalSourcePriceUSDFixed)}
+                  ${formatNumber(profitData.summary.totalSourcePriceUSD)}
                 </p>
               </div>
 
               <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-jewel/30">
                 <div className="flex items-center gap-2 mb-2">
-                  {profitData.summary.totalProfitUSDFixed >= 0 ? (
+                  {profitData.summary.totalProfitUSD >= 0 ? (
                     <ArrowUpRight className="w-4 h-4 text-jewel" />
                   ) : (
                     <ArrowDownRight className="w-4 h-4 text-red-500" />
                   )}
-                  <span className="text-xs text-[var(--text-muted)]">Bénéfice Total (fixe)</span>
+                  <span className="text-xs text-[var(--text-muted)]">Bénéfice Total</span>
                 </div>
-                <p className={`text-2xl font-bold ${profitData.summary.totalProfitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'}`}>
-                  {profitData.summary.totalProfitUSDFixed >= 0 ? '+' : ''}${formatNumber(profitData.summary.totalProfitUSDFixed)}
+                <p className={`text-2xl font-bold ${profitData.summary.totalProfitUSD >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                  {profitData.summary.totalProfitUSD >= 0 ? '+' : ''}${formatNumber(profitData.summary.totalProfitUSD)}
                 </p>
-                {profitData.summary.avgProfitPercentageFixed !== null && (
+                {profitData.summary.avgProfitPercentage !== null && (
                   <p className="text-xs text-[var(--text-muted)]">
-                    Marge moyenne: {profitData.summary.avgProfitPercentageFixed}%
+                    Marge moyenne: {profitData.summary.avgProfitPercentage}%
                   </p>
-                )}
-              </div>
-            </div>
-
-            {/* Real-time vs Fixed comparison */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-[var(--surface)] rounded-xl p-4">
-                <h3 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                  <Calculator className="w-4 h-4 text-mandarin" />
-                  Taux de change fixes (achat)
-                </h3>
-                <div className="space-y-2 text-sm">
-                  {Object.entries(profitData.exchangeRates.fixed).map(([currency, rate]) => (
-                    <div key={currency} className="flex justify-between">
-                      <span className="text-[var(--text-muted)]">1 USD = </span>
-                      <span className="font-mono text-[var(--text-primary)]">{rate} {currency}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-[var(--surface)] rounded-xl p-4">
-                <h3 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-royal-blue" />
-                  Taux de change temps réel
-                </h3>
-                <div className="space-y-2 text-sm">
-                  {Object.entries(profitData.exchangeRates.realtime).map(([currency, rate]) => (
-                    <div key={currency} className="flex justify-between">
-                      <span className="text-[var(--text-muted)]">1 USD = </span>
-                      <span className="font-mono text-[var(--text-primary)]">
-                        {rate ? rate.toFixed(2) : 'N/A'} {currency}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {profitData.summary.totalProfitUSDRealtime !== undefined && (
-                  <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-[var(--text-muted)]">Bénéfice (temps réel):</span>
-                      <span className={`font-bold ${profitData.summary.totalProfitUSDRealtime >= 0 ? 'text-jewel' : 'text-red-500'}`}>
-                        {profitData.summary.totalProfitUSDRealtime >= 0 ? '+' : ''}${formatNumber(profitData.summary.totalProfitUSDRealtime)}
-                      </span>
-                    </div>
-                  </div>
                 )}
               </div>
             </div>
@@ -963,38 +905,33 @@ export default function AdminAnalyticsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(profitData.bySource).map(([source, data]) => {
-                        const margin = data.totalSourceUSDFixed > 0
-                          ? ((data.totalProfitUSDFixed / data.totalSourceUSDFixed) * 100).toFixed(1)
-                          : 'N/A';
-                        return (
-                          <tr key={source} className="border-b border-[var(--card-border)]/50">
-                            <td className="py-2 px-3">
-                              <span className="flex items-center gap-2">
-                                <span className="text-lg">
-                                  {source === 'china' || source === 'che168' || source === 'dongchedi' ? '🇨🇳' :
-                                   source === 'korea' ? '🇰🇷' :
-                                   source === 'dubai' ? '🇦🇪' : '🌍'}
-                                </span>
-                                <span className="capitalize text-[var(--text-primary)]">{source}</span>
+                      {Object.entries(profitData.bySource).map(([source, sourceData]) => (
+                        <tr key={source} className="border-b border-[var(--card-border)]/50">
+                          <td className="py-2 px-3">
+                            <span className="flex items-center gap-2">
+                              <span className="text-lg">
+                                {source === 'china' || source === 'che168' || source === 'dongchedi' ? '🇨🇳' :
+                                 source === 'korea' ? '🇰🇷' :
+                                 source === 'dubai' ? '🇦🇪' : '🌍'}
                               </span>
-                            </td>
-                            <td className="py-2 px-3 text-right text-[var(--text-primary)]">{data.count}</td>
-                            <td className="py-2 px-3 text-right text-royal-blue font-medium">
-                              ${formatNumber(data.totalDrivebyUSD)}
-                            </td>
-                            <td className="py-2 px-3 text-right text-mandarin font-medium">
-                              ${formatNumber(data.totalSourceUSDFixed)}
-                            </td>
-                            <td className={`py-2 px-3 text-right font-bold ${data.totalProfitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'}`}>
-                              {data.totalProfitUSDFixed >= 0 ? '+' : ''}${formatNumber(data.totalProfitUSDFixed)}
-                            </td>
-                            <td className={`py-2 px-3 text-right ${data.totalProfitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'}`}>
-                              {margin}%
-                            </td>
-                          </tr>
-                        );
-                      })}
+                              <span className="capitalize text-[var(--text-primary)]">{source}</span>
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-right text-[var(--text-primary)]">{sourceData.count}</td>
+                          <td className="py-2 px-3 text-right text-royal-blue font-medium">
+                            ${formatNumber(sourceData.totalDrivebyUSD)}
+                          </td>
+                          <td className="py-2 px-3 text-right text-mandarin font-medium">
+                            ${formatNumber(sourceData.totalSourceUSD)}
+                          </td>
+                          <td className={`py-2 px-3 text-right font-bold ${sourceData.totalProfitUSD >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                            {sourceData.totalProfitUSD >= 0 ? '+' : ''}${formatNumber(sourceData.totalProfitUSD)}
+                          </td>
+                          <td className={`py-2 px-3 text-right ${sourceData.totalProfitUSD >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                            {sourceData.avgProfitPercentage !== null ? `${sourceData.avgProfitPercentage}%` : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1039,32 +976,27 @@ export default function AdminAnalyticsPage() {
                           ${formatNumber(order.drivebyPriceUSD)}
                         </td>
                         <td className="py-2 px-3 text-right text-mandarin">
-                          {order.sourcePriceUSDFixed !== null
-                            ? `$${formatNumber(order.sourcePriceUSDFixed)}`
+                          {order.sourcePriceUSD !== null
+                            ? `$${formatNumber(order.sourcePriceUSD)}`
                             : <span className="text-[var(--text-muted)]">N/A</span>
                           }
-                          {order.sourcePriceOriginal !== null && order.sourceCurrency && (
-                            <span className="block text-xs text-[var(--text-muted)]">
-                              ({formatNumber(order.sourcePriceOriginal)} {order.sourceCurrency})
-                            </span>
-                          )}
                         </td>
                         <td className={`py-2 px-3 text-right font-medium ${
-                          order.profitUSDFixed !== null
-                            ? order.profitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'
+                          order.profitUSD !== null
+                            ? order.profitUSD >= 0 ? 'text-jewel' : 'text-red-500'
                             : 'text-[var(--text-muted)]'
                         }`}>
-                          {order.profitUSDFixed !== null
-                            ? `${order.profitUSDFixed >= 0 ? '+' : ''}$${formatNumber(order.profitUSDFixed)}`
+                          {order.profitUSD !== null
+                            ? `${order.profitUSD >= 0 ? '+' : ''}$${formatNumber(order.profitUSD)}`
                             : 'N/A'
                           }
                         </td>
                         <td className={`py-2 px-3 text-right ${
-                          order.profitPercentageFixed !== null
-                            ? order.profitPercentageFixed >= 0 ? 'text-jewel' : 'text-red-500'
+                          order.profitPercentage !== null
+                            ? order.profitPercentage >= 0 ? 'text-jewel' : 'text-red-500'
                             : 'text-[var(--text-muted)]'
                         }`}>
-                          {order.profitPercentageFixed !== null ? `${order.profitPercentageFixed}%` : 'N/A'}
+                          {order.profitPercentage !== null ? `${order.profitPercentage}%` : 'N/A'}
                         </td>
                       </tr>
                     ))}
