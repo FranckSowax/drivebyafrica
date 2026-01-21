@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
+// Initialize OpenAI client (GPT-4o)
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 // Order status translations for AI context
@@ -210,8 +210,8 @@ ${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleStri
       content: userMessage,
     });
 
-    // Check if Anthropic API key is configured
-    if (!process.env.ANTHROPIC_API_KEY) {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
       // Fallback response without AI
       const fallbackResponse = generateFallbackResponse(userMessage, orders || [], quotes || []);
 
@@ -231,20 +231,21 @@ ${vehicles.map(v => `- ${v.make} ${v.model} ${v.year}, ${v.mileage?.toLocaleStri
       return NextResponse.json({ message: botMessage });
     }
 
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+    // Call OpenAI GPT-4o API
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini', // Cost-effective model, can use 'gpt-4o' for better quality
       max_tokens: 600,
-      system: fullContext,
-      messages: conversationHistory.map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      })),
+      messages: [
+        { role: 'system', content: fullContext },
+        ...conversationHistory.map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        })),
+      ],
     });
 
-    const aiResponse = response.content[0].type === 'text'
-      ? response.content[0].text
-      : "Je n'ai pas pu generer une reponse. Veuillez reessayer.";
+    const aiResponse = response.choices[0]?.message?.content
+      || "Je n'ai pas pu generer une reponse. Veuillez reessayer.";
 
     // Save bot response to database
     const { data: botMessage, error: insertError } = await supabase
