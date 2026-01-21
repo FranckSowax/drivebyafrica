@@ -65,7 +65,16 @@ export async function GET(request: NextRequest) {
   const sortOrder = searchParams.get('sortOrder') || 'desc';
   const isVisible = searchParams.get('isVisible');
 
-  const filterParams = { source, status, isVisible, search };
+  // Optimization: Ignore search if less than 2 characters to prevent DB timeout
+  // on expensive wildcard queries like '%a%' or '%j%'
+  const effectiveSearch = search && search.length >= 2 ? search : null;
+
+  const filterParams = { 
+    source, 
+    status, 
+    isVisible, 
+    search: effectiveSearch 
+  };
 
   try {
     // Run count query and data query in parallel for better performance
@@ -125,7 +134,7 @@ export async function GET(request: NextRequest) {
     const count = countResult.count || 0;
 
     return NextResponse.json({
-      vehicles: dataResult.data,
+      vehicles: dataResult.data || [],
       total: count,
       page,
       totalPages: Math.ceil(count / limit),

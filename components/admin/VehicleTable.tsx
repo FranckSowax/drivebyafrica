@@ -156,8 +156,8 @@ export function VehicleTable({
             <input
               type="search"
               placeholder="Rechercher par marque, modèle, ID source..."
-              value={filters.search}
-              onChange={(e) => onFilterChange({ search: e.target.value })}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="w-full h-12 pl-12 pr-4 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-mandarin focus:ring-2 focus:ring-mandarin/20 focus:outline-none transition-all"
             />
           </div>
