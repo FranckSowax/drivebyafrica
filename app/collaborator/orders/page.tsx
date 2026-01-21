@@ -748,7 +748,7 @@ function CollaboratorOrdersContent() {
                                 size="sm"
                                 onClick={() => handleViewDetails(order)}
                                 title={locale === 'zh' ? '查看/编辑' : 'View/Edit'}
-                                className="text-white hover:text-mandarin hover:bg-mandarin/10"
+                                className="text-mandarin hover:text-mandarin/80 hover:bg-mandarin/10"
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -842,7 +842,7 @@ function CollaboratorOrdersContent() {
             <div className="p-6 space-y-6">
               {/* Progress Timeline */}
               <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-4">
                   {locale === 'zh' ? '订单进度' : 'Order Progress'}
                 </h4>
                 <div className="relative">
@@ -1017,17 +1017,6 @@ function CollaboratorOrdersContent() {
                   </h4>
                   <p className="font-medium text-white">{selectedOrder.customer_name}</p>
                   <p className="text-sm text-gray-400">{selectedOrder.customer_country}</p>
-                  {(selectedOrder.customer_whatsapp || selectedOrder.customer_phone) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3 w-full text-green-500 border-green-500/30 hover:bg-green-500/10"
-                      onClick={() => handleContactWhatsApp(selectedOrder)}
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      WhatsApp
-                    </Button>
-                  )}
                 </div>
                 <div className="bg-nobel/10 rounded-xl p-4">
                   <h4 className="text-sm font-medium text-gray-400 mb-2">
@@ -1046,41 +1035,6 @@ function CollaboratorOrdersContent() {
                       </span>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Financial Summary */}
-              <div className="bg-nobel/10 rounded-xl p-4">
-                <h4 className="text-sm font-medium text-gray-400 mb-3">
-                  {locale === 'zh' ? '财务摘要' : 'Financial Summary'}
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">{locale === 'zh' ? '车辆价格' : 'Vehicle Price'}</span>
-                    <span className="text-white">{formatPrice(selectedOrder.vehicle_price_usd)}</span>
-                  </div>
-                  {selectedOrder.shipping_cost_xaf && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">{locale === 'zh' ? '运费' : 'Shipping'}</span>
-                      <span className="text-white">{formatPrice(selectedOrder.shipping_cost_xaf / 615)}</span>
-                    </div>
-                  )}
-                  {selectedOrder.insurance_cost_xaf && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">{locale === 'zh' ? '保险' : 'Insurance'}</span>
-                      <span className="text-white">{formatPrice(selectedOrder.insurance_cost_xaf / 615)}</span>
-                    </div>
-                  )}
-                  {selectedOrder.total_cost_xaf && (
-                    <div className="border-t border-nobel/20 pt-2 mt-2 flex justify-between font-semibold">
-                      <span className="text-white">{locale === 'zh' ? '总计' : 'Total'}</span>
-                      <span className="text-mandarin">{formatPrice(selectedOrder.total_cost_xaf / 615)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm pt-2">
-                    <span className="text-green-500 font-medium">{locale === 'zh' ? '已付定金' : 'Deposit Paid'}</span>
-                    <span className="text-green-500 font-medium">{formatPrice(selectedOrder.deposit_amount_usd)}</span>
-                  </div>
                 </div>
               </div>
             </div>
