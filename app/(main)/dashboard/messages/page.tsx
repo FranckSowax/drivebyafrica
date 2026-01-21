@@ -9,7 +9,6 @@ import {
   User,
   Loader2,
   UserPlus,
-  Phone,
   Clock,
   Sparkles,
   HelpCircle,
@@ -358,13 +357,16 @@ export default function MessagesPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <a href="https://wa.me/24177000000" target="_blank" rel="noopener noreferrer">
-            <Button variant="ghost" size="sm" leftIcon={<Phone className="w-4 h-4" />}>
-              WhatsApp
-            </Button>
-          </a>
-        </div>
+        {conversationStatus !== 'waiting_agent' && (
+          <button
+            onClick={requestHumanAgent}
+            disabled={!conversationId}
+            className="flex items-center gap-1.5 py-1.5 px-3 bg-royal-blue/10 border border-royal-blue/20 rounded-lg text-royal-blue text-xs hover:bg-royal-blue/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Parler à un agent</span>
+          </button>
+        )}
       </div>
 
       {/* Messages Container */}
@@ -540,18 +542,6 @@ export default function MessagesPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Request Agent Banner */}
-      {messages.length > 3 && conversationStatus !== 'waiting_agent' && (
-        <div className="py-2">
-          <button
-            onClick={requestHumanAgent}
-            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-royal-blue/10 border border-royal-blue/20 rounded-xl text-royal-blue text-sm hover:bg-royal-blue/20 transition-colors"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Besoin d'aide? Demander l'intervention d'un agent</span>
-          </button>
-        </div>
-      )}
 
       {/* Waiting Agent Banner */}
       {conversationStatus === 'waiting_agent' && (
