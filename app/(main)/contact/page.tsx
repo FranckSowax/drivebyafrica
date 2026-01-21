@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   MessageCircle, Mail, Phone, MapPin, Clock, Send,
-  ArrowRight, CheckCircle
+  ArrowRight, CheckCircle, Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const contactMethods = [
   {
@@ -49,6 +51,8 @@ const offices = [
 ];
 
 export default function ContactPage() {
+  const router = useRouter();
+  const { user } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -63,11 +67,54 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // If user is logged in, redirect to chat with message
+      if (user) {
+        // Create a conversation and send the message
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `[Formulaire de contact]\nSujet: ${formData.subject}\nNom: ${formData.name}\nEmail: ${formData.email}\nTéléphone: ${formData.phone || 'Non fourni'}\n\nMessage:\n${formData.message}`,
+          }),
+        });
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+        if (response.ok) {
+          const data = await response.json();
+
+          // Get AI response
+          await fetch('/api/chat/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conversationId: data.conversationId,
+              userMessage: formData.message,
+            }),
+          });
+
+          // Redirect to messages
+          router.push('/dashboard/messages');
+          return;
+        }
+      }
+
+      // Fallback: show success message (for non-logged users or API errors)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setIsSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const goToChat = () => {
+    if (user) {
+      router.push('/dashboard/messages');
+    } else {
+      router.push('/login?redirect=/dashboard/messages');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -95,7 +142,19 @@ export default function ContactPage() {
       {/* Contact Methods */}
       <section className="py-12 -mt-8 relative z-20">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            {/* AI Chat Card */}
+            <button onClick={goToChat} className="text-left">
+              <Card hover className="p-6 text-center h-full border-2 border-mandarin/30 bg-mandarin/5">
+                <div className="w-12 h-12 bg-mandarin/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Bot className="w-6 h-6 text-mandarin" />
+                </div>
+                <h3 className="font-semibold text-white mb-1">Assistant IA</h3>
+                <p className="text-sm text-nobel mb-2">Réponse instantanée</p>
+                <p className="font-medium text-mandarin">Discuter maintenant</p>
+              </Card>
+            </button>
+
             {contactMethods.map((method) => (
               <a
                 key={method.title}

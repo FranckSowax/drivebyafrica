@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
@@ -12,6 +13,7 @@ import {
   Clock,
   Sparkles,
   HelpCircle,
+  Car,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -37,6 +39,7 @@ const QUICK_QUESTIONS = [
 export default function MessagesPage() {
   const { user } = useAuthStore();
   const toast = useToast();
+  const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -47,6 +50,25 @@ export default function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [vehicleContext, setVehicleContext] = useState<{
+    id: string;
+    make: string;
+    model: string;
+    year: string;
+  } | null>(null);
+  const [hasAutoSentVehicleQuestion, setHasAutoSentVehicleQuestion] = useState(false);
+
+  // Check for vehicle context from URL params
+  useEffect(() => {
+    const vehicleId = searchParams.get('vehicle');
+    const make = searchParams.get('make');
+    const model = searchParams.get('model');
+    const year = searchParams.get('year');
+
+    if (vehicleId && make && model && year) {
+      setVehicleContext({ id: vehicleId, make, model, year });
+    }
+  }, [searchParams]);
 
   // Load existing conversation or create new one
   useEffect(() => {
@@ -296,17 +318,72 @@ export default function MessagesPage() {
               Je peux repondre a vos questions sur nos vehicules, le processus d'achat,
               les prix et les delais de livraison.
             </p>
+
+            {/* Vehicle Context Banner */}
+            {vehicleContext && (
+              <div className="w-full max-w-md mb-6 p-4 bg-royal-blue/10 border border-royal-blue/30 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-royal-blue/20 rounded-lg">
+                    <Car className="w-5 h-5 text-royal-blue" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      Question sur: {vehicleContext.make} {vehicleContext.model} {vehicleContext.year}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Posez votre question ci-dessous
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-              {QUICK_QUESTIONS.map((question, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickQuestion(question)}
-                  className="p-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-sm text-[var(--text-primary)] hover:border-mandarin hover:bg-mandarin/5 transition-colors text-left"
-                >
-                  <HelpCircle className="w-4 h-4 text-mandarin inline mr-2" />
-                  {question}
-                </button>
-              ))}
+              {vehicleContext ? (
+                // Vehicle-specific quick questions
+                <>
+                  <button
+                    onClick={() => handleQuickQuestion(`Bonjour, j'aimerais avoir plus d'informations sur le ${vehicleContext.make} ${vehicleContext.model} ${vehicleContext.year}.`)}
+                    className="p-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-sm text-[var(--text-primary)] hover:border-mandarin hover:bg-mandarin/5 transition-colors text-left"
+                  >
+                    <HelpCircle className="w-4 h-4 text-mandarin inline mr-2" />
+                    Plus d'informations
+                  </button>
+                  <button
+                    onClick={() => handleQuickQuestion(`Quel est le délai de livraison pour le ${vehicleContext.make} ${vehicleContext.model}?`)}
+                    className="p-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-sm text-[var(--text-primary)] hover:border-mandarin hover:bg-mandarin/5 transition-colors text-left"
+                  >
+                    <HelpCircle className="w-4 h-4 text-mandarin inline mr-2" />
+                    Délai de livraison
+                  </button>
+                  <button
+                    onClick={() => handleQuickQuestion(`Ce ${vehicleContext.make} ${vehicleContext.model} est-il en bon état? Avez-vous un rapport d'inspection?`)}
+                    className="p-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-sm text-[var(--text-primary)] hover:border-mandarin hover:bg-mandarin/5 transition-colors text-left"
+                  >
+                    <HelpCircle className="w-4 h-4 text-mandarin inline mr-2" />
+                    État du véhicule
+                  </button>
+                  <button
+                    onClick={() => handleQuickQuestion(`Quels sont les frais totaux pour importer le ${vehicleContext.make} ${vehicleContext.model} au Gabon?`)}
+                    className="p-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-sm text-[var(--text-primary)] hover:border-mandarin hover:bg-mandarin/5 transition-colors text-left"
+                  >
+                    <HelpCircle className="w-4 h-4 text-mandarin inline mr-2" />
+                    Coût total d'importation
+                  </button>
+                </>
+              ) : (
+                // Generic quick questions
+                QUICK_QUESTIONS.map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickQuestion(question)}
+                    className="p-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-sm text-[var(--text-primary)] hover:border-mandarin hover:bg-mandarin/5 transition-colors text-left"
+                  >
+                    <HelpCircle className="w-4 h-4 text-mandarin inline mr-2" />
+                    {question}
+                  </button>
+                ))
+              )}
             </div>
           </div>
         ) : (

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Heart,
   Share2,
@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Copy,
   Check,
+  MessageCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -56,6 +57,7 @@ const STATUS_STYLES: Record<VehicleStatus, { bg: string; label: string }> = {
 const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
 
 export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [idCopied, setIdCopied] = useState(false);
@@ -94,6 +96,16 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
       await navigator.clipboard.writeText(window.location.href);
       toast.success('Lien copié!');
     }
+  };
+
+  const handleAskQuestion = () => {
+    if (!user) {
+      // Redirect to login with return URL
+      router.push(`/login?redirect=/dashboard/messages&vehicle=${vehicle.id}`);
+      return;
+    }
+    // Redirect to messages with vehicle context
+    router.push(`/dashboard/messages?vehicle=${vehicle.id}&make=${vehicle.make}&model=${vehicle.model}&year=${vehicle.year}`);
   };
 
   const copyVehicleId = async () => {
@@ -386,6 +398,15 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     vehicleSource={source}
                   />
                 )}
+
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleAskQuestion}
+                  leftIcon={<MessageCircle className="w-4 h-4" />}
+                >
+                  Poser une question
+                </Button>
 
                 <div className="flex gap-3">
                   <Button
