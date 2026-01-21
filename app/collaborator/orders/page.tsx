@@ -494,20 +494,9 @@ function CollaboratorOrdersContent() {
             </Button>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards - Only operational stats, no financial */}
           {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <Card className="p-4 bg-cod-gray border-nobel/20">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-yellow-500/10 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-yellow-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">{locale === 'zh' ? '已付定金' : 'Deposit Paid'}</p>
-                    <p className="text-xl font-bold text-white">{stats.deposit_paid}</p>
-                  </div>
-                </div>
-              </Card>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <Card className="p-4 bg-cod-gray border-nobel/20">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -549,17 +538,6 @@ function CollaboratorOrdersContent() {
                   <div>
                     <p className="text-xs text-gray-400">{locale === 'zh' ? '已交付' : 'Delivered'}</p>
                     <p className="text-xl font-bold text-white">{stats.delivered}</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4 bg-gradient-to-br from-mandarin/10 to-jewel/10 border-mandarin/20">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-mandarin/20 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-mandarin" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">{locale === 'zh' ? '总定金' : 'Total Deposits'}</p>
-                    <p className="text-xl font-bold text-mandarin">{formatPrice(stats.totalDeposits)}</p>
                   </div>
                 </div>
               </Card>
