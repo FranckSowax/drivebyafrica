@@ -556,7 +556,7 @@ function CollaboratorOrdersContent() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-3 bg-nobel/10 border border-nobel/20 rounded-xl text-white placeholder-gray-500 focus:border-mandarin focus:outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-[var(--card-bg)] border border-nobel/20 rounded-xl text-[var(--text-primary)] placeholder-gray-500 focus:border-mandarin focus:outline-none"
               />
             </div>
             <select
@@ -565,7 +565,7 @@ function CollaboratorOrdersContent() {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-3 bg-nobel/10 border border-nobel/20 rounded-xl text-white focus:border-mandarin focus:outline-none"
+              className="px-4 py-3 bg-[var(--card-bg)] border border-nobel/20 rounded-xl text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
             >
               <option value="all">{locale === 'zh' ? '所有状态' : 'All statuses'}</option>
               {Object.entries(statusConfig).map(([key, config]) => (
