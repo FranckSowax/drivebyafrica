@@ -74,13 +74,18 @@ export function Slider({
         } else {
           newLocalValue = [prev[0], Math.max(newValue, prev[0] + step)];
         }
-        // Call onLiveChange for live preview during drag
-        onLiveChange?.(newLocalValue);
         return newLocalValue;
       });
     },
-    [isDragging, getValueFromPosition, step, onLiveChange]
+    [isDragging, getValueFromPosition, step]
   );
+
+  // Call onLiveChange when localValue changes during drag
+  useEffect(() => {
+    if (isDragging && onLiveChange) {
+      onLiveChange(localValue);
+    }
+  }, [localValue, isDragging, onLiveChange]);
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
