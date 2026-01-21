@@ -18,7 +18,9 @@ import {
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/components/ui/Toast';
+import { useCurrency } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface Message {
   id: string;
@@ -36,10 +38,70 @@ const QUICK_QUESTIONS = [
   "Comment fonctionne l'inspection?",
 ];
 
+// Render message content with clickable links
+function renderMessageContent(content: string): React.ReactNode {
+  // Parse markdown links: [text](/path) or [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const linkText = match[1];
+    const linkUrl = match[2];
+
+    // Check if it's an internal link (starts with /)
+    if (linkUrl.startsWith('/')) {
+      parts.push(
+        <Link
+          key={match.index}
+          href={linkUrl}
+          className="text-mandarin hover:underline font-medium"
+        >
+          {linkText}
+        </Link>
+      );
+    } else {
+      // External link
+      parts.push(
+        <a
+          key={match.index}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-mandarin hover:underline font-medium"
+        >
+          {linkText}
+        </a>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text after the last link
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  // If no links found, return original content
+  if (parts.length === 0) {
+    return content;
+  }
+
+  return <>{parts}</>;
+}
+
 export default function MessagesPage() {
   const { user } = useAuthStore();
   const toast = useToast();
   const searchParams = useSearchParams();
+  const { currency, currencyInfo } = useCurrency();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -160,13 +222,15 @@ export default function MessagesPage() {
       // Show typing indicator
       setIsTyping(true);
 
-      // Get AI response
+      // Get AI response with currency context
       const aiResponse = await fetch('/api/chat/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           conversationId: data.conversationId,
           userMessage: content,
+          currency: currency,
+          exchangeRate: currencyInfo?.rateToUsd || 1,
         }),
       });
 
@@ -426,7 +490,11 @@ export default function MessagesPage() {
                       : 'bg-[var(--surface)] text-[var(--text-primary)] rounded-bl-md border border-[var(--card-border)]'
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {message.sender_type === 'user'
+                      ? message.content
+                      : renderMessageContent(message.content)}
+                  </div>
                   <p
                     className={cn(
                       'text-[10px] mt-1',

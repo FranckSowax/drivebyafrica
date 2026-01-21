@@ -87,6 +87,30 @@ function extractVehicleKeywords(message: string): { brands: string[], keywords: 
   return { brands: foundBrands, keywords };
 }
 
+// Format price in user's currency
+function formatPriceInCurrency(priceUsd: number | null, currency: string, rate: number): string {
+  if (!priceUsd) return 'Prix non disponible';
+
+  if (currency === 'USD') {
+    return `${priceUsd.toLocaleString('fr-FR')} USD`;
+  }
+
+  const convertedPrice = Math.round(priceUsd * rate);
+  return `${convertedPrice.toLocaleString('fr-FR')} ${currency}`;
+}
+
+// Get currency symbol/name
+function getCurrencyDisplay(currency: string): string {
+  const displays: Record<string, string> = {
+    'USD': 'USD',
+    'XAF': 'FCFA',
+    'XOF': 'FCFA',
+    'EUR': 'EUR',
+    'GBP': 'GBP',
+  };
+  return displays[currency] || currency;
+}
+
 // System prompt with Driveby Africa context
 const SYSTEM_PROMPT = `Tu es l'assistant virtuel de Driveby Africa, une plateforme d'importation de vehicules depuis la Coree du Sud, la Chine et Dubai vers l'Afrique (principalement Gabon, Cameroun, Senegal, Cote d'Ivoire).
 
@@ -129,7 +153,12 @@ REGLES DE REPONSE:
 - Utilise un ton professionnel mais amical
 - Si le client demande le statut de sa commande, utilise les informations de commande fournies
 - Si le client n'a pas de commande en cours, propose-lui de parcourir le catalogue
-- Quand tu proposes des vehicules, inclus le lien vers la page du vehicule: /cars/[id]`;
+
+IMPORTANT - FORMAT DES LIENS ET PRIX:
+- Pour les liens vers les vehicules, utilise TOUJOURS le format markdown: [Voir le vehicule](/cars/ID_DU_VEHICULE)
+- Exemple: [Voir la Kia K3 2016](/cars/3bcef28d-f210-4bb5-9e3a-8f185f08ee46)
+- Les prix sont deja convertis dans la devise du client - affiche-les tels quels
+- N'ajoute PAS de lien externe (https://www.drivebyafrica.com), utilise uniquement /cars/ID`;
 
 export async function POST(request: Request) {
   try {
@@ -141,7 +170,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { conversationId, userMessage } = body;
+    const { conversationId, userMessage, currency, exchangeRate } = body;
+
+    // Currency settings from frontend (default to XAF)
+    const userCurrency = currency || 'XAF';
+    const userExchangeRate = exchangeRate || 615; // Default XAF rate
 
     if (!conversationId || !userMessage) {
       return NextResponse.json(
@@ -319,13 +352,17 @@ export async function POST(request: Request) {
       });
     }
 
-    // Build vehicle context with search info
+    // Build vehicle context with search info and converted prices
     let vehicleContext = '';
     const searchedBrandsText = brands.length > 0 ? brands.join(', ') : '';
     const searchedKeywordsText = keywords.length > 0 ? keywords.join(', ') : '';
+    const currencyDisplay = getCurrencyDisplay(userCurrency);
+
+    // Add currency info for the AI
+    vehicleContext = `\n\nDEVISE CLIENT: ${currencyDisplay}`;
 
     if (brands.length > 0 || keywords.length > 0) {
-      vehicleContext = `\n\nRECHERCHE EFFECTUEE:`;
+      vehicleContext += `\n\nRECHERCHE EFFECTUEE:`;
       if (searchedBrandsText) vehicleContext += `\n- Marques recherchees: ${searchedBrandsText}`;
       if (searchedKeywordsText) vehicleContext += `\n- Mots-cles recherches: ${searchedKeywordsText}`;
     }
@@ -345,7 +382,14 @@ export async function POST(request: Request) {
       if (matchingVehicles.length > 0) {
         vehicleContext += `\n\nVEHICULES TROUVES CORRESPONDANT A LA RECHERCHE (${matchingVehicles.length} resultats):`;
         matchingVehicles.forEach(v => {
-          vehicleContext += `\n- ID: ${v.id} | ${v.make} ${v.model} ${v.year} | ${v.mileage?.toLocaleString() || 'N/A'} km | ${v.current_price_usd?.toLocaleString() || 'N/A'} USD | ${v.fuel_type || 'N/A'} | ${v.transmission || 'N/A'} | Origine: ${v.source || 'N/A'}`;
+          const formattedPrice = formatPriceInCurrency(v.current_price_usd, userCurrency, userExchangeRate);
+          vehicleContext += `\n- ${v.make} ${v.model} ${v.year}`;
+          vehicleContext += `\n  ID: ${v.id}`;
+          vehicleContext += `\n  Prix: ${formattedPrice}`;
+          vehicleContext += `\n  Kilometrage: ${v.mileage?.toLocaleString() || 'N/A'} km`;
+          vehicleContext += `\n  Carburant: ${v.fuel_type || 'N/A'} | Transmission: ${v.transmission || 'N/A'}`;
+          vehicleContext += `\n  Origine: ${v.source === 'che168' ? 'Chine' : v.source === 'encar' ? 'Coree du Sud' : v.source === 'dongchedi' ? 'Chine' : v.source || 'N/A'}`;
+          vehicleContext += `\n  Lien: /cars/${v.id}`;
         });
       } else if (brands.length > 0 || keywords.length > 0) {
         vehicleContext += `\n\nAUCUN VEHICULE TROUVE pour "${searchedBrandsText || searchedKeywordsText}".`;
@@ -354,7 +398,8 @@ export async function POST(request: Request) {
       if (otherVehicles.length > 0) {
         vehicleContext += `\n\nAUTRES VEHICULES DISPONIBLES (suggestions):`;
         otherVehicles.slice(0, 5).forEach(v => {
-          vehicleContext += `\n- ID: ${v.id} | ${v.make} ${v.model} ${v.year} | ${v.mileage?.toLocaleString() || 'N/A'} km | ${v.current_price_usd?.toLocaleString() || 'N/A'} USD | ${v.fuel_type || 'N/A'} | Origine: ${v.source || 'N/A'}`;
+          const formattedPrice = formatPriceInCurrency(v.current_price_usd, userCurrency, userExchangeRate);
+          vehicleContext += `\n- ${v.make} ${v.model} ${v.year} | ${formattedPrice} | ${v.mileage?.toLocaleString() || 'N/A'} km | ID: ${v.id}`;
         });
       }
     } else if (brands.length > 0 || keywords.length > 0) {
