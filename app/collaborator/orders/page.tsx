@@ -11,7 +11,7 @@ import { useCollaboratorNotifications } from '@/lib/hooks/useCollaboratorNotific
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { format, formatDistanceToNow } from 'date-fns';
-import { enUS, zhCN, fr } from 'date-fns/locale';
+import { enUS, zhCN } from 'date-fns/locale';
 import {
   Search,
   Loader2,
@@ -233,7 +233,7 @@ function CollaboratorOrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedOrderId = searchParams.get('order');
-  const dateLocale = locale === 'zh' ? zhCN : locale === 'fr' ? fr : enUS;
+  const dateLocale = locale === 'zh' ? zhCN : enUS;
 
   const [userName, setUserName] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
