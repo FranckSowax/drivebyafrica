@@ -392,6 +392,8 @@ async function main() {
         color: offer.color,
         start_price_usd: Math.round(offer.price * CNY_TO_USD),
         current_price_usd: Math.round(offer.price * CNY_TO_USD),
+        original_price: offer.price,
+        original_currency: 'CNY',
         auction_status: 'ongoing',
         images: formatPgArray(images) as unknown as string[],
       };

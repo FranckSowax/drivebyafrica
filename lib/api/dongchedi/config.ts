@@ -92,11 +92,53 @@ export function buildApiUrl(
   return url.toString();
 }
 
+// Cache for real-time CNY rate
+let cachedCnyRate: { rate: number; timestamp: number } | null = null;
+const RATE_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
 /**
- * Convert CNY price to USD
+ * Fetch real-time CNY to USD rate
+ */
+async function fetchRealTimeCnyRate(): Promise<number> {
+  // Check cache
+  if (cachedCnyRate && Date.now() - cachedCnyRate.timestamp < RATE_CACHE_TTL) {
+    return cachedCnyRate.rate;
+  }
+
+  try {
+    const response = await fetch(
+      'https://api.frankfurter.app/latest?from=CNY&to=USD',
+      { signal: AbortSignal.timeout(5000) }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.rates?.USD) {
+        cachedCnyRate = { rate: data.rates.USD, timestamp: Date.now() };
+        return data.rates.USD;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to fetch real-time CNY rate, using fallback:', error);
+  }
+
+  // Fallback to static rate
+  return DONGCHEDI_CONFIG.CNY_TO_USD_RATE;
+}
+
+/**
+ * Convert CNY price to USD (sync version using static rate)
  */
 export function convertCnyToUsd(priceInCny: number): number {
   return Math.round(priceInCny * DONGCHEDI_CONFIG.CNY_TO_USD_RATE);
+}
+
+/**
+ * Convert CNY price to USD using real-time rate (async version)
+ */
+export async function convertCnyToUsdRealTime(priceInCny: number): Promise<number> {
+  const rate = await fetchRealTimeCnyRate();
+  return Math.round(priceInCny * rate);
 }
 
 /**

@@ -361,6 +361,8 @@ function mapToDbRecord(vehicle: ApiOffer | CsvVehicle) {
     color: vehicle.color,
     start_price_usd: priceUsd,
     current_price_usd: priceUsd,
+    original_price: vehicle.price,
+    original_currency: 'CNY',
     auction_status: 'ongoing',
     auction_platform: 'che168',
     images: vehicle.images,

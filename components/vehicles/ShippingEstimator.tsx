@@ -113,6 +113,10 @@ export function ShippingEstimator({
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+
+  // Real-time price state (for accurate quote generation)
+  const [realTimePriceUSD, setRealTimePriceUSD] = useState<number | null>(null);
+  const [isLoadingRealTimePrice, setIsLoadingRealTimePrice] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const shippingTypeRef = useRef<HTMLDivElement>(null);
@@ -245,12 +249,13 @@ export function ShippingEstimator({
       dest.country.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const calculations = useMemo(() => {
+  // Helper function to calculate costs based on vehicle price
+  const calculateCosts = (basePriceUSD: number) => {
     if (!selectedDestination) return null;
 
     // Pour les véhicules chinois, ajouter silencieusement la taxe export (980$)
     const exportTaxUSD = getExportTax(vehicleSource);
-    const effectiveVehiclePriceUSD = vehiclePriceUSD + exportTaxUSD;
+    const effectiveVehiclePriceUSD = basePriceUSD + exportTaxUSD;
 
     const shippingCostUSD = selectedDestination.shippingCost[vehicleSource];
 
@@ -264,7 +269,6 @@ export function ShippingEstimator({
     // Total en USD
     const totalUSD = effectiveVehiclePriceUSD + adjustedShippingCostUSD + insuranceCostUSD + INSPECTION_FEE_USD;
 
-    // Convert all values to quote currency (USD, EUR, or XAF)
     return {
       vehiclePrice: Math.round(convertToQuoteCurrency(effectiveVehiclePriceUSD)),
       shippingCost: Math.round(convertToQuoteCurrency(adjustedShippingCostUSD)),
@@ -281,7 +285,21 @@ export function ShippingEstimator({
       hasExportTax: exportTaxUSD > 0,
       quoteCurrencyCode,
     };
+  };
+
+  // Calculations for display (using stored USD price)
+  const calculations = useMemo(() => {
+    return calculateCosts(vehiclePriceUSD);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType, convertToQuoteCurrency, quoteCurrencyCode]);
+
+  // Calculations for quote modal (using real-time price if available)
+  const quoteCalculations = useMemo(() => {
+    // Use real-time price if available, otherwise fall back to stored price
+    const priceToUse = realTimePriceUSD ?? vehiclePriceUSD;
+    return calculateCosts(priceToUse);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realTimePriceUSD, vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType, convertToQuoteCurrency, quoteCurrencyCode]);
 
   // Format currency in quote currency (amounts are already converted)
   const formatCurrency = (amount: number) => {
@@ -300,9 +318,9 @@ export function ShippingEstimator({
     }
   };
 
-  const handleRequestQuote = () => {
+  const handleRequestQuote = async () => {
     console.log('ShippingEstimator: handleRequestQuote clicked, user:', !!user, 'dest:', !!selectedDestination);
-    
+
     if (!selectedDestination) {
       toast.error('Veuillez sélectionner une destination');
       return;
@@ -316,18 +334,36 @@ export function ShippingEstimator({
       return;
     }
 
-    // Open the quote modal directly
+    // Fetch real-time price before opening quote modal
+    setIsLoadingRealTimePrice(true);
+    try {
+      const response = await fetch(`/api/vehicles/${vehicleId}/realtime-price`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.priceUsd) {
+          setRealTimePriceUSD(data.priceUsd);
+          console.log('ShippingEstimator: Got real-time price:', data.priceUsd, 'vs stored:', vehiclePriceUSD);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch real-time price, using stored price:', error);
+    } finally {
+      setIsLoadingRealTimePrice(false);
+    }
+
+    // Open the quote modal
     console.log('ShippingEstimator: Opening Quote Modal');
     setIsQuoteModalOpen(true);
   };
 
-  // Prepare quote data for the modal
-  const quoteDataForModal = selectedDestination && calculations ? {
+  // Prepare quote data for the modal (uses real-time price for accurate quotes)
+  const quoteDataForModal = selectedDestination && quoteCalculations ? {
     vehicleId,
     vehicleMake,
     vehicleModel,
     vehicleYear,
-    vehiclePriceUSD,
+    // Use real-time price if available for accurate quote
+    vehiclePriceUSD: realTimePriceUSD ?? vehiclePriceUSD,
     vehicleSource,
     destination: {
       id: selectedDestination.id,
@@ -337,7 +373,7 @@ export function ShippingEstimator({
     },
     shippingType: selectedShippingType,
     shippingTypeName: shippingTypes.find(t => t.id === selectedShippingType)?.name || 'Container seul 20HQ',
-    calculations,
+    calculations: quoteCalculations,
     userId: user?.id || '',
     userEmail: user?.email || '',
     validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -679,9 +715,10 @@ export function ShippingEstimator({
               variant="primary"
               className="w-full mt-4"
               onClick={handleRequestQuote}
-              leftIcon={<FileText className="w-4 h-4" />}
+              disabled={isLoadingRealTimePrice}
+              leftIcon={isLoadingRealTimePrice ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
             >
-              Obtenir un devis PDF
+              {isLoadingRealTimePrice ? 'Calcul du prix...' : 'Obtenir un devis PDF'}
             </Button>
           </motion.div>
         )}

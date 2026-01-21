@@ -179,6 +179,8 @@ function convertToVehicle(encar: EncarVehicle) {
     condition_report: data.extra ? JSON.stringify(data.extra) : null,
     start_price_usd: priceUsd,
     current_price_usd: priceUsd,
+    original_price: price * 10000, // Store full KRW price
+    original_currency: 'KRW',
     auction_platform: 'encar',
     auction_status: 'ongoing',
     images: images,
