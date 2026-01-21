@@ -73,8 +73,13 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Error fetching notifications', error_zh: '获取通知时出错' },
+      {
+        error: 'Error fetching notifications',
+        error_zh: '获取通知时出错',
+        details: errorMessage
+      },
       { status: 500 }
     );
   }
