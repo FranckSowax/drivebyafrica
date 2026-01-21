@@ -97,12 +97,31 @@ export async function GET(request: Request) {
       }
     }
 
-    // Enrich quotes with user info
+    // Get vehicle source URLs
+    const vehicleIds = [...new Set(quotes?.map(q => q.vehicle_id).filter(Boolean) || [])];
+    let vehicleSourceUrls: Record<string, string | null> = {};
+
+    if (vehicleIds.length > 0) {
+      const { data: vehiclesData } = await supabase
+        .from('vehicles')
+        .select('id, source_url')
+        .in('id', vehicleIds);
+
+      if (vehiclesData) {
+        vehicleSourceUrls = vehiclesData.reduce((acc, v) => {
+          acc[v.id] = v.source_url;
+          return acc;
+        }, {} as Record<string, string | null>);
+      }
+    }
+
+    // Enrich quotes with user info and vehicle source URL
     const enrichedQuotes = quotes?.map(quote => ({
       ...quote,
       customer_name: profiles[quote.user_id]?.full_name || 'Utilisateur',
       customer_phone: profiles[quote.user_id]?.phone || profiles[quote.user_id]?.whatsapp_number || '',
       customer_email: profiles[quote.user_id]?.email || userEmails[quote.user_id] || '',
+      vehicle_source_url: quote.vehicle_id ? vehicleSourceUrls[quote.vehicle_id] : null,
     })) || [];
 
     // Calculate stats using database function (O(1) instead of O(n) client-side filtering)

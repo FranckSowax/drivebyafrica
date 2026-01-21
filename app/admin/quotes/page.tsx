@@ -21,6 +21,7 @@ import {
   Loader2,
   AlertTriangle,
   ArrowRightLeft,
+  ExternalLink,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -38,6 +39,7 @@ interface Quote {
   vehicle_year: number;
   vehicle_price_usd: number | null;
   vehicle_source: string;
+  vehicle_source_url?: string | null;
   destination_id: string;
   destination_name: string;
   destination_country: string;
@@ -552,13 +554,26 @@ export default function AdminQuotesPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div>
-                          <p className="text-sm font-medium text-[var(--text-primary)]">
-                            {quote.vehicle_make} {quote.vehicle_model}
-                          </p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            {quote.vehicle_year} - {quote.vehicle_price_usd ? formatCurrency(quote.vehicle_price_usd, 'USD') : <span className="text-purple-500">Prix à définir</span>}
-                          </p>
+                        <div className="flex items-start gap-2">
+                          <div>
+                            <p className="text-sm font-medium text-[var(--text-primary)]">
+                              {quote.vehicle_make} {quote.vehicle_model}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)]">
+                              {quote.vehicle_year} - {quote.vehicle_price_usd ? formatCurrency(quote.vehicle_price_usd, 'USD') : <span className="text-purple-500">Prix à définir</span>}
+                            </p>
+                          </div>
+                          {quote.vehicle_source_url && (
+                            <a
+                              href={quote.vehicle_source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
+                              title="Voir sur le site source"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-4">
@@ -693,15 +708,30 @@ export default function AdminQuotesPage() {
               <div>
                 <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Véhicule</h4>
                 <div className="bg-[var(--surface)] rounded-xl p-4">
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {selectedQuote.vehicle_make} {selectedQuote.vehicle_model} {selectedQuote.vehicle_year}
-                  </p>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    Prix: {selectedQuote.vehicle_price_usd ? formatCurrency(selectedQuote.vehicle_price_usd, 'USD') : <span className="text-purple-500">À définir</span>}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Source: {selectedQuote.vehicle_source}
-                  </p>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-[var(--text-primary)]">
+                        {selectedQuote.vehicle_make} {selectedQuote.vehicle_model} {selectedQuote.vehicle_year}
+                      </p>
+                      <p className="text-sm text-[var(--text-muted)]">
+                        Prix: {selectedQuote.vehicle_price_usd ? formatCurrency(selectedQuote.vehicle_price_usd, 'USD') : <span className="text-purple-500">À définir</span>}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        Source: {selectedQuote.vehicle_source}
+                      </p>
+                    </div>
+                    {selectedQuote.vehicle_source_url && (
+                      <a
+                        href={selectedQuote.vehicle_source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
+                        title="Voir sur le site source"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 

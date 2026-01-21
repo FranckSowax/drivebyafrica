@@ -29,6 +29,7 @@ import {
   CreditCard,
   FileText,
   Building,
+  ExternalLink,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -50,6 +51,7 @@ interface Order {
   vehicle_year: number;
   vehicle_price_usd: number;
   vehicle_source: string;
+  vehicle_source_url?: string | null;
   destination_id: string;
   destination_name: string;
   destination_country: string;
@@ -569,13 +571,26 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div>
-                          <p className="text-sm font-medium text-[var(--text-primary)]">
-                            {order.vehicle_make} {order.vehicle_model}
-                          </p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            {order.vehicle_year} - {formatCurrency(order.vehicle_price_usd, 'USD')}
-                          </p>
+                        <div className="flex items-start gap-2">
+                          <div>
+                            <p className="text-sm font-medium text-[var(--text-primary)]">
+                              {order.vehicle_make} {order.vehicle_model}
+                            </p>
+                            <p className="text-xs text-[var(--text-muted)]">
+                              {order.vehicle_year} - {formatCurrency(order.vehicle_price_usd, 'USD')}
+                            </p>
+                          </div>
+                          {order.vehicle_source_url && (
+                            <a
+                              href={order.vehicle_source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
+                              title="Voir sur le site source"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-4">
@@ -702,9 +717,22 @@ export default function AdminOrdersPage() {
                   <h3 className="text-lg font-bold text-[var(--text-primary)]">
                     Commande {selectedOrder.order_number}
                   </h3>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-[var(--text-muted)]">
+                      {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
+                    </p>
+                    {selectedOrder.vehicle_source_url && (
+                      <a
+                        href={selectedOrder.vehicle_source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded transition-colors"
+                        title="Voir sur le site source"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
                   <X className="w-5 h-5" />
