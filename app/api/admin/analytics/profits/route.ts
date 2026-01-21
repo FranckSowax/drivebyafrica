@@ -66,6 +66,7 @@ export async function GET() {
         id,
         order_number,
         vehicle_id,
+        quote_id,
         vehicle_price_usd,
         total_cost_xaf,
         destination_country,
@@ -77,6 +78,27 @@ export async function GET() {
     if (ordersError) {
       console.error('Error fetching orders:', ordersError);
       return NextResponse.json({ error: 'Erreur lors de la récupération des commandes' }, { status: 500 });
+    }
+
+    // Get quote IDs to fetch total_cost_xaf from quotes table
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const quoteIds = [...new Set((ordersRaw || []).map((o: any) => o.quote_id).filter(Boolean))];
+
+    // Fetch quotes with total_cost_xaf (since it's not stored in orders table)
+    let quoteDetails: Record<string, { total_cost_xaf: number | null }> = {};
+    if (quoteIds.length > 0) {
+      const { data: quotesData } = await supabaseAny
+        .from('quotes')
+        .select('id, total_cost_xaf')
+        .in('id', quoteIds);
+
+      if (quotesData && Array.isArray(quotesData)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        quoteDetails = quotesData.reduce((acc: typeof quoteDetails, q: any) => {
+          acc[q.id] = { total_cost_xaf: q.total_cost_xaf || null };
+          return acc;
+        }, {} as typeof quoteDetails);
+      }
     }
 
     // Get vehicle IDs from orders
@@ -117,8 +139,10 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const orders = (ordersRaw || []).map((o: any) => {
       const vehicle = vehicleDetails[o.vehicle_id] || {};
+      // Get total_cost_xaf from quotes table (since it's not stored in orders)
+      const quoteData = o.quote_id ? quoteDetails[o.quote_id] : null;
+      const totalCostXaf = quoteData?.total_cost_xaf || o.total_cost_xaf || 0;
       // Calculate customer price in USD from total_cost_xaf
-      const totalCostXaf = o.total_cost_xaf || 0;
       const drivebyPriceUSD = totalCostXaf > 0 ? Math.round(totalCostXaf / xafToUsdRate) : (o.vehicle_price_usd || 0);
 
       return {
