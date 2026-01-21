@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from './QuotePDFModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
-import { INSURANCE_RATE, INSPECTION_FEE_XAF, getExportTax } from '@/lib/utils/pricing';
+import { INSURANCE_RATE, INSPECTION_FEE_USD, getExportTax } from '@/lib/utils/pricing';
 
 // Types d'expédition
 type ShippingType = 'container' | 'groupage';
@@ -92,14 +92,13 @@ export function ShippingEstimator({
   const searchParams = useSearchParams();
   const { user, profile } = useAuthStore();
   const toast = useToast();
-  const { availableCurrencies } = useCurrency();
+  const {
+    getQuoteCurrencyCode,
+    convertToQuoteCurrency,
+  } = useCurrency();
 
-  // Get XAF rate dynamically from currency API (default to 615 if not available)
-  const xafRate = useMemo(() => {
-    // Find XAF rate from available currencies
-    const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
-    return xafCurrency?.rateToUsd || 615; // Default to 615 if not found
-  }, [availableCurrencies]);
+  // Get quote currency code (USD, EUR, or XAF)
+  const quoteCurrencyCode = getQuoteCurrencyCode();
 
   // État pour les destinations chargées depuis l'API
   const [destinations, setDestinations] = useState<Destination[]>(FALLBACK_DESTINATIONS);
@@ -252,38 +251,53 @@ export function ShippingEstimator({
     // Pour les véhicules chinois, ajouter silencieusement la taxe export (980$)
     const exportTaxUSD = getExportTax(vehicleSource);
     const effectiveVehiclePriceUSD = vehiclePriceUSD + exportTaxUSD;
-    const vehiclePriceXAF = effectiveVehiclePriceUSD * xafRate;
 
     const shippingCostUSD = selectedDestination.shippingCost[vehicleSource];
 
     // Appliquer le multiplicateur selon le type d'expédition
     const shippingTypeConfig = shippingTypes.find(t => t.id === selectedShippingType);
     const adjustedShippingCostUSD = shippingCostUSD * (shippingTypeConfig?.multiplier || 1);
-    const shippingCostXAF = adjustedShippingCostUSD * xafRate;
 
-    // Assurance cargo: 2.5% du (prix véhicule + taxe export + transport maritime)
-    const insuranceCostXAF = (vehiclePriceXAF + shippingCostXAF) * INSURANCE_RATE;
-    const inspectionFeeXAF = INSPECTION_FEE_XAF;
+    // Assurance cargo: 2.5% du (prix véhicule + transport maritime) en USD
+    const insuranceCostUSD = (effectiveVehiclePriceUSD + adjustedShippingCostUSD) * INSURANCE_RATE;
 
-    const totalXAF = vehiclePriceXAF + shippingCostXAF + insuranceCostXAF + inspectionFeeXAF;
+    // Total en USD
+    const totalUSD = effectiveVehiclePriceUSD + adjustedShippingCostUSD + insuranceCostUSD + INSPECTION_FEE_USD;
 
+    // Convert all values to quote currency (USD, EUR, or XAF)
     return {
-      vehiclePrice: Math.round(vehiclePriceXAF),
-      shippingCost: Math.round(shippingCostXAF),
-      insuranceCost: Math.round(insuranceCostXAF),
-      inspectionFee: Math.round(inspectionFeeXAF),
-      total: Math.round(totalXAF),
+      vehiclePrice: Math.round(convertToQuoteCurrency(effectiveVehiclePriceUSD)),
+      shippingCost: Math.round(convertToQuoteCurrency(adjustedShippingCostUSD)),
+      insuranceCost: Math.round(convertToQuoteCurrency(insuranceCostUSD)),
+      inspectionFee: Math.round(convertToQuoteCurrency(INSPECTION_FEE_USD)),
+      total: Math.round(convertToQuoteCurrency(totalUSD)),
+      // Keep USD values for database storage
+      vehiclePriceUSD: effectiveVehiclePriceUSD,
+      shippingCostUSD: adjustedShippingCostUSD,
+      insuranceCostUSD,
+      inspectionFeeUSD: INSPECTION_FEE_USD,
+      totalUSD,
       isGroupage: selectedShippingType === 'groupage',
       hasExportTax: exportTaxUSD > 0,
+      quoteCurrencyCode,
     };
-  }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType, xafRate]);
+  }, [vehiclePriceUSD, vehicleSource, selectedDestination, selectedShippingType, convertToQuoteCurrency, quoteCurrencyCode]);
 
+  // Format currency in quote currency (amounts are already converted)
   const formatCurrency = (amount: number) => {
     // Format with regular spaces as thousand separators
     const formatted = Math.round(amount)
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return `${formatted} FCFA`;
+
+    // Add appropriate currency symbol/suffix based on quote currency
+    if (quoteCurrencyCode === 'XAF') {
+      return `${formatted} FCFA`;
+    } else if (quoteCurrencyCode === 'EUR') {
+      return `${formatted} €`;
+    } else {
+      return `$${formatted}`;
+    }
   };
 
   const handleRequestQuote = () => {

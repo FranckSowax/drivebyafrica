@@ -5,6 +5,7 @@
 // Fixed fees
 export const INSURANCE_RATE = 0.025; // 2.5% cargo insurance
 export const INSPECTION_FEE_XAF = 225000; // 225,000 FCFA for inspection and documents
+export const INSPECTION_FEE_USD = 350; // ~350 USD for inspection and documents (base value)
 
 // Export taxes by source country (in USD)
 export const EXPORT_TAX_USD: Record<string, number> = {

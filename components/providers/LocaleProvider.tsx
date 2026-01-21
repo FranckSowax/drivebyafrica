@@ -8,6 +8,11 @@ import frTranslations from '@/locales/fr.json';
 import enTranslations from '@/locales/en.json';
 import { setDynamicRates } from '@/lib/utils/currency';
 
+// Currencies that support full quote conversion (devis + estimations)
+// Other currencies only display prices but quotes/orders are in USD
+const QUOTE_CURRENCIES = ['USD', 'EUR', 'XAF'] as const;
+type QuoteCurrency = typeof QUOTE_CURRENCIES[number];
+
 // Translations type
 type TranslationKeys = typeof frTranslations;
 
@@ -27,6 +32,13 @@ interface LocaleContextType {
   formatPrice: (amountUsd: number) => string;
   formatPriceRaw: (amountUsd: number) => number;
   convertFromUsd: (amountUsd: number) => number;
+
+  // Quote currency functions (USD, EUR, XAF support full conversion; others show USD)
+  isQuoteCurrency: () => boolean;
+  getQuoteCurrency: () => CurrencyInfo | null;
+  getQuoteCurrencyCode: () => string;
+  formatQuotePrice: (amountUsd: number) => string;
+  convertToQuoteCurrency: (amountUsd: number) => number;
 
   // Loading state
   isLoading: boolean;
@@ -235,6 +247,71 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     [convertFromUsd]
   );
 
+  // Check if current currency supports full quote conversion
+  const isQuoteCurrency = useCallback((): boolean => {
+    const code = currencyInfo?.code || 'USD';
+    return QUOTE_CURRENCIES.includes(code as QuoteCurrency);
+  }, [currencyInfo]);
+
+  // Get the currency to use for quotes (selected if quote currency, otherwise USD)
+  const getQuoteCurrency = useCallback((): CurrencyInfo | null => {
+    if (isQuoteCurrency()) {
+      return currencyInfo;
+    }
+    // Return USD info for non-quote currencies
+    return availableCurrencies.find(c => c.code === 'USD') || {
+      code: 'USD',
+      name: 'US Dollar',
+      symbol: '$',
+      rateToUsd: 1,
+      countries: [],
+    };
+  }, [isQuoteCurrency, currencyInfo, availableCurrencies]);
+
+  // Get the currency code to use for quotes
+  const getQuoteCurrencyCode = useCallback((): string => {
+    return isQuoteCurrency() ? (currencyInfo?.code || 'USD') : 'USD';
+  }, [isQuoteCurrency, currencyInfo]);
+
+  // Convert USD to quote currency (selected if quote currency, otherwise USD)
+  const convertToQuoteCurrency = useCallback(
+    (amountUsd: number): number => {
+      const quoteCurrency = getQuoteCurrency();
+      const rate = quoteCurrency?.rateToUsd || 1;
+      return amountUsd * rate;
+    },
+    [getQuoteCurrency]
+  );
+
+  // Format price for quotes (uses quote currency)
+  const formatQuotePrice = useCallback(
+    (amountUsd: number): string => {
+      const quoteCurrency = getQuoteCurrency();
+      const converted = convertToQuoteCurrency(amountUsd);
+      const code = quoteCurrency?.code || 'USD';
+      const symbol = quoteCurrency?.symbol || '$';
+
+      // For CFA currencies, use custom format with regular spaces
+      if (code === 'XAF' || code === 'XOF') {
+        return `${formatWithSpaces(converted)} FCFA`;
+      }
+
+      // For USD
+      if (code === 'USD') {
+        return `$${formatWithSpaces(converted)}`;
+      }
+
+      // For EUR
+      if (code === 'EUR') {
+        return `${formatWithSpaces(converted)} €`;
+      }
+
+      // Default: symbol prefix
+      return `${symbol}${formatWithSpaces(converted)}`;
+    },
+    [getQuoteCurrency, convertToQuoteCurrency, formatWithSpaces]
+  );
+
   const value = useMemo(
     () => ({
       language,
@@ -247,6 +324,11 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       formatPrice,
       formatPriceRaw,
       convertFromUsd,
+      isQuoteCurrency,
+      getQuoteCurrency,
+      getQuoteCurrencyCode,
+      formatQuotePrice,
+      convertToQuoteCurrency,
       isLoading,
       mounted,
     }),
@@ -261,6 +343,11 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       formatPrice,
       formatPriceRaw,
       convertFromUsd,
+      isQuoteCurrency,
+      getQuoteCurrency,
+      getQuoteCurrencyCode,
+      formatQuotePrice,
+      convertToQuoteCurrency,
       isLoading,
       mounted,
     ]
@@ -294,6 +381,11 @@ export function useCurrency() {
     formatPrice,
     formatPriceRaw,
     convertFromUsd,
+    isQuoteCurrency,
+    getQuoteCurrency,
+    getQuoteCurrencyCode,
+    formatQuotePrice,
+    convertToQuoteCurrency,
   } = useLocale();
   return {
     currency,
@@ -303,5 +395,11 @@ export function useCurrency() {
     formatPrice,
     formatPriceRaw,
     convertFromUsd,
+    // Quote currency functions (USD, EUR, XAF support full conversion; others use USD)
+    isQuoteCurrency,
+    getQuoteCurrency,
+    getQuoteCurrencyCode,
+    formatQuotePrice,
+    convertToQuoteCurrency,
   };
 }

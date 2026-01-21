@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   X,
   ChevronDown,
@@ -250,9 +250,17 @@ interface RangeFilterProps {
 }
 
 function RangeFilter({ label, icon, min, max, step = 1, value, onChange, formatValue }: RangeFilterProps) {
+  // Local state for live display during drag
+  const [displayValue, setDisplayValue] = useState<[number, number]>(value);
+
+  // Sync display value with prop when not dragging
+  useEffect(() => {
+    setDisplayValue(value);
+  }, [value]);
+
   const hasCustomRange = useMemo(() =>
-    value[0] !== min || value[1] !== max,
-    [value, min, max]
+    displayValue[0] !== min || displayValue[1] !== max,
+    [displayValue, min, max]
   );
 
   return (
@@ -272,7 +280,7 @@ function RangeFilter({ label, icon, min, max, step = 1, value, onChange, formatV
         <div className="flex-1">
           <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
           <p className="text-xs text-[var(--text-muted)]">
-            {formatValue(value[0])} - {formatValue(value[1])}
+            {formatValue(displayValue[0])} - {formatValue(displayValue[1])}
           </p>
         </div>
       </div>
@@ -282,6 +290,7 @@ function RangeFilter({ label, icon, min, max, step = 1, value, onChange, formatV
         step={step}
         value={value}
         onValueChange={onChange}
+        onLiveChange={setDisplayValue}
       />
     </div>
   );

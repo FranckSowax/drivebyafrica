@@ -40,7 +40,14 @@ interface QuoteData {
     insuranceCost: number;
     inspectionFee: number;
     total: number;
+    // USD values for database storage
+    vehiclePriceUSD?: number;
+    shippingCostUSD?: number;
+    insuranceCostUSD?: number;
+    inspectionFeeUSD?: number;
+    totalUSD?: number;
     hasExportTax?: boolean;
+    quoteCurrencyCode?: string;
   };
   userId: string;
   userEmail: string;
@@ -123,18 +130,30 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
     };
   }, [pdfUrl]);
 
-  // 4. Helper: Format currency
+  // 4. Helper: Format currency based on quote currency code
   const formatCurrency = useCallback((amount: number) => {
     // Format with regular spaces as thousand separators
     const formatted = Math.round(amount)
       .toString()
       .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return `${formatted} FCFA`;
-  }, []);
 
-  // 5. Action: Save to DB
+    const currencyCode = quoteData?.calculations?.quoteCurrencyCode || 'XAF';
+
+    if (currencyCode === 'XAF') {
+      return `${formatted} FCFA`;
+    } else if (currencyCode === 'EUR') {
+      return `${formatted} €`;
+    } else {
+      return `$${formatted}`;
+    }
+  }, [quoteData?.calculations?.quoteCurrencyCode]);
+
+  // 5. Action: Save to DB (always save in USD for consistency)
   const saveQuoteToDatabase = useCallback(async (qNumber: string) => {
     if (!quoteData || !user || quoteSaved) return;
+
+    // Use USD values if available, otherwise use the converted values
+    const calc = quoteData.calculations;
 
     try {
       const response = await fetch('/api/quotes', {
@@ -153,10 +172,13 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
           destination_name: quoteData.destination.name,
           destination_country: quoteData.destination.country,
           shipping_type: quoteData.shippingType,
-          shipping_cost_xaf: quoteData.calculations.shippingCost,
-          insurance_cost_xaf: quoteData.calculations.insuranceCost,
-          inspection_fee_xaf: quoteData.calculations.inspectionFee,
-          total_cost_xaf: quoteData.calculations.total,
+          // Save USD values for database consistency
+          shipping_cost_usd: calc.shippingCostUSD || calc.shippingCost,
+          insurance_cost_usd: calc.insuranceCostUSD || calc.insuranceCost,
+          inspection_fee_usd: calc.inspectionFeeUSD || calc.inspectionFee,
+          total_cost_usd: calc.totalUSD || calc.total,
+          // Also save the display currency for reference
+          quote_currency: calc.quoteCurrencyCode || 'USD',
         }),
       });
 
@@ -378,14 +400,17 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
       doc.text('DETAIL DES COUTS', margin, y);
       y += 6;
 
-      // Table header
+      // Table header - use quote currency
+      const quoteCurrencyLabel = quoteData.calculations.quoteCurrencyCode === 'EUR' ? 'EUR'
+        : quoteData.calculations.quoteCurrencyCode === 'USD' ? 'USD'
+        : 'FCFA';
       doc.setFillColor(249, 115, 22);
       doc.rect(margin, y, contentWidth, 9, 'F');
       doc.setFontSize(8);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.text('DESCRIPTION', margin + 5, y + 6);
-      doc.text('MONTANT (FCFA)', pageWidth - margin - 5, y + 6, { align: 'right' });
+      doc.text(`MONTANT (${quoteCurrencyLabel})`, pageWidth - margin - 5, y + 6, { align: 'right' });
       y += 9;
 
       // Table rows
@@ -731,7 +756,9 @@ return createPortal(
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs uppercase tracking-widest text-gray-400 font-bold">Détail des Coûts</h4>
-                      <span className="text-[10px] text-gray-400 uppercase">Devis estimatif (FCFA)</span>
+                      <span className="text-[10px] text-gray-400 uppercase">
+                        Devis estimatif ({quoteData.calculations.quoteCurrencyCode === 'EUR' ? 'EUR' : quoteData.calculations.quoteCurrencyCode === 'USD' ? 'USD' : 'FCFA'})
+                      </span>
                     </div>
                     <div className="border border-gray-100 rounded-xl overflow-hidden">
                       <table className="w-full text-sm">

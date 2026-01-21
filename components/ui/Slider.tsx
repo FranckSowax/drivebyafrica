@@ -9,6 +9,7 @@ export interface SliderProps {
   step?: number;
   value: [number, number];
   onValueChange: (value: [number, number]) => void;
+  onLiveChange?: (value: [number, number]) => void; // Called during drag for live preview
   className?: string;
   formatValue?: (value: number) => string;
 }
@@ -19,6 +20,7 @@ export function Slider({
   step = 1,
   value,
   onValueChange,
+  onLiveChange,
   className,
   formatValue,
 }: SliderProps) {
@@ -66,14 +68,18 @@ export function Slider({
 
       // Update local state only during drag (smooth UI, no re-renders of parent)
       setLocalValue(prev => {
+        let newLocalValue: [number, number];
         if (isDragging === 'start') {
-          return [Math.min(newValue, prev[1] - step), prev[1]];
+          newLocalValue = [Math.min(newValue, prev[1] - step), prev[1]];
         } else {
-          return [prev[0], Math.max(newValue, prev[0] + step)];
+          newLocalValue = [prev[0], Math.max(newValue, prev[0] + step)];
         }
+        // Call onLiveChange for live preview during drag
+        onLiveChange?.(newLocalValue);
+        return newLocalValue;
       });
     },
-    [isDragging, getValueFromPosition, step]
+    [isDragging, getValueFromPosition, step, onLiveChange]
   );
 
   const handleMouseMove = useCallback(
