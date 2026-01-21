@@ -61,6 +61,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const searchParams = useSearchParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [idCopied, setIdCopied] = useState(false);
+  const [isShippingSelected, setIsShippingSelected] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
   const toast = useToast();
   const { formatPrice } = useCurrency();
@@ -385,6 +386,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     vehicleModel={vehicle.model || 'Unknown'}
                     vehicleYear={vehicle.year || new Date().getFullYear()}
                     autoOpenQuote={shouldAutoOpenQuote}
+                    onSelectionComplete={setIsShippingSelected}
                   />
                 )}
 
@@ -399,14 +401,17 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   />
                 )}
 
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={handleAskQuestion}
-                  leftIcon={<MessageCircle className="w-4 h-4" />}
-                >
-                  Poser une question
-                </Button>
+                {/* Ask Question Button - only show after destination and shipping type are selected */}
+                {isShippingSelected && (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={handleAskQuestion}
+                    leftIcon={<MessageCircle className="w-4 h-4" />}
+                  >
+                    Poser une question
+                  </Button>
+                )}
 
                 <div className="flex gap-3">
                   <Button

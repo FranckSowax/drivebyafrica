@@ -18,6 +18,10 @@ import {
   Ship,
   Target,
   Percent,
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calculator,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +58,52 @@ interface MonthlyData {
   users: number;
   quotes: number;
   vehicles: number;
+}
+
+interface ProfitData {
+  summary: {
+    totalOrders: number;
+    ordersWithPriceData: number;
+    totalDrivebyPriceUSD: number;
+    totalSourcePriceUSDFixed: number;
+    totalSourcePriceUSDRealtime: number;
+    totalProfitUSDFixed: number;
+    totalProfitUSDRealtime: number;
+    avgProfitPercentageFixed: number | null;
+    avgProfitPercentageRealtime: number | null;
+  };
+  bySource: Record<string, {
+    count: number;
+    totalDrivebyUSD: number;
+    totalSourceUSDFixed: number;
+    totalSourceUSDRealtime: number;
+    totalProfitUSDFixed: number;
+    totalProfitUSDRealtime: number;
+  }>;
+  exchangeRates: {
+    fixed: Record<string, number>;
+    realtime: Record<string, number | null>;
+  };
+  orders: Array<{
+    orderId: string;
+    orderNumber: string;
+    vehicleMake: string;
+    vehicleModel: string;
+    vehicleYear: number;
+    vehicleSource: string;
+    destinationCountry: string;
+    orderStatus: string;
+    createdAt: string;
+    drivebyPriceUSD: number;
+    sourcePriceOriginal: number | null;
+    sourceCurrency: string | null;
+    sourcePriceUSDFixed: number | null;
+    sourcePriceUSDRealtime: number | null;
+    profitUSDFixed: number | null;
+    profitUSDRealtime: number | null;
+    profitPercentageFixed: number | null;
+    profitPercentageRealtime: number | null;
+  }>;
 }
 
 interface AnalyticsData {
@@ -167,7 +217,9 @@ const PIE_COLORS = ['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#F59
 
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [profitData, setProfitData] = useState<ProfitData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProfitLoading, setIsProfitLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
@@ -186,9 +238,24 @@ export default function AdminAnalyticsPage() {
     }
   }, []);
 
+  const fetchProfitData = useCallback(async () => {
+    try {
+      setIsProfitLoading(true);
+      const response = await fetch('/api/admin/analytics/profits');
+      if (!response.ok) throw new Error('Erreur lors du chargement des profits');
+      const result = await response.json();
+      setProfitData(result);
+    } catch (err) {
+      console.error('Error fetching profit data:', err);
+    } finally {
+      setIsProfitLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchProfitData();
+  }, [fetchData, fetchProfitData]);
 
   const formatNumber = (value: number) => {
     // Format with regular spaces as thousand separators
@@ -749,6 +816,275 @@ export default function AdminAnalyticsPage() {
           </div>
         </Card>
       </div>
+
+      {/* Profit Analysis Section */}
+      <Card className="p-6 mb-8 bg-gradient-to-r from-jewel/5 to-mandarin/5 border-jewel/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-jewel/10 rounded-xl">
+              <Calculator className="w-6 h-6 text-jewel" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Analyse des Bénéfices (Commandes)</h2>
+              <p className="text-sm text-[var(--text-muted)]">
+                Comparaison Prix Driveby vs Prix Source pour les commandes validées
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchProfitData}
+            disabled={isProfitLoading}
+            leftIcon={<RefreshCw className={`w-4 h-4 ${isProfitLoading ? 'animate-spin' : ''}`} />}
+          >
+            Actualiser
+          </Button>
+        </div>
+
+        {isProfitLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-jewel" />
+          </div>
+        ) : profitData ? (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--card-border)]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-xs text-[var(--text-muted)]">Commandes analysées</span>
+                </div>
+                <p className="text-2xl font-bold text-[var(--text-primary)]">
+                  {profitData.summary.ordersWithPriceData}
+                  <span className="text-sm font-normal text-[var(--text-muted)]"> / {profitData.summary.totalOrders}</span>
+                </p>
+              </div>
+
+              <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--card-border)]">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-royal-blue" />
+                  <span className="text-xs text-[var(--text-muted)]">Prix Driveby Total</span>
+                </div>
+                <p className="text-2xl font-bold text-royal-blue">
+                  ${formatNumber(profitData.summary.totalDrivebyPriceUSD)}
+                </p>
+              </div>
+
+              <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-[var(--card-border)]">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-mandarin" />
+                  <span className="text-xs text-[var(--text-muted)]">Prix Source Total (fixe)</span>
+                </div>
+                <p className="text-2xl font-bold text-mandarin">
+                  ${formatNumber(profitData.summary.totalSourcePriceUSDFixed)}
+                </p>
+              </div>
+
+              <div className="bg-[var(--card-bg)] rounded-xl p-4 border border-jewel/30">
+                <div className="flex items-center gap-2 mb-2">
+                  {profitData.summary.totalProfitUSDFixed >= 0 ? (
+                    <ArrowUpRight className="w-4 h-4 text-jewel" />
+                  ) : (
+                    <ArrowDownRight className="w-4 h-4 text-red-500" />
+                  )}
+                  <span className="text-xs text-[var(--text-muted)]">Bénéfice Total (fixe)</span>
+                </div>
+                <p className={`text-2xl font-bold ${profitData.summary.totalProfitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                  {profitData.summary.totalProfitUSDFixed >= 0 ? '+' : ''}${formatNumber(profitData.summary.totalProfitUSDFixed)}
+                </p>
+                {profitData.summary.avgProfitPercentageFixed !== null && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Marge moyenne: {profitData.summary.avgProfitPercentageFixed}%
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Real-time vs Fixed comparison */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <h3 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-mandarin" />
+                  Taux de change fixes (achat)
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {Object.entries(profitData.exchangeRates.fixed).map(([currency, rate]) => (
+                    <div key={currency} className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">1 USD = </span>
+                      <span className="font-mono text-[var(--text-primary)]">{rate} {currency}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <h3 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-royal-blue" />
+                  Taux de change temps réel
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {Object.entries(profitData.exchangeRates.realtime).map(([currency, rate]) => (
+                    <div key={currency} className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">1 USD = </span>
+                      <span className="font-mono text-[var(--text-primary)]">
+                        {rate ? rate.toFixed(2) : 'N/A'} {currency}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {profitData.summary.totalProfitUSDRealtime !== undefined && (
+                  <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">Bénéfice (temps réel):</span>
+                      <span className={`font-bold ${profitData.summary.totalProfitUSDRealtime >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                        {profitData.summary.totalProfitUSDRealtime >= 0 ? '+' : ''}${formatNumber(profitData.summary.totalProfitUSDRealtime)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* By Source Breakdown */}
+            {Object.keys(profitData.bySource).length > 0 && (
+              <div className="bg-[var(--surface)] rounded-xl p-4 mb-6">
+                <h3 className="font-medium text-[var(--text-primary)] mb-4">Bénéfices par source</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--card-border)]">
+                        <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Source</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Commandes</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Driveby</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Source</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Bénéfice</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Marge</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(profitData.bySource).map(([source, data]) => {
+                        const margin = data.totalSourceUSDFixed > 0
+                          ? ((data.totalProfitUSDFixed / data.totalSourceUSDFixed) * 100).toFixed(1)
+                          : 'N/A';
+                        return (
+                          <tr key={source} className="border-b border-[var(--card-border)]/50">
+                            <td className="py-2 px-3">
+                              <span className="flex items-center gap-2">
+                                <span className="text-lg">
+                                  {source === 'china' || source === 'che168' || source === 'dongchedi' ? '🇨🇳' :
+                                   source === 'korea' ? '🇰🇷' :
+                                   source === 'dubai' ? '🇦🇪' : '🌍'}
+                                </span>
+                                <span className="capitalize text-[var(--text-primary)]">{source}</span>
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 text-right text-[var(--text-primary)]">{data.count}</td>
+                            <td className="py-2 px-3 text-right text-royal-blue font-medium">
+                              ${formatNumber(data.totalDrivebyUSD)}
+                            </td>
+                            <td className="py-2 px-3 text-right text-mandarin font-medium">
+                              ${formatNumber(data.totalSourceUSDFixed)}
+                            </td>
+                            <td className={`py-2 px-3 text-right font-bold ${data.totalProfitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                              {data.totalProfitUSDFixed >= 0 ? '+' : ''}${formatNumber(data.totalProfitUSDFixed)}
+                            </td>
+                            <td className={`py-2 px-3 text-right ${data.totalProfitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                              {margin}%
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Individual Orders Table */}
+            <div className="bg-[var(--surface)] rounded-xl p-4">
+              <h3 className="font-medium text-[var(--text-primary)] mb-4">Détail par commande</h3>
+              <div className="overflow-x-auto max-h-[400px]">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-[var(--surface)]">
+                    <tr className="border-b border-[var(--card-border)]">
+                      <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Commande</th>
+                      <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Véhicule</th>
+                      <th className="text-center py-2 px-3 text-[var(--text-muted)] font-medium">Source</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Driveby</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Source</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Bénéfice</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Marge</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {profitData.orders.slice(0, 20).map((order) => (
+                      <tr key={order.orderId} className="border-b border-[var(--card-border)]/30 hover:bg-[var(--card-bg)]">
+                        <td className="py-2 px-3">
+                          <span className="font-mono text-xs text-mandarin">{order.orderNumber}</span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className="text-[var(--text-primary)]">
+                            {order.vehicleMake} {order.vehicleModel} {order.vehicleYear}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className="text-lg">
+                            {order.vehicleSource === 'china' || order.vehicleSource === 'che168' || order.vehicleSource === 'dongchedi' ? '🇨🇳' :
+                             order.vehicleSource === 'korea' ? '🇰🇷' :
+                             order.vehicleSource === 'dubai' ? '🇦🇪' : '🌍'}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-right text-royal-blue">
+                          ${formatNumber(order.drivebyPriceUSD)}
+                        </td>
+                        <td className="py-2 px-3 text-right text-mandarin">
+                          {order.sourcePriceUSDFixed !== null
+                            ? `$${formatNumber(order.sourcePriceUSDFixed)}`
+                            : <span className="text-[var(--text-muted)]">N/A</span>
+                          }
+                          {order.sourcePriceOriginal !== null && order.sourceCurrency && (
+                            <span className="block text-xs text-[var(--text-muted)]">
+                              ({formatNumber(order.sourcePriceOriginal)} {order.sourceCurrency})
+                            </span>
+                          )}
+                        </td>
+                        <td className={`py-2 px-3 text-right font-medium ${
+                          order.profitUSDFixed !== null
+                            ? order.profitUSDFixed >= 0 ? 'text-jewel' : 'text-red-500'
+                            : 'text-[var(--text-muted)]'
+                        }`}>
+                          {order.profitUSDFixed !== null
+                            ? `${order.profitUSDFixed >= 0 ? '+' : ''}$${formatNumber(order.profitUSDFixed)}`
+                            : 'N/A'
+                          }
+                        </td>
+                        <td className={`py-2 px-3 text-right ${
+                          order.profitPercentageFixed !== null
+                            ? order.profitPercentageFixed >= 0 ? 'text-jewel' : 'text-red-500'
+                            : 'text-[var(--text-muted)]'
+                        }`}>
+                          {order.profitPercentageFixed !== null ? `${order.profitPercentageFixed}%` : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {profitData.orders.length > 20 && (
+                <p className="text-xs text-[var(--text-muted)] mt-3 text-center">
+                  Affichage des 20 premières commandes sur {profitData.orders.length} total
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+            <p className="text-[var(--text-muted)]">Aucune donnée de profit disponible</p>
+          </div>
+        )}
+      </Card>
 
       {/* Top Vehicles Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

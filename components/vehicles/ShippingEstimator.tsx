@@ -77,6 +77,7 @@ interface ShippingEstimatorProps {
   vehicleModel: string;
   vehicleYear: number;
   autoOpenQuote?: boolean;
+  onSelectionComplete?: (isComplete: boolean) => void;
 }
 
 export function ShippingEstimator({
@@ -87,6 +88,7 @@ export function ShippingEstimator({
   vehicleModel,
   vehicleYear,
   autoOpenQuote = false,
+  onSelectionComplete,
 }: ShippingEstimatorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -129,6 +131,14 @@ export function ShippingEstimator({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const shippingTypeRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Notify parent when selection is complete (destination + shipping type selected)
+  useEffect(() => {
+    if (onSelectionComplete) {
+      // Selection is complete when destination is selected (shipping type has default value)
+      onSelectionComplete(selectedDestination !== null);
+    }
+  }, [selectedDestination, selectedShippingType, onSelectionComplete]);
 
   // Charger les destinations depuis l'API
   useEffect(() => {
