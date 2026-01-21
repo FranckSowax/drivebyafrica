@@ -25,23 +25,9 @@ interface ProfitAnalysis {
   profitPercentage: number | null; // Profit margin percentage
 }
 
-// Get XAF to USD exchange rate
-async function getXafToUsdRate(): Promise<number> {
-  try {
-    const response = await fetch(
-      'https://api.exchangerate-api.com/v4/latest/USD',
-      { next: { revalidate: 3600 } } // Cache for 1 hour
-    );
-    if (response.ok) {
-      const data = await response.json();
-      // Rate is USD -> XAF, so we need XAF (e.g., 1 USD = 630 XAF)
-      return data.rates?.XAF || 630;
-    }
-  } catch (error) {
-    console.error('Error fetching exchange rate:', error);
-  }
-  return 630; // Default rate if API fails
-}
+// Fixed XAF to USD exchange rate for profit calculations
+// Using fixed rate of 600 XAF = 1 USD for consistency
+const FIXED_XAF_TO_USD_RATE = 600;
 
 // GET: Fetch profit analysis for all orders
 export async function GET() {
@@ -54,8 +40,8 @@ export async function GET() {
 
     const supabase = adminCheck.supabase;
 
-    // Get XAF to USD exchange rate
-    const xafToUsdRate = await getXafToUsdRate();
+    // Use fixed XAF to USD exchange rate
+    const xafToUsdRate = FIXED_XAF_TO_USD_RATE;
 
     // Fetch all orders with their associated vehicles
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -260,7 +246,7 @@ export async function GET() {
       bySource,
       exchangeRate: {
         xafToUsd: xafToUsdRate,
-        description: `1 USD = ${xafToUsdRate.toFixed(2)} XAF`,
+        description: `1 USD = ${xafToUsdRate} XAF (taux fixe)`,
       },
       orders: profitAnalysis,
       generatedAt: new Date().toISOString(),
