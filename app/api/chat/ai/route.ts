@@ -125,6 +125,40 @@ function extractFiltersFromMessage(message: string): ExtractedFilters {
     }
   });
 
+  // Extract potential brand/model words that are NOT in BRAND_ALIASES
+  // This allows searching for any brand in the database, even if not predefined
+  const stopWords = ['des', 'les', 'une', 'pour', 'avec', 'dans', 'sur', 'par', 'que', 'qui', 'est', 'sont',
+    'propose', 'moi', 'cherche', 'veux', 'voudrais', 'montre', 'trouve', 'donne', 'affiche',
+    'voiture', 'voitures', 'vehicule', 'vehicules', 'auto', 'autos', 'car', 'cars',
+    'moins', 'plus', 'entre', 'ans', 'annee', 'annees', 'million', 'millions', 'fcfa', 'xaf', 'usd', 'euros',
+    'prix', 'budget', 'max', 'maximum', 'min', 'minimum', 'environ', 'autour',
+    'electrique', 'hybride', 'essence', 'diesel', 'automatique', 'manuelle',
+    'neuf', 'neuve', 'occasion', 'recente', 'recent', 'recentes', 'ancienne', 'ancien',
+    'bon', 'bonne', 'etat', 'kilometrage', 'faible', 'bas', 'km'];
+
+  // Extract capitalized words or words that look like brand names (3+ letters)
+  const words = message.split(/[\s,;:.!?]+/);
+  words.forEach(word => {
+    const cleanWord = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (cleanWord.length >= 3 &&
+        !stopWords.includes(cleanWord) &&
+        !foundBrands.includes(cleanWord) &&
+        !keywords.includes(cleanWord)) {
+      // Check if this word is not already a known brand alias
+      let isKnownAlias = false;
+      for (const aliases of Object.values(BRAND_ALIASES)) {
+        if (aliases.includes(cleanWord)) {
+          isKnownAlias = true;
+          break;
+        }
+      }
+      // If not a known alias, add it as a potential brand/model keyword for direct search
+      if (!isKnownAlias) {
+        keywords.push(cleanWord);
+      }
+    }
+  });
+
   // Detect "recent" or "less than X years" filters
   const currentYear = new Date().getFullYear();
   if (lowerMessage.includes('moins de 5 ans') || lowerMessage.includes('recente') || lowerMessage.includes('récente') || lowerMessage.includes('recent')) {
@@ -403,10 +437,14 @@ export async function POST(request: Request) {
     // Apply brand/model search
     if (brands.length > 0 || keywords.length > 0) {
       const searchConditions: string[] = [];
+      // Known brands search in make field
       for (const brand of brands) {
         searchConditions.push(`make.ilike.%${brand}%`);
       }
+      // Keywords search in BOTH make AND model fields
+      // This allows finding brands not in BRAND_ALIASES
       for (const keyword of keywords) {
+        searchConditions.push(`make.ilike.%${keyword}%`);
         searchConditions.push(`model.ilike.%${keyword}%`);
       }
       if (searchConditions.length > 0) {
