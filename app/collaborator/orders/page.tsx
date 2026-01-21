@@ -658,10 +658,10 @@ function CollaboratorOrdersContent() {
                                 )}
                               </div>
                               <div>
-                                <p className="text-sm font-medium text-white">
+                                <p className="text-sm font-medium text-[var(--text-primary)]">
                                   {order.vehicle_make} {order.vehicle_model}
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-[var(--text-muted)]">
                                   {order.vehicle_year} - {formatPrice(order.vehicle_price_usd)}
                                 </p>
                               </div>
@@ -670,7 +670,7 @@ function CollaboratorOrdersContent() {
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               <div>
-                                <p className="text-sm font-medium text-white">{order.customer_name}</p>
+                                <p className="text-sm font-medium text-[var(--text-primary)]">{order.customer_name}</p>
                                 {(order.customer_whatsapp || order.customer_phone) && (
                                   <button
                                     onClick={() => handleContactWhatsApp(order)}
@@ -687,8 +687,8 @@ function CollaboratorOrdersContent() {
                             <div className="flex items-center gap-2">
                               <span className="text-lg">{flag}</span>
                               <div>
-                                <p className="text-sm text-white">{order.destination_name}</p>
-                                <p className="text-xs text-gray-500">{order.destination_country}</p>
+                                <p className="text-sm text-[var(--text-primary)]">{order.destination_name}</p>
+                                <p className="text-xs text-[var(--text-muted)]">{order.destination_country}</p>
                               </div>
                             </div>
                           </td>
