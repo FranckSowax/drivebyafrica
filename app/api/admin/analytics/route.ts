@@ -82,8 +82,25 @@ export async function GET() {
     const { count: koreaCount } = await supabaseAny.from('vehicles').select('*', { count: 'exact', head: true }).eq('source', 'korea');
     if (koreaCount && koreaCount > 0) vehiclesBySource['korea'] = koreaCount;
 
-    // Top viewed vehicles
-    const topViewedVehicles = [...(vehicles || [])]
+    // Get actual favorites count from favorites table
+    const { data: favoritesData } = await supabase
+      .from('favorites')
+      .select('vehicle_id');
+
+    // Count favorites per vehicle
+    const favoritesCountByVehicle: Record<string, number> = {};
+    favoritesData?.forEach((f: { vehicle_id: string }) => {
+      favoritesCountByVehicle[f.vehicle_id] = (favoritesCountByVehicle[f.vehicle_id] || 0) + 1;
+    });
+
+    // Merge favorites count with vehicles
+    const vehiclesWithFavorites = (vehicles || []).map(v => ({
+      ...v,
+      actual_favorites: favoritesCountByVehicle[v.id] || 0,
+    }));
+
+    // Top viewed vehicles (using views_count from vehicles table)
+    const topViewedVehicles = [...vehiclesWithFavorites]
       .sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
       .slice(0, 5)
       .map(v => ({
@@ -91,19 +108,19 @@ export async function GET() {
         make: v.make,
         model: v.model,
         views: v.views_count || 0,
-        favorites: v.favorites_count || 0,
+        favorites: v.actual_favorites,
       }));
 
-    // Top favorited vehicles
-    const topFavoritedVehicles = [...(vehicles || [])]
-      .sort((a, b) => (b.favorites_count || 0) - (a.favorites_count || 0))
+    // Top favorited vehicles (using actual count from favorites table)
+    const topFavoritedVehicles = [...vehiclesWithFavorites]
+      .sort((a, b) => b.actual_favorites - a.actual_favorites)
       .slice(0, 5)
       .map(v => ({
         id: v.id,
         make: v.make,
         model: v.model,
         views: v.views_count || 0,
-        favorites: v.favorites_count || 0,
+        favorites: v.actual_favorites,
       }));
 
     // Top makes
@@ -266,7 +283,7 @@ export async function GET() {
     const acceptedMarginUSD = acceptedDrivebyPriceUSD - acceptedSourcePriceUSD;
     const marginPercentage = totalSourcePriceUSD > 0 ? Math.round((totalMarginUSD / totalSourcePriceUSD) * 100) : 0;
 
-    // ===== ORDERS STATS (from order_tracking) =====
+    // ===== ORDERS STATS (from orders table) =====
     let ordersStats = {
       total: 0,
       deposit_paid: 0,
@@ -277,22 +294,56 @@ export async function GET() {
     };
 
     try {
-      const { data: orderTracking } = await supabaseAny
-        .from('order_tracking')
-        .select('order_status');
+      // First try the orders table which has actual order data
+      const { data: ordersData, count: ordersCount } = await supabaseAny
+        .from('orders')
+        .select('status', { count: 'exact' });
 
-      if (orderTracking && Array.isArray(orderTracking)) {
-        ordersStats.total = orderTracking.length;
-        orderTracking.forEach((o: { order_status: string }) => {
-          if (o.order_status === 'deposit_paid') ordersStats.deposit_paid++;
-          if (o.order_status === 'vehicle_purchased') ordersStats.vehicle_purchased++;
-          if (o.order_status === 'in_transit' || o.order_status === 'at_port') ordersStats.in_transit++;
-          if (o.order_status === 'shipping') ordersStats.shipping++;
-          if (o.order_status === 'delivered') ordersStats.delivered++;
+      if (ordersData && Array.isArray(ordersData) && ordersData.length > 0) {
+        ordersStats.total = ordersCount || ordersData.length;
+        ordersData.forEach((o: { status: string }) => {
+          const status = o.status || '';
+          // Map orders table statuses to pipeline stages
+          // deposit_paid or pending_deposit states
+          if (status === 'pending_deposit' || status === 'deposit_paid' || status === 'pending_payment') {
+            ordersStats.deposit_paid++;
+          }
+          // Vehicle purchased / processing
+          else if (status === 'processing' || status === 'paid' || status === 'vehicle_purchased') {
+            ordersStats.vehicle_purchased++;
+          }
+          // In transit to port
+          else if (status === 'in_transit' || status === 'shipped') {
+            ordersStats.in_transit++;
+          }
+          // At sea / shipping
+          else if (status === 'shipping' || status === 'customs_clearance') {
+            ordersStats.shipping++;
+          }
+          // Delivered
+          else if (status === 'delivered' || status === 'completed') {
+            ordersStats.delivered++;
+          }
         });
+      } else {
+        // Fallback to order_tracking if orders is empty
+        const { data: orderTracking } = await supabaseAny
+          .from('order_tracking')
+          .select('order_status');
+
+        if (orderTracking && Array.isArray(orderTracking)) {
+          ordersStats.total = orderTracking.length;
+          orderTracking.forEach((o: { order_status: string }) => {
+            if (o.order_status === 'deposit_paid') ordersStats.deposit_paid++;
+            if (o.order_status === 'vehicle_purchased') ordersStats.vehicle_purchased++;
+            if (o.order_status === 'in_transit' || o.order_status === 'at_port') ordersStats.in_transit++;
+            if (o.order_status === 'shipping') ordersStats.shipping++;
+            if (o.order_status === 'delivered') ordersStats.delivered++;
+          });
+        }
       }
     } catch {
-      // order_tracking table may not exist
+      // Tables may not exist - use accepted quotes count as fallback
       ordersStats.total = acceptedQuotes.length;
       ordersStats.deposit_paid = acceptedQuotes.length;
     }
