@@ -110,9 +110,11 @@ export default async function handler() {
 
     // Also run ANALYZE to update table statistics for query planner
     // This helps PostgreSQL make better decisions after large deletes
-    await supabase.rpc('analyze_vehicles').catch(() => {
+    try {
+      await supabase.rpc('analyze_vehicles');
+    } catch {
       // Function may not exist, that's OK
-    });
+    }
 
     return {
       statusCode: 200,

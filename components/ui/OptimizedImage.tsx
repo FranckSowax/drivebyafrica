@@ -1,10 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000; // 1 second
+
+// Chinese CDN domains that need proxy
+const CHINA_CDN_DOMAINS = [
+  'autoimg.cn',      // CHE168
+  'byteimg.com',     // Dongchedi
+  'tosv.byted.org',  // Dongchedi alt
+  'dongchedi.com',   // Dongchedi direct
+];
 
 // A tiny blurred placeholder for loading state
 const shimmer = (w: number, h: number) => `
@@ -29,6 +39,13 @@ const toBase64 = (str: string) =>
 const blurDataURL = (w: number, h: number) =>
   `data:image/svg+xml;base64,${toBase64(shimmer(w, h))}`;
 
+/**
+ * Check if URL is from a Chinese CDN that needs proxy
+ */
+function needsProxy(url: string): boolean {
+  return CHINA_CDN_DOMAINS.some(domain => url.includes(domain));
+}
+
 interface OptimizedImageProps {
   src: string | null | undefined;
   alt: string;
@@ -49,10 +66,11 @@ interface OptimizedImageProps {
  * - Responsive srcsets
  * - Lazy loading with blur placeholder
  * - Automatic size optimization
+ * - Auto-retry on failure
  *
  * Falls back to placeholder on error or missing src.
  *
- * For CHE168 images (autoimg.cn), uses proxy to bypass CORS.
+ * For Chinese CDN images (autoimg.cn, byteimg.com, etc.), uses proxy to bypass CORS/Referer blocks.
  */
 export function OptimizedImage({
   src,
@@ -69,20 +87,28 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const [imgError, setImgError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Reset error state when src changes
+  useEffect(() => {
+    setImgError(false);
+    setRetryCount(0);
+    setIsLoading(true);
+  }, [src]);
 
   // Determine the image URL
-  const getImageUrl = () => {
+  const getImageUrl = useCallback(() => {
     if (!src || imgError) return PLACEHOLDER_IMAGE;
 
-    // Use proxy for CHE168 images (autoimg.cn) which block external Referer
-    if (useProxy && src.includes('autoimg.cn')) {
-      // Hash for cache busting
-      const hash = simpleHash(src);
+    // Use proxy for Chinese CDN images that block external Referer
+    if (useProxy && needsProxy(src)) {
+      // Add retry count to bust cache on retry
+      const hash = simpleHash(src) + (retryCount > 0 ? `-r${retryCount}` : '');
       return `/api/image-proxy?url=${encodeURIComponent(src)}&h=${hash}`;
     }
 
     return src;
-  };
+  }, [src, imgError, useProxy, retryCount]);
 
   const imageUrl = getImageUrl();
   const isPlaceholder = imageUrl === PLACEHOLDER_IMAGE;
@@ -96,10 +122,18 @@ export function OptimizedImage({
     onLoadingComplete?.();
   };
 
-  const handleError = () => {
-    setImgError(true);
-    setIsLoading(false);
-  };
+  const handleError = useCallback(() => {
+    // Try to retry before showing placeholder
+    if (retryCount < MAX_RETRIES && src && needsProxy(src)) {
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setIsLoading(true);
+      }, RETRY_DELAY);
+    } else {
+      setImgError(true);
+      setIsLoading(false);
+    }
+  }, [retryCount, src]);
 
   const imageProps = {
     src: imageUrl,

@@ -7,10 +7,16 @@ const ALLOWED_DOMAINS = [
   'p3-dcd.byteimg.com',
   'p6-dcd.byteimg.com',
   'p9-dcd.byteimg.com',
+  'p1-dcd-sign.byteimg.com',
+  'p3-dcd-sign.byteimg.com',
+  'p6-dcd-sign.byteimg.com',
   'tosv.byted.org',
   'dongchedi.com',
   'autoimg.cn',  // CHE168 images
 ];
+
+// Timeout for fetching images (10 seconds)
+const FETCH_TIMEOUT = 10000;
 
 /**
  * Calculate appropriate cache duration based on image URL expiry
@@ -75,10 +81,28 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Check if URL has expired (for Dongchedi signed URLs)
+    const expiresMatch = decodedUrl.match(/x-expires=(\d+)/);
+    if (expiresMatch) {
+      const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
+      if (Date.now() > expiresTimestamp) {
+        console.warn(`Image URL expired: ${decodedUrl.substring(0, 100)}...`);
+        // Return 410 Gone for expired URLs - client should show placeholder
+        return NextResponse.json(
+          { error: 'Image URL expired' },
+          { status: 410 }
+        );
+      }
+    }
+
     // Determine the appropriate Referer based on the image domain
     const referer = decodedUrl.includes('autoimg.cn')
       ? 'https://www.che168.com/'
       : 'https://www.dongchedi.com/';
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
     // Fetch the image with appropriate headers
     const response = await fetch(decodedUrl, {
@@ -90,10 +114,13 @@ export async function GET(request: NextRequest) {
       },
       // No cache on fetch to always get fresh from origin
       cache: 'no-store',
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      console.error(`Image proxy failed: ${response.status} for ${decodedUrl}`);
+      console.error(`Image proxy failed: ${response.status} for ${decodedUrl.substring(0, 100)}...`);
       return NextResponse.json(
         { error: 'Failed to fetch image', status: response.status },
         { status: response.status }
@@ -119,6 +146,15 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    // Handle timeout/abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`Image proxy timeout for ${decodedUrl.substring(0, 100)}...`);
+      return NextResponse.json(
+        { error: 'Request timeout' },
+        { status: 504 }
+      );
+    }
+
     console.error('Image proxy error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
