@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
 
 // Note:
-// - Prix Driveby = total_cost_xaf converted to USD (what customer pays)
+// - Prix Driveby = vehicle price only in XAF (total - shipping - insurance - inspection) converted to USD
+//   For Chinese vehicles, subtract $980 export tax from the USD price
 // - Prix Source = start_price_usd from vehicles table (source auction price)
-// - XAF to USD rate: ~630 XAF = 1 USD (approximate, we'll fetch real rate)
+// - Fixed XAF to USD rate: 600 XAF = 1 USD
 
 interface ProfitAnalysis {
   orderId: string;
@@ -28,6 +29,9 @@ interface ProfitAnalysis {
 // Fixed XAF to USD exchange rate for profit calculations
 // Using fixed rate of 600 XAF = 1 USD for consistency
 const FIXED_XAF_TO_USD_RATE = 600;
+
+// Export tax for Chinese vehicles (che168, dongchedi)
+const CHINA_EXPORT_TAX_USD = 980;
 
 // GET: Fetch profit analysis for all orders
 export async function GET() {
@@ -70,18 +74,37 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const quoteIds = [...new Set((ordersRaw || []).map((o: any) => o.quote_id).filter(Boolean))];
 
-    // Fetch quotes with total_cost_xaf (since it's not stored in orders table)
-    let quoteDetails: Record<string, { total_cost_xaf: number | null }> = {};
+    // Fetch quotes with detailed costs to calculate vehicle-only price
+    let quoteDetails: Record<string, {
+      total_cost_xaf: number | null;
+      shipping_cost_xaf: number | null;
+      insurance_cost_xaf: number | null;
+      inspection_fee_xaf: number | null;
+      vehicle_price_xaf: number | null; // Calculated: total - shipping - insurance - inspection
+    }> = {};
     if (quoteIds.length > 0) {
       const { data: quotesData } = await supabaseAny
         .from('quotes')
-        .select('id, total_cost_xaf')
+        .select('id, total_cost_xaf, shipping_cost_xaf, insurance_cost_xaf, inspection_fee_xaf')
         .in('id', quoteIds);
 
       if (quotesData && Array.isArray(quotesData)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         quoteDetails = quotesData.reduce((acc: typeof quoteDetails, q: any) => {
-          acc[q.id] = { total_cost_xaf: q.total_cost_xaf || null };
+          const totalCost = q.total_cost_xaf || 0;
+          const shippingCost = q.shipping_cost_xaf || 0;
+          const insuranceCost = q.insurance_cost_xaf || 0;
+          const inspectionFee = q.inspection_fee_xaf || 0;
+          // Calculate vehicle price only (without shipping, insurance, inspection)
+          const vehiclePriceXaf = totalCost - shippingCost - insuranceCost - inspectionFee;
+
+          acc[q.id] = {
+            total_cost_xaf: q.total_cost_xaf || null,
+            shipping_cost_xaf: shippingCost,
+            insurance_cost_xaf: insuranceCost,
+            inspection_fee_xaf: inspectionFee,
+            vehicle_price_xaf: vehiclePriceXaf > 0 ? vehiclePriceXaf : null,
+          };
           return acc;
         }, {} as typeof quoteDetails);
       }
@@ -125,11 +148,20 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const orders = (ordersRaw || []).map((o: any) => {
       const vehicle = vehicleDetails[o.vehicle_id] || {};
-      // Get total_cost_xaf from quotes table (since it's not stored in orders)
+      const vehicleSource = vehicle.source || 'china';
+
+      // Get quote data to calculate vehicle-only price
       const quoteData = o.quote_id ? quoteDetails[o.quote_id] : null;
-      const totalCostXaf = quoteData?.total_cost_xaf || o.total_cost_xaf || 0;
-      // Calculate customer price in USD from total_cost_xaf
-      const drivebyPriceUSD = totalCostXaf > 0 ? Math.round(totalCostXaf / xafToUsdRate) : (o.vehicle_price_usd || 0);
+      const vehiclePriceXaf = quoteData?.vehicle_price_xaf || 0;
+
+      // Convert vehicle price XAF to USD at fixed rate
+      let drivebyPriceUSD = vehiclePriceXaf > 0 ? Math.round(vehiclePriceXaf / xafToUsdRate) : (o.vehicle_price_usd || 0);
+
+      // For Chinese vehicles, subtract $980 export tax to get the net vehicle price
+      const isChineseSource = vehicleSource === 'che168' || vehicleSource === 'dongchedi' || vehicleSource === 'china';
+      if (isChineseSource && drivebyPriceUSD > CHINA_EXPORT_TAX_USD) {
+        drivebyPriceUSD = drivebyPriceUSD - CHINA_EXPORT_TAX_USD;
+      }
 
       return {
         id: o.id,
@@ -139,8 +171,8 @@ export async function GET() {
         vehicle_model: vehicle.model || 'N/A',
         vehicle_year: vehicle.year || 0,
         driveby_price_usd: drivebyPriceUSD,
-        total_cost_xaf: totalCostXaf,
-        vehicle_source: vehicle.source || 'china',
+        vehicle_price_xaf: vehiclePriceXaf, // Vehicle price only (without shipping/insurance/inspection)
+        vehicle_source: vehicleSource,
         destination_country: o.destination_country,
         order_status: o.status || 'processing',
         created_at: o.created_at,
@@ -155,8 +187,8 @@ export async function GET() {
     let ordersWithPriceData = 0;
 
     for (const order of orders) {
-      const drivebyPriceUSD = order.driveby_price_usd || 0; // Customer price (from total_cost_xaf)
-      const totalCostXaf = order.total_cost_xaf || null;
+      const drivebyPriceUSD = order.driveby_price_usd || 0; // Customer vehicle price (from vehicle_price_xaf - export tax)
+      const vehiclePriceXaf = order.vehicle_price_xaf || null;
       const sourcePriceUSD = order.start_price_usd || null; // Source price from vehicles table
 
       let profitUSD: number | null = null;
@@ -184,7 +216,7 @@ export async function GET() {
         orderStatus: order.order_status,
         createdAt: order.created_at,
         drivebyPriceUSD,
-        drivebyPriceXAF: totalCostXaf,
+        drivebyPriceXAF: vehiclePriceXaf, // Vehicle price only in XAF
         sourcePriceUSD,
         profitUSD,
         profitPercentage,

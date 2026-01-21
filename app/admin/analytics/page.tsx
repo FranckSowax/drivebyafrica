@@ -961,8 +961,8 @@ export default function AdminAnalyticsPage() {
                       <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Commande</th>
                       <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Véhicule</th>
                       <th className="text-center py-2 px-3 text-[var(--text-muted)] font-medium">Source</th>
-                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Client (XAF)</th>
-                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Client (USD)</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Véhicule (XAF)</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Driveby (USD)</th>
                       <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Source</th>
                       <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Bénéfice</th>
                       <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Marge</th>
