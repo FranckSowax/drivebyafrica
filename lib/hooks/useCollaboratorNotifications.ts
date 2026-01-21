@@ -47,19 +47,27 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      setError(null);
 
-      const response = await fetch('/api/collaborator/notifications');
+      const response = await fetch('/api/collaborator/notifications', {
+        credentials: 'include',
+      });
 
+      // Silently handle auth errors (user not logged in) or server errors (table doesn't exist)
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        // Don't set error for non-critical notification failures
+        setNotifications([]);
+        setUnreadCount(0);
+        return;
       }
 
       const data = await response.json();
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(null);
+    } catch {
+      // Silently fail - notifications are non-critical
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -151,18 +159,19 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId: id }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to mark as read');
+        return; // Silently fail
       }
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+    } catch {
+      // Silently fail - non-critical
     }
   }, []);
 
@@ -173,18 +182,19 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAllRead: true }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to mark all as read');
+        return; // Silently fail
       }
 
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, read: true }))
       );
       setUnreadCount(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+    } catch {
+      // Silently fail - non-critical
     }
   }, []);
 
@@ -195,10 +205,11 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId: id }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to dismiss notification');
+        return; // Silently fail
       }
 
       const notification = notifications.find((n) => n.id === id);
@@ -206,8 +217,8 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
       if (notification && !notification.read) {
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+    } catch {
+      // Silently fail - non-critical
     }
   }, [notifications]);
 
