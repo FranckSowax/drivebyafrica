@@ -29,56 +29,49 @@ export function Pagination({
   if (totalPages <= 1) return null;
 
   // Generate page numbers to display
-  // Desktop: show more pages (1 2 3 4 5 ... last)
-  // Mobile: show fewer pages (1 ... current ... last)
+  // Sliding window: current page stays in position, pages scroll around it
+  // Desktop: 5 6 [7] 8 9 ... 4117
+  // Mobile: 6 [7] 8 ... 4117
   const getPageNumbers = (): (number | 'ellipsis')[] => {
     const pages: (number | 'ellipsis')[] = [];
 
-    // Desktop shows more pages, mobile shows fewer
+    // Number of pages to show on each side of current page
     const siblingsCount = isDesktop ? 2 : 1;
-    const showEllipsisThreshold = isDesktop ? 9 : 7;
+    // Total visible page buttons (excluding ellipsis and last page)
+    const visibleCount = siblingsCount * 2 + 1;
 
-    if (totalPages <= showEllipsisThreshold) {
-      // Show all pages if total is small
+    if (totalPages <= visibleCount + 2) {
+      // Show all pages if total is small enough
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first pages on desktop (1, 2, 3, 4, 5)
-      const firstPagesCount = isDesktop ? 5 : 1;
+      // Calculate the sliding window
+      let start = currentPage - siblingsCount;
+      let end = currentPage + siblingsCount;
 
-      if (currentPage <= firstPagesCount + siblingsCount) {
-        // Near the start: show first pages + ellipsis + last
-        const endOfFirstSection = isDesktop ? Math.max(5, currentPage + siblingsCount) : currentPage + siblingsCount;
-        for (let i = 1; i <= Math.min(endOfFirstSection, totalPages - 1); i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - firstPagesCount - siblingsCount) {
-        // Near the end: show first + ellipsis + last pages
-        pages.push(1);
-        pages.push('ellipsis');
-        const startOfLastSection = isDesktop
-          ? Math.min(totalPages - 4, currentPage - siblingsCount)
-          : currentPage - siblingsCount;
-        for (let i = Math.max(2, startOfLastSection); i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        // Middle: show first + ellipsis + current area + ellipsis + last
-        pages.push(1);
-        if (isDesktop) pages.push(2);
-        pages.push('ellipsis');
+      // Adjust if we're near the beginning
+      if (start < 1) {
+        start = 1;
+        end = visibleCount;
+      }
 
-        for (let i = currentPage - siblingsCount; i <= currentPage + siblingsCount; i++) {
-          if (i > (isDesktop ? 2 : 1) && i < totalPages) {
-            pages.push(i);
-          }
-        }
+      // Adjust if we're near the end
+      if (end > totalPages - 1) {
+        end = totalPages - 1;
+        start = Math.max(1, totalPages - visibleCount);
+      }
 
+      // Add visible pages
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      // Add ellipsis and last page if not already included
+      if (end < totalPages - 1) {
         pages.push('ellipsis');
-        if (isDesktop) pages.push(totalPages - 1);
+      }
+      if (end < totalPages) {
         pages.push(totalPages);
       }
     }
