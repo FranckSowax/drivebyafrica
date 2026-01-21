@@ -55,11 +55,43 @@ const BRAND_ALIASES: Record<string, string[]> = {
   'tesla': ['tesla', 'model s', 'model 3', 'model x', 'model y'],
 };
 
-// Extract brand and model keywords from user message
-function extractVehicleKeywords(message: string): { brands: string[], keywords: string[] } {
+// Export tax by source (same as in pricing.ts)
+const EXPORT_TAX_USD: Record<string, number> = {
+  che168: 980,    // China
+  dongchedi: 980, // China
+  encar: 0,       // Korea
+  dubai: 0,       // Dubai
+  china: 980,
+  korea: 0,
+};
+
+function getExportTax(source: string | null): number {
+  if (!source) return 0;
+  return EXPORT_TAX_USD[source.toLowerCase()] || 0;
+}
+
+// Extract filters from user message
+interface ExtractedFilters {
+  brands: string[];
+  keywords: string[];
+  maxYear: number | null;
+  minYear: number | null;
+  maxPrice: number | null;
+  minPrice: number | null;
+  fuelTypes: string[];
+  recentOnly: boolean; // Less than 5 years
+}
+
+function extractFiltersFromMessage(message: string): ExtractedFilters {
   const lowerMessage = message.toLowerCase();
   const foundBrands: string[] = [];
   const keywords: string[] = [];
+  let maxYear: number | null = null;
+  let minYear: number | null = null;
+  let maxPrice: number | null = null;
+  let minPrice: number | null = null;
+  const fuelTypes: string[] = [];
+  let recentOnly = false;
 
   // Check for brand mentions
   for (const [brand, aliases] of Object.entries(BRAND_ALIASES)) {
@@ -68,7 +100,6 @@ function extractVehicleKeywords(message: string): { brands: string[], keywords: 
         if (!foundBrands.includes(brand)) {
           foundBrands.push(brand);
         }
-        // Also capture the specific model/alias as keyword
         if (alias !== brand && alias.length > 2) {
           keywords.push(alias);
         }
@@ -76,7 +107,7 @@ function extractVehicleKeywords(message: string): { brands: string[], keywords: 
     }
   }
 
-  // Extract potential model names (alphanumeric patterns like K3, X5, etc.)
+  // Extract model patterns (K3, X5, etc.)
   const modelPatterns = lowerMessage.match(/\b[a-z]?\d+[a-z]?\b/gi) || [];
   modelPatterns.forEach(pattern => {
     if (pattern.length >= 2 && !keywords.includes(pattern.toLowerCase())) {
@@ -84,7 +115,59 @@ function extractVehicleKeywords(message: string): { brands: string[], keywords: 
     }
   });
 
-  return { brands: foundBrands, keywords };
+  // Detect "recent" or "less than X years" filters
+  const currentYear = new Date().getFullYear();
+  if (lowerMessage.includes('moins de 5 ans') || lowerMessage.includes('recente') || lowerMessage.includes('récente') || lowerMessage.includes('recent')) {
+    recentOnly = true;
+    minYear = currentYear - 5;
+  }
+  if (lowerMessage.includes('moins de 3 ans')) {
+    minYear = currentYear - 3;
+    recentOnly = true;
+  }
+  if (lowerMessage.includes('moins de 10 ans')) {
+    minYear = currentYear - 10;
+  }
+
+  // Detect specific year mentions
+  const yearMatch = lowerMessage.match(/(\d{4})/);
+  if (yearMatch) {
+    const year = parseInt(yearMatch[1]);
+    if (year >= 2000 && year <= currentYear + 1) {
+      // If message says "après" or "depuis", use as minYear
+      if (lowerMessage.includes('après') || lowerMessage.includes('depuis') || lowerMessage.includes('apres')) {
+        minYear = year;
+      } else if (lowerMessage.includes('avant')) {
+        maxYear = year;
+      }
+    }
+  }
+
+  // Detect fuel type preferences
+  if (lowerMessage.includes('electrique') || lowerMessage.includes('électrique') || lowerMessage.includes('ev')) {
+    fuelTypes.push('electric', 'électrique', 'ev');
+  }
+  if (lowerMessage.includes('hybride')) {
+    fuelTypes.push('hybrid', 'hybride', 'plug-in hybrid');
+  }
+  if (lowerMessage.includes('essence')) {
+    fuelTypes.push('gasoline', 'essence', 'petrol');
+  }
+  if (lowerMessage.includes('diesel')) {
+    fuelTypes.push('diesel');
+  }
+
+  // Detect price constraints (simplified - in millions FCFA or thousands USD)
+  const priceFCFA = lowerMessage.match(/moins de (\d+)\s*millions?\s*(fcfa|xaf)?/i);
+  if (priceFCFA) {
+    maxPrice = parseInt(priceFCFA[1]) * 1000000 / 615; // Convert FCFA to USD
+  }
+  const priceUSD = lowerMessage.match(/moins de (\d+)\s*000?\s*\$?\s*usd?/i);
+  if (priceUSD) {
+    maxPrice = parseInt(priceUSD[1]) * 1000;
+  }
+
+  return { brands: foundBrands, keywords, maxYear, minYear, maxPrice, minPrice, fuelTypes, recentOnly };
 }
 
 // Format price in user's currency
@@ -158,7 +241,23 @@ IMPORTANT - FORMAT DES LIENS ET PRIX:
 - Pour les liens vers les vehicules, utilise TOUJOURS le format markdown: [Voir le vehicule](/cars/ID_DU_VEHICULE)
 - Exemple: [Voir la Kia K3 2016](/cars/3bcef28d-f210-4bb5-9e3a-8f185f08ee46)
 - Les prix sont deja convertis dans la devise du client - affiche-les tels quels
-- N'ajoute PAS de lien externe (https://www.drivebyafrica.com), utilise uniquement /cars/ID`;
+- N'ajoute PAS de lien externe (https://www.drivebyafrica.com), utilise uniquement /cars/ID
+
+REGLES POUR LES SUGGESTIONS DE VEHICULES:
+- Propose MAXIMUM 3 vehicules par reponse
+- Pour chaque vehicule propose, inclus: marque, modele, annee, prix et un lien cliquable
+- Format recommande:
+  1. **Marque Modele Annee** - Prix
+     [Voir ce vehicule](/cars/ID)
+- Si le client demande des filtres (moins de X ans, electrique, etc.), applique-les dans tes suggestions
+- Si plus de 3 vehicules correspondent, mentionne le nombre total disponible
+
+SUIVI DE COMMANDE:
+- Quand le client demande le statut de sa commande, donne des informations DETAILLEES:
+  - Etape actuelle et signification (ex: "En transit maritime" = le vehicule est sur le bateau)
+  - Prochaines etapes a venir
+  - Estimation du delai restant si possible
+- Si le client a une commande, propose toujours de l'aider a suivre son avancement`;
 
 export async function POST(request: Request) {
   try {
@@ -190,7 +289,7 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single();
 
-    // Fetch user's recent orders
+    // Fetch user's recent orders with detailed tracking info
     const { data: orders } = await supabase
       .from('orders')
       .select(`
@@ -203,6 +302,17 @@ export async function POST(request: Request) {
         vehicle_price_usd,
         destination_country,
         destination_name,
+        destination_port,
+        deposit_amount_usd,
+        deposit_amount_xaf,
+        deposit_paid_at,
+        balance_amount_xaf,
+        balance_paid_at,
+        shipping_method,
+        shipping_eta,
+        tracking_number,
+        tracking_url,
+        estimated_arrival,
         created_at,
         updated_at
       `)
@@ -238,70 +348,100 @@ export async function POST(request: Request) {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    // Extract vehicle keywords from user message
-    const { brands, keywords } = extractVehicleKeywords(userMessage);
+    // Extract filters from user message
+    const filters = extractFiltersFromMessage(userMessage);
+    const { brands, keywords, minYear, maxYear, maxPrice, fuelTypes, recentOnly } = filters;
 
-    // Smart vehicle search based on user query
+    // Smart vehicle search with filters
     let vehicles: {
       id: string;
       make: string | null;
       model: string | null;
       year: number | null;
-      current_price_usd: number | null;
+      start_price_usd: number | null;
       mileage: number | null;
       fuel_type: string | null;
       transmission: string | null;
       source: string | null;
     }[] = [];
 
-    // If user mentions specific brands or models, search for them
-    if (brands.length > 0 || keywords.length > 0) {
-      // Build search conditions
-      const searchConditions: string[] = [];
+    // Build base query with start_price_usd (display price)
+    let query = supabase
+      .from('vehicles')
+      .select('id, make, model, year, start_price_usd, mileage, fuel_type, transmission, source')
+      .eq('is_visible', true);
 
-      // Add brand searches (case-insensitive)
+    // Apply year filter
+    if (minYear) {
+      query = query.gte('year', minYear);
+    }
+    if (maxYear) {
+      query = query.lte('year', maxYear);
+    }
+
+    // Apply price filter (approximate - will filter more precisely after)
+    if (maxPrice) {
+      query = query.lte('start_price_usd', maxPrice + 1000); // Add buffer for export tax
+    }
+
+    // Apply fuel type filter
+    if (fuelTypes.length > 0) {
+      const fuelConditions = fuelTypes.map(ft => `fuel_type.ilike.%${ft}%`).join(',');
+      query = query.or(fuelConditions);
+    }
+
+    // Apply brand/model search
+    if (brands.length > 0 || keywords.length > 0) {
+      const searchConditions: string[] = [];
       for (const brand of brands) {
         searchConditions.push(`make.ilike.%${brand}%`);
       }
-
-      // Add keyword searches in model
       for (const keyword of keywords) {
         searchConditions.push(`model.ilike.%${keyword}%`);
       }
-
-      // Search with OR conditions
       if (searchConditions.length > 0) {
-        const { data: searchResults } = await supabase
-          .from('vehicles')
-          .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
-          .eq('is_visible', true)
+        // Need to apply OR conditions separately
+        const { data: searchResults } = await query
           .or(searchConditions.join(','))
-          .order('created_at', { ascending: false })
-          .limit(15);
+          .order('year', { ascending: false })
+          .limit(20);
 
-        if (searchResults && searchResults.length > 0) {
+        if (searchResults) {
           vehicles = searchResults;
         }
       }
-    }
-
-    // If no specific search or no results, also fetch some popular/recent vehicles
-    if (vehicles.length < 5) {
-      const { data: generalVehicles } = await supabase
-        .from('vehicles')
-        .select('id, make, model, year, current_price_usd, mileage, fuel_type, transmission, source')
-        .eq('is_visible', true)
+    } else {
+      // No specific brand search - get recent vehicles
+      const { data: generalVehicles } = await query
+        .order('year', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(15);
 
       if (generalVehicles) {
-        // Add general vehicles that are not already in results
-        const existingIds = new Set(vehicles.map(v => v.id));
-        for (const v of generalVehicles) {
-          if (!existingIds.has(v.id)) {
-            vehicles.push(v);
-          }
-        }
+        vehicles = generalVehicles;
+      }
+    }
+
+    // Post-filter for exact price with export tax
+    if (maxPrice && vehicles.length > 0) {
+      vehicles = vehicles.filter(v => {
+        if (!v.start_price_usd) return false;
+        const displayPrice = v.start_price_usd + getExportTax(v.source);
+        return displayPrice <= maxPrice;
+      });
+    }
+
+    // If no results from filtered search, get some suggestions
+    if (vehicles.length === 0 && (brands.length > 0 || keywords.length > 0 || recentOnly)) {
+      const { data: suggestionVehicles } = await supabase
+        .from('vehicles')
+        .select('id, make, model, year, start_price_usd, mileage, fuel_type, transmission, source')
+        .eq('is_visible', true)
+        .order('year', { ascending: false })
+        .limit(10);
+
+      if (suggestionVehicles) {
+        vehicles = suggestionVehicles;
       }
     }
 
@@ -319,17 +459,68 @@ export async function POST(request: Request) {
     customerContext += `\nNom: ${profile?.full_name || 'Non renseigné'}`;
     customerContext += `\nPays: ${profile?.country || 'Non renseigné'}`;
 
-    // Build orders context
+    // Build orders context with detailed tracking
     let ordersContext = '';
     if (orders && orders.length > 0) {
       ordersContext = '\n\nCOMMANDES DU CLIENT:';
       orders.forEach(order => {
         const statusFr = ORDER_STATUS_FR[order.status] || order.status;
-        ordersContext += `\n- Commande ${order.order_number}: ${order.vehicle_make} ${order.vehicle_model} ${order.vehicle_year}`;
-        ordersContext += `\n  Statut: ${statusFr}`;
-        ordersContext += `\n  Destination: ${order.destination_name}, ${order.destination_country}`;
-        ordersContext += `\n  Prix: ${order.vehicle_price_usd?.toLocaleString()} USD`;
-        ordersContext += `\n  Date: ${new Date(order.created_at).toLocaleDateString('fr-FR')}`;
+        ordersContext += `\n\n📦 Commande ${order.order_number || 'N/A'}: ${order.vehicle_make || ''} ${order.vehicle_model || ''} ${order.vehicle_year || ''}`;
+        ordersContext += `\n  ➤ Statut actuel: ${statusFr}`;
+        ordersContext += `\n  ➤ Destination: ${order.destination_name || ''}, ${order.destination_country || ''}`;
+        ordersContext += `\n  ➤ Prix vehicule: ${order.vehicle_price_usd?.toLocaleString() || 'N/A'} USD`;
+
+        // Add payment info
+        if (order.deposit_amount_usd) {
+          ordersContext += `\n  ➤ Acompte paye: ${order.deposit_amount_usd.toLocaleString()} USD`;
+          if (order.deposit_paid_at) {
+            ordersContext += ` (le ${new Date(order.deposit_paid_at).toLocaleDateString('fr-FR')})`;
+          }
+        }
+        if (order.balance_amount_xaf && !order.balance_paid_at) {
+          ordersContext += `\n  ➤ Solde restant: ${order.balance_amount_xaf.toLocaleString()} FCFA`;
+        }
+        if (order.balance_paid_at) {
+          ordersContext += `\n  ➤ Solde paye le: ${new Date(order.balance_paid_at).toLocaleDateString('fr-FR')}`;
+        }
+
+        // Add shipping info if available
+        if (order.destination_port) {
+          ordersContext += `\n  ➤ Port de destination: ${order.destination_port}`;
+        }
+        if (order.shipping_method) {
+          ordersContext += `\n  ➤ Mode d'expedition: ${order.shipping_method}`;
+        }
+        if (order.tracking_number) {
+          ordersContext += `\n  ➤ Numero de suivi: ${order.tracking_number}`;
+        }
+
+        // Add dates
+        ordersContext += `\n  ➤ Date de commande: ${new Date(order.created_at).toLocaleDateString('fr-FR')}`;
+        const arrivalDate = order.shipping_eta || order.estimated_arrival;
+        if (arrivalDate) {
+          ordersContext += `\n  ➤ Arrivee estimee: ${new Date(arrivalDate).toLocaleDateString('fr-FR')}`;
+        }
+
+        // Add next steps based on status
+        const nextSteps: Record<string, string> = {
+          'pending_deposit': 'Prochaine etape: Payer l\'acompte de 1000 USD pour bloquer le vehicule',
+          'deposit_paid': 'Prochaine etape: Inspection du vehicule en cours (1-3 jours)',
+          'inspection_in_progress': 'Prochaine etape: Reception du rapport d\'inspection',
+          'inspection_completed': 'Prochaine etape: Payer le solde pour lancer l\'expedition',
+          'pending_balance': 'Prochaine etape: Payer le solde restant',
+          'balance_paid': 'Prochaine etape: Preparation du vehicule pour l\'expedition',
+          'shipping_preparation': 'Prochaine etape: Chargement sur le navire',
+          'shipped': 'Prochaine etape: Arrivee au port de destination',
+          'in_transit': 'Prochaine etape: Arrivee au port et dedouanement',
+          'customs_clearance': 'Prochaine etape: Recuperation du vehicule',
+          'ready_for_pickup': 'Prochaine etape: Recuperer le vehicule au point de livraison',
+          'delivered': 'Commande terminee - Vehicule livre',
+          'cancelled': 'Commande annulee',
+        };
+        if (nextSteps[order.status]) {
+          ordersContext += `\n  💡 ${nextSteps[order.status]}`;
+        }
       });
     } else {
       ordersContext = '\n\nCOMMANDES DU CLIENT: Aucune commande en cours.';
@@ -379,27 +570,54 @@ export async function POST(request: Request) {
         return !brands.some(b => makeModel.includes(b)) && !keywords.some(k => makeModel.includes(k));
       });
 
+      // Helper to calculate display price (start_price_usd + export tax)
+      const getDisplayPrice = (v: { start_price_usd: number | null; source: string | null }): number | null => {
+        if (!v.start_price_usd) return null;
+        return v.start_price_usd + getExportTax(v.source);
+      };
+
+      // Helper to get origin name
+      const getOriginName = (source: string | null): string => {
+        if (!source) return 'N/A';
+        const sourceMap: Record<string, string> = {
+          'che168': 'Chine',
+          'dongchedi': 'Chine',
+          'encar': 'Corée du Sud',
+          'dubai': 'Dubaï',
+        };
+        return sourceMap[source.toLowerCase()] || source;
+      };
+
       if (matchingVehicles.length > 0) {
-        vehicleContext += `\n\nVEHICULES TROUVES CORRESPONDANT A LA RECHERCHE (${matchingVehicles.length} resultats):`;
-        matchingVehicles.forEach(v => {
-          const formattedPrice = formatPriceInCurrency(v.current_price_usd, userCurrency, userExchangeRate);
+        // Limit to 3 results maximum
+        const topMatches = matchingVehicles.slice(0, 3);
+        vehicleContext += `\n\nVEHICULES TROUVES (${Math.min(matchingVehicles.length, 3)} sur ${matchingVehicles.length} resultats):`;
+        topMatches.forEach(v => {
+          const displayPrice = getDisplayPrice(v);
+          const formattedPrice = formatPriceInCurrency(displayPrice, userCurrency, userExchangeRate);
           vehicleContext += `\n- ${v.make} ${v.model} ${v.year}`;
           vehicleContext += `\n  ID: ${v.id}`;
           vehicleContext += `\n  Prix: ${formattedPrice}`;
           vehicleContext += `\n  Kilometrage: ${v.mileage?.toLocaleString() || 'N/A'} km`;
           vehicleContext += `\n  Carburant: ${v.fuel_type || 'N/A'} | Transmission: ${v.transmission || 'N/A'}`;
-          vehicleContext += `\n  Origine: ${v.source === 'che168' ? 'Chine' : v.source === 'encar' ? 'Coree du Sud' : v.source === 'dongchedi' ? 'Chine' : v.source || 'N/A'}`;
+          vehicleContext += `\n  Origine: ${getOriginName(v.source)}`;
           vehicleContext += `\n  Lien: /cars/${v.id}`;
         });
+        if (matchingVehicles.length > 3) {
+          vehicleContext += `\n\n(${matchingVehicles.length - 3} autres vehicules disponibles dans cette categorie)`;
+        }
       } else if (brands.length > 0 || keywords.length > 0) {
         vehicleContext += `\n\nAUCUN VEHICULE TROUVE pour "${searchedBrandsText || searchedKeywordsText}".`;
       }
 
-      if (otherVehicles.length > 0) {
+      if (otherVehicles.length > 0 && matchingVehicles.length === 0) {
+        // Only show suggestions if no matching vehicles found - limit to 3
         vehicleContext += `\n\nAUTRES VEHICULES DISPONIBLES (suggestions):`;
-        otherVehicles.slice(0, 5).forEach(v => {
-          const formattedPrice = formatPriceInCurrency(v.current_price_usd, userCurrency, userExchangeRate);
-          vehicleContext += `\n- ${v.make} ${v.model} ${v.year} | ${formattedPrice} | ${v.mileage?.toLocaleString() || 'N/A'} km | ID: ${v.id}`;
+        otherVehicles.slice(0, 3).forEach(v => {
+          const displayPrice = getDisplayPrice(v);
+          const formattedPrice = formatPriceInCurrency(displayPrice, userCurrency, userExchangeRate);
+          vehicleContext += `\n- ${v.make} ${v.model} ${v.year} | ${formattedPrice} | ${v.mileage?.toLocaleString() || 'N/A'} km`;
+          vehicleContext += `\n  Lien: /cars/${v.id}`;
         });
       }
     } else if (brands.length > 0 || keywords.length > 0) {
