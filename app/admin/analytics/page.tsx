@@ -76,6 +76,10 @@ interface ProfitData {
     totalProfitUSD: number;
     avgProfitPercentage: number | null;
   }>;
+  exchangeRate?: {
+    xafToUsd: number;
+    description: string;
+  };
   orders: Array<{
     orderId: string;
     orderNumber: string;
@@ -87,6 +91,7 @@ interface ProfitData {
     orderStatus: string;
     createdAt: string;
     drivebyPriceUSD: number;
+    drivebyPriceXAF: number | null;
     sourcePriceUSD: number | null;
     profitUSD: number | null;
     profitPercentage: number | null;
@@ -888,20 +893,28 @@ export default function AdminAnalyticsPage() {
               </div>
             </div>
 
+            {/* Exchange Rate Info */}
+            {profitData.exchangeRate && (
+              <div className="bg-[var(--surface)] rounded-xl p-3 mb-6 flex items-center gap-2 text-sm">
+                <span className="text-[var(--text-muted)]">Taux de change:</span>
+                <span className="font-mono text-[var(--text-primary)]">{profitData.exchangeRate.description}</span>
+              </div>
+            )}
+
             {/* By Source Breakdown */}
             {Object.keys(profitData.bySource).length > 0 && (
               <div className="bg-[var(--surface)] rounded-xl p-4 mb-6">
                 <h3 className="font-medium text-[var(--text-primary)] mb-4">Bénéfices par source</h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm table-fixed">
                     <thead>
                       <tr className="border-b border-[var(--card-border)]">
-                        <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Source</th>
-                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Commandes</th>
-                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Driveby</th>
-                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Source</th>
-                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Bénéfice</th>
-                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Marge</th>
+                        <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium w-[120px]">Source</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium w-[100px]">Commandes</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium w-[140px]">Prix Driveby</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium w-[140px]">Prix Source</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium w-[120px]">Bénéfice</th>
+                        <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium w-[80px]">Marge</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -948,7 +961,8 @@ export default function AdminAnalyticsPage() {
                       <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Commande</th>
                       <th className="text-left py-2 px-3 text-[var(--text-muted)] font-medium">Véhicule</th>
                       <th className="text-center py-2 px-3 text-[var(--text-muted)] font-medium">Source</th>
-                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Driveby</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Client (XAF)</th>
+                      <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Client (USD)</th>
                       <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Prix Source</th>
                       <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Bénéfice</th>
                       <th className="text-right py-2 px-3 text-[var(--text-muted)] font-medium">Marge</th>
@@ -972,7 +986,13 @@ export default function AdminAnalyticsPage() {
                              order.vehicleSource === 'dubai' ? '🇦🇪' : '🌍'}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-right text-royal-blue">
+                        <td className="py-2 px-3 text-right text-[var(--text-primary)]">
+                          {order.drivebyPriceXAF !== null
+                            ? `${formatNumber(order.drivebyPriceXAF)} FCFA`
+                            : <span className="text-[var(--text-muted)]">N/A</span>
+                          }
+                        </td>
+                        <td className="py-2 px-3 text-right text-royal-blue font-medium">
                           ${formatNumber(order.drivebyPriceUSD)}
                         </td>
                         <td className="py-2 px-3 text-right text-mandarin">

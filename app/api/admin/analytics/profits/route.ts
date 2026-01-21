@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
 
-// Note: We use start_price_usd from vehicles table as the source price
-// This is the price already converted to USD during sync from source APIs
+// Note:
+// - Prix Driveby = total_cost_xaf converted to USD (what customer pays)
+// - Prix Source = start_price_usd from vehicles table (source auction price)
+// - XAF to USD rate: ~630 XAF = 1 USD (approximate, we'll fetch real rate)
 
 interface ProfitAnalysis {
   orderId: string;
@@ -15,11 +17,30 @@ interface ProfitAnalysis {
   orderStatus: string;
   createdAt: string;
   // Prices
-  drivebyPriceUSD: number; // Price shown to customer (Driveby price)
+  drivebyPriceUSD: number; // Customer price (total_cost_xaf converted to USD)
+  drivebyPriceXAF: number | null; // Customer price in XAF
   sourcePriceUSD: number | null; // Source price in USD (start_price_usd from vehicles)
   // Profits
   profitUSD: number | null; // Driveby price - source price
   profitPercentage: number | null; // Profit margin percentage
+}
+
+// Get XAF to USD exchange rate
+async function getXafToUsdRate(): Promise<number> {
+  try {
+    const response = await fetch(
+      'https://api.exchangerate-api.com/v4/latest/USD',
+      { next: { revalidate: 3600 } } // Cache for 1 hour
+    );
+    if (response.ok) {
+      const data = await response.json();
+      // Rate is USD -> XAF, so we need XAF (e.g., 1 USD = 630 XAF)
+      return data.rates?.XAF || 630;
+    }
+  } catch (error) {
+    console.error('Error fetching exchange rate:', error);
+  }
+  return 630; // Default rate if API fails
 }
 
 // GET: Fetch profit analysis for all orders
@@ -33,14 +54,20 @@ export async function GET() {
 
     const supabase = adminCheck.supabase;
 
+    // Get XAF to USD exchange rate
+    const xafToUsdRate = await getXafToUsdRate();
+
     // Fetch all orders with their associated vehicles
-    const { data: ordersRaw, error: ordersError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseAny = supabase as any;
+    const { data: ordersRaw, error: ordersError } = await supabaseAny
       .from('orders')
       .select(`
         id,
         order_number,
         vehicle_id,
         vehicle_price_usd,
+        total_cost_xaf,
         destination_country,
         status,
         created_at
@@ -53,27 +80,22 @@ export async function GET() {
     }
 
     // Get vehicle IDs from orders
-    const orderVehicleIds = [...new Set((ordersRaw || []).map(o => o.vehicle_id).filter(Boolean))];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orderVehicleIds = [...new Set((ordersRaw || []).map((o: any) => o.vehicle_id).filter(Boolean))];
 
-    // Fetch vehicle details (make, model, year, source, original prices)
-    // Note: original_price and original_currency may not exist in all deployments
+    // Fetch vehicle details (make, model, year, source, start_price_usd)
     let vehicleDetails: Record<string, {
       make: string | null;
       model: string | null;
       year: number | null;
       source: string | null;
-      original_price: number | null;
-      original_currency: string | null;
       start_price_usd: number | null;
     }> = {};
 
     if (orderVehicleIds.length > 0) {
-      // Use raw query to handle columns that may not exist in TypeScript types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const supabaseAny = supabase as any;
       const { data: vehiclesData } = await supabaseAny
         .from('vehicles')
-        .select('id, make, model, year, source, original_price, original_currency, start_price_usd')
+        .select('id, make, model, year, source, start_price_usd')
         .in('id', orderVehicleIds);
 
       if (vehiclesData && Array.isArray(vehiclesData)) {
@@ -84,8 +106,6 @@ export async function GET() {
             model: v.model || null,
             year: v.year || null,
             source: v.source || null,
-            original_price: v.original_price || null,
-            original_currency: v.original_currency || null,
             start_price_usd: v.start_price_usd || null,
           };
           return acc;
@@ -94,8 +114,13 @@ export async function GET() {
     }
 
     // Transform orders with vehicle details
-    const orders = (ordersRaw || []).map(o => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orders = (ordersRaw || []).map((o: any) => {
       const vehicle = vehicleDetails[o.vehicle_id] || {};
+      // Calculate customer price in USD from total_cost_xaf
+      const totalCostXaf = o.total_cost_xaf || 0;
+      const drivebyPriceUSD = totalCostXaf > 0 ? Math.round(totalCostXaf / xafToUsdRate) : (o.vehicle_price_usd || 0);
+
       return {
         id: o.id,
         order_number: o.order_number || `ORD-${o.id.substring(0, 8).toUpperCase()}`,
@@ -103,13 +128,12 @@ export async function GET() {
         vehicle_make: vehicle.make || 'N/A',
         vehicle_model: vehicle.model || 'N/A',
         vehicle_year: vehicle.year || 0,
-        vehicle_price_usd: o.vehicle_price_usd,
+        driveby_price_usd: drivebyPriceUSD,
+        total_cost_xaf: totalCostXaf,
         vehicle_source: vehicle.source || 'china',
         destination_country: o.destination_country,
         order_status: o.status || 'processing',
         created_at: o.created_at,
-        original_price: vehicle.original_price,
-        original_currency: vehicle.original_currency,
         start_price_usd: vehicle.start_price_usd,
       };
     });
@@ -121,22 +145,23 @@ export async function GET() {
     let ordersWithPriceData = 0;
 
     for (const order of orders) {
-      const vehiclePriceUSD = order.vehicle_price_usd || 0; // Driveby price shown to customer
+      const drivebyPriceUSD = order.driveby_price_usd || 0; // Customer price (from total_cost_xaf)
+      const totalCostXaf = order.total_cost_xaf || null;
       const sourcePriceUSD = order.start_price_usd || null; // Source price from vehicles table
 
       let profitUSD: number | null = null;
       let profitPercentage: number | null = null;
 
-      // Calculate profit if we have source price
-      if (sourcePriceUSD !== null && sourcePriceUSD > 0) {
-        profitUSD = vehiclePriceUSD - sourcePriceUSD;
+      // Calculate profit if we have both prices
+      if (sourcePriceUSD !== null && sourcePriceUSD > 0 && drivebyPriceUSD > 0) {
+        profitUSD = drivebyPriceUSD - sourcePriceUSD;
         profitPercentage = Math.round((profitUSD / sourcePriceUSD) * 100 * 10) / 10;
         totalSourcePriceUSD += sourcePriceUSD;
         ordersWithPriceData++;
       }
 
       // Accumulate totals
-      totalDrivebyPriceUSD += vehiclePriceUSD;
+      totalDrivebyPriceUSD += drivebyPriceUSD;
 
       profitAnalysis.push({
         orderId: order.id,
@@ -148,7 +173,8 @@ export async function GET() {
         destinationCountry: order.destination_country || 'N/A',
         orderStatus: order.order_status,
         createdAt: order.created_at,
-        drivebyPriceUSD: vehiclePriceUSD,
+        drivebyPriceUSD,
+        drivebyPriceXAF: totalCostXaf,
         sourcePriceUSD,
         profitUSD,
         profitPercentage,
@@ -208,6 +234,10 @@ export async function GET() {
         avgProfitPercentage,
       },
       bySource,
+      exchangeRate: {
+        xafToUsd: xafToUsdRate,
+        description: `1 USD = ${xafToUsdRate.toFixed(2)} XAF`,
+      },
       orders: profitAnalysis,
       generatedAt: new Date().toISOString(),
     });
