@@ -721,6 +721,17 @@ export default function AdminOrdersPage() {
                     <p className="text-sm text-[var(--text-muted)]">
                       {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
                     </p>
+                    {selectedOrder.vehicle_id && (
+                      <a
+                        href={`/cars/${selectedOrder.vehicle_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-nobel hover:text-jewel hover:bg-jewel/10 rounded transition-colors"
+                        title="Voir sur Driveby Africa"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </a>
+                    )}
                     {selectedOrder.vehicle_source_url && (
                       <a
                         href={selectedOrder.vehicle_source_url}

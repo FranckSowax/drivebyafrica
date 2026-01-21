@@ -720,17 +720,29 @@ export default function AdminQuotesPage() {
                         Source: {selectedQuote.vehicle_source}
                       </p>
                     </div>
-                    {selectedQuote.vehicle_source_url && (
-                      <a
-                        href={selectedQuote.vehicle_source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
-                        title="Voir sur le site source"
-                      >
-                        <ExternalLink className="w-5 h-5" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {selectedQuote.vehicle_id && (
+                        <Link
+                          href={`/cars/${selectedQuote.vehicle_id}`}
+                          target="_blank"
+                          className="p-2 text-nobel hover:text-jewel hover:bg-jewel/10 rounded-lg transition-colors"
+                          title="Voir sur Driveby Africa"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </Link>
+                      )}
+                      {selectedQuote.vehicle_source_url && (
+                        <a
+                          href={selectedQuote.vehicle_source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
+                          title="Voir sur le site source"
+                        >
+                          <ExternalLink className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
