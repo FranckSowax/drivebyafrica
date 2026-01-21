@@ -15,8 +15,8 @@ const ALLOWED_DOMAINS = [
   'autoimg.cn',  // CHE168 images
 ];
 
-// Timeout for fetching images (10 seconds)
-const FETCH_TIMEOUT = 10000;
+// Timeout for fetching images (8 seconds - must be less than Netlify's 10s limit)
+const FETCH_TIMEOUT = 8000;
 
 /**
  * Calculate appropriate cache duration based on image URL expiry
@@ -133,14 +133,20 @@ export async function GET(request: NextRequest) {
     // Calculate cache control based on image expiry
     const cacheControl = getCacheControl(decodedUrl);
 
+    // For CHE168 images, cache aggressively since URLs don't expire
+    // For Dongchedi, use calculated cache based on x-expires
+    const isAutoimg = decodedUrl.includes('autoimg.cn');
+    const finalCacheControl = isAutoimg
+      ? 'public, max-age=86400, s-maxage=86400' // 24 hours for CHE168
+      : cacheControl;
+
     return new NextResponse(imageBuffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        // Completely disable caching on both CDN and browser to fix same-image bug
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'CDN-Cache-Control': 'no-store',
-        'Netlify-CDN-Cache-Control': 'no-store',
+        'Cache-Control': finalCacheControl,
+        'CDN-Cache-Control': finalCacheControl,
+        'Netlify-CDN-Cache-Control': finalCacheControl,
         'Netlify-Vary': 'query',
         'Access-Control-Allow-Origin': '*',
       },
