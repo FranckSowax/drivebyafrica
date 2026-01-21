@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
-import { sendStatusChangeNotification } from '@/lib/whatsapp/send-status-notification';
+import { enqueueStatusNotification } from '@/lib/notifications/enqueue-status-notification';
 
 // Order statuses for tracking (13-step workflow)
 const ORDER_STATUSES = [
@@ -361,6 +361,9 @@ export async function PUT(request: Request) {
         );
       }
 
+      // Store old status for logging
+      const oldStatus = order.status || 'processing';
+
       // Fetch profile separately for WhatsApp notification
       let profile: { full_name: string | null; whatsapp_number: string | null; phone: string | null } | null = null;
       if (order.user_id) {
@@ -452,43 +455,56 @@ export async function PUT(request: Request) {
         }
       }
 
-      // Send WhatsApp notification (profile and vehicle were fetched earlier)
-      let whatsappResult: { success: boolean; error?: string; messageId?: string; messagesCount?: number } = { success: false, error: 'Non envoyé' };
+      // Enqueue WhatsApp notification (robust queue system with retries)
+      let notificationResult: { success: boolean; queueId?: string; error?: string } = { success: false, error: 'Non envoyé' };
       if (sendWhatsApp && order) {
         const whatsappNumber = profile?.whatsapp_number || profile?.phone;
 
         if (whatsappNumber) {
-          const vehicleName = vehicle
-            ? `${vehicle.make} ${vehicle.model} ${vehicle.year || ''}`
-            : 'Votre véhicule';
-
           // Get uploaded documents for this status
           const uploadedDocs = Array.isArray(order.uploaded_documents)
             ? (order.uploaded_documents as { name: string; url: string; type: string; status?: string; visible_to_client?: boolean }[])
                 .filter(d => d.status === orderStatus || !d.status)
+                .map(d => ({
+                  name: d.name,
+                  url: d.url,
+                  type: d.type as 'image' | 'pdf' | 'link',
+                  visibleToClient: d.visible_to_client !== false
+                }))
             : [];
 
-          whatsappResult = await sendStatusChangeNotification({
-            phone: whatsappNumber,
-            customerName: profile?.full_name || 'Client',
-            orderNumber: order.order_number || `ORD-${orderId.slice(0, 8).toUpperCase()}`,
+          notificationResult = await enqueueStatusNotification({
+            recipientPhone: whatsappNumber,
+            recipientName: profile?.full_name || 'Client',
+            recipientUserId: order.user_id,
             orderId: orderId,
-            vehicleName: vehicleName.trim(),
+            quoteId: order.quote_id || undefined,
+            orderNumber: order.order_number || `ORD-${orderId.slice(0, 8).toUpperCase()}`,
+            previousStatus: oldStatus,
             newStatus: orderStatus,
+            vehicleInfo: vehicle ? {
+              make: vehicle.make,
+              model: vehicle.model,
+              year: vehicle.year || new Date().getFullYear()
+            } : undefined,
             documents: uploadedDocs,
+            note: noteText,
             eta: eta || order.estimated_arrival,
-            language: 'fr', // Default to French for African markets
+            triggeredBy: adminCheck.user.id,
+            triggeredByEmail: adminCheck.user.email || undefined,
+            triggeredByRole: 'admin'
           });
 
-          console.log('WhatsApp notification result:', whatsappResult);
+          console.log('Notification enqueued:', notificationResult);
         }
       }
 
       return NextResponse.json({
         success: true,
         status: orderStatus,
-        whatsappSent: whatsappResult.success,
-        whatsappError: whatsappResult.error,
+        notificationQueued: notificationResult.success,
+        notificationQueueId: notificationResult.queueId,
+        notificationError: notificationResult.error,
       });
     }
 
@@ -574,41 +590,56 @@ export async function PUT(request: Request) {
       trackingData = data;
     }
 
-    // Send WhatsApp notification for legacy quotes
-    let whatsappResult: { success: boolean; error?: string; messageId?: string; messagesCount?: number } = { success: false, error: 'Non envoyé' };
+    // Enqueue WhatsApp notification for legacy quotes
+    const legacyOldStatus = existingTracking?.order_status || 'deposit_paid';
+    let notificationResult: { success: boolean; queueId?: string; error?: string } = { success: false, error: 'Non envoyé' };
     if (sendWhatsApp && quote) {
       const whatsappNumber = quoteProfile?.whatsapp_number || quoteProfile?.phone;
 
       if (whatsappNumber) {
-        const vehicleName = `${quote.vehicle_make} ${quote.vehicle_model} ${quote.vehicle_year || ''}`;
-
         // Get uploaded documents from tracking
         const uploadedDocs = existingTracking?.uploaded_documents
           ? (existingTracking.uploaded_documents as { name: string; url: string; type: string; status?: string; visible_to_client?: boolean }[])
               .filter((d: { status?: string }) => d.status === orderStatus || !d.status)
+              .map(d => ({
+                name: d.name,
+                url: d.url,
+                type: d.type as 'image' | 'pdf' | 'link',
+                visibleToClient: d.visible_to_client !== false
+              }))
           : [];
 
-        whatsappResult = await sendStatusChangeNotification({
-          phone: whatsappNumber,
-          customerName: quoteProfile?.full_name || 'Client',
+        notificationResult = await enqueueStatusNotification({
+          recipientPhone: whatsappNumber,
+          recipientName: quoteProfile?.full_name || 'Client',
+          recipientUserId: quote.user_id,
+          quoteId: quoteId,
           orderNumber: quote.quote_number?.replace('QT-', 'ORD-') || `ORD-${quoteId.slice(0, 8).toUpperCase()}`,
-          orderId: quoteId,
-          vehicleName: vehicleName.trim(),
+          previousStatus: legacyOldStatus,
           newStatus: orderStatus,
+          vehicleInfo: {
+            make: quote.vehicle_make,
+            model: quote.vehicle_model,
+            year: quote.vehicle_year || new Date().getFullYear()
+          },
           documents: uploadedDocs,
+          note: noteText,
           eta: eta || existingTracking?.shipping_eta,
-          language: 'fr', // Default to French for African markets
+          triggeredBy: adminCheck.user.id,
+          triggeredByEmail: adminCheck.user.email || undefined,
+          triggeredByRole: 'admin'
         });
 
-        console.log('WhatsApp notification result (legacy):', whatsappResult);
+        console.log('Notification enqueued (legacy):', notificationResult);
       }
     }
 
     return NextResponse.json({
       success: true,
       tracking: trackingData,
-      whatsappSent: whatsappResult.success,
-      whatsappError: whatsappResult.error,
+      notificationQueued: notificationResult.success,
+      notificationQueueId: notificationResult.queueId,
+      notificationError: notificationResult.error,
     });
   } catch (error) {
     console.error('Error updating order tracking:', error);
