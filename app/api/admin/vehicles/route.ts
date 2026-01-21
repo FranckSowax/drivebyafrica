@@ -86,12 +86,12 @@ export async function GET(request: NextRequest) {
         model,
         year,
         mileage,
-        price_usd,
         current_price_usd,
         start_price_usd,
+        buy_now_price_usd,
         status,
         is_visible,
-        thumbnail_url,
+        images,
         created_at,
         updated_at
       `);
