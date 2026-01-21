@@ -142,11 +142,11 @@ export async function GET(request: Request) {
     }
 
     // Fetch vehicles for orders
-    let vehicles: Record<string, { make: string | null; model: string | null; year: number | null; source: string | null; images: string[] | null }> = {};
+    let vehicles: Record<string, { make: string | null; model: string | null; year: number | null; source: string | null; images: string[] | null; source_url: string | null }> = {};
     if (vehicleIds.length > 0) {
       const { data: vehiclesData } = await supabase
         .from('vehicles')
-        .select('id, make, model, year, source, images')
+        .select('id, make, model, year, source, images, source_url')
         .in('id', vehicleIds);
 
       if (vehiclesData) {
@@ -157,6 +157,7 @@ export async function GET(request: Request) {
             year: v.year,
             source: v.source,
             images: v.images,
+            source_url: v.source_url,
           };
           return acc;
         }, {} as typeof vehicles);
@@ -202,6 +203,7 @@ export async function GET(request: Request) {
         vehicle_year: vehicle.year || 0,
         vehicle_price_usd: o.vehicle_price_usd,
         vehicle_source: vehicle.source || 'china',
+        vehicle_source_url: vehicle.source_url || null,
         vehicle_image_url: vehicle.images?.[0] || null,
         destination_country: o.destination_country,
         destination_name: o.destination_port || o.destination_city,
@@ -223,6 +225,24 @@ export async function GET(request: Request) {
       };
     });
 
+    // Fetch vehicle source URLs for legacy quotes
+    const legacyVehicleIds = [...new Set((quotes || []).map(q => q.vehicle_id).filter(Boolean))];
+    let legacyVehicleSourceUrls: Record<string, string | null> = {};
+
+    if (legacyVehicleIds.length > 0) {
+      const { data: legacyVehiclesData } = await supabase
+        .from('vehicles')
+        .select('id, source_url')
+        .in('id', legacyVehicleIds);
+
+      if (legacyVehiclesData) {
+        legacyVehicleSourceUrls = legacyVehiclesData.reduce((acc, v) => {
+          acc[v.id] = v.source_url;
+          return acc;
+        }, {} as Record<string, string | null>);
+      }
+    }
+
     // Transform legacy quotes (quotes without orders)
     const transformedQuotes = (quotes || []).map(q => ({
       id: q.id,
@@ -236,6 +256,7 @@ export async function GET(request: Request) {
       vehicle_year: q.vehicle_year,
       vehicle_price_usd: q.vehicle_price_usd,
       vehicle_source: q.vehicle_source,
+      vehicle_source_url: q.vehicle_id ? legacyVehicleSourceUrls[q.vehicle_id] || null : null,
       vehicle_image_url: null,
       destination_country: q.destination_country,
       destination_name: q.destination_name,

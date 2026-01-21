@@ -56,6 +56,7 @@ interface Order {
   vehicle_year: number;
   vehicle_price_usd: number;
   vehicle_source: string;
+  vehicle_source_url?: string | null;
   vehicle_image_url?: string | null;
   destination_country: string;
   destination_name: string;
@@ -665,6 +666,17 @@ function CollaboratorOrdersContent() {
                                   {order.vehicle_year} - {formatPrice(order.vehicle_price_usd)}
                                 </p>
                               </div>
+                              {order.vehicle_source_url && (
+                                <a
+                                  href={order.vehicle_source_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
+                                  title={locale === 'zh' ? '查看原始列表' : 'View source listing'}
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              )}
                             </div>
                           </td>
                           <td className="py-4 px-4">
@@ -806,9 +818,22 @@ function CollaboratorOrdersContent() {
                     <h3 className="text-lg font-bold text-white">
                       {locale === 'zh' ? '订单' : 'Order'} {selectedOrder.order_number}
                     </h3>
-                    <p className="text-sm text-gray-400">
-                      {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-gray-400">
+                        {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
+                      </p>
+                      {selectedOrder.vehicle_source_url && (
+                        <a
+                          href={selectedOrder.vehicle_source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded transition-colors"
+                          title={locale === 'zh' ? '查看原始列表' : 'View source listing'}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleCloseModal} className="text-gray-400 hover:text-white">
