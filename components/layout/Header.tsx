@@ -81,9 +81,7 @@ export function Header() {
             <LocaleSwitcher />
 
             {/* Theme Toggle */}
-            <div className="hidden sm:block">
-              <ThemeToggle />
-            </div>
+            <ThemeToggle />
 
             {renderAuthSection()}
           </div>
