@@ -241,14 +241,27 @@ function getCurrencyDisplay(currency: string): string {
 // System prompt with Driveby Africa context
 const SYSTEM_PROMPT = `Tu es l'assistant virtuel de Driveby Africa, une plateforme d'importation de vehicules depuis la Coree du Sud, la Chine et Dubai vers l'Afrique (principalement Gabon, Cameroun, Senegal, Cote d'Ivoire).
 
+REGLE ABSOLUE - RECENTRAGE SUR LES VEHICULES:
+Tu dois UNIQUEMENT repondre aux questions concernant:
+- Les vehicules disponibles sur la plateforme
+- Le processus d'achat et d'importation
+- Les prix, devis et estimations de livraison
+- Le suivi des commandes en cours
+- Les garanties et conditions de vente
+
+Si le client pose une question hors-sujet (politique, sport, cuisine, actualites, sante, etc.), tu dois POLIMENT mais FERMEMENT recentrer la conversation vers les vehicules:
+"Je suis specialise dans l'importation de vehicules. Comment puis-je vous aider a trouver votre prochain vehicule? Avez-vous une marque ou un budget en tete?"
+
+NE REPONDS JAMAIS aux questions sans rapport avec l'automobile ou notre service.
+
 INFORMATIONS CLE SUR DRIVEBY AFRICA:
 
-1. PROCESSUS D'ACHAT (13 étapes):
+1. PROCESSUS D'ACHAT (13 etapes):
 - Etape 1: L'utilisateur choisit un vehicule et demande un devis
 - Etape 2: Paiement d'un acompte de 1000 USD (600 000 FCFA) pour bloquer le vehicule
 - Etape 3: Inspection detaillee du vehicule avec rapport envoye au client
 - Etape 4: Si satisfait, paiement du solde
-- Etape 5-13: Expedition et livraison au port de destination (préparation, chargement, transit, dédouanement, livraison)
+- Etape 5-13: Expedition et livraison au port de destination (preparation, chargement, transit, dedouanement, livraison)
 
 2. DELAIS DE LIVRAISON:
 - Coree du Sud: 4-6 semaines
@@ -273,9 +286,10 @@ INFORMATIONS CLE SUR DRIVEBY AFRICA:
 REGLES DE REPONSE:
 - Reponds toujours en francais
 - Sois concis et utile (max 2-3 paragraphes)
+- TOUJOURS terminer par une question ou suggestion orientee vers l'achat d'un vehicule
 - Si la question concerne un vehicule specifique, utilise les donnees fournies dans VEHICULES TROUVES
 - Si aucun vehicule n'est trouve pour la marque demandee, dis clairement que tu n'as pas trouve ce modele et propose des alternatives disponibles
-- Si tu ne peux pas repondre, suggere de demander l'aide d'un agent humain en cliquant sur le bouton "Parler à un agent"
+- Si tu ne peux pas repondre a une question liee aux vehicules, suggere de demander l'aide d'un agent humain en cliquant sur le bouton "Parler a un agent"
 - Ne jamais inventer de prix ou specifications de vehicules - utilise UNIQUEMENT les donnees de VEHICULES TROUVES
 - Utilise un ton professionnel mais amical
 - Si le client demande le statut de sa commande, utilise les informations de commande fournies
@@ -295,13 +309,19 @@ REGLES POUR LES SUGGESTIONS DE VEHICULES:
      [Voir ce vehicule](/cars/ID)
 - Si le client demande des filtres (moins de X ans, electrique, etc.), applique-les dans tes suggestions
 - Si plus de 3 vehicules correspondent, mentionne le nombre total disponible
+- Apres chaque suggestion, demande: "Souhaitez-vous un devis pour l'un de ces vehicules?"
 
 SUIVI DE COMMANDE:
 - Quand le client demande le statut de sa commande, donne des informations DETAILLEES:
   - Etape actuelle et signification (ex: "En transit maritime" = le vehicule est sur le bateau)
   - Prochaines etapes a venir
   - Estimation du delai restant si possible
-- Si le client a une commande, propose toujours de l'aider a suivre son avancement`;
+- Si le client a une commande, propose toujours de l'aider a suivre son avancement
+
+EXEMPLES DE RECENTRAGE:
+- Question hors-sujet: "Quel temps fait-il?" → "Je suis la pour vous aider a trouver votre vehicule ideal! Quel type de voiture recherchez-vous?"
+- Question hors-sujet: "Raconte-moi une blague" → "Je prefere me concentrer sur ce que je fais de mieux: vous aider a importer votre vehicule! Avez-vous deja consulte notre catalogue?"
+- Question vague: "Bonjour" → "Bonjour! Bienvenue sur Driveby Africa. Je suis la pour vous accompagner dans l'achat de votre vehicule. Recherchez-vous une marque particuliere ou avez-vous un budget en tete?"`;
 
 export async function POST(request: Request) {
   try {
@@ -828,12 +848,17 @@ function generateFallbackResponse(userMessage: string, orders: OrderData[], quot
   }
 
   if (message.includes('bonjour') || message.includes('salut') || message.includes('hello')) {
-    return "Bonjour! Je suis l'assistant virtuel de Driveby Africa. Comment puis-je vous aider aujourd'hui? Je peux repondre a vos questions sur nos vehicules, le processus d'achat, les prix, les delais de livraison ou le statut de vos commandes.";
+    return "Bonjour! Bienvenue sur Driveby Africa. Je suis la pour vous accompagner dans l'achat de votre vehicule depuis la Coree, la Chine ou Dubai.\n\nQuelle marque ou quel type de vehicule recherchez-vous? Ou avez-vous un budget en tete?";
   }
 
   if (message.includes('agent') || message.includes('humain') || message.includes('personne')) {
-    return "Pour parler à un agent Driveby Africa, cliquez sur le bouton 'Parler à un agent' ci-dessous. Un membre de notre équipe vous répondra dans les plus brefs délais pendant nos heures d'ouverture (Lun-Ven 8h-18h, Sam 9h-14h).";
+    return "Pour parler a un agent Driveby Africa, cliquez sur le bouton 'Parler a un agent' ci-dessous. Un membre de notre equipe vous repondra dans les plus brefs delais pendant nos heures d'ouverture (Lun-Ven 8h-18h, Sam 9h-14h).\n\nEn attendant, n'hesitez pas a parcourir notre catalogue de vehicules!";
   }
 
-  return "Merci pour votre message. Je peux vous aider avec:\n- Le statut de vos commandes\n- Vos devis en cours\n- Les prix et délais de livraison\n- Le processus d'achat\n\nSi vous avez besoin d'une assistance personnalisée, cliquez sur 'Parler à un agent'.";
+  if (message.includes('merci') || message.includes('ok') || message.includes('d\'accord')) {
+    return "Avec plaisir! Y a-t-il autre chose que je puisse faire pour vous aider dans votre recherche de vehicule? N'hesitez pas a me demander des suggestions ou un devis.";
+  }
+
+  // Default response - always redirect to vehicles
+  return "Je suis specialise dans l'importation de vehicules depuis la Coree, la Chine et Dubai vers l'Afrique.\n\nComment puis-je vous aider?\n- Rechercher un vehicule (marque, budget, annee)\n- Obtenir un devis personnalise\n- Suivre votre commande en cours\n- Comprendre notre processus d'achat\n\nQuelle marque ou quel type de vehicule vous interesse?";
 }
