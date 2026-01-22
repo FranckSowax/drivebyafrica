@@ -153,7 +153,26 @@ export function TransitairesSuggestion({
   }
 
   if (transitaires.length === 0) {
-    return null;
+    return (
+      <Card className="overflow-hidden border-nobel/20 bg-gradient-to-br from-cod-gray to-cod-gray/80">
+        <div className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-nobel/20 flex items-center justify-center">
+              <Briefcase className="w-5 h-5 text-gray-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">Transitaires recommandés</h3>
+              <p className="text-sm text-gray-400">
+                Aucun transitaire disponible pour {destinationPort || destinationCountry} pour le moment.
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-3">
+            Contactez-nous si vous avez besoin d&apos;aide pour le dédouanement de votre véhicule.
+          </p>
+        </div>
+      </Card>
+    );
   }
 
   return (
