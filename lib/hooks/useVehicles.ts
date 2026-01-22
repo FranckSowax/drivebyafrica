@@ -165,8 +165,8 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use estimated count instead of exact to avoid slow COUNT(*) on large tables
-      'Prefer': 'count=estimated',
+      // Use exact count for accurate pagination - estimated can be inaccurate
+      'Prefer': 'count=exact',
     },
   });
 
@@ -178,7 +178,7 @@ async function fetchVehicles(
   const vehicles = (data as Vehicle[]) || [];
 
   // Get total count from Content-Range header
-  // With count=estimated, this uses PostgreSQL statistics which is much faster
+  // With count=exact, this gives accurate total for pagination
   const contentRange = response.headers.get('Content-Range');
   let totalCount = 0;
   if (contentRange) {
