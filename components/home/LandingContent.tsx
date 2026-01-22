@@ -1,8 +1,9 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Car, Shield, Truck, Headphones } from 'lucide-react';
+import { ArrowRight, Car, Shield, Truck, Headphones, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { VehicleCard } from '@/components/vehicles/VehicleCard';
@@ -31,30 +32,33 @@ interface LandingContentProps {
 
 export function LandingContent({ featuredVehicles }: LandingContentProps) {
   const { t } = useTranslation();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  const toggleVideo = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
       {/* Hero Section */}
       <section className="relative min-h-[85vh] lg:min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background - Image on mobile, Video on desktop */}
+        {/* Background Video */}
         <div className="absolute inset-0">
-          {/* Mobile: Static image (better performance, saves data) */}
-          <div className="block lg:hidden absolute inset-0">
-            <Image
-              src="/banner driveby.jpg"
-              alt="Driveby Africa Banner"
-              fill
-              className="object-cover object-center"
-              priority
-            />
-          </div>
-          {/* Desktop: Video background */}
           <video
+            ref={videoRef}
             autoPlay
             loop
             muted
             playsInline
-            className="hidden lg:block absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             poster="/banner driveby.jpg"
           >
             <source src="/hero-video.webm" type="video/webm" />
@@ -63,6 +67,19 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
           {/* Overlay - adjusted for mobile readability */}
           <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-l from-black/80 via-black/60 to-black/40 lg:from-black/70 lg:via-black/50 lg:to-transparent" />
         </div>
+
+        {/* Video Play/Pause Button */}
+        <button
+          onClick={toggleVideo}
+          className="absolute bottom-6 left-6 z-20 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full border border-white/20 transition-all duration-200 group"
+          aria-label={isPlaying ? 'Pause video' : 'Play video'}
+        >
+          {isPlaying ? (
+            <Pause className="w-5 h-5 text-white group-hover:text-mandarin transition-colors" />
+          ) : (
+            <Play className="w-5 h-5 text-white group-hover:text-mandarin transition-colors" />
+          )}
+        </button>
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex justify-center lg:justify-end">
