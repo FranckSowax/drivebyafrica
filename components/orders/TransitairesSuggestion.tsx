@@ -39,7 +39,6 @@ interface TransitairesSuggestionProps {
   destinationCountry: string;
   destinationPort?: string;
   orderId: string;
-  orderStatus: string;
 }
 
 const SPECIALTY_LABELS: Record<string, string> = {
@@ -61,30 +60,18 @@ export function TransitairesSuggestion({
   destinationCountry,
   destinationPort,
   orderId,
-  orderStatus,
 }: TransitairesSuggestionProps) {
   const [transitaires, setTransitaires] = useState<Transitaire[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true); // Expanded by default
   const [selectedTransitaire, setSelectedTransitaire] = useState<string | null>(null);
   const toast = useToast();
 
-  // Only show for orders that are in shipping phase or later
-  const showableStatuses = [
-    'shipping_preparation',
-    'shipped',
-    'in_transit',
-    'customs_clearance',
-    'ready_for_pickup',
-  ];
-
-  const shouldShow = showableStatuses.includes(orderStatus);
-
   useEffect(() => {
-    if (shouldShow && destinationCountry) {
+    if (destinationCountry) {
       fetchTransitaires();
     }
-  }, [destinationCountry, destinationPort, shouldShow]);
+  }, [destinationCountry, destinationPort]);
 
   const fetchTransitaires = async () => {
     setLoading(true);
@@ -156,10 +143,6 @@ export function TransitairesSuggestion({
       </div>
     );
   };
-
-  if (!shouldShow) {
-    return null;
-  }
 
   if (loading) {
     return (

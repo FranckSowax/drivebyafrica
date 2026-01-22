@@ -280,7 +280,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
             destinationCountry={orderData.destination_country || ''}
             destinationPort={orderData.destination_port || undefined}
             orderId={orderData.id}
-            orderStatus={orderData.status}
           />
 
           {/* Shipping Details */}
