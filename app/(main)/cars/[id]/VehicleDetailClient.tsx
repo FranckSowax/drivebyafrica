@@ -35,7 +35,7 @@ import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
 
 // Admin emails that can see the vehicle ID
-const ADMIN_EMAILS = ['franck.sowax@gmail.com', 'admin@drivebyafrica.com'];
+const ADMIN_EMAILS = ['franck.sowax@gmail.com', 'admin@driveby-africa.com'];
 
 interface VehicleDetailClientProps {
   vehicle: Vehicle;

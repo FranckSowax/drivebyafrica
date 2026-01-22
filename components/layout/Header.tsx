@@ -63,14 +63,14 @@ export function Header() {
           {/* Logo - Ensure clickable on mobile with proper touch target */}
           <Link
             href="/"
-            className="flex-shrink-0 relative z-20 block hover:opacity-90 active:opacity-70 transition-opacity touch-manipulation min-h-[44px] flex items-center"
+            className="flex-shrink-0 relative z-20 flex items-center justify-center hover:opacity-90 active:opacity-70 transition-opacity touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 pr-3"
           >
             <Image
               src={logoSrc}
               alt="Driveby Africa"
               width={200}
               height={50}
-              className="h-8 sm:h-10 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain pointer-events-none"
               priority
             />
           </Link>

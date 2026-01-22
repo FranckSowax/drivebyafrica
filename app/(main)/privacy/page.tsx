@@ -137,7 +137,7 @@ export default function PrivacyPage() {
                   <li><strong>Droit de limitation:</strong> restreindre le traitement de vos données</li>
                 </ul>
                 <p className="text-nobel">
-                  Pour exercer ces droits, contactez-nous à privacy@drivebyafrica.com
+                  Pour exercer ces droits, contactez-nous à privacy@driveby-africa.com
                 </p>
 
                 <h2 className="text-xl font-bold text-white">8. Cookies</h2>
@@ -188,7 +188,7 @@ export default function PrivacyPage() {
                   Pour toute question concernant cette politique ou vos données personnelles:
                 </p>
                 <ul className="text-nobel list-none pl-0 space-y-1">
-                  <li>Email: privacy@drivebyafrica.com</li>
+                  <li>Email: privacy@driveby-africa.com</li>
                   <li>WhatsApp: +241 77 00 00 00</li>
                   <li>Adresse: Central Business District, Hong Kong</li>
                 </ul>

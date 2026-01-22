@@ -513,7 +513,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
       doc.setFontSize(8);
       doc.setTextColor(darkGray);
       doc.setFont('helvetica', 'normal');
-      doc.text('Email: contact@drivebyafrica.com', margin + 5, y + 14);
+      doc.text('Email: contact@driveby-africa.com', margin + 5, y + 14);
       doc.text('Site: www.drivebyafrica.com', margin + 5, y + 20);
       doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
       doc.text('Hong Kong', margin + contentWidth / 2, y + 20);
@@ -847,7 +847,7 @@ return createPortal(
                 <div className="mt-auto bg-gray-50 p-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-gray-100">
                   <div className="space-y-1">
                     <p className="text-[8px] font-bold text-gray-400 uppercase">Email</p>
-                    <p className="text-[10px] font-medium text-gray-900">contact@drivebyafrica.com</p>
+                    <p className="text-[10px] font-medium text-gray-900">contact@driveby-africa.com</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[8px] font-bold text-gray-400 uppercase">WhatsApp</p>

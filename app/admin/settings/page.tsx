@@ -14,7 +14,7 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
     siteName: 'Driveby Africa',
     siteDescription: 'Plateforme d\'importation de véhicules pour l\'Afrique',
-    contactEmail: 'contact@drivebyafrica.com',
+    contactEmail: 'contact@driveby-africa.com',
     contactPhone: '+241 77 00 00 00',
     whatsappNumber: '+241 77 00 00 00',
     currency: 'USD',

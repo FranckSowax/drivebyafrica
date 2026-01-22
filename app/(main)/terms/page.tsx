@@ -160,7 +160,7 @@ export default function TermsPage() {
                   Pour toute question concernant ces conditions, contactez-nous:
                 </p>
                 <ul className="text-nobel list-none pl-0 space-y-1">
-                  <li>Email: legal@drivebyafrica.com</li>
+                  <li>Email: legal@driveby-africa.com</li>
                   <li>WhatsApp: +241 77 00 00 00</li>
                   <li>Adresse: Central Business District, Hong Kong</li>
                 </ul>

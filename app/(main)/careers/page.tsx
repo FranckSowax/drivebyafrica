@@ -216,7 +216,7 @@ export default function CareersPage() {
                     <p className="text-sm text-nobel mt-3">{job.description}</p>
                   </div>
                   <div className="lg:text-right">
-                    <a href={`mailto:careers@drivebyafrica.com?subject=Candidature: ${job.title}`}>
+                    <a href={`mailto:careers@driveby-africa.com?subject=Candidature: ${job.title}`}>
                       <Button variant="outline" size="sm" rightIcon={<ChevronRight className="w-4 h-4" />}>
                         Postuler
                       </Button>
@@ -283,7 +283,7 @@ export default function CareersPage() {
                 Vous ne trouvez pas le poste idéal? Envoyez-nous votre candidature,
                 nous sommes toujours à la recherche de nouveaux talents.
               </p>
-              <a href="mailto:careers@drivebyafrica.com?subject=Candidature spontanée">
+              <a href="mailto:careers@driveby-africa.com?subject=Candidature spontanée">
                 <Button
                   variant="secondary"
                   size="lg"

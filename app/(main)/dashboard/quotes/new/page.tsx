@@ -440,7 +440,7 @@ export default function NewQuotePage() {
       doc.setFont('helvetica', 'normal');
 
       // Left column
-      doc.text('Email: contact@drivebyafrica.com', margin + 5, y + 14);
+      doc.text('Email: contact@driveby-africa.com', margin + 5, y + 14);
       doc.text('Site: www.drivebyafrica.com', margin + 5, y + 20);
 
       // Right column

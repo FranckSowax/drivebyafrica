@@ -280,7 +280,7 @@ INFORMATIONS CLE SUR DRIVEBY AFRICA:
 
 5. CONTACT:
 - WhatsApp: +241 77 00 00 00
-- Email: contact@drivebyafrica.com
+- Email: contact@driveby-africa.com
 - Horaires: Lun-Ven 8h-18h, Sam 9h-14h
 
 REGLES DE REPONSE:

@@ -516,7 +516,7 @@ export default function QuotesPage() {
       doc.setTextColor(darkGray);
       doc.setFont('helvetica', 'normal');
       doc.text('Driveby Africa', margin + 5, y + 14);
-      doc.text('Email: contact@drivebyafrica.com', margin + 5, y + 20);
+      doc.text('Email: contact@driveby-africa.com', margin + 5, y + 20);
       doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
       doc.text('Site: www.drivebyafrica.com', margin + contentWidth / 2, y + 20);
 

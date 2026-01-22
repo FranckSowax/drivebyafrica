@@ -118,7 +118,7 @@ export default function AdminLoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@drivebyafrica.com"
+                  placeholder="admin@driveby-africa.com"
                   required
                   disabled={isLoading}
                   className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-royal-blue focus:ring-royal-blue disabled:opacity-50"

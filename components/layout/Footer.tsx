@@ -57,11 +57,11 @@ export function Footer() {
             </p>
             <div className="space-y-2 text-sm">
               <a
-                href="mailto:contact@drivebyafrica.com"
+                href="mailto:contact@driveby-africa.com"
                 className="flex items-center gap-2 text-[var(--text-muted)] hover:text-mandarin transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                contact@drivebyafrica.com
+                contact@driveby-africa.com
               </a>
               <a
                 href="tel:+24177000000"
