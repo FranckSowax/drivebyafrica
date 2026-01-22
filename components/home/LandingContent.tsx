@@ -36,15 +36,27 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
     <div className="min-h-screen bg-[var(--background)]">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Image */}
+        {/* Background Video */}
         <div className="absolute inset-0">
-          <Image
-            src="/banner driveby.jpg"
-            alt="Driveby Africa Banner"
-            fill
-            className="object-cover"
-            priority
-          />
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            poster="/banner driveby.jpg"
+          >
+            <source src="/hero-video.webm" type="video/webm" />
+            <source src="/hero-video.mp4" type="video/mp4" />
+            {/* Fallback image if video doesn't load */}
+            <Image
+              src="/banner driveby.jpg"
+              alt="Driveby Africa Banner"
+              fill
+              className="object-cover"
+              priority
+            />
+          </video>
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/50 to-transparent" />
         </div>
