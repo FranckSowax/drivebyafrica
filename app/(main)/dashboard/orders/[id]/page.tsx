@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { OrderDocuments } from '@/components/orders/OrderDocuments';
+import { TransitairesSuggestion } from '@/components/orders/TransitairesSuggestion';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
@@ -273,6 +274,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
               documents={orderData.uploaded_documents}
             />
           </Card>
+
+          {/* Transitaires Suggestion */}
+          <TransitairesSuggestion
+            destinationCountry={orderData.destination_country || ''}
+            destinationPort={orderData.destination_port || undefined}
+            orderId={orderData.id}
+            orderStatus={orderData.status}
+          />
 
           {/* Shipping Details */}
           <Card>
