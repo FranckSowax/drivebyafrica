@@ -35,51 +35,54 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Video */}
+      <section className="relative min-h-[85vh] lg:min-h-[90vh] flex items-center overflow-hidden">
+        {/* Background - Image on mobile, Video on desktop */}
         <div className="absolute inset-0">
+          {/* Mobile: Static image (better performance, saves data) */}
+          <div className="block lg:hidden absolute inset-0">
+            <Image
+              src="/banner driveby.jpg"
+              alt="Driveby Africa Banner"
+              fill
+              className="object-cover object-center"
+              priority
+            />
+          </div>
+          {/* Desktop: Video background */}
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
+            className="hidden lg:block absolute inset-0 w-full h-full object-cover"
             poster="/banner driveby.jpg"
           >
             <source src="/hero-video.webm" type="video/webm" />
             <source src="/hero-video.mp4" type="video/mp4" />
-            {/* Fallback image if video doesn't load */}
-            <Image
-              src="/banner driveby.jpg"
-              alt="Driveby Africa Banner"
-              fill
-              className="object-cover"
-              priority
-            />
           </video>
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/50 to-transparent" />
+          {/* Overlay - adjusted for mobile readability */}
+          <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-l from-black/80 via-black/60 to-black/40 lg:from-black/70 lg:via-black/50 lg:to-transparent" />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="flex justify-end">
-            <div className="max-w-2xl text-right">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-mandarin/20 backdrop-blur-sm rounded-full border border-mandarin/30 mb-6">
+          <div className="flex justify-center lg:justify-end">
+            <div className="max-w-2xl text-center lg:text-right">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-mandarin/20 backdrop-blur-sm rounded-full border border-mandarin/30 mb-4 lg:mb-6">
                 <span className="text-mandarin font-medium text-sm">
                   {t('landing.hero.badge')}
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight mb-4 lg:mb-6">
                 {t('landing.hero.title')}{' '}
                 <span className="text-mandarin">{t('landing.hero.titleHighlight')}</span>
               </h1>
 
-              <p className="text-lg text-white/80 mb-8 max-w-xl ml-auto">
+              <p className="text-base lg:text-lg text-white/80 mb-6 lg:mb-8 max-w-xl mx-auto lg:ml-auto lg:mr-0">
                 {t('landing.hero.subtitle')}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-end">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-end">
                 <Link href="/cars">
                   <Button variant="primary" size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
                     {t('landing.hero.cta')}
@@ -87,21 +90,21 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
                 </Link>
               </div>
 
-              {/* Source Badges */}
-              <div className="flex items-center gap-6 mt-12 justify-end">
+              {/* Source Badges - responsive layout */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 mt-8 lg:mt-12 justify-center lg:justify-end">
                 <p className="text-sm text-white/60">{t('landing.hero.sources')}:</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <span className="text-xl">🇰🇷</span>
-                    <span className="text-sm text-white">Korea</span>
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                    <span className="text-base sm:text-xl">🇰🇷</span>
+                    <span className="text-xs sm:text-sm text-white">Korea</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <span className="text-xl">🇨🇳</span>
-                    <span className="text-sm text-white">China</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                    <span className="text-base sm:text-xl">🇨🇳</span>
+                    <span className="text-xs sm:text-sm text-white">China</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-                    <span className="text-xl">🇦🇪</span>
-                    <span className="text-sm text-white">Dubai</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                    <span className="text-base sm:text-xl">🇦🇪</span>
+                    <span className="text-xs sm:text-sm text-white">Dubai</span>
                   </div>
                 </div>
               </div>
