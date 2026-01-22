@@ -133,9 +133,9 @@ export async function GET() {
       .slice(0, 10)
       .map(([make, count]) => ({ make, count }));
 
-    // Vehicles added this month
-    const vehiclesThisMonth = vehicles?.filter(v => new Date(v.created_at) >= startOfMonth).length || 0;
-    const vehiclesLastMonth = vehicles?.filter(v => {
+    // Vehicles added this month - use created_at as fallback
+    const vehiclesCreatedThisMonth = vehicles?.filter(v => new Date(v.created_at) >= startOfMonth).length || 0;
+    const vehiclesCreatedLastMonth = vehicles?.filter(v => {
       const date = new Date(v.created_at);
       return date >= startOfLastMonth && date <= endOfLastMonth;
     }).length || 0;
@@ -407,9 +407,7 @@ export async function GET() {
       ? Math.round(((quotesThisMonth - quotesLastMonth) / quotesLastMonth) * 100)
       : 100;
 
-    const vehiclesGrowth = vehiclesLastMonth > 0
-      ? Math.round(((vehiclesThisMonth - vehiclesLastMonth) / vehiclesLastMonth) * 100)
-      : 100;
+    // vehiclesGrowth will be calculated after sync stats are computed
 
     // ===== RECENT ACTIVITY =====
     // Get recent quotes
@@ -473,6 +471,66 @@ export async function GET() {
       syncByDay[log.date].removed += log.vehicles_removed;
       syncByDay[log.date].syncs += 1;
     });
+
+    // Calculate sync stats for this month and last month
+    const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+    const startOfLastMonthStr = startOfLastMonth.toISOString().split('T')[0];
+    const endOfLastMonthStr = endOfLastMonth.toISOString().split('T')[0];
+
+    // Sync stats by source for this month
+    interface SyncStats {
+      added: number;
+      removed: number;
+      updated: number;
+      net: number;
+    }
+    const syncStatsThisMonth: Record<string, SyncStats> = {};
+    const syncStatsLastMonth: Record<string, SyncStats> = {};
+    let totalSyncAddedThisMonth = 0;
+    let totalSyncRemovedThisMonth = 0;
+    let totalSyncAddedLastMonth = 0;
+    let totalSyncRemovedLastMonth = 0;
+
+    syncLogsData.forEach(log => {
+      if (!log.date || log.status !== 'completed') return;
+
+      const normalizedSource = normalizeSource(log.source);
+
+      // This month
+      if (log.date >= startOfMonthStr) {
+        if (!syncStatsThisMonth[normalizedSource]) {
+          syncStatsThisMonth[normalizedSource] = { added: 0, removed: 0, updated: 0, net: 0 };
+        }
+        syncStatsThisMonth[normalizedSource].added += log.vehicles_added;
+        syncStatsThisMonth[normalizedSource].removed += log.vehicles_removed;
+        syncStatsThisMonth[normalizedSource].updated += log.vehicles_updated;
+        syncStatsThisMonth[normalizedSource].net += (log.vehicles_added - log.vehicles_removed);
+        totalSyncAddedThisMonth += log.vehicles_added;
+        totalSyncRemovedThisMonth += log.vehicles_removed;
+      }
+      // Last month
+      else if (log.date >= startOfLastMonthStr && log.date <= endOfLastMonthStr) {
+        if (!syncStatsLastMonth[normalizedSource]) {
+          syncStatsLastMonth[normalizedSource] = { added: 0, removed: 0, updated: 0, net: 0 };
+        }
+        syncStatsLastMonth[normalizedSource].added += log.vehicles_added;
+        syncStatsLastMonth[normalizedSource].removed += log.vehicles_removed;
+        syncStatsLastMonth[normalizedSource].updated += log.vehicles_updated;
+        syncStatsLastMonth[normalizedSource].net += (log.vehicles_added - log.vehicles_removed);
+        totalSyncAddedLastMonth += log.vehicles_added;
+        totalSyncRemovedLastMonth += log.vehicles_removed;
+      }
+    });
+
+    // Net vehicles change this month and last month (added - removed)
+    const vehiclesNetThisMonth = totalSyncAddedThisMonth - totalSyncRemovedThisMonth;
+    const vehiclesNetLastMonth = totalSyncAddedLastMonth - totalSyncRemovedLastMonth;
+
+    // For vehicles growth, compare net change (added - removed) between months
+    // If last month had 0 net change, show 100% if positive this month, -100% if negative, 0% if same
+    const vehiclesGrowth = vehiclesNetLastMonth !== 0
+      ? Math.round(((vehiclesNetThisMonth - vehiclesNetLastMonth) / Math.abs(vehiclesNetLastMonth)) * 100)
+      : vehiclesNetThisMonth > 0 ? 100 : vehiclesNetThisMonth < 0 ? -100 : 0;
 
     // ===== TIME SERIES DATA (Last 90 days) =====
     const timeSeriesData: Array<{
@@ -721,8 +779,22 @@ export async function GET() {
         active: activeVehicles.length,
         sold: soldVehicles.length,
         bySource: vehiclesBySource,
-        thisMonth: vehiclesThisMonth,
-        lastMonth: vehiclesLastMonth,
+        // Net change from sync (added - removed)
+        thisMonth: vehiclesNetThisMonth,
+        lastMonth: vehiclesNetLastMonth,
+        // Detailed sync stats
+        syncThisMonth: {
+          added: totalSyncAddedThisMonth,
+          removed: totalSyncRemovedThisMonth,
+          net: vehiclesNetThisMonth,
+          bySource: syncStatsThisMonth,
+        },
+        syncLastMonth: {
+          added: totalSyncAddedLastMonth,
+          removed: totalSyncRemovedLastMonth,
+          net: vehiclesNetLastMonth,
+          bySource: syncStatsLastMonth,
+        },
         topViewed: topViewedVehicles,
         topFavorited: topFavoritedVehicles,
         topMakes: topMakes,

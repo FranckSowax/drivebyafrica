@@ -22,6 +22,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Calculator,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -98,6 +100,13 @@ interface ProfitData {
   }>;
 }
 
+interface SyncStats {
+  added: number;
+  removed: number;
+  updated: number;
+  net: number;
+}
+
 interface AnalyticsData {
   kpis: {
     totalVehicles: number;
@@ -125,6 +134,18 @@ interface AnalyticsData {
     bySource: Record<string, number>;
     thisMonth: number;
     lastMonth: number;
+    syncThisMonth?: {
+      added: number;
+      removed: number;
+      net: number;
+      bySource: Record<string, SyncStats>;
+    };
+    syncLastMonth?: {
+      added: number;
+      removed: number;
+      net: number;
+      bySource: Record<string, SyncStats>;
+    };
     topViewed: Array<{ id: string; make: string; model: string; views: number; favorites: number }>;
     topFavorited: Array<{ id: string; make: string; model: string; views: number; favorites: number }>;
     topMakes: Array<{ make: string; count: number }>;
@@ -589,11 +610,13 @@ export default function AdminAnalyticsPage() {
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Car className="w-5 h-5 text-mandarin" />
-              <span className="font-medium text-[var(--text-primary)]">Véhicules ajoutés</span>
+              <span className="font-medium text-[var(--text-primary)]">Véhicules (net)</span>
             </div>
             <div className="flex items-center justify-center gap-4">
               <div>
-                <p className="text-3xl font-bold text-[var(--text-primary)]">{data.vehicles.thisMonth}</p>
+                <p className={`text-3xl font-bold ${data.vehicles.thisMonth >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                  {data.vehicles.thisMonth >= 0 ? '+' : ''}{data.vehicles.thisMonth}
+                </p>
                 <p className="text-xs text-[var(--text-muted)]">Ce mois</p>
               </div>
               <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${data.growth.vehiclesGrowth >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -601,13 +624,121 @@ export default function AdminAnalyticsPage() {
                 <span className="font-medium">{data.growth.vehiclesGrowth >= 0 ? '+' : ''}{data.growth.vehiclesGrowth}%</span>
               </div>
               <div>
-                <p className="text-xl font-medium text-[var(--text-muted)]">{data.vehicles.lastMonth}</p>
+                <p className={`text-xl font-medium ${data.vehicles.lastMonth >= 0 ? 'text-[var(--text-muted)]' : 'text-red-400'}`}>
+                  {data.vehicles.lastMonth >= 0 ? '+' : ''}{data.vehicles.lastMonth}
+                </p>
                 <p className="text-xs text-[var(--text-muted)]">Mois dernier</p>
               </div>
             </div>
           </div>
         </div>
       </Card>
+
+      {/* Sync Details Card */}
+      {data.vehicles.syncThisMonth && (
+        <Card className="p-6 mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <RefreshCw className="w-5 h-5 text-mandarin" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Détail des synchronisations</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* This Month */}
+            <div className="bg-[var(--surface)] rounded-xl p-4">
+              <h3 className="font-medium text-[var(--text-primary)] mb-4">Ce mois-ci</h3>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 text-jewel mb-1">
+                    <Plus className="w-4 h-4" />
+                    <span className="text-xl font-bold">{formatNumber(data.vehicles.syncThisMonth.added)}</span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">Ajoutés</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 text-red-500 mb-1">
+                    <Minus className="w-4 h-4" />
+                    <span className="text-xl font-bold">{formatNumber(data.vehicles.syncThisMonth.removed)}</span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">Supprimés</p>
+                </div>
+                <div className="text-center">
+                  <div className={`text-xl font-bold mb-1 ${data.vehicles.syncThisMonth.net >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                    {data.vehicles.syncThisMonth.net >= 0 ? '+' : ''}{formatNumber(data.vehicles.syncThisMonth.net)}
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">Net</p>
+                </div>
+              </div>
+
+              {/* By Source This Month */}
+              <div className="space-y-2">
+                {Object.entries(data.vehicles.syncThisMonth.bySource).map(([source, stats]) => (
+                  <div key={source} className="flex items-center justify-between p-2 bg-[var(--card-bg)] rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{sourceFlags[source]?.flag || '🌍'}</span>
+                      <span className="text-sm font-medium text-[var(--text-primary)] capitalize">{sourceFlags[source]?.name || source}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-jewel">+{stats.added}</span>
+                      <span className="text-red-500">-{stats.removed}</span>
+                      <span className={`font-medium ${stats.net >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                        = {stats.net >= 0 ? '+' : ''}{stats.net}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Last Month */}
+            {data.vehicles.syncLastMonth && (
+              <div className="bg-[var(--surface)] rounded-xl p-4">
+                <h3 className="font-medium text-[var(--text-primary)] mb-4">Mois dernier</h3>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-jewel mb-1">
+                      <Plus className="w-4 h-4" />
+                      <span className="text-xl font-bold">{formatNumber(data.vehicles.syncLastMonth.added)}</span>
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)]">Ajoutés</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-red-500 mb-1">
+                      <Minus className="w-4 h-4" />
+                      <span className="text-xl font-bold">{formatNumber(data.vehicles.syncLastMonth.removed)}</span>
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)]">Supprimés</p>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xl font-bold mb-1 ${data.vehicles.syncLastMonth.net >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                      {data.vehicles.syncLastMonth.net >= 0 ? '+' : ''}{formatNumber(data.vehicles.syncLastMonth.net)}
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)]">Net</p>
+                  </div>
+                </div>
+
+                {/* By Source Last Month */}
+                <div className="space-y-2">
+                  {Object.entries(data.vehicles.syncLastMonth.bySource).map(([source, stats]) => (
+                    <div key={source} className="flex items-center justify-between p-2 bg-[var(--card-bg)] rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{sourceFlags[source]?.flag || '🌍'}</span>
+                        <span className="text-sm font-medium text-[var(--text-primary)] capitalize">{sourceFlags[source]?.name || source}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-jewel">+{stats.added}</span>
+                        <span className="text-red-500">-{stats.removed}</span>
+                        <span className={`font-medium ${stats.net >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                          = {stats.net >= 0 ? '+' : ''}{stats.net}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Monthly Comparison Bar Chart */}
       <Card className="p-6 mb-8">
