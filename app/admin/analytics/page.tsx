@@ -59,7 +59,9 @@ interface MonthlyData {
   month: string;
   users: number;
   quotes: number;
-  vehicles: number;
+  vehiclesNet: number;
+  vehiclesAdded: number;
+  vehiclesRemoved: number;
 }
 
 interface ProfitData {
@@ -740,42 +742,130 @@ export default function AdminAnalyticsPage() {
         </Card>
       )}
 
-      {/* Monthly Comparison Bar Chart */}
-      <Card className="p-6 mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-mandarin" />
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Comparaison mensuelle</h2>
-        </div>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.monthlyComparison}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'var(--card-bg)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '8px',
-                }}
-              />
-              <Legend />
-              <Bar dataKey="users" name="Utilisateurs" fill={CHART_COLORS.secondary} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="quotes" name="Devis" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="vehicles" name="Véhicules" fill={CHART_COLORS.tertiary} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      {/* Monthly Comparison - Two Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Users & Quotes Bar Chart */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-mandarin" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Activité mensuelle</h2>
+          </div>
+          <p className="text-sm text-[var(--text-muted)] mb-4">Nouveaux utilisateurs et devis par mois</p>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.monthlyComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="users" name="Utilisateurs" fill={CHART_COLORS.secondary} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="quotes" name="Devis" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        {/* Vehicles Sync Stacked Area Chart */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Car className="w-5 h-5 text-jewel" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Synchronisation véhicules</h2>
+          </div>
+          <p className="text-sm text-[var(--text-muted)] mb-4">Véhicules ajoutés vs supprimés par mois</p>
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={data.monthlyComparison}
+                margin={{ left: 0, right: 0, top: 10, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorAdded" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={CHART_COLORS.tertiary} stopOpacity={0.6} />
+                    <stop offset="95%" stopColor={CHART_COLORS.tertiary} stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="colorRemoved" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.6} />
+                    <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                  }}
+                  formatter={(value, name) => {
+                    const label = name === 'vehiclesAdded' ? 'Ajoutés' : name === 'vehiclesRemoved' ? 'Supprimés' : name;
+                    return [formatNumber(value as number), label];
+                  }}
+                />
+                <Legend
+                  formatter={(value) => {
+                    if (value === 'vehiclesAdded') return 'Ajoutés';
+                    if (value === 'vehiclesRemoved') return 'Supprimés';
+                    return value;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="vehiclesAdded"
+                  name="vehiclesAdded"
+                  stroke={CHART_COLORS.tertiary}
+                  fill="url(#colorAdded)"
+                  strokeWidth={2}
+                  stackId="1"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="vehiclesRemoved"
+                  name="vehiclesRemoved"
+                  stroke={CHART_COLORS.red}
+                  fill="url(#colorRemoved)"
+                  strokeWidth={2}
+                  stackId="2"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Net change summary */}
+          <div className="mt-4 pt-4 border-t border-[var(--card-border)]">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Variation nette ce mois:</span>
+              <span className={`font-bold ${data.vehicles.thisMonth >= 0 ? 'text-jewel' : 'text-red-500'}`}>
+                {data.vehicles.thisMonth >= 0 ? '+' : ''}{formatNumber(data.vehicles.thisMonth)} véhicules
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {/* Two Column Layout - Pie Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
