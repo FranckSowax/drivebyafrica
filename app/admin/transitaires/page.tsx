@@ -551,9 +551,9 @@ export default function TransitairesPage() {
         {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-cod-gray border border-nobel/20 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-nobel/20">
-                <h2 className="text-xl font-bold text-white">
+            <div className="bg-[var(--surface)] border border-[var(--card-border)] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-[var(--card-border)]">
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">
                   {editingTransitaire ? 'Modifier le transitaire' : 'Ajouter un transitaire'}
                 </h2>
               </div>
@@ -579,13 +579,13 @@ export default function TransitairesPage() {
                 {/* Location */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                       Pays *
                     </label>
                     <select
                       value={formData.country}
                       onChange={(e) => setFormData({ ...formData, country: e.target.value, port: '' })}
-                      className="w-full bg-nobel/10 border border-nobel/20 rounded-lg px-4 py-2 text-white"
+                      className="w-full bg-[var(--surface)] border border-[var(--card-border)] rounded-lg px-4 py-2 text-[var(--text-primary)]"
                       required
                     >
                       <option value="">Sélectionner un pays</option>
@@ -595,13 +595,13 @@ export default function TransitairesPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                       Port
                     </label>
                     <select
                       value={formData.port}
                       onChange={(e) => setFormData({ ...formData, port: e.target.value })}
-                      className="w-full bg-nobel/10 border border-nobel/20 rounded-lg px-4 py-2 text-white"
+                      className="w-full bg-[var(--surface)] border border-[var(--card-border)] rounded-lg px-4 py-2 text-[var(--text-primary)]"
                       disabled={!formData.country}
                     >
                       <option value="">Tous les ports du pays</option>
@@ -647,13 +647,13 @@ export default function TransitairesPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-nobel/10 border border-nobel/20 rounded-lg px-4 py-2 text-white resize-none"
+                    className="w-full bg-[var(--surface)] border border-[var(--card-border)] rounded-lg px-4 py-2 text-[var(--text-primary)] resize-none"
                     rows={3}
                     placeholder="Brève description des services..."
                   />
@@ -661,7 +661,7 @@ export default function TransitairesPage() {
 
                 {/* Specialties */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                     Spécialités
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -673,7 +673,7 @@ export default function TransitairesPage() {
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                           formData.specialties.includes(specialty.value)
                             ? 'bg-mandarin text-white'
-                            : 'bg-nobel/20 text-gray-400 hover:bg-nobel/30'
+                            : 'bg-[var(--card-border)] text-[var(--text-muted)] hover:bg-[var(--card-border)]/80'
                         }`}
                       >
                         {specialty.label}
@@ -684,7 +684,7 @@ export default function TransitairesPage() {
 
                 {/* Languages */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                     Langues parlées
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -696,7 +696,7 @@ export default function TransitairesPage() {
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                           formData.languages.includes(language.value)
                             ? 'bg-royal-blue text-white'
-                            : 'bg-nobel/20 text-gray-400 hover:bg-nobel/30'
+                            : 'bg-[var(--card-border)] text-[var(--text-muted)] hover:bg-[var(--card-border)]/80'
                         }`}
                       >
                         {language.label}
@@ -712,23 +712,23 @@ export default function TransitairesPage() {
                       type="checkbox"
                       checked={formData.is_active}
                       onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="w-4 h-4 rounded border-nobel/20 bg-nobel/10 text-mandarin focus:ring-mandarin"
+                      className="w-4 h-4 rounded border-[var(--card-border)] bg-[var(--surface)] text-mandarin focus:ring-mandarin"
                     />
-                    <span className="text-gray-300">Actif</span>
+                    <span className="text-[var(--text-primary)]">Actif</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.is_verified}
                       onChange={(e) => setFormData({ ...formData, is_verified: e.target.checked })}
-                      className="w-4 h-4 rounded border-nobel/20 bg-nobel/10 text-blue-500 focus:ring-blue-500"
+                      className="w-4 h-4 rounded border-[var(--card-border)] bg-[var(--surface)] text-blue-500 focus:ring-blue-500"
                     />
-                    <span className="text-gray-300">Vérifié par Driveby</span>
+                    <span className="text-[var(--text-primary)]">Vérifié par Driveby</span>
                   </label>
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-nobel/20">
+                <div className="flex justify-end gap-3 pt-4 border-t border-[var(--card-border)]">
                   <Button
                     type="button"
                     variant="outline"

@@ -275,13 +275,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
             />
           </Card>
 
-          {/* Transitaires Suggestion */}
-          <TransitairesSuggestion
-            destinationCountry={orderData.destination_country || ''}
-            destinationPort={orderData.destination_port || undefined}
-            orderId={orderData.id}
-          />
-
           {/* Shipping Details */}
           <Card>
             <h2 className="font-bold text-[var(--text-primary)] mb-4">Détails de livraison</h2>
@@ -322,6 +315,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
               )}
             </div>
           </Card>
+
+          {/* Transitaires Suggestion */}
+          <TransitairesSuggestion
+            destinationCountry={orderData.destination_country || ''}
+            destinationPort={orderData.destination_port || undefined}
+            orderId={orderData.id}
+          />
         </div>
 
         {/* Right Column */}
