@@ -43,31 +43,90 @@ interface Transitaire {
   updated_at: string;
 }
 
-const COUNTRIES = [
-  'Gabon',
-  'Cameroun',
-  'Congo',
-  'Côte d\'Ivoire',
-  'Sénégal',
-  'Guinée',
-  'Mali',
-  'Bénin',
-  'Togo',
-  'RDC',
+// Complete list of African countries and ports (synced with shipping routes)
+const SHIPPING_DESTINATIONS = [
+  // Afrique de l'Ouest
+  { country: 'Sénégal', port: 'Dakar', flag: '🇸🇳' },
+  { country: "Côte d'Ivoire", port: 'Abidjan', flag: '🇨🇮' },
+  { country: 'Ghana', port: 'Tema', flag: '🇬🇭' },
+  { country: 'Nigeria', port: 'Lagos', flag: '🇳🇬' },
+  { country: 'Togo', port: 'Lomé', flag: '🇹🇬' },
+  { country: 'Bénin', port: 'Cotonou', flag: '🇧🇯' },
+  { country: 'Guinée', port: 'Conakry', flag: '🇬🇳' },
+  { country: 'Sierra Leone', port: 'Freetown', flag: '🇸🇱' },
+  { country: 'Liberia', port: 'Monrovia', flag: '🇱🇷' },
+  { country: 'Gambie', port: 'Banjul', flag: '🇬🇲' },
+  { country: 'Guinée-Bissau', port: 'Bissau', flag: '🇬🇼' },
+  { country: 'Mauritanie', port: 'Nouakchott', flag: '🇲🇷' },
+  { country: 'Cap-Vert', port: 'Praia', flag: '🇨🇻' },
+  { country: 'Niger', port: 'Niamey', flag: '🇳🇪' },
+  { country: 'Burkina Faso', port: 'Ouagadougou', flag: '🇧🇫' },
+  { country: 'Mali', port: 'Bamako', flag: '🇲🇱' },
+  // Afrique Centrale
+  { country: 'Cameroun', port: 'Douala', flag: '🇨🇲' },
+  { country: 'Gabon', port: 'Libreville', flag: '🇬🇦' },
+  { country: 'Gabon', port: 'Port-Gentil', flag: '🇬🇦' },
+  { country: 'Congo', port: 'Pointe-Noire', flag: '🇨🇬' },
+  { country: 'Congo', port: 'Brazzaville', flag: '🇨🇬' },
+  { country: 'RD Congo', port: 'Matadi', flag: '🇨🇩' },
+  { country: 'RD Congo', port: 'Kinshasa', flag: '🇨🇩' },
+  { country: 'RD Congo', port: 'Lubumbashi', flag: '🇨🇩' },
+  { country: 'Angola', port: 'Luanda', flag: '🇦🇴' },
+  { country: 'Guinée Équatoriale', port: 'Malabo', flag: '🇬🇶' },
+  { country: 'São Tomé-et-Príncipe', port: 'São Tomé', flag: '🇸🇹' },
+  { country: 'Centrafrique', port: 'Bangui', flag: '🇨🇫' },
+  { country: 'Tchad', port: "N'Djamena", flag: '🇹🇩' },
+  // Afrique de l'Est
+  { country: 'Kenya', port: 'Mombasa', flag: '🇰🇪' },
+  { country: 'Kenya', port: 'Nairobi', flag: '🇰🇪' },
+  { country: 'Tanzanie', port: 'Dar es Salaam', flag: '🇹🇿' },
+  { country: 'Ouganda', port: 'Kampala', flag: '🇺🇬' },
+  { country: 'Rwanda', port: 'Kigali', flag: '🇷🇼' },
+  { country: 'Burundi', port: 'Bujumbura', flag: '🇧🇮' },
+  { country: 'Éthiopie', port: 'Addis-Abeba', flag: '🇪🇹' },
+  { country: 'Djibouti', port: 'Djibouti', flag: '🇩🇯' },
+  { country: 'Érythrée', port: 'Asmara', flag: '🇪🇷' },
+  { country: 'Somalie', port: 'Mogadiscio', flag: '🇸🇴' },
+  { country: 'Soudan du Sud', port: 'Juba', flag: '🇸🇸' },
+  // Afrique du Nord
+  { country: 'Maroc', port: 'Casablanca', flag: '🇲🇦' },
+  { country: 'Maroc', port: 'Tanger', flag: '🇲🇦' },
+  { country: 'Algérie', port: 'Alger', flag: '🇩🇿' },
+  { country: 'Tunisie', port: 'Tunis', flag: '🇹🇳' },
+  { country: 'Libye', port: 'Tripoli', flag: '🇱🇾' },
+  { country: 'Égypte', port: 'Alexandrie', flag: '🇪🇬' },
+  { country: 'Égypte', port: 'Port-Saïd', flag: '🇪🇬' },
+  { country: 'Soudan', port: 'Port-Soudan', flag: '🇸🇩' },
+  // Afrique Australe
+  { country: 'Afrique du Sud', port: 'Durban', flag: '🇿🇦' },
+  { country: 'Afrique du Sud', port: 'Le Cap', flag: '🇿🇦' },
+  { country: 'Mozambique', port: 'Maputo', flag: '🇲🇿' },
+  { country: 'Mozambique', port: 'Beira', flag: '🇲🇿' },
+  { country: 'Zambie', port: 'Lusaka', flag: '🇿🇲' },
+  { country: 'Zimbabwe', port: 'Harare', flag: '🇿🇼' },
+  { country: 'Botswana', port: 'Gaborone', flag: '🇧🇼' },
+  { country: 'Namibie', port: 'Windhoek', flag: '🇳🇦' },
+  { country: 'Namibie', port: 'Walvis Bay', flag: '🇳🇦' },
+  { country: 'Malawi', port: 'Lilongwe', flag: '🇲🇼' },
+  { country: 'Eswatini', port: 'Mbabane', flag: '🇸🇿' },
+  { country: 'Lesotho', port: 'Maseru', flag: '🇱🇸' },
+  // Îles de l'Océan Indien
+  { country: 'Madagascar', port: 'Antananarivo', flag: '🇲🇬' },
+  { country: 'Madagascar', port: 'Toamasina', flag: '🇲🇬' },
+  { country: 'Maurice', port: 'Port-Louis', flag: '🇲🇺' },
+  { country: 'Seychelles', port: 'Victoria', flag: '🇸🇨' },
+  { country: 'Comores', port: 'Moroni', flag: '🇰🇲' },
 ];
 
-const PORTS = {
-  'Gabon': ['Libreville', 'Port-Gentil', 'Owendo'],
-  'Cameroun': ['Douala', 'Kribi'],
-  'Congo': ['Pointe-Noire', 'Brazzaville'],
-  'Côte d\'Ivoire': ['Abidjan', 'San Pedro'],
-  'Sénégal': ['Dakar'],
-  'Guinée': ['Conakry'],
-  'Mali': ['Bamako'],
-  'Bénin': ['Cotonou'],
-  'Togo': ['Lomé'],
-  'RDC': ['Matadi', 'Kinshasa'],
-};
+// Extract unique countries with flags
+const COUNTRIES = [...new Map(SHIPPING_DESTINATIONS.map(d => [d.country, { name: d.country, flag: d.flag }])).values()];
+
+// Group ports by country
+const PORTS: Record<string, string[]> = SHIPPING_DESTINATIONS.reduce((acc, d) => {
+  if (!acc[d.country]) acc[d.country] = [];
+  if (!acc[d.country].includes(d.port)) acc[d.country].push(d.port);
+  return acc;
+}, {} as Record<string, string[]>);
 
 const SPECIALTIES = [
   { value: 'vehicles', label: 'Véhicules' },
@@ -312,8 +371,8 @@ export default function TransitairesPage() {
               className="bg-nobel/10 border border-nobel/20 rounded-lg px-4 py-2 text-white"
             >
               <option value="">Tous les pays</option>
-              {COUNTRIES.map(country => (
-                <option key={country} value={country}>{country}</option>
+              {COUNTRIES.map(c => (
+                <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
               ))}
             </select>
 
@@ -530,8 +589,8 @@ export default function TransitairesPage() {
                       required
                     >
                       <option value="">Sélectionner un pays</option>
-                      {COUNTRIES.map(country => (
-                        <option key={country} value={country}>{country}</option>
+                      {COUNTRIES.map(c => (
+                        <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
                       ))}
                     </select>
                   </div>

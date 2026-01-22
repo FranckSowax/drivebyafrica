@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   DollarSign,
   Briefcase,
+  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +45,7 @@ const mainNavItems: NavItem[] = [
   { href: '/admin/orders', label: 'Commandes', icon: CreditCard },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
 ];
 
 const secondaryNavItems = [
