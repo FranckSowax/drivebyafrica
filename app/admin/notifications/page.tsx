@@ -105,11 +105,10 @@ export default function AdminNotificationsPage() {
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Erreur lors du chargement des notifications');
     } finally {
       setLoading(false);
     }
-  }, [filterPriority, showUnreadOnly, toast]);
+  }, [filterPriority, showUnreadOnly]);
 
   useEffect(() => {
     fetchNotifications();

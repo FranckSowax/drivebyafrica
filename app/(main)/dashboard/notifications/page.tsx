@@ -111,11 +111,10 @@ export default function UserNotificationsPage() {
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Erreur lors du chargement des notifications');
     } finally {
       setLoading(false);
     }
-  }, [showUnreadOnly, toast]);
+  }, [showUnreadOnly]);
 
   useEffect(() => {
     fetchNotifications();
