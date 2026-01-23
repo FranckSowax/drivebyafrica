@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Car, Shield, Truck, Headphones, Play, Pause } from 'lucide-react';
@@ -35,6 +35,29 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
 
+  // Force video play on mount (needed for some mobile browsers)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      // Set attributes programmatically for better iOS support
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+
+      // Try to play the video
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(() => {
+            // Autoplay was prevented, user needs to interact
+            setIsPlaying(false);
+          });
+      }
+    }
+  }, []);
+
   const toggleVideo = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -52,17 +75,20 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
       <section className="relative min-h-[85vh] lg:min-h-[90vh] flex items-center overflow-hidden">
         {/* Background Video */}
         <div className="absolute inset-0">
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             ref={videoRef}
             autoPlay
             loop
             muted
             playsInline
+            preload="auto"
             className="absolute inset-0 w-full h-full object-cover"
             poster="/banner driveby.jpg"
           >
-            <source src="/hero-video.webm" type="video/webm" />
+            {/* MP4 first for better mobile compatibility */}
             <source src="/hero-video.mp4" type="video/mp4" />
+            <source src="/hero-video.webm" type="video/webm" />
           </video>
           {/* Overlay - adjusted for mobile readability */}
           <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-l from-black/80 via-black/60 to-black/40 lg:from-black/70 lg:via-black/50 lg:to-transparent" />
