@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Car, Shield, Truck, Headphones, Play, Pause } from 'lucide-react';
@@ -33,59 +33,7 @@ interface LandingContentProps {
 export function LandingContent({ featuredVehicles }: LandingContentProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
-
-  // Try to play video on mount
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Set attributes for iOS
-    video.setAttribute('playsinline', 'true');
-    video.setAttribute('webkit-playsinline', 'true');
-    video.muted = true;
-
-    const tryPlay = () => {
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            setShowPlayOverlay(false);
-          })
-          .catch(() => {
-            // Autoplay blocked - show play overlay
-            setIsPlaying(false);
-            setShowPlayOverlay(true);
-          });
-      }
-    };
-
-    // Try immediately
-    tryPlay();
-
-    // Also try on first user interaction (for stubborn browsers)
-    const handleInteraction = () => {
-      if (!isPlaying && video.paused) {
-        tryPlay();
-      }
-      // Remove listeners after first interaction
-      document.removeEventListener('touchstart', handleInteraction);
-      document.removeEventListener('click', handleInteraction);
-      document.removeEventListener('scroll', handleInteraction);
-    };
-
-    document.addEventListener('touchstart', handleInteraction, { passive: true });
-    document.addEventListener('click', handleInteraction, { passive: true });
-    document.addEventListener('scroll', handleInteraction, { passive: true });
-
-    return () => {
-      document.removeEventListener('touchstart', handleInteraction);
-      document.removeEventListener('click', handleInteraction);
-      document.removeEventListener('scroll', handleInteraction);
-    };
-  }, [isPlaying]);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   const toggleVideo = () => {
     const video = videoRef.current;
@@ -95,72 +43,53 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
       video.pause();
       setIsPlaying(false);
     } else {
-      video.play().then(() => {
-        setIsPlaying(true);
-        setShowPlayOverlay(false);
-      }).catch(() => {
-        // Still blocked
-        setShowPlayOverlay(true);
-      });
-    }
-  };
-
-  const startVideo = () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.muted = true;
-    video.play().then(() => {
+      video.play();
       setIsPlaying(true);
-      setShowPlayOverlay(false);
-    }).catch(() => {
-      // Really can't play
-      console.log('Video playback not allowed');
-    });
+    }
   };
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
       {/* Hero Section */}
       <section className="relative min-h-[85vh] lg:min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Video */}
+        {/* Background - Image on mobile, Video on desktop */}
         <div className="absolute inset-0">
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            ref={videoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            className="absolute inset-0 w-full h-full object-cover"
-            poster="/banner driveby.jpg"
-          >
-            {/* MP4 first for better mobile compatibility */}
-            <source src="/hero-video.mp4" type="video/mp4" />
-            <source src="/hero-video.webm" type="video/webm" />
-          </video>
-          {/* Overlay - adjusted for mobile readability */}
+          {/* Mobile: Static image (video autoplay blocked on iOS) */}
+          <div className="lg:hidden absolute inset-0">
+            <Image
+              src="/banner driveby.jpg"
+              alt="Driveby Africa"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+
+          {/* Desktop: Video background */}
+          <div className="hidden lg:block absolute inset-0">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={videoRef}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+              poster="/banner driveby.jpg"
+            >
+              <source src="/hero-video.mp4" type="video/mp4" />
+              <source src="/hero-video.webm" type="video/webm" />
+            </video>
+          </div>
+
+          {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-l from-black/80 via-black/60 to-black/40 lg:from-black/70 lg:via-black/50 lg:to-transparent" />
         </div>
 
-        {/* Large Play Overlay - shown when autoplay is blocked */}
-        {showPlayOverlay && (
-          <button
-            onClick={startVideo}
-            className="absolute inset-0 z-30 flex items-center justify-center bg-black/20"
-            aria-label="Lancer la vidéo"
-          >
-            <div className="p-6 bg-mandarin/90 hover:bg-mandarin rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110">
-              <Play className="w-12 h-12 text-white ml-1" />
-            </div>
-          </button>
-        )}
-
-        {/* Video Play/Pause Button - small, bottom left */}
+        {/* Video Play/Pause Button - desktop only */}
         <button
           onClick={toggleVideo}
-          className="absolute bottom-6 left-6 z-20 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full border border-white/20 transition-all duration-200 group"
+          className="hidden lg:flex absolute bottom-6 left-6 z-20 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full border border-white/20 transition-all duration-200 group items-center justify-center"
           aria-label={isPlaying ? 'Pause video' : 'Play video'}
         >
           {isPlaying ? (
