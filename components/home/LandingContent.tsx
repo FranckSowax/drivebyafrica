@@ -33,40 +33,90 @@ interface LandingContentProps {
 export function LandingContent({ featuredVehicles }: LandingContentProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
 
-  // Force video play on mount (needed for some mobile browsers)
+  // Try to play video on mount
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
-      // Set attributes programmatically for better iOS support
-      video.setAttribute('playsinline', 'true');
-      video.setAttribute('webkit-playsinline', 'true');
+    if (!video) return;
 
-      // Try to play the video
+    // Set attributes for iOS
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+
+    const tryPlay = () => {
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
             setIsPlaying(true);
+            setShowPlayOverlay(false);
           })
           .catch(() => {
-            // Autoplay was prevented, user needs to interact
+            // Autoplay blocked - show play overlay
             setIsPlaying(false);
+            setShowPlayOverlay(true);
           });
       }
-    }
-  }, []);
+    };
+
+    // Try immediately
+    tryPlay();
+
+    // Also try on first user interaction (for stubborn browsers)
+    const handleInteraction = () => {
+      if (!isPlaying && video.paused) {
+        tryPlay();
+      }
+      // Remove listeners after first interaction
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('scroll', handleInteraction);
+    };
+
+    document.addEventListener('touchstart', handleInteraction, { passive: true });
+    document.addEventListener('click', handleInteraction, { passive: true });
+    document.addEventListener('scroll', handleInteraction, { passive: true });
+
+    return () => {
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('scroll', handleInteraction);
+    };
+  }, [isPlaying]);
 
   const toggleVideo = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+      setIsPlaying(false);
+    } else {
+      video.play().then(() => {
+        setIsPlaying(true);
+        setShowPlayOverlay(false);
+      }).catch(() => {
+        // Still blocked
+        setShowPlayOverlay(true);
+      });
     }
+  };
+
+  const startVideo = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.play().then(() => {
+      setIsPlaying(true);
+      setShowPlayOverlay(false);
+    }).catch(() => {
+      // Really can't play
+      console.log('Video playback not allowed');
+    });
   };
 
   return (
@@ -94,7 +144,20 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
           <div className="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-l from-black/80 via-black/60 to-black/40 lg:from-black/70 lg:via-black/50 lg:to-transparent" />
         </div>
 
-        {/* Video Play/Pause Button */}
+        {/* Large Play Overlay - shown when autoplay is blocked */}
+        {showPlayOverlay && (
+          <button
+            onClick={startVideo}
+            className="absolute inset-0 z-30 flex items-center justify-center bg-black/20"
+            aria-label="Lancer la vidéo"
+          >
+            <div className="p-6 bg-mandarin/90 hover:bg-mandarin rounded-full shadow-2xl transition-all duration-200 transform hover:scale-110">
+              <Play className="w-12 h-12 text-white ml-1" />
+            </div>
+          </button>
+        )}
+
+        {/* Video Play/Pause Button - small, bottom left */}
         <button
           onClick={toggleVideo}
           className="absolute bottom-6 left-6 z-20 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full border border-white/20 transition-all duration-200 group"
