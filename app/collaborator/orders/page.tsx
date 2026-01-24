@@ -255,6 +255,7 @@ function CollaboratorOrdersContent() {
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [newEta, setNewEta] = useState('');
+  const [actualPurchasePrice, setActualPurchasePrice] = useState('');
 
   const {
     notifications,
@@ -375,6 +376,12 @@ function CollaboratorOrdersContent() {
   const handleUpdateStatus = async () => {
     if (!selectedOrder || !newStatus) return;
 
+    // Validate actual purchase price for 'vehicle_purchased' status
+    if (newStatus === 'vehicle_purchased' && !actualPurchasePrice) {
+      alert(locale === 'zh' ? '请输入实际购买价格' : 'Please enter the actual purchase price');
+      return;
+    }
+
     try {
       setIsUpdatingStatus(true);
 
@@ -387,13 +394,18 @@ function CollaboratorOrdersContent() {
           status: newStatus,
           notes: statusNote || undefined,
           eta: newEta || undefined,
+          actualPurchasePrice: actualPurchasePrice || undefined,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to update status');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.error_zh || 'Failed to update status');
+      }
 
       await fetchOrders();
       setStatusNote('');
+      setActualPurchasePrice('');
 
       // Refresh selected order with new data
       const updatedOrder = orders.find(o => o.id === selectedOrder.id);
@@ -402,6 +414,7 @@ function CollaboratorOrdersContent() {
       }
     } catch (error) {
       console.error('Error updating status:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update status');
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -922,6 +935,27 @@ function CollaboratorOrdersContent() {
                     onChange={(e) => setStatusNote(e.target.value)}
                     className="w-full px-4 py-2.5 bg-cod-gray border border-nobel/30 rounded-lg text-white placeholder-gray-500 focus:border-mandarin focus:outline-none"
                   />
+                  {/* Actual Purchase Price - Only shown for 'vehicle_purchased' status */}
+                  {newStatus === 'vehicle_purchased' && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                      <label className="block text-sm font-medium text-amber-400 mb-2">
+                        {locale === 'zh' ? '实际购买价格 (USD)' : 'Actual Purchase Price (USD)'} <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder={locale === 'zh' ? '输入实际购买价格' : 'Enter actual purchase price'}
+                        value={actualPurchasePrice}
+                        onChange={(e) => setActualPurchasePrice(e.target.value)}
+                        required
+                        className="w-full px-4 py-2.5 bg-cod-gray border border-amber-500/50 rounded-lg text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+                      />
+                      <p className="text-xs text-amber-300 mt-1">
+                        {locale === 'zh' ? '此信息仅对管理员和协作者可见' : 'This information is only visible to admins and collaborators'}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-3">
                     <input
                       type="date"

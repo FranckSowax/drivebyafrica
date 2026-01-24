@@ -371,7 +371,7 @@ export async function PUT(request: Request) {
     );
     const body = await request.json();
     // Support both 'status' and 'orderStatus' field names
-    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true } = body;
+    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true, actualPurchasePrice } = body;
     const orderStatus = orderStatusField || statusField;
     const noteText = note || notes;
 
@@ -389,6 +389,14 @@ export async function PUT(request: Request) {
     if (!ORDER_STATUSES.includes(orderStatus as typeof ORDER_STATUSES[number])) {
       return NextResponse.json(
         { error: 'Invalid status', error_zh: '无效状态' },
+        { status: 400 }
+      );
+    }
+
+    // Validate actualPurchasePrice is required for 'vehicle_purchased' status
+    if (orderStatus === 'vehicle_purchased' && !actualPurchasePrice) {
+      return NextResponse.json(
+        { error: 'Actual purchase price is required when setting status to "vehicle_purchased"', error_zh: '设置状态为"车辆已购买"时，必须填写实际购买价格' },
         { status: 400 }
       );
     }
@@ -447,13 +455,25 @@ export async function PUT(request: Request) {
       }
 
       // Update order status in orders table
+      const updateData: {
+        status: string;
+        estimated_arrival: string | null;
+        updated_at: string;
+        actual_purchase_price_usd?: number;
+      } = {
+        status: orderStatus,
+        estimated_arrival: eta || null,
+        updated_at: now,
+      };
+
+      // Add actual purchase price if provided (for 'vehicle_purchased' status)
+      if (actualPurchasePrice) {
+        updateData.actual_purchase_price_usd = parseFloat(actualPurchasePrice);
+      }
+
       const { error: updateError } = await supabase
         .from('orders')
-        .update({
-          status: orderStatus,
-          estimated_arrival: eta || null,
-          updated_at: now,
-        })
+        .update(updateData)
         .eq('id', orderId);
 
       if (updateError) {

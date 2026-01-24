@@ -356,6 +356,7 @@ export type Database = {
           customer_name: string | null;
           customer_email: string | null;
           customer_whatsapp: string | null;
+          actual_purchase_price_usd: number | null;
           customer_country: string | null;
           admin_notes: string | null;
           customer_notes: string | null;
@@ -413,6 +414,7 @@ export type Database = {
           customer_name?: string | null;
           customer_email?: string | null;
           customer_whatsapp?: string | null;
+          actual_purchase_price_usd?: number | null;
           customer_country?: string | null;
           admin_notes?: string | null;
           customer_notes?: string | null;
@@ -470,6 +472,7 @@ export type Database = {
           customer_name?: string | null;
           customer_email?: string | null;
           customer_whatsapp?: string | null;
+          actual_purchase_price_usd?: number | null;
           customer_country?: string | null;
           admin_notes?: string | null;
           customer_notes?: string | null;
@@ -1279,6 +1282,7 @@ export type Database = {
           actual_delivery_date: string | null;
           customer_notes: string | null;
           admin_notes: string | null;
+          actual_purchase_price_usd: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -1299,6 +1303,7 @@ export type Database = {
           actual_delivery_date?: string | null;
           customer_notes?: string | null;
           admin_notes?: string | null;
+          actual_purchase_price_usd?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1319,6 +1324,7 @@ export type Database = {
           actual_delivery_date?: string | null;
           customer_notes?: string | null;
           admin_notes?: string | null;
+          actual_purchase_price_usd?: number | null;
           created_at?: string;
           updated_at?: string;
         };
