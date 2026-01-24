@@ -12,7 +12,7 @@ export const PaginationSchema = z.object({
 export const SelectSchema = z.object({
   table: z.string().describe('Name of the table to query'),
   columns: z.string().optional().describe('Comma-separated list of columns to select (default: all columns)'),
-  filters: z.record(z.any()).optional().describe('Object with column names as keys and filter values'),
+  filters: z.record(z.string(), z.any()).optional().describe('Object with column names as keys and filter values'),
   order_by: z.string().optional().describe('Column name to order by (prefix with - for descending)'),
   offset: z.number().int().min(0).optional().describe('Number of records to skip'),
   limit: z.number().int().min(1).max(1000).optional().describe('Maximum number of records to return'),
@@ -21,29 +21,29 @@ export const SelectSchema = z.object({
 
 export const InsertSchema = z.object({
   table: z.string().describe('Name of the table to insert into'),
-  data: z.union([z.record(z.any()), z.array(z.record(z.any()))]).describe('Object or array of objects to insert'),
+  data: z.union([z.record(z.string(), z.any()), z.array(z.record(z.string(), z.any()))]).describe('Object or array of objects to insert'),
   return_data: z.boolean().default(true).describe('Whether to return the inserted data'),
   response_format: ResponseFormatSchema.optional(),
 });
 
 export const UpdateSchema = z.object({
   table: z.string().describe('Name of the table to update'),
-  filters: z.record(z.any()).describe('Object with column names as keys to identify records to update'),
-  data: z.record(z.any()).describe('Object with column names and new values'),
+  filters: z.record(z.string(), z.any()).describe('Object with column names as keys to identify records to update'),
+  data: z.record(z.string(), z.any()).describe('Object with column names and new values'),
   return_data: z.boolean().default(true).describe('Whether to return the updated data'),
   response_format: ResponseFormatSchema.optional(),
 });
 
 export const DeleteSchema = z.object({
   table: z.string().describe('Name of the table to delete from'),
-  filters: z.record(z.any()).describe('Object with column names as keys to identify records to delete'),
+  filters: z.record(z.string(), z.any()).describe('Object with column names as keys to identify records to delete'),
   return_data: z.boolean().default(false).describe('Whether to return the deleted data'),
   response_format: ResponseFormatSchema.optional(),
 });
 
 export const UpsertSchema = z.object({
   table: z.string().describe('Name of the table to upsert into'),
-  data: z.union([z.record(z.any()), z.array(z.record(z.any()))]).describe('Object or array of objects to upsert'),
+  data: z.union([z.record(z.string(), z.any()), z.array(z.record(z.string(), z.any()))]).describe('Object or array of objects to upsert'),
   on_conflict: z.string().optional().describe('Comma-separated list of columns that should be used to resolve conflicts'),
   return_data: z.boolean().default(true).describe('Whether to return the upserted data'),
   response_format: ResponseFormatSchema.optional(),
@@ -51,13 +51,13 @@ export const UpsertSchema = z.object({
 
 export const RpcSchema = z.object({
   function_name: z.string().describe('Name of the Postgres function to call'),
-  params: z.record(z.any()).optional().describe('Parameters to pass to the function'),
+  params: z.record(z.string(), z.any()).optional().describe('Parameters to pass to the function'),
   response_format: ResponseFormatSchema.optional(),
 });
 
 export const CountSchema = z.object({
   table: z.string().describe('Name of the table to count records in'),
-  filters: z.record(z.any()).optional().describe('Object with column names as keys and filter values'),
+  filters: z.record(z.string(), z.any()).optional().describe('Object with column names as keys and filter values'),
   response_format: ResponseFormatSchema.optional(),
 });
 
@@ -75,7 +75,7 @@ export const ExecuteSqlSchema = z.object({
 export const SignUpSchema = z.object({
   email: z.string().email().describe('User email address'),
   password: z.string().min(6).describe('User password (minimum 6 characters)'),
-  metadata: z.record(z.any()).optional().describe('Additional user metadata'),
+  metadata: z.record(z.string(), z.any()).optional().describe('Additional user metadata'),
 });
 
 export const SignInSchema = z.object({
@@ -86,7 +86,7 @@ export const SignInSchema = z.object({
 export const UpdateUserSchema = z.object({
   email: z.string().email().optional().describe('New email address'),
   password: z.string().min(6).optional().describe('New password'),
-  metadata: z.record(z.any()).optional().describe('User metadata to update'),
+  metadata: z.record(z.string(), z.any()).optional().describe('User metadata to update'),
 });
 
 export const ResetPasswordSchema = z.object({
@@ -142,5 +142,5 @@ export const SubscribeSchema = z.object({
 export const BroadcastSchema = z.object({
   channel: z.string().describe('Channel name to broadcast to'),
   event: z.string().describe('Event name'),
-  payload: z.record(z.any()).describe('Data to broadcast'),
+  payload: z.record(z.string(), z.any()).describe('Data to broadcast'),
 });
