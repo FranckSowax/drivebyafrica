@@ -54,10 +54,10 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         const file = files[i];
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `vehicle-images/${fileName}`;
+        const filePath = `batch-images/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('vehicles')
+          .from('batch-images')
           .upload(filePath, file);
 
         if (uploadError) {
@@ -65,7 +65,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from('vehicles')
+          .from('batch-images')
           .getPublicUrl(filePath);
 
         uploadedUrls.push(publicUrl);

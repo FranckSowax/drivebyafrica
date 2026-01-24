@@ -53,7 +53,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         const filePath = `vehicle-images/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('vehicles')
+          .from('vehicle-images')
           .upload(filePath, file);
 
         if (uploadError) {
@@ -61,7 +61,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         }
 
         const { data: { publicUrl } } = supabase.storage
-          .from('vehicles')
+          .from('vehicle-images')
           .getPublicUrl(filePath);
 
         uploadedUrls.push(publicUrl);
