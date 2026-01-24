@@ -187,10 +187,17 @@ export async function GET(request: Request) {
     const user = authCheck.user;
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status'); // pending, approved, rejected, sold_out
+    const statusParam = searchParams.get('status');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
+
+    // Type-narrow status to allowed values
+    const allowedStatuses = ['pending', 'approved', 'rejected', 'sold_out'] as const;
+    type AllowedStatus = typeof allowedStatuses[number];
+    const status: AllowedStatus | null = statusParam && allowedStatuses.includes(statusParam as AllowedStatus)
+      ? (statusParam as AllowedStatus)
+      : null;
 
     let query = supabase
       .from('vehicle_batches')
