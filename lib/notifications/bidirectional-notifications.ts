@@ -12,7 +12,14 @@ export type NotificationType =
   | 'new_order_assigned'
   | 'order_note_added'
   | 'payment_received'
-  | 'urgent_attention_needed';
+  | 'urgent_attention_needed'
+  | 'vehicle_submitted'
+  | 'vehicle_approved'
+  | 'vehicle_rejected'
+  | 'batch_submitted'
+  | 'batch_approved'
+  | 'batch_rejected'
+  | 'batch_order_created';
 
 export type UserRole = 'admin' | 'super_admin' | 'collaborator';
 
@@ -38,10 +45,11 @@ interface CreateNotificationParams {
   data: NotificationData;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   actionUrl?: string;
-  relatedEntityType?: 'order' | 'quote' | 'document';
+  relatedEntityType?: 'order' | 'quote' | 'document' | 'vehicle' | 'batch' | 'batch_order';
   relatedEntityId?: string;
   targetRole?: UserRole; // If specified, only notify this role
   excludeUserId?: string; // Exclude the user who triggered the action
+  targetCollaboratorId?: string; // Target specific collaborator
 }
 
 /**
@@ -89,13 +97,18 @@ export async function notifyCollaborators(
   params: Omit<CreateNotificationParams, 'targetRole'>
 ) {
   try {
+    // Store targetCollaboratorId in data for filtering
+    const notificationData = params.targetCollaboratorId
+      ? { ...params.data, targetCollaboratorId: params.targetCollaboratorId }
+      : params.data;
+
     const notification = {
       type: params.type,
       title: params.title,
       title_zh: params.titleZh,
       message: params.message,
       message_zh: params.messageZh,
-      data: params.data,
+      data: notificationData,
       priority: params.priority || 'medium',
       action_url: params.actionUrl,
       related_entity_type: params.relatedEntityType,
