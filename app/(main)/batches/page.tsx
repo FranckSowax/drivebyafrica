@@ -205,11 +205,11 @@ export default function BatchesPage() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-3 mb-2">
             <Package className="w-8 h-8 text-alto-orange" />
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-cod-gray">
               Lots de Véhicules
             </h1>
           </div>
-          <p className="text-nobel">
+          <p className="text-cod-gray/70">
             Importez des véhicules en gros depuis la Chine, la Corée et Dubaï
           </p>
         </div>
@@ -226,7 +226,7 @@ export default function BatchesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher par marque, modèle..."
-              className="w-full pl-12 pr-4 py-3 bg-surface border border-nobel/20 rounded-lg text-white placeholder-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full pl-12 pr-4 py-3 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder-nobel focus:outline-none focus:border-alto-orange"
             />
           </form>
 
@@ -238,7 +238,7 @@ export default function BatchesPage() {
                 setCountryFilter(e.target.value as typeof countryFilter);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2.5 bg-surface border border-nobel/20 rounded-lg text-white focus:outline-none focus:border-alto-orange"
+              className="px-4 py-2.5 bg-white border border-nobel/20 rounded-lg text-cod-gray focus:outline-none focus:border-alto-orange"
             >
               <option value="all">Tous les pays</option>
               <option value="china">🇨🇳 Chine</option>
@@ -252,7 +252,7 @@ export default function BatchesPage() {
                 setSortBy(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2.5 bg-surface border border-nobel/20 rounded-lg text-white focus:outline-none focus:border-alto-orange"
+              className="px-4 py-2.5 bg-white border border-nobel/20 rounded-lg text-cod-gray focus:outline-none focus:border-alto-orange"
             >
               {SORT_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
@@ -272,7 +272,7 @@ export default function BatchesPage() {
           </div>
 
           {/* Results Count */}
-          <div className="flex items-center justify-between text-sm text-nobel">
+          <div className="flex items-center justify-between text-sm text-cod-gray/70">
             <span>
               {totalCount} lot{totalCount > 1 ? 's' : ''} disponible{totalCount > 1 ? 's' : ''}
             </span>
@@ -287,10 +287,10 @@ export default function BatchesPage() {
         ) : batches.length === 0 ? (
           <Card className="p-12 text-center">
             <Package className="w-16 h-16 text-nobel mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold text-cod-gray mb-2">
               Aucun lot disponible
             </h3>
-            <p className="text-nobel">
+            <p className="text-cod-gray/70">
               Aucun lot ne correspond à vos critères de recherche
             </p>
           </Card>
@@ -324,24 +324,24 @@ export default function BatchesPage() {
 
                   {/* Content */}
                   <div className="p-5">
-                    <h3 className="font-bold text-white text-lg mb-2 line-clamp-2 group-hover:text-alto-orange transition-colors">
+                    <h3 className="font-bold text-cod-gray text-lg mb-2 line-clamp-2 group-hover:text-alto-orange transition-colors">
                       {batch.title}
                     </h3>
-                    <p className="text-sm text-nobel mb-4">
+                    <p className="text-sm text-cod-gray/70 mb-4">
                       {batch.year} • {batch.make} {batch.model}
                     </p>
 
                     {/* Pricing Grid */}
                     <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-surface/50 rounded-lg">
                       <div>
-                        <div className="text-xs text-nobel mb-1">Prix unitaire</div>
+                        <div className="text-xs text-cod-gray/60 mb-1">Prix unitaire</div>
                         <div className="text-lg font-bold text-alto-orange">
                           ${batch.price_per_unit_usd.toLocaleString()}
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-nobel mb-1">Disponible</div>
-                        <div className="text-lg font-bold text-green-400">
+                        <div className="text-xs text-cod-gray/60 mb-1">Disponible</div>
+                        <div className="text-lg font-bold text-green-600">
                           {batch.available_quantity}
                         </div>
                       </div>
@@ -349,14 +349,14 @@ export default function BatchesPage() {
 
                     {/* Min Order Info */}
                     <div className="flex items-center justify-between p-3 bg-surface/30 rounded-lg mb-4">
-                      <span className="text-xs text-nobel">Commande min.</span>
-                      <span className="text-sm font-semibold text-white">
+                      <span className="text-xs text-cod-gray/60">Commande min.</span>
+                      <span className="text-sm font-semibold text-cod-gray">
                         {batch.minimum_order_quantity} unités
                       </span>
                     </div>
 
                     {batch.description && (
-                      <p className="text-xs text-nobel mb-4 line-clamp-2">
+                      <p className="text-xs text-cod-gray/70 mb-4 line-clamp-2">
                         {batch.description}
                       </p>
                     )}
@@ -408,22 +408,22 @@ export default function BatchesPage() {
             {/* Batch Info */}
             <div className="p-4 bg-surface/50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-nobel">Prix unitaire</span>
-                <span className="text-white font-semibold">${selectedBatch.price_per_unit_usd.toLocaleString()}</span>
+                <span className="text-cod-gray/70">Prix unitaire</span>
+                <span className="text-cod-gray font-semibold">${selectedBatch.price_per_unit_usd.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-nobel">Disponible</span>
-                <span className="text-green-400 font-semibold">{selectedBatch.available_quantity} unités</span>
+                <span className="text-cod-gray/70">Disponible</span>
+                <span className="text-green-600 font-semibold">{selectedBatch.available_quantity} unités</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-nobel">Commande minimale</span>
-                <span className="text-white font-semibold">{selectedBatch.minimum_order_quantity} unités</span>
+                <span className="text-cod-gray/70">Commande minimale</span>
+                <span className="text-cod-gray font-semibold">{selectedBatch.minimum_order_quantity} unités</span>
               </div>
             </div>
 
             {/* Order Form */}
             <div>
-              <label className="block text-sm font-medium text-nobel mb-2">
+              <label className="block text-sm font-medium text-cod-gray mb-2">
                 Quantité <span className="text-red-400">*</span>
               </label>
               <input
@@ -433,10 +433,10 @@ export default function BatchesPage() {
                 required
                 min={selectedBatch.minimum_order_quantity}
                 max={selectedBatch.available_quantity}
-                className="w-full px-4 py-2.5 bg-surface border border-nobel/20 rounded-lg text-white focus:outline-none focus:border-alto-orange"
+                className="w-full px-4 py-2.5 bg-white border border-nobel/20 rounded-lg text-cod-gray focus:outline-none focus:border-alto-orange"
               />
               {orderQuantity && (
-                <p className="text-xs text-nobel mt-2">
+                <p className="text-xs text-cod-gray/70 mt-2">
                   Total : <span className="text-alto-orange font-semibold">
                     ${(parseFloat(orderQuantity || '0') * selectedBatch.price_per_unit_usd).toLocaleString()} USD
                   </span>
@@ -445,14 +445,14 @@ export default function BatchesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-nobel mb-2">
+              <label className="block text-sm font-medium text-cod-gray mb-2">
                 Pays de destination <span className="text-red-400">*</span>
               </label>
               <select
                 value={destinationCountry}
                 onChange={(e) => setDestinationCountry(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 bg-surface border border-nobel/20 rounded-lg text-white focus:outline-none focus:border-alto-orange"
+                className="w-full px-4 py-2.5 bg-white border border-nobel/20 rounded-lg text-cod-gray focus:outline-none focus:border-alto-orange"
               >
                 <option value="">Sélectionner...</option>
                 <option value="Cameroon">Cameroun</option>
@@ -466,7 +466,7 @@ export default function BatchesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-nobel mb-2">
+              <label className="block text-sm font-medium text-cod-gray mb-2">
                 Port de destination (Optionnel)
               </label>
               <input
@@ -474,12 +474,12 @@ export default function BatchesPage() {
                 value={destinationPort}
                 onChange={(e) => setDestinationPort(e.target.value)}
                 placeholder="ex: Port de Douala"
-                className="w-full px-4 py-2.5 bg-surface border border-nobel/20 rounded-lg text-white placeholder-nobel focus:outline-none focus:border-alto-orange"
+                className="w-full px-4 py-2.5 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder-nobel focus:outline-none focus:border-alto-orange"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-nobel mb-2">
+              <label className="block text-sm font-medium text-cod-gray mb-2">
                 Notes (Optionnel)
               </label>
               <textarea
@@ -487,7 +487,7 @@ export default function BatchesPage() {
                 onChange={(e) => setCustomerNotes(e.target.value)}
                 rows={3}
                 placeholder="Exigences spécifiques ou questions..."
-                className="w-full px-4 py-2.5 bg-surface border border-nobel/20 rounded-lg text-white placeholder-nobel focus:outline-none focus:border-alto-orange resize-none"
+                className="w-full px-4 py-2.5 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder-nobel focus:outline-none focus:border-alto-orange resize-none"
               />
             </div>
 
