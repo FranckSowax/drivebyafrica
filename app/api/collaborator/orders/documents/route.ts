@@ -128,8 +128,8 @@ export async function POST(request: Request) {
           p_user_id: order.user_id,
           p_type: 'documents_ready',
           p_title: 'Documents available / 文件可用',
-          p_message: \`Documents for your order #\${order.order_number || orderId.slice(0, 8)} are now available. / 您的订单 #\${order.order_number || orderId.slice(0, 8)} 的文件现已可用。\`,
-          p_action_url: \`/dashboard/orders/\${orderId}\`,
+          p_message: `Documents for your order #${order.order_number || orderId.slice(0, 8)} are now available. / 您的订单 #${order.order_number || orderId.slice(0, 8)} 的文件现已可用。`,
+          p_action_url: `/dashboard/orders/${orderId}`,
           p_action_label: 'View documents / 查看文件',
           p_icon: 'file-text',
           p_priority: 'high',
@@ -149,17 +149,17 @@ export async function POST(request: Request) {
       );
 
       const vehicleInfo = vehicle
-        ? \`\${vehicle.make} \${vehicle.model} \${vehicle.year || ''}\`
+        ? `\${vehicle.make} \${vehicle.model} \${vehicle.year || ''}`
         : 'Vehicle';
 
       const documentNames = newDocuments.map(d => d.name).join(', ');
 
       await notifyAdmins(supabaseAdmin, {
         type: 'document_uploaded',
-        title: \`Documents uploaded by collaborator for order \${order.order_number || orderId.slice(0, 8)}\`,
-        titleZh: \`协作员为订单 \${order.order_number || orderId.slice(0, 8)} 上传了文件\`,
-        message: \`\${newDocuments.length} document(s) uploaded: \${documentNames}\`,
-        messageZh: \`已上传 \${newDocuments.length} 个文件: \${documentNames}\`,
+        title: `Documents uploaded by collaborator for order \${order.order_number || orderId.slice(0, 8)}`,
+        titleZh: `协作员为订单 \${order.order_number || orderId.slice(0, 8)} 上传了文件`,
+        message: `\${newDocuments.length} document(s) uploaded: \${documentNames}`,
+        messageZh: `已上传 \${newDocuments.length} 个文件: \${documentNames}`,
         data: {
           orderId,
           orderNumber: order.order_number || orderId.slice(0, 8),
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
           status: docStatus || order.status,
         },
         priority: 'medium',
-        actionUrl: \`/admin/orders?orderId=\${orderId}\`,
+        actionUrl: `/admin/orders?orderId=\${orderId}`,
         relatedEntityType: 'document',
         relatedEntityId: orderId,
         excludeUserId: user.id,
@@ -184,8 +184,8 @@ export async function POST(request: Request) {
     let whatsappSent = false;
     if (sendWhatsApp && whatsappNumber) {
       try {
-        const documentNames = newDocuments.map(d => \`- \${d.name}\`).join('\\n');
-        const message = \`🚗 *Driveby Africa*\\n\\nHello \${customerName},\\n\\nDocuments for your order are now available:\\n\\n\${documentNames}\\n\\n📥 Download them from your dashboard:\\nhttps://drivebyafrica.netlify.app/dashboard/orders/\${orderId}\\n\\nBest regards,\\nDriveby Africa Team\`;
+        const documentNames = newDocuments.map(d => `- \${d.name}`).join('\\n');
+        const message = `🚗 *Driveby Africa*\\n\\nHello \${customerName},\\n\\nDocuments for your order are now available:\\n\\n\${documentNames}\\n\\n📥 Download them from your dashboard:\\nhttps://drivebyafrica.netlify.app/dashboard/orders/\${orderId}\\n\\nBest regards,\\nDriveby Africa Team`;
 
         const whatsappApiUrl = process.env.WHATSAPP_API_URL;
         const whatsappApiKey = process.env.WHATSAPP_API_KEY;
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': \`Bearer \${whatsappApiKey}\`,
+              'Authorization': `Bearer \${whatsappApiKey}`,
             },
             body: JSON.stringify({
               phone: whatsappNumber.replace(/[^0-9+]/g, ''),
@@ -358,10 +358,10 @@ export async function DELETE(request: Request) {
 
         await notifyAdmins(supabaseAdmin, {
           type: 'document_uploaded',
-          title: \`Document deleted by collaborator for order \${order.order_number || orderId.slice(0, 8)}\`,
-          titleZh: \`协作员删除了订单 \${order.order_number || orderId.slice(0, 8)} 的文件\`,
-          message: \`Document "\${deletedDoc.name}" was deleted\`,
-          messageZh: \`文件"\${deletedDoc.name}"已被删除\`,
+          title: `Document deleted by collaborator for order \${order.order_number || orderId.slice(0, 8)}`,
+          titleZh: `协作员删除了订单 \${order.order_number || orderId.slice(0, 8)} 的文件`,
+          message: `Document "\${deletedDoc.name}" was deleted`,
+          messageZh: `文件"\${deletedDoc.name}"已被删除`,
           data: {
             orderId,
             orderNumber: order.order_number || orderId.slice(0, 8),
@@ -369,7 +369,7 @@ export async function DELETE(request: Request) {
             action: 'deleted',
           },
           priority: 'low',
-          actionUrl: \`/admin/orders?orderId=\${orderId}\`,
+          actionUrl: `/admin/orders?orderId=\${orderId}`,
           relatedEntityType: 'document',
           relatedEntityId: orderId,
           excludeUserId: user.id,
