@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Upload, X, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 
 interface AddBatchModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface AddBatchModalProps {
 }
 
 export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps) {
+  const { t } = useCollaboratorLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -463,11 +465,11 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         {/* Images */}
         <div>
           <label className="block text-sm font-medium text-nobel mb-2">
-            Vehicle Images
+            {t('imageUpload.vehicleImages')}
           </label>
           {images.length > 0 && (
             <p className="text-xs text-nobel mb-2">
-              The first image (marked with <Star className="w-3 h-3 inline fill-alto-orange text-alto-orange" />) will be used as the main thumbnail. Click "Set as main" on any image to make it the thumbnail.
+              {t('imageUpload.thumbnailHelper')}
             </p>
           )}
 
@@ -486,7 +488,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
                 {index === 0 && (
                   <div className="absolute top-1 left-1 px-2 py-0.5 bg-alto-orange text-white text-xs font-semibold rounded flex items-center gap-1">
                     <Star className="w-3 h-3 fill-current" />
-                    Main
+                    {t('imageUpload.main')}
                   </div>
                 )}
 
@@ -496,10 +498,10 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
                     type="button"
                     onClick={() => setAsThumbnail(index)}
                     className="absolute bottom-1 left-1 px-2 py-1 bg-surface/90 hover:bg-alto-orange text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-                    title="Set as main thumbnail"
+                    title={t('imageUpload.setAsMainTitle')}
                   >
                     <Star className="w-3 h-3" />
-                    Set as main
+                    {t('imageUpload.setAsMain')}
                   </button>
                 )}
 
@@ -518,12 +520,12 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-nobel/20 rounded-lg cursor-pointer hover:border-alto-orange/50 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {uploadingImages ? (
-                <div className="text-sm text-nobel">Uploading...</div>
+                <div className="text-sm text-nobel">{t('imageUpload.uploading')}</div>
               ) : (
                 <>
                   <Upload className="w-8 h-8 text-nobel mb-2" />
                   <p className="text-sm text-nobel">
-                    Click to upload images
+                    {t('imageUpload.clickToUpload')}
                   </p>
                 </>
               )}

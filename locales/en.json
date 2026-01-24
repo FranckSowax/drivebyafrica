@@ -394,5 +394,14 @@
     "hoursAgo": "{count} hours ago",
     "daysAgo": "{count} days ago",
     "weeksAgo": "{count} weeks ago"
+  },
+  "imageUpload": {
+    "vehicleImages": "Vehicle Images",
+    "main": "Main",
+    "setAsMain": "Set as main",
+    "setAsMainTitle": "Set as main thumbnail",
+    "thumbnailHelper": "The first image (marked with ⭐) will be used as the main thumbnail. Click \"Set as main\" on any image to make it the thumbnail.",
+    "clickToUpload": "Click to upload images",
+    "uploading": "Uploading..."
   }
 }

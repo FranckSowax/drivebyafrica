@@ -185,5 +185,14 @@
     "hoursAgo": "{count}小时前",
     "daysAgo": "{count}天前",
     "weeksAgo": "{count}周前"
+  },
+  "imageUpload": {
+    "vehicleImages": "车辆图片",
+    "main": "主图",
+    "setAsMain": "设为主图",
+    "setAsMainTitle": "设为主缩略图",
+    "thumbnailHelper": "第一张图片（标有⭐）将用作主缩略图。点击任意图片上的"设为主图"以将其设为缩略图。",
+    "clickToUpload": "点击上传图片",
+    "uploading": "上传中..."
   }
 }
