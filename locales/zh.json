@@ -141,7 +141,21 @@
     "inTransit": "运输中",
     "shipping": "海运中",
     "delivered": "已交付",
-    "totalDeposits": "定金总额"
+    "totalDeposits": "定金总额",
+    "todayNewOrders": "今日新订单",
+    "yesterday": "昨日",
+    "processedToday": "今日已处理",
+    "completedToday": "今日完成",
+    "pendingAction": "待处理",
+    "inProgress": "处理中",
+    "completed": "已完成",
+    "pending": "待审核",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "totalBatches": "批次总数",
+    "totalVehicles": "车辆总数",
+    "available": "可用",
+    "allStatuses": "所有状态"
   },
   "common": {
     "loading": "加载中...",

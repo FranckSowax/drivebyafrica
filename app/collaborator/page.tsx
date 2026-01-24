@@ -313,12 +313,12 @@ export default function CollaboratorDashboardPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm text-blue-400 mb-1">
-                        {locale === 'zh' ? '今日新订单' : "Today's New Orders"}
+                        {t('stats.todayNewOrders')}
                       </p>
                       <p className="text-3xl font-bold text-white">{dailyStats.newOrdersToday}</p>
                       {dailyStats.newOrdersYesterday > 0 && (
                         <p className="text-xs text-gray-500 mt-1">
-                          {locale === 'zh' ? '昨日' : 'Yesterday'}: {dailyStats.newOrdersYesterday}
+                          {t('stats.yesterday')}: {dailyStats.newOrdersYesterday}
                         </p>
                       )}
                     </div>
@@ -333,7 +333,7 @@ export default function CollaboratorDashboardPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm text-purple-400 mb-1">
-                        {locale === 'zh' ? '今日已处理' : 'Processed Today'}
+                        {t('stats.processedToday')}
                       </p>
                       <p className="text-3xl font-bold text-white">{dailyStats.processedToday}</p>
                     </div>
@@ -348,7 +348,7 @@ export default function CollaboratorDashboardPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm text-emerald-400 mb-1">
-                        {locale === 'zh' ? '今日完成' : 'Completed Today'}
+                        {t('stats.completedToday')}
                       </p>
                       <p className="text-3xl font-bold text-white">{dailyStats.completedToday}</p>
                     </div>
@@ -363,7 +363,7 @@ export default function CollaboratorDashboardPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm text-amber-400 mb-1">
-                        {locale === 'zh' ? '待处理' : 'Pending Action'}
+                        {t('stats.pendingAction')}
                       </p>
                       <p className="text-3xl font-bold text-white">{dailyStats.pendingAction}</p>
                     </div>
@@ -382,7 +382,7 @@ export default function CollaboratorDashboardPage() {
                       <ShoppingCart className="w-5 h-5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">{locale === 'zh' ? '处理中' : 'In Progress'}</p>
+                      <p className="text-xs text-gray-400">{t('stats.inProgress')}</p>
                       <p className="text-xl font-bold text-white">{statusBreakdown.inProgress}</p>
                     </div>
                   </div>
@@ -393,7 +393,7 @@ export default function CollaboratorDashboardPage() {
                       <Truck className="w-5 h-5 text-purple-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">{locale === 'zh' ? '运输中' : 'In Transit'}</p>
+                      <p className="text-xs text-gray-400">{t('stats.inTransit')}</p>
                       <p className="text-xl font-bold text-white">{statusBreakdown.inTransit}</p>
                     </div>
                   </div>
@@ -404,7 +404,7 @@ export default function CollaboratorDashboardPage() {
                       <Ship className="w-5 h-5 text-indigo-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">{locale === 'zh' ? '海运中' : 'Shipping'}</p>
+                      <p className="text-xs text-gray-400">{t('stats.shipping')}</p>
                       <p className="text-xl font-bold text-white">{statusBreakdown.shipping}</p>
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export default function CollaboratorDashboardPage() {
                       <CheckCircle className="w-5 h-5 text-jewel" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">{locale === 'zh' ? '已完成' : 'Completed'}</p>
+                      <p className="text-xs text-gray-400">{t('stats.completed')}</p>
                       <p className="text-xl font-bold text-white">{statusBreakdown.completed}</p>
                     </div>
                   </div>

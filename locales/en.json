@@ -399,7 +399,21 @@
     "inTransit": "In Transit",
     "shipping": "Shipping",
     "delivered": "Delivered",
-    "totalDeposits": "Total Deposits"
+    "totalDeposits": "Total Deposits",
+    "todayNewOrders": "Today's New Orders",
+    "yesterday": "Yesterday",
+    "processedToday": "Processed Today",
+    "completedToday": "Completed Today",
+    "pendingAction": "Pending Action",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "totalBatches": "Total Batches",
+    "totalVehicles": "Total Vehicles",
+    "available": "Available",
+    "allStatuses": "All statuses"
   },
   "notifications": {
     "title": "Notifications",

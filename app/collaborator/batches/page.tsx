@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
 import { AddBatchModal } from '@/components/collaborator/AddBatchModal';
@@ -20,6 +21,7 @@ import {
 import type { VehicleBatch } from '@/types/vehicle-batch';
 
 export default function CollaboratorBatchesPage() {
+  const { t } = useCollaboratorLocale();
   const [batches, setBatches] = useState<VehicleBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -145,28 +147,28 @@ export default function CollaboratorBatchesPage() {
           {/* Stats */}
           <div className="grid grid-cols-6 gap-4 mb-6">
             <Card className="p-4">
-              <div className="text-sm text-nobel">Total Batches</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.total}</div>
+              <div className="text-sm text-gray-900">{t('stats.totalBatches')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-sm text-yellow-400">Pending</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.pending}</div>
+              <div className="text-sm text-yellow-400">{t('stats.pending')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.pending}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-sm text-green-400">Approved</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.approved}</div>
+              <div className="text-sm text-green-400">{t('stats.approved')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.approved}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-sm text-red-400">Rejected</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.rejected}</div>
+              <div className="text-sm text-red-400">{t('stats.rejected')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.rejected}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-sm text-nobel">Total Vehicles</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.totalVehicles}</div>
+              <div className="text-sm text-gray-900">{t('stats.totalVehicles')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.totalVehicles}</div>
             </Card>
             <Card className="p-4">
-              <div className="text-sm text-blue-400">Available</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.availableVehicles}</div>
+              <div className="text-sm text-blue-400">{t('stats.available')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.availableVehicles}</div>
             </Card>
           </div>
 
@@ -186,12 +188,12 @@ export default function CollaboratorBatchesPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="px-4 py-2 bg-surface border border-nobel/20 rounded-lg text-white focus:outline-none focus:border-alto-orange"
+              className="px-4 py-2 bg-surface border border-nobel/20 rounded-lg text-gray-900 focus:outline-none focus:border-alto-orange"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="all">{t('stats.allStatuses')}</option>
+              <option value="pending">{t('stats.pending')}</option>
+              <option value="approved">{t('stats.approved')}</option>
+              <option value="rejected">{t('stats.rejected')}</option>
             </select>
           </div>
 
