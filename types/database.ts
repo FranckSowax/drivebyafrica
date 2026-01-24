@@ -170,6 +170,10 @@ export type Database = {
           has_360_view: boolean;
           views_count: number;
           favorites_count: number;
+          added_by_collaborator_id: string | null;
+          is_collaborator_listing: boolean;
+          collaborator_approved: boolean;
+          rejection_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -206,6 +210,10 @@ export type Database = {
           has_360_view?: boolean;
           views_count?: number;
           favorites_count?: number;
+          added_by_collaborator_id?: string | null;
+          is_collaborator_listing?: boolean;
+          collaborator_approved?: boolean;
+          rejection_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -242,6 +250,10 @@ export type Database = {
           has_360_view?: boolean;
           views_count?: number;
           favorites_count?: number;
+          added_by_collaborator_id?: string | null;
+          is_collaborator_listing?: boolean;
+          collaborator_approved?: boolean;
+          rejection_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
