@@ -16,9 +16,11 @@ export type NotificationType =
   | 'vehicle_submitted'
   | 'vehicle_approved'
   | 'vehicle_rejected'
+  | 'vehicle_published'
   | 'batch_submitted'
   | 'batch_approved'
   | 'batch_rejected'
+  | 'batch_published'
   | 'batch_order_created';
 
 export type UserRole = 'admin' | 'super_admin' | 'collaborator';
