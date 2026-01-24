@@ -154,8 +154,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Vehicle"
-      description="Add a vehicle to your listings"
+      title={t('collaborator.addVehicle')}
+      description=""
       size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -168,8 +168,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         {/* Basic Info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Make <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.make')} <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -182,8 +182,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Model <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.model')} <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -198,8 +198,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Year <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.year')} <span className="text-red-400">*</span>
             </label>
             <input
               type="number"
@@ -214,8 +214,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Price (USD) <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.price')} <span className="text-red-400">*</span>
             </label>
             <input
               type="number"
@@ -231,8 +231,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Title <span className="text-red-400">*</span>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.vehicleForm.title')} <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
@@ -245,8 +245,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Description
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.vehicleForm.description')}
           </label>
           <textarea
             value={description}
@@ -260,8 +260,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         {/* Additional Details */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Mileage (km)
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.mileage')}
             </label>
             <input
               type="number"
@@ -274,8 +274,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Fuel Type
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.fuelType')}
             </label>
             <select
               value={fuelType}
@@ -293,8 +293,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Transmission
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.transmission')}
             </label>
             <select
               value={transmission}
@@ -308,8 +308,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Drive Type
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.driveType')}
             </label>
             <select
               value={driveType}
@@ -327,8 +327,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Engine Size
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.engineSize')}
             </label>
             <input
               type="text"
@@ -340,8 +340,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Body Type
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.bodyType')}
             </label>
             <input
               type="text"
@@ -353,8 +353,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Color
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.vehicleForm.color')}
             </label>
             <input
               type="text"
@@ -367,8 +367,8 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Condition
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.vehicleForm.condition')}
           </label>
           <select
             value={condition}
@@ -384,11 +384,11 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
 
         {/* Images */}
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             {t('imageUpload.vehicleImages')}
           </label>
           {images.length > 0 && (
-            <p className="text-xs text-cod-gray/70 mb-2">
+            <p className="text-xs text-gray-600 mb-2">
               {t('imageUpload.thumbnailHelper')}
             </p>
           )}
@@ -440,11 +440,11 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-nobel/20 rounded-lg cursor-pointer hover:border-alto-orange/50 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {uploadingImages ? (
-                <div className="text-sm text-cod-gray">{t('imageUpload.uploading')}</div>
+                <div className="text-sm text-gray-900">{t('imageUpload.uploading')}</div>
               ) : (
                 <>
-                  <Upload className="w-8 h-8 text-cod-gray/70 mb-2" />
-                  <p className="text-sm text-cod-gray">
+                  <Upload className="w-8 h-8 text-gray-600 mb-2" />
+                  <p className="text-sm text-gray-900">
                     {t('imageUpload.clickToUpload')}
                   </p>
                 </>
@@ -469,14 +469,14 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
             disabled={loading}
             className="flex-1 px-4 py-2 bg-surface border border-nobel/20 text-white rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={loading || uploadingImages}
             className="flex-1 px-4 py-2 bg-alto-orange text-white rounded-lg hover:bg-alto-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Adding...' : 'Add Vehicle'}
+            {loading ? t('collaborator.vehicleForm.submitting') : t('collaborator.vehicleForm.submit')}
           </button>
         </div>
       </form>

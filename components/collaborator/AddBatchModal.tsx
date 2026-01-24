@@ -176,8 +176,8 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Vehicle Batch"
-      description="Add a batch of vehicles for wholesale"
+      title={t('collaborator.addBatch')}
+      description=""
       size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -190,29 +190,29 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         {/* Basic Info */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Make <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.make')} <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
               value={make}
               onChange={(e) => setMake(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Toyota, BMW, etc."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Model <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.model')} <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Camry, X5, etc."
             />
           </div>
@@ -220,8 +220,8 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Year <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.year')} <span className="text-red-400">*</span>
             </label>
             <input
               type="number"
@@ -230,20 +230,20 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
               required
               min="1900"
               max={new Date().getFullYear() + 1}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="2023"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Source Country <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.sourceCountry')} <span className="text-red-400">*</span>
             </label>
             <select
               value={sourceCountry}
               onChange={(e) => setSourceCountry(e.target.value as 'china' | 'korea' | 'dubai')}
               required
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="china">China</option>
               <option value="korea">Korea</option>
@@ -253,39 +253,39 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Title <span className="text-red-400">*</span>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.batchForm.title')} <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             placeholder="2023 Toyota Camry - Wholesale Lot"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Description
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.batchForm.description')}
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange resize-none"
+            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange resize-none"
             placeholder="Batch description..."
           />
         </div>
 
         {/* Batch Specific */}
         <div className="p-4 bg-nobel/10 rounded-lg border border-nobel/20">
-          <h3 className="text-sm font-semibold text-cod-gray mb-3">Batch Information</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('collaborator.batchForm.batchInfo')}</h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-cod-gray mb-1">
-                Price per Unit (USD) <span className="text-red-400">*</span>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                {t('collaborator.batchForm.pricePerUnit')} <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
@@ -294,14 +294,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
                 required
                 min="0"
                 step="0.01"
-                className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+                className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
                 placeholder="15000"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-cod-gray mb-1">
-                Total Quantity <span className="text-red-400">*</span>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                {t('collaborator.batchForm.totalQuantity')} <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
@@ -309,14 +309,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
                 onChange={(e) => setTotalQuantity(e.target.value)}
                 required
                 min="1"
-                className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+                className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
                 placeholder="50"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-cod-gray mb-1">
-                Min. Order Qty <span className="text-red-400">*</span>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                {t('collaborator.batchForm.minOrderQuantity')} <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
@@ -324,14 +324,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
                 onChange={(e) => setMinOrderQuantity(e.target.value)}
                 required
                 min="1"
-                className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+                className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
                 placeholder="5"
               />
             </div>
           </div>
 
           {totalQuantity && minOrderQuantity && (
-            <p className="mt-2 text-xs text-cod-gray/70">
+            <p className="mt-2 text-xs text-gray-600">
               Total value: ${(parseFloat(pricePerUnit || '0') * parseInt(totalQuantity)).toLocaleString()} USD
             </p>
           )}
@@ -340,27 +340,27 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         {/* Vehicle Details */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Mileage (km)
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.mileage')}
             </label>
             <input
               type="number"
               value={mileage}
               onChange={(e) => setMileage(e.target.value)}
               min="0"
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="50000"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Fuel Type
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.fuelType')}
             </label>
             <select
               value={fuelType}
               onChange={(e) => setFuelType(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="">Select...</option>
               <option value="Gasoline">Gasoline</option>
@@ -373,13 +373,13 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Transmission
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.transmission')}
             </label>
             <select
               value={transmission}
               onChange={(e) => setTransmission(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="">Select...</option>
               <option value="Automatic">Automatic</option>
@@ -388,13 +388,13 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Drive Type
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.driveType')}
             </label>
             <select
               value={driveType}
               onChange={(e) => setDriveType(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="">Select...</option>
               <option value="FWD">FWD</option>
@@ -407,53 +407,53 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Engine Size
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.engineSize')}
             </label>
             <input
               type="text"
               value={engineSize}
               onChange={(e) => setEngineSize(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="2.0L"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Body Type
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.bodyType')}
             </label>
             <input
               type="text"
               value={bodyType}
               onChange={(e) => setBodyType(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Sedan, SUV, etc."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cod-gray mb-1">
-              Color
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              {t('collaborator.batchForm.color')}
             </label>
             <input
               type="text"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Black, White, etc."
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Condition
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.batchForm.condition')}
           </label>
           <select
             value={condition}
             onChange={(e) => setCondition(e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
           >
             <option value="">Select...</option>
             <option value="New">New</option>
@@ -464,11 +464,11 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
 
         {/* Images */}
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             {t('imageUpload.vehicleImages')}
           </label>
           {images.length > 0 && (
-            <p className="text-xs text-cod-gray/70 mb-2">
+            <p className="text-xs text-gray-600 mb-2">
               {t('imageUpload.thumbnailHelper')}
             </p>
           )}
@@ -520,11 +520,11 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-nobel/20 rounded-lg cursor-pointer hover:border-alto-orange/50 transition-colors">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {uploadingImages ? (
-                <div className="text-sm text-cod-gray">{t('imageUpload.uploading')}</div>
+                <div className="text-sm text-gray-900">{t('imageUpload.uploading')}</div>
               ) : (
                 <>
-                  <Upload className="w-8 h-8 text-cod-gray/70 mb-2" />
-                  <p className="text-sm text-cod-gray">
+                  <Upload className="w-8 h-8 text-gray-600 mb-2" />
+                  <p className="text-sm text-gray-900">
                     {t('imageUpload.clickToUpload')}
                   </p>
                 </>
@@ -543,14 +543,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
 
         {/* Collaborator Notes */}
         <div>
-          <label className="block text-sm font-medium text-cod-gray mb-1">
-            Notes (Internal)
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            {t('collaborator.batchForm.collaboratorNotes')}
           </label>
           <textarea
             value={collaboratorNotes}
             onChange={(e) => setCollaboratorNotes(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange resize-none"
+            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange resize-none"
             placeholder="Any additional notes for the admin..."
           />
         </div>
@@ -563,14 +563,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
             disabled={loading}
             className="flex-1 px-4 py-2 bg-surface border border-nobel/20 text-white rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={loading || uploadingImages}
             className="flex-1 px-4 py-2 bg-alto-orange text-white rounded-lg hover:bg-alto-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Adding...' : 'Add Batch'}
+            {loading ? t('collaborator.batchForm.submitting') : t('collaborator.batchForm.submit')}
           </button>
         </div>
       </form>
