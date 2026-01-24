@@ -64,7 +64,7 @@ export function CollaboratorSidebar({ className, onLogout, collapsed, onCollapse
       <div className="p-6 border-b border-gray-700">
         <Link href="/collaborator" className="flex items-center gap-3">
           <Image
-            src="/logo-driveby-africa-dark.png"
+            src="/logo-driveby-africa.png"
             alt="Driveby Africa"
             width={180}
             height={60}
