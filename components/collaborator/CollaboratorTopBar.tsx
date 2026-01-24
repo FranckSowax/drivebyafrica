@@ -16,7 +16,7 @@ interface Notification {
 }
 
 interface CollaboratorTopBarProps {
-  title: string;
+  title?: string;
   userName?: string;
   notifications?: Notification[];
   unreadCount?: number;
