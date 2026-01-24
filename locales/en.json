@@ -1,0 +1,398 @@
+{
+  "landing": {
+    "hero": {
+      "badge": "New: Direct import from South Korea",
+      "title": "Import your vehicle from",
+      "titleHighlight": "China, Korea and Dubai",
+      "subtitle": "Access thousands of vehicles from South Korea, China and Dubai. Free estimate and delivery to your port in Africa.",
+      "cta": "Browse vehicles",
+      "sources": "Sources"
+    },
+    "stats": {
+      "vehicles": "Vehicles available",
+      "clients": "Satisfied clients",
+      "countries": "Countries served",
+      "satisfaction": "Satisfaction rate"
+    },
+    "featured": {
+      "title": "Popular",
+      "titleHighlight": "vehicles",
+      "subtitle": "The most searched vehicles by our clients",
+      "viewAll": "View all"
+    },
+    "howItWorks": {
+      "title": "How it",
+      "titleHighlight": "works",
+      "subtitle": "A simple and transparent process to import your vehicle",
+      "steps": {
+        "choose": {
+          "title": "Choose",
+          "description": "Browse our catalog and find the ideal vehicle among thousands of options."
+        },
+        "estimate": {
+          "title": "Estimate",
+          "description": "Calculate shipping costs to your port and get a personalized quote."
+        },
+        "reserve": {
+          "title": "Reserve",
+          "description": "Pay a deposit to secure the vehicle and start the import process."
+        },
+        "receive": {
+          "title": "Receive",
+          "description": "Track your vehicle in real-time until delivery at your chosen port."
+        }
+      }
+    },
+    "features": {
+      "title": "Why",
+      "titleHighlight": "Driveby Africa",
+      "subtitle": "A platform designed to simplify vehicle imports to Africa",
+      "verified": {
+        "title": "Verified vehicles",
+        "description": "Each vehicle is inspected with detailed specifications and complete history."
+      },
+      "secure": {
+        "title": "Secure transactions",
+        "description": "Secure payments via Stripe and Mobile Money. Your deposit is protected until delivery."
+      },
+      "delivery": {
+        "title": "Complete delivery",
+        "description": "From reservation to African port. Real-time tracking and customs assistance included."
+      },
+      "support": {
+        "title": "24/7 Support",
+        "description": "Dedicated team available via WhatsApp. English assistance throughout the process."
+      }
+    },
+    "cta": {
+      "title": "Ready to import your next vehicle?",
+      "subtitle": "Create your free account, explore our catalog and get a personalized quote for your import.",
+      "register": "Create free account",
+      "browse": "Browse vehicles"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "none": "None",
+    "more": "More",
+    "less": "Less",
+    "seeAll": "See all",
+    "seeMore": "See more",
+    "noResults": "No results",
+    "noData": "No data"
+  },
+  "nav": {
+    "home": "Home",
+    "vehicles": "Vehicles",
+    "howItWorks": "How it works",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Login",
+    "register": "Sign up",
+    "dashboard": "Dashboard",
+    "logout": "Logout",
+    "admin": "Admin"
+  },
+  "hero": {
+    "title": "Import your used vehicle to Africa",
+    "subtitle": "The trusted platform to import vehicles from Korea, China and Dubai to Africa",
+    "cta": "Browse vehicles",
+    "ctaSecondary": "How it works"
+  },
+  "vehicles": {
+    "title": "Vehicle catalog",
+    "searchPlaceholder": "Search by make, model...",
+    "filters": {
+      "make": "Make",
+      "model": "Model",
+      "year": "Year",
+      "price": "Price",
+      "mileage": "Mileage",
+      "fuel": "Fuel",
+      "transmission": "Transmission",
+      "source": "Source"
+    },
+    "priceRange": "Price range",
+    "mileageRange": "Mileage range",
+    "yearRange": "Year range",
+    "resultsCount": "{count} vehicles found",
+    "noVehicles": "No vehicles found",
+    "viewDetails": "View details",
+    "addToFavorites": "Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
+    "requestQuote": "Request quote",
+    "specifications": "Specifications",
+    "description": "Description",
+    "photos": "Photos",
+    "estimatedPrice": "Estimated price",
+    "shippingIncluded": "Shipping included",
+    "views": "views",
+    "favorites": "favorites",
+    "card": {
+      "status": {
+        "available": "Available",
+        "reserved": "Reserved",
+        "sold": "Sold",
+        "pending": "Pending"
+      },
+      "source": {
+        "korea": "South Korea",
+        "china": "China",
+        "dubai": "Dubai"
+      },
+      "grade": "Grade",
+      "fobPrice": "FOB Price",
+      "onRequest": "On request",
+      "freeEstimate": "Free shipping estimate",
+      "viewDetail": "View details →"
+    }
+  },
+  "quote": {
+    "title": "Quote request",
+    "subtitle": "Get an accurate estimate for this vehicle",
+    "vehiclePrice": "Vehicle price",
+    "shippingCost": "Shipping cost",
+    "customsDuties": "Customs duties",
+    "totalCost": "Total estimated cost",
+    "destination": "Destination",
+    "selectCountry": "Select your country",
+    "submit": "Submit request",
+    "success": "Your quote request has been sent",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "expired": "Expired",
+    "cancelled": "Cancelled"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "fullName": "Full name",
+    "phone": "Phone",
+    "country": "Country",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginSuccess": "Login successful",
+    "registerSuccess": "Registration successful",
+    "logoutSuccess": "Logout successful"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "myQuotes": "My quotes",
+    "myOrders": "My orders",
+    "myFavorites": "My favorites",
+    "messages": "Messages",
+    "settings": "Settings",
+    "wallet": "Wallet"
+  },
+  "admin": {
+    "title": "Administration",
+    "dashboard": "Dashboard",
+    "vehicles": "Vehicles",
+    "users": "Users",
+    "quotes": "Quotes",
+    "orders": "Orders",
+    "messages": "Messages",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "shipping": "Shipping",
+    "currencies": "Currencies"
+  },
+  "currencies": {
+    "title": "Currency management",
+    "subtitle": "Manage exchange rates for different countries",
+    "code": "Code",
+    "name": "Name",
+    "symbol": "Symbol",
+    "rateToUsd": "Rate / USD",
+    "countries": "Countries",
+    "lastUpdate": "Last update",
+    "updateRate": "Update rate",
+    "history": "History",
+    "addNote": "Add note",
+    "saveSuccess": "Exchange rate updated",
+    "saveError": "Error updating rate"
+  },
+  "footer": {
+    "about": "About Driveby Africa",
+    "description": "The trusted platform to import used vehicles to Africa",
+    "quickLinks": "Quick links",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms of use",
+    "contact": "Contact us",
+    "copyright": "© {year} Driveby Africa. All rights reserved."
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match",
+    "serverError": "Server error",
+    "networkError": "Network error",
+    "unauthorized": "Unauthorized",
+    "notFound": "Not found",
+    "accessDenied": "Access denied",
+    "sessionExpired": "Session expired"
+  },
+  "collaborator": {
+    "title": "Collaborator Portal",
+    "portal": "Collaborator Portal",
+    "dashboard": "Dashboard",
+    "orders": "Order Management",
+    "ordersDescription": "Manage and track all vehicle orders",
+    "vehicles": "My Vehicles",
+    "batches": "Vehicle Batches",
+    "welcome": "Welcome back",
+    "logout": "Logout",
+    "login": "Collaborator Login",
+    "loginSubtitle": "Sign in to your collaborator account"
+  },
+  "orders": {
+    "title": "Order Management",
+    "orderNumber": "Order Number",
+    "vehicle": "Vehicle",
+    "customer": "Customer",
+    "destination": "Destination",
+    "status": "Status",
+    "progress": "Progress",
+    "eta": "ETA",
+    "actions": "Actions",
+    "search": "Search order number, make or model...",
+    "filterByStatus": "Filter by status",
+    "allStatuses": "All statuses",
+    "noOrders": "No orders found",
+    "noOrdersHint": "Orders will appear here after deposit is paid",
+    "updateStatus": "Update Status",
+    "addNote": "Add note (optional)",
+    "setEta": "Set estimated arrival date",
+    "update": "Update",
+    "documents": "Documents",
+    "uploadDocuments": "Upload Documents",
+    "sendNotification": "Send Notification",
+    "sendWhatsApp": "Send WhatsApp Notification",
+    "contactWhatsApp": "Contact via WhatsApp",
+    "viewDetails": "View Details",
+    "orderDetails": "Order Details",
+    "vehicleInfo": "Vehicle Information",
+    "customerInfo": "Customer Information",
+    "shippingInfo": "Shipping Information",
+    "trackingHistory": "Tracking History",
+    "price": "Price",
+    "deposit": "Deposit",
+    "total": "Total",
+    "source": "Source",
+    "year": "Year",
+    "make": "Make",
+    "model": "Model"
+  },
+  "statuses": {
+    "deposit_paid": "Deposit Paid",
+    "vehicle_locked": "Vehicle Locked",
+    "inspection_sent": "Inspection Sent",
+    "full_payment_received": "Full Payment Received",
+    "vehicle_purchased": "Vehicle Purchased",
+    "export_customs": "Export Customs",
+    "in_transit": "In Transit",
+    "at_port": "At Port",
+    "shipping": "Shipping",
+    "documents_ready": "Documents Ready",
+    "customs": "Import Customs",
+    "ready_pickup": "Ready for Pickup",
+    "delivered": "Delivered"
+  },
+  "statusDescriptions": {
+    "deposit_paid": "Customer has paid the deposit, awaiting processing",
+    "vehicle_locked": "Vehicle is locked and won't be sold to other buyers",
+    "inspection_sent": "Vehicle inspection report has been sent to customer",
+    "full_payment_received": "Full payment has been received",
+    "vehicle_purchased": "Vehicle has been purchased from the seller",
+    "export_customs": "Export customs clearance in progress",
+    "in_transit": "Vehicle is being transported to the port",
+    "at_port": "Vehicle has arrived at the departure port",
+    "shipping": "Vehicle is being shipped overseas",
+    "documents_ready": "All documents are ready for download",
+    "customs": "Destination customs clearance in progress",
+    "ready_pickup": "Vehicle has arrived and is ready for pickup",
+    "delivered": "Vehicle has been successfully delivered to customer"
+  },
+  "stats": {
+    "total": "Total",
+    "depositPaid": "Deposit Paid",
+    "purchased": "Purchased",
+    "inTransit": "In Transit",
+    "shipping": "Shipping",
+    "delivered": "Delivered",
+    "totalDeposits": "Total Deposits"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "No notifications",
+    "markAllRead": "Mark all as read",
+    "markAsRead": "Mark as read",
+    "dismiss": "Dismiss",
+    "newOrder": "New Order",
+    "orderUpdated": "Order Updated",
+    "documentUploaded": "Document Uploaded",
+    "statusChanged": "Status Changed",
+    "unread": "Unread",
+    "all": "All"
+  },
+  "documents": {
+    "title": "Document Management",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "uploadSuccess": "Upload successful",
+    "uploadError": "Upload failed",
+    "delete": "Delete",
+    "download": "Download",
+    "pdfOnly": "PDF files only",
+    "dragDrop": "Click or drag PDF files here",
+    "maxSize": "Maximum file size: 10MB",
+    "noDocuments": "No documents",
+    "documentList": "Document List",
+    "uploadedAt": "Uploaded at",
+    "uploadedBy": "Uploaded by",
+    "size": "Size",
+    "sendNotification": "Send notification after upload",
+    "sendWhatsApp": "Send WhatsApp notification"
+  },
+  "languages": {
+    "en": "English",
+    "zh": "中文"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {current} of {total}",
+    "showing": "Showing {from}-{to} of {total}"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{count} minutes ago",
+    "hoursAgo": "{count} hours ago",
+    "daysAgo": "{count} days ago",
+    "weeksAgo": "{count} weeks ago"
+  }
+}

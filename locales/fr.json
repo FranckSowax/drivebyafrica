@@ -1,0 +1,257 @@
+{
+  "landing": {
+    "hero": {
+      "badge": "Nouveau: Importation directe depuis la Corée du Sud",
+      "title": "Importez votre véhicule depuis",
+      "titleHighlight": "la Chine, la Corée et Dubaï",
+      "subtitle": "Accédez à des milliers de véhicules depuis la Corée du Sud, la Chine et Dubaï. Estimation gratuite et livraison jusqu'à votre port en Afrique.",
+      "cta": "Explorer les véhicules",
+      "sources": "Sources"
+    },
+    "stats": {
+      "vehicles": "Véhicules disponibles",
+      "clients": "Clients satisfaits",
+      "countries": "Pays desservis",
+      "satisfaction": "Taux de satisfaction"
+    },
+    "featured": {
+      "title": "Véhicules",
+      "titleHighlight": "populaires",
+      "subtitle": "Les véhicules les plus recherchés par nos clients",
+      "viewAll": "Voir tout"
+    },
+    "howItWorks": {
+      "title": "Comment ça",
+      "titleHighlight": "fonctionne",
+      "subtitle": "Un processus simple et transparent pour importer votre véhicule",
+      "steps": {
+        "choose": {
+          "title": "Choisissez",
+          "description": "Parcourez notre catalogue et trouvez le véhicule idéal parmi des milliers d'options."
+        },
+        "estimate": {
+          "title": "Estimez",
+          "description": "Calculez les frais de transport jusqu'à votre port et obtenez un devis personnalisé."
+        },
+        "reserve": {
+          "title": "Réservez",
+          "description": "Versez un acompte pour bloquer le véhicule et lancer la procédure d'importation."
+        },
+        "receive": {
+          "title": "Recevez",
+          "description": "Suivez votre véhicule en temps réel jusqu'à sa livraison au port de votre choix."
+        }
+      }
+    },
+    "features": {
+      "title": "Pourquoi",
+      "titleHighlight": "Driveby Africa",
+      "subtitle": "Une plateforme conçue pour simplifier l'importation de véhicules vers l'Afrique",
+      "verified": {
+        "title": "Véhicules vérifiés",
+        "description": "Chaque véhicule est inspecté avec une fiche technique détaillée et un historique complet."
+      },
+      "secure": {
+        "title": "Transactions sécurisées",
+        "description": "Paiements sécurisés via Stripe et Mobile Money. Votre acompte est protégé jusqu'à la livraison."
+      },
+      "delivery": {
+        "title": "Livraison complète",
+        "description": "De la réservation au port africain. Suivi en temps réel et assistance douanière incluse."
+      },
+      "support": {
+        "title": "Support 24/7",
+        "description": "Équipe dédiée disponible par WhatsApp. Assistance en français tout au long du processus."
+      }
+    },
+    "cta": {
+      "title": "Prêt à importer votre prochain véhicule?",
+      "subtitle": "Créez votre compte gratuitement, explorez notre catalogue et obtenez un devis personnalisé pour votre importation.",
+      "register": "Créer un compte gratuit",
+      "browse": "Explorer les véhicules"
+    }
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "reset": "Réinitialiser",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "yes": "Oui",
+    "no": "Non",
+    "all": "Tous",
+    "none": "Aucun",
+    "more": "Plus",
+    "less": "Moins",
+    "seeAll": "Voir tout",
+    "seeMore": "Voir plus",
+    "noResults": "Aucun résultat",
+    "noData": "Aucune donnée"
+  },
+  "nav": {
+    "home": "Accueil",
+    "vehicles": "Véhicules",
+    "howItWorks": "Comment ça marche",
+    "about": "À propos",
+    "contact": "Contact",
+    "login": "Connexion",
+    "register": "Inscription",
+    "dashboard": "Tableau de bord",
+    "logout": "Déconnexion",
+    "admin": "Administration"
+  },
+  "hero": {
+    "title": "Importez votre véhicule d'occasion en Afrique",
+    "subtitle": "La plateforme de confiance pour importer des véhicules de Corée, Chine et Dubaï vers l'Afrique",
+    "cta": "Voir les véhicules",
+    "ctaSecondary": "Comment ça marche"
+  },
+  "vehicles": {
+    "title": "Catalogue de véhicules",
+    "searchPlaceholder": "Rechercher par marque, modèle...",
+    "filters": {
+      "make": "Marque",
+      "model": "Modèle",
+      "year": "Année",
+      "price": "Prix",
+      "mileage": "Kilométrage",
+      "fuel": "Carburant",
+      "transmission": "Transmission",
+      "source": "Source"
+    },
+    "priceRange": "Gamme de prix",
+    "mileageRange": "Kilométrage",
+    "yearRange": "Année",
+    "resultsCount": "{count} véhicules trouvés",
+    "noVehicles": "Aucun véhicule trouvé",
+    "viewDetails": "Voir détails",
+    "addToFavorites": "Ajouter aux favoris",
+    "removeFromFavorites": "Retirer des favoris",
+    "requestQuote": "Demander un devis",
+    "specifications": "Caractéristiques",
+    "description": "Description",
+    "photos": "Photos",
+    "estimatedPrice": "Prix estimé",
+    "shippingIncluded": "Livraison incluse",
+    "views": "vues",
+    "favorites": "favoris",
+    "card": {
+      "status": {
+        "available": "Disponible",
+        "reserved": "Réservé",
+        "sold": "Vendu",
+        "pending": "En attente"
+      },
+      "source": {
+        "korea": "Corée du Sud",
+        "china": "Chine",
+        "dubai": "Dubaï"
+      },
+      "grade": "Note",
+      "fobPrice": "Prix FOB",
+      "onRequest": "Sur demande",
+      "freeEstimate": "Estimation transport gratuite",
+      "viewDetail": "Voir le détail →"
+    }
+  },
+  "quote": {
+    "title": "Demande de devis",
+    "subtitle": "Obtenez une estimation précise pour ce véhicule",
+    "vehiclePrice": "Prix du véhicule",
+    "shippingCost": "Frais de transport",
+    "customsDuties": "Droits de douane",
+    "totalCost": "Coût total estimé",
+    "destination": "Destination",
+    "selectCountry": "Sélectionnez votre pays",
+    "submit": "Soumettre la demande",
+    "success": "Votre demande de devis a été envoyée",
+    "pending": "En attente",
+    "accepted": "Accepté",
+    "expired": "Expiré",
+    "cancelled": "Annulé"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "fullName": "Nom complet",
+    "phone": "Téléphone",
+    "country": "Pays",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "hasAccount": "Déjà un compte ?",
+    "loginSuccess": "Connexion réussie",
+    "registerSuccess": "Inscription réussie",
+    "logoutSuccess": "Déconnexion réussie"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue",
+    "myQuotes": "Mes devis",
+    "myOrders": "Mes commandes",
+    "myFavorites": "Mes favoris",
+    "messages": "Messages",
+    "settings": "Paramètres",
+    "wallet": "Portefeuille"
+  },
+  "admin": {
+    "title": "Administration",
+    "dashboard": "Tableau de bord",
+    "vehicles": "Véhicules",
+    "users": "Utilisateurs",
+    "quotes": "Devis",
+    "orders": "Commandes",
+    "messages": "Messages",
+    "analytics": "Analytiques",
+    "settings": "Paramètres",
+    "shipping": "Transport",
+    "currencies": "Devises"
+  },
+  "currencies": {
+    "title": "Gestion des devises",
+    "subtitle": "Gérez les taux de change pour les différents pays",
+    "code": "Code",
+    "name": "Nom",
+    "symbol": "Symbole",
+    "rateToUsd": "Taux / USD",
+    "countries": "Pays",
+    "lastUpdate": "Dernière mise à jour",
+    "updateRate": "Modifier le taux",
+    "history": "Historique",
+    "addNote": "Ajouter une note",
+    "saveSuccess": "Taux de change mis à jour",
+    "saveError": "Erreur lors de la mise à jour"
+  },
+  "footer": {
+    "about": "À propos de Driveby Africa",
+    "description": "La plateforme de confiance pour importer des véhicules d'occasion vers l'Afrique",
+    "quickLinks": "Liens rapides",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité",
+    "terms": "Conditions d'utilisation",
+    "contact": "Contactez-nous",
+    "copyright": "© {year} Driveby Africa. Tous droits réservés."
+  },
+  "errors": {
+    "required": "Ce champ est requis",
+    "invalidEmail": "Email invalide",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "serverError": "Erreur serveur",
+    "networkError": "Erreur réseau",
+    "unauthorized": "Non autorisé",
+    "notFound": "Non trouvé"
+  }
+}

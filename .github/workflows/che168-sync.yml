@@ -1,0 +1,83 @@
+name: CHE168 Daily Sync
+
+on:
+  # Run daily at 7:00 AM UTC (8:00 AM WAT) - 1 hour after Dongchedi
+  schedule:
+    - cron: '0 7 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      max_pages:
+        description: 'Maximum pages to fetch (20 vehicles/page)'
+        required: false
+        default: '4000'
+      use_csv:
+        description: 'Use CSV export for faster sync'
+        required: false
+        default: true
+        type: boolean
+      remove_expired:
+        description: 'Remove expired/sold vehicles'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  CHE168_API_KEY: ${{ secrets.DONGCHEDI_API_KEY }}
+  ENCAR_API_KEY: ${{ secrets.DONGCHEDI_API_KEY }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 hours max (4000 pages ~80k vehicles)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download CHE168 CSVs
+        if: ${{ github.event.inputs.use_csv != false }}
+        continue-on-error: true
+        run: |
+          YESTERDAY=$(date -d "yesterday" '+%Y-%m-%d' 2>/dev/null || date -v-1d '+%Y-%m-%d')
+          echo "Using date: $YESTERDAY"
+
+          echo "Downloading CHE168 active offers CSV..."
+          curl -L -u "ewing:${{ secrets.DONGCHEDI_API_KEY }}" \
+            "https://autobase-perez.auto-api.com/che168/${YESTERDAY}/all_active.csv" \
+            -o /tmp/che168_active.csv || echo "Active CSV download failed"
+          if [ -f /tmp/che168_active.csv ]; then
+            echo "Active CSV: $(wc -l < /tmp/che168_active.csv) lines"
+          fi
+
+          echo "Downloading CHE168 removed offers CSV..."
+          curl -L -u "ewing:${{ secrets.DONGCHEDI_API_KEY }}" \
+            "https://autobase-perez.auto-api.com/che168/${YESTERDAY}/removed_daily.csv" \
+            -o /tmp/che168_removed.csv || echo "Removed CSV download failed"
+          if [ -f /tmp/che168_removed.csv ]; then
+            echo "Removed CSV: $(wc -l < /tmp/che168_removed.csv) lines"
+          fi
+
+      - name: Run CHE168 sync
+        run: |
+          npx tsx scripts/sync-che168-ci.ts \
+            --max-pages=${{ github.event.inputs.max_pages || '4000' }} \
+            --use-csv=${{ github.event.inputs.use_csv || 'true' }} \
+            --remove-expired=${{ github.event.inputs.remove_expired || 'true' }}
+
+      - name: Summary
+        run: |
+          echo "CHE168 sync completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
