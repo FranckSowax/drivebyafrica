@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface AddBatchModalProps {
@@ -80,6 +80,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
 
   const removeImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
+  };
+
+  const setAsThumbnail = (index: number) => {
+    if (index === 0) return; // Already the thumbnail
+    const newImages = [...images];
+    const [selectedImage] = newImages.splice(index, 1);
+    newImages.unshift(selectedImage); // Add to beginning
+    setImages(newImages);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -457,6 +465,11 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
           <label className="block text-sm font-medium text-nobel mb-2">
             Vehicle Images
           </label>
+          {images.length > 0 && (
+            <p className="text-xs text-nobel mb-2">
+              The first image (marked with <Star className="w-3 h-3 inline fill-alto-orange text-alto-orange" />) will be used as the main thumbnail. Click "Set as main" on any image to make it the thumbnail.
+            </p>
+          )}
 
           <div className="grid grid-cols-4 gap-4 mb-4">
             {images.map((url, index) => (
@@ -464,8 +477,33 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
                 <img
                   src={url}
                   alt={`Batch ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg"
+                  className={`w-full h-24 object-cover rounded-lg ${
+                    index === 0 ? 'ring-2 ring-alto-orange' : ''
+                  }`}
                 />
+
+                {/* Main thumbnail badge */}
+                {index === 0 && (
+                  <div className="absolute top-1 left-1 px-2 py-0.5 bg-alto-orange text-white text-xs font-semibold rounded flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-current" />
+                    Main
+                  </div>
+                )}
+
+                {/* Set as main button (for non-main images) */}
+                {index !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAsThumbnail(index)}
+                    className="absolute bottom-1 left-1 px-2 py-1 bg-surface/90 hover:bg-alto-orange text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                    title="Set as main thumbnail"
+                  >
+                    <Star className="w-3 h-3" />
+                    Set as main
+                  </button>
+                )}
+
+                {/* Remove button */}
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
