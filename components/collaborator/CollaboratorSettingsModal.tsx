@@ -165,7 +165,7 @@ export function CollaboratorSettingsModal({
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Palette className="h-5 w-5 text-alto-orange" />
-            <h3 className="text-lg font-semibold text-cod-gray">Theme</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Theme</h3>
           </div>
 
           {themeError && (
@@ -193,8 +193,8 @@ export function CollaboratorSettingsModal({
                 ${savingTheme ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
-              <Sun className="h-8 w-8 text-cod-gray mx-auto mb-2" />
-              <p className="text-sm font-medium text-cod-gray">Light</p>
+              <Sun className="h-8 w-8 text-gray-900 mx-auto mb-2" />
+              <p className="text-sm font-medium text-gray-900">Light</p>
             </button>
 
             <button
@@ -209,8 +209,8 @@ export function CollaboratorSettingsModal({
                 ${savingTheme ? 'opacity-50 cursor-not-allowed' : ''}
               `}
             >
-              <Moon className="h-8 w-8 text-cod-gray mx-auto mb-2" />
-              <p className="text-sm font-medium text-cod-gray">Dark</p>
+              <Moon className="h-8 w-8 text-gray-900 mx-auto mb-2" />
+              <p className="text-sm font-medium text-gray-900">Dark</p>
             </button>
           </div>
         </div>
@@ -222,11 +222,11 @@ export function CollaboratorSettingsModal({
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Lock className="h-5 w-5 text-alto-orange" />
-            <h3 className="text-lg font-semibold text-cod-gray">Change Password</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
           </div>
 
           {userEmail && (
-            <p className="text-sm text-cod-gray/70 mb-4">
+            <p className="text-sm text-gray-600 mb-4">
               Email: <span className="font-medium">{userEmail}</span>
             </p>
           )}
@@ -246,7 +246,7 @@ export function CollaboratorSettingsModal({
           <form onSubmit={handlePasswordChange} className="space-y-4">
             {/* Current Password */}
             <div>
-              <label className="block text-sm font-medium text-cod-gray mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 Current Password
               </label>
               <div className="relative">
@@ -255,13 +255,13 @@ export function CollaboratorSettingsModal({
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-2.5 pr-12 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+                  className="w-full px-4 py-2.5 pr-12 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
                   placeholder="Enter current password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cod-gray/50 hover:text-cod-gray"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
                 >
                   {showCurrentPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -274,7 +274,7 @@ export function CollaboratorSettingsModal({
 
             {/* New Password */}
             <div>
-              <label className="block text-sm font-medium text-cod-gray mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 New Password
               </label>
               <div className="relative">
@@ -284,13 +284,13 @@ export function CollaboratorSettingsModal({
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 pr-12 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+                  className="w-full px-4 py-2.5 pr-12 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
                   placeholder="At least 8 characters"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cod-gray/50 hover:text-cod-gray"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
                 >
                   {showNewPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -303,7 +303,7 @@ export function CollaboratorSettingsModal({
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-cod-gray mb-2">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
                 Confirm New Password
               </label>
               <div className="relative">
@@ -313,13 +313,13 @@ export function CollaboratorSettingsModal({
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-2.5 pr-12 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+                  className="w-full px-4 py-2.5 pr-12 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
                   placeholder="Re-enter new password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cod-gray/50 hover:text-cod-gray"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-5 w-5" />
