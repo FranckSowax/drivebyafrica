@@ -108,7 +108,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           fuel_type: fuelType || undefined,
           transmission: transmission || undefined,
           drive_type: driveType || undefined,
-          engine_size: engineSize || undefined,
+          engine_size: engineSize ? parseInt(engineSize) : undefined,
           body_type: bodyType || undefined,
           color: color || undefined,
           condition: condition || undefined,
@@ -330,11 +330,12 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               {t('collaborator.vehicleForm.engineSize')}
             </label>
             <input
-              type="text"
+              type="number"
               value={engineSize}
               onChange={(e) => setEngineSize(e.target.value)}
+              min="0"
               className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
-              placeholder="2.0L"
+              placeholder="2000"
             />
           </div>
 

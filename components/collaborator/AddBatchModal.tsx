@@ -415,7 +415,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
               value={engineSize}
               onChange={(e) => setEngineSize(e.target.value)}
               className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
-              placeholder="2.0L"
+              placeholder="2000cc"
             />
           </div>
 
