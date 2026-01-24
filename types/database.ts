@@ -1334,6 +1334,73 @@ export type Database = {
           }
         ];
       };
+      notification_queue: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          recipient: string;
+          subject: string;
+          subject_zh: string;
+          message: string;
+          message_zh: string;
+          data: Json | null;
+          priority: string;
+          scheduled_for: string;
+          sent_at: string | null;
+          status: 'pending' | 'sent' | 'failed';
+          error: string | null;
+          retry_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          recipient: string;
+          subject: string;
+          subject_zh: string;
+          message: string;
+          message_zh: string;
+          data?: Json | null;
+          priority?: string;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          status?: 'pending' | 'sent' | 'failed';
+          error?: string | null;
+          retry_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: string;
+          recipient?: string;
+          subject?: string;
+          subject_zh?: string;
+          message?: string;
+          message_zh?: string;
+          data?: Json | null;
+          priority?: string;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          status?: 'pending' | 'sent' | 'failed';
+          error?: string | null;
+          retry_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
