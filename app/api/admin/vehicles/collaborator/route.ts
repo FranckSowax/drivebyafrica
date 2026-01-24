@@ -190,7 +190,7 @@ export async function PUT(request: Request) {
             year: vehicle.year,
             reason: adminNotes,
           },
-          priority: 'medium',
+          priority: 'normal',
           actionUrl: `/collaborator/vehicles?vehicleId=${vehicle.id}`,
           relatedEntityType: 'vehicle',
           relatedEntityId: vehicle.id,

@@ -221,7 +221,7 @@ export async function PUT(request: Request) {
             year: batch.year,
             reason: adminNotes,
           },
-          priority: 'medium',
+          priority: 'normal',
           actionUrl: `/collaborator/batches?batchId=${batch.id}`,
           relatedEntityType: 'batch',
           relatedEntityId: batch.id,

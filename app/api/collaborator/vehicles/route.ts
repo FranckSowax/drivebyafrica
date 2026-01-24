@@ -121,7 +121,7 @@ export async function POST(request: Request) {
           title,
           source,
         },
-        priority: 'medium',
+        priority: 'normal',
         actionUrl: `/admin/vehicles?vehicleId=${vehicle.id}`,
         relatedEntityType: 'vehicle',
         relatedEntityId: vehicle.id,

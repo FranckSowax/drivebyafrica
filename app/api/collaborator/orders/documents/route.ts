@@ -169,7 +169,7 @@ export async function POST(request: Request) {
           documentCount: newDocuments.length,
           status: docStatus || order.status,
         },
-        priority: 'medium',
+        priority: 'normal',
         actionUrl: `/admin/orders?orderId=\${orderId}`,
         relatedEntityType: 'document',
         relatedEntityId: orderId,
