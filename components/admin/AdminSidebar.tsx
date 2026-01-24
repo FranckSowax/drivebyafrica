@@ -31,6 +31,11 @@ interface NavItem {
   subItems?: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }
 
+interface AdminSidebarProps {
+  collapsed?: boolean;
+  onCollapse?: (value: boolean) => void;
+}
+
 const mainNavItems: NavItem[] = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
   { href: '/admin/vehicles', label: 'Véhicules', icon: Car },
@@ -58,7 +63,7 @@ const secondaryNavItems = [
   { href: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ collapsed, onCollapse }: AdminSidebarProps = {}) {
   const pathname = usePathname();
 
   const isActive = (href: string, exact?: boolean) => {
