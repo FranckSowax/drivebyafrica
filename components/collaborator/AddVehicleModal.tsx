@@ -176,7 +176,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               value={make}
               onChange={(e) => setMake(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Toyota, BMW, etc."
             />
           </div>
@@ -190,7 +190,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               value={model}
               onChange={(e) => setModel(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Camry, X5, etc."
             />
           </div>
@@ -208,7 +208,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               required
               min="1900"
               max={new Date().getFullYear() + 1}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="2023"
             />
           </div>
@@ -224,7 +224,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               required
               min="0"
               step="0.01"
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="15000"
             />
           </div>
@@ -268,7 +268,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               value={mileage}
               onChange={(e) => setMileage(e.target.value)}
               min="0"
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="50000"
             />
           </div>
@@ -280,7 +280,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
             <select
               value={fuelType}
               onChange={(e) => setFuelType(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="">Select...</option>
               <option value="Gasoline">Gasoline</option>
@@ -299,7 +299,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
             <select
               value={transmission}
               onChange={(e) => setTransmission(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="">Select...</option>
               <option value="Automatic">Automatic</option>
@@ -314,7 +314,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
             <select
               value={driveType}
               onChange={(e) => setDriveType(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
             >
               <option value="">Select...</option>
               <option value="FWD">FWD</option>
@@ -334,7 +334,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               type="text"
               value={engineSize}
               onChange={(e) => setEngineSize(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="2.0L"
             />
           </div>
@@ -347,7 +347,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               type="text"
               value={bodyType}
               onChange={(e) => setBodyType(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Sedan, SUV, etc."
             />
           </div>
@@ -360,7 +360,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
               type="text"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-cod-gray placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
               placeholder="Black, White, etc."
             />
           </div>
