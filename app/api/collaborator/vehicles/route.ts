@@ -81,6 +81,7 @@ export async function POST(request: Request) {
         grade: condition || null,
         condition_report: features ? JSON.parse(JSON.stringify(features)) : null,
         images: images || [],
+        thumbnail_url: thumbnail_url || null,
         buy_now_price_usd: price || null,
         current_price_usd: price || null,
         auction_status: 'available',
