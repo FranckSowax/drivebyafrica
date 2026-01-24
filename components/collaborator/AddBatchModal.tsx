@@ -568,7 +568,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
           <button
             type="submit"
             disabled={loading || uploadingImages}
-            className="flex-1 px-4 py-2 bg-alto-orange text-white rounded-lg hover:bg-alto-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-alto-orange text-gray-900 font-semibold rounded-lg hover:bg-alto-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? t('collaborator.batchForm.submitting') : t('collaborator.batchForm.submit')}
           </button>

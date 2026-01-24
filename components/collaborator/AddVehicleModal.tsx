@@ -113,7 +113,6 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           color: color || undefined,
           condition: condition || undefined,
           images,
-          thumbnail_url: images[0] || undefined,
         }),
       });
 
@@ -474,7 +473,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           <button
             type="submit"
             disabled={loading || uploadingImages}
-            className="flex-1 px-4 py-2 bg-alto-orange text-white rounded-lg hover:bg-alto-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-alto-orange text-gray-900 font-semibold rounded-lg hover:bg-alto-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? t('collaborator.vehicleForm.submitting') : t('collaborator.vehicleForm.submit')}
           </button>
