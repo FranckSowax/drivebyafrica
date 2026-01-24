@@ -257,7 +257,7 @@ export async function PUT(request: Request) {
     // Check if batch belongs to collaborator and is pending
     const { data: batch, error: checkError } = await supabase
       .from('vehicle_batches')
-      .select('id, status, added_by_collaborator_id')
+      .select('id, status, added_by_collaborator_id, total_quantity, minimum_order_quantity')
       .eq('id', batchId)
       .eq('added_by_collaborator_id', user.id)
       .single();
@@ -277,7 +277,7 @@ export async function PUT(request: Request) {
     }
 
     // Prevent updating certain fields
-    const allowedUpdates = { ...updates };
+    const allowedUpdates: Record<string, any> = { ...updates };
     delete allowedUpdates.status;
     delete allowedUpdates.approved_by_admin_id;
     delete allowedUpdates.approved_at;
