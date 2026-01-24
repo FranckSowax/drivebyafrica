@@ -19,6 +19,8 @@ import {
 interface CollaboratorSidebarProps {
   className?: string;
   onLogout: () => void;
+  collapsed?: boolean;
+  onCollapse?: (value: boolean) => void;
 }
 
 const navItems = [
@@ -44,7 +46,7 @@ const navItems = [
   },
 ];
 
-export function CollaboratorSidebar({ className, onLogout }: CollaboratorSidebarProps) {
+export function CollaboratorSidebar({ className, onLogout, collapsed, onCollapse }: CollaboratorSidebarProps) {
   const { t } = useCollaboratorLocale();
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
