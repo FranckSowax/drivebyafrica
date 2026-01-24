@@ -120,7 +120,6 @@
     "loginButton": "登录",
     "email": "邮箱",
     "password": "密码",
-    "loginButton": "登录",
     "forgotPassword": "忘记密码？",
     "loginSuccess": "登录成功",
     "loginError": "登录失败",
@@ -192,7 +191,7 @@
     "main": "主图",
     "setAsMain": "设为主图",
     "setAsMainTitle": "设为主缩略图",
-    "thumbnailHelper": "第一张图片（标有⭐）将用作主缩略图。点击任意图片上的"设为主图"以将其设为缩略图。",
+    "thumbnailHelper": "第一张图片（标有⭐）将用作主缩略图。点击任意图片上的\"设为主图\"以将其设为缩略图。",
     "clickToUpload": "点击上传图片",
     "uploading": "上传中..."
   }
