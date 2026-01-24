@@ -189,7 +189,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <h2 className="font-bold text-[var(--text-primary)] mb-4">Véhicule</h2>
             {vehicleData ? (
               <div className="flex gap-4">
-                <div className="relative w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-surface">
+                <div className="relative w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-nobel/10">
                   {vehicleData.images?.[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -375,7 +375,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </Card>
 
           {/* Need Help */}
-          <Card className="bg-surface/50">
+          <Card className="bg-nobel/10">
             <p className="text-sm text-[var(--text-muted)]">
               Besoin d&apos;aide avec votre commande?
             </p>

@@ -182,6 +182,7 @@
   },
   "auth": {
     "login": "Login",
+    "loginButton": "Login",
     "register": "Sign up",
     "email": "Email",
     "password": "Password",

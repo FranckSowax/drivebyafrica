@@ -332,7 +332,7 @@ export default function BatchesPage() {
                     </p>
 
                     {/* Pricing Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-surface/50 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-nobel/10 rounded-lg">
                       <div>
                         <div className="text-xs text-cod-gray/60 mb-1">Prix unitaire</div>
                         <div className="text-lg font-bold text-alto-orange">
@@ -348,7 +348,7 @@ export default function BatchesPage() {
                     </div>
 
                     {/* Min Order Info */}
-                    <div className="flex items-center justify-between p-3 bg-surface/30 rounded-lg mb-4">
+                    <div className="flex items-center justify-between p-3 bg-nobel/5 rounded-lg mb-4">
                       <span className="text-xs text-cod-gray/60">Commande min.</span>
                       <span className="text-sm font-semibold text-cod-gray">
                         {batch.minimum_order_quantity} unités
@@ -406,7 +406,7 @@ export default function BatchesPage() {
             )}
 
             {/* Batch Info */}
-            <div className="p-4 bg-surface/50 rounded-lg space-y-2">
+            <div className="p-4 bg-nobel/10 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-cod-gray/70">Prix unitaire</span>
                 <span className="text-cod-gray font-semibold">${selectedBatch.price_per_unit_usd.toLocaleString()}</span>

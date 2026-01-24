@@ -117,6 +117,7 @@
   },
   "auth": {
     "login": "登录",
+    "loginButton": "登录",
     "email": "邮箱",
     "password": "密码",
     "loginButton": "登录",
