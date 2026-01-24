@@ -37,9 +37,9 @@ export async function POST(request: Request) {
     } = body;
 
     // Validation
-    if (!make || !model || !year || !title) {
+    if (!make || !model || !year) {
       return NextResponse.json(
-        { error: 'Make, model, year, and title are required', error_zh: '需要品牌、型号、年份和标题' },
+        { error: 'Make, model, and year are required', error_zh: '需要品牌、型号和年份' },
         { status: 400 }
       );
     }
@@ -59,32 +59,37 @@ export async function POST(request: Request) {
     if (assignedCountry === 'dubai') source = 'dubai';
     if (assignedCountry === 'all') source = 'china'; // Default to china for 'all'
 
-    // Create vehicle
+    // Create vehicle - map to database schema
+    const sourceId = `collab-${user.id.substring(0, 8)}-${Date.now()}`;
+    const adminNotesContent = title ? `${title}${description ? '\n\n' + description : ''}` : (description || '');
+
     const { data: vehicle, error: createError } = await supabase
       .from('vehicles')
       .insert({
+        source,
+        source_id: sourceId,
         make,
         model,
         year,
-        title,
-        description,
-        price,
-        source,
         mileage,
         fuel_type,
         transmission,
         drive_type,
-        engine_size,
+        engine_cc: engine_size || null,
         body_type,
         color,
-        condition,
-        features: features || {},
+        grade: condition || null,
+        condition_report: features ? JSON.parse(JSON.stringify(features)) : null,
         images: images || [],
-        thumbnail_url,
+        buy_now_price_usd: price || null,
+        current_price_usd: price || null,
+        auction_status: 'available',
+        status: 'pending',
+        is_visible: false,
+        admin_notes: adminNotesContent || null,
         added_by_collaborator_id: user.id,
         is_collaborator_listing: true,
         collaborator_approved: false,
-        is_visible: false, // Not visible until admin approves
       })
       .select()
       .single();
