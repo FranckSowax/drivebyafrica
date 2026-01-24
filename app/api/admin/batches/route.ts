@@ -205,7 +205,7 @@ export async function PUT(request: Request) {
           actionUrl: `/collaborator/batches?batchId=${batch.id}`,
           relatedEntityType: 'batch',
           relatedEntityId: batch.id,
-          targetCollaboratorId: batch.added_by_collaborator_id,
+          targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
         });
       } else {
         await notifyCollaborators(supabaseAdmin, {
@@ -225,7 +225,7 @@ export async function PUT(request: Request) {
           actionUrl: `/collaborator/batches?batchId=${batch.id}`,
           relatedEntityType: 'batch',
           relatedEntityId: batch.id,
-          targetCollaboratorId: batch.added_by_collaborator_id,
+          targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
         });
       }
 
@@ -389,7 +389,7 @@ export async function POST(request: Request) {
         actionUrl: `/collaborator/batches?batchId=${batchId}`,
         relatedEntityType: 'batch_order',
         relatedEntityId: order.id,
-        targetCollaboratorId: batch.added_by_collaborator_id,
+        targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
       });
 
       console.log('✅ Admins and collaborator notified of batch order');

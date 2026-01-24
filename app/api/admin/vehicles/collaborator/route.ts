@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { notifyCollaborators } from '@/lib/notifications/bidirectional-notifications';
 import type { Database } from '@/types/database';
 
+// Type for vehicle with collaborator info
+type VehicleRow = Database['public']['Tables']['vehicles']['Row'];
+
 // Helper to check if user is admin
 async function isUserAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -171,7 +174,7 @@ export async function PUT(request: Request) {
           actionUrl: `/collaborator/vehicles?vehicleId=${vehicle.id}`,
           relatedEntityType: 'vehicle',
           relatedEntityId: vehicle.id,
-          targetCollaboratorId: vehicle.added_by_collaborator_id,
+          targetCollaboratorId: vehicle.added_by_collaborator_id ?? undefined,
         });
       } else {
         await notifyCollaborators(supabaseAdmin, {
@@ -191,7 +194,7 @@ export async function PUT(request: Request) {
           actionUrl: `/collaborator/vehicles?vehicleId=${vehicle.id}`,
           relatedEntityType: 'vehicle',
           relatedEntityId: vehicle.id,
-          targetCollaboratorId: vehicle.added_by_collaborator_id,
+          targetCollaboratorId: vehicle.added_by_collaborator_id ?? undefined,
         });
       }
 
