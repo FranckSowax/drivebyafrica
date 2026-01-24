@@ -8,6 +8,7 @@ import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLoc
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
 import { useCollaboratorNotifications } from '@/lib/hooks/useCollaboratorNotifications';
+import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import {
@@ -96,6 +97,9 @@ export default function CollaboratorDashboardPage() {
   const router = useRouter();
   const dateLocale = locale === 'zh' ? zhCN : enUS;
 
+  // Check if user is authorized to access this page
+  const { isChecking, isAuthorized } = useCollaboratorAuth();
+
   const [userName, setUserName] = useState<string>('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats>({
@@ -140,8 +144,10 @@ export default function CollaboratorDashboardPage() {
         setUserName(profile?.full_name || user.email || '');
       }
     };
-    fetchUser();
-  }, [supabase]);
+    if (isAuthorized) {
+      fetchUser();
+    }
+  }, [supabase, isAuthorized]);
 
   // Fetch dashboard data
   useEffect(() => {
@@ -215,9 +221,16 @@ export default function CollaboratorDashboardPage() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/collaborator/login');
-    router.refresh();
+    try {
+      await supabase.auth.signOut();
+      router.push('/collaborator/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force redirect even if signOut fails
+      router.push('/collaborator/login');
+      router.refresh();
+    }
   };
 
   const getStatusLabel = (status: string) => {
@@ -237,6 +250,15 @@ export default function CollaboratorDashboardPage() {
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  // Show loading spinner while checking auth
+  if (isChecking || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-cod-gray flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-mandarin animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cod-gray">
