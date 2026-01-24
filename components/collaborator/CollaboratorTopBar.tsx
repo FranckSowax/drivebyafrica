@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCollaboratorLocale } from './CollaboratorLocaleProvider';
 import { CollaboratorLanguageSwitcher } from './CollaboratorLanguageSwitcher';
-import { Bell, User, Check, X, LogOut, ChevronDown } from 'lucide-react';
+import { CollaboratorSettingsModal } from './CollaboratorSettingsModal';
+import { Bell, User, Check, X, LogOut, ChevronDown, Settings } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -18,6 +19,7 @@ interface Notification {
 interface CollaboratorTopBarProps {
   title?: string;
   userName?: string;
+  userEmail?: string;
   notifications?: Notification[];
   unreadCount?: number;
   onMarkAsRead?: (id: string) => void;
@@ -29,6 +31,7 @@ interface CollaboratorTopBarProps {
 export function CollaboratorTopBar({
   title,
   userName,
+  userEmail,
   notifications = [],
   unreadCount = 0,
   onMarkAsRead,
@@ -39,6 +42,7 @@ export function CollaboratorTopBar({
   const { t } = useCollaboratorLocale();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -209,13 +213,30 @@ export function CollaboratorTopBar({
 
           {/* User dropdown menu */}
           {showUserMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-cod-gray border border-nobel/20 rounded-xl shadow-xl z-50 overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-56 bg-cod-gray border border-nobel/20 rounded-xl shadow-xl z-50 overflow-hidden">
               {userName && (
                 <div className="px-4 py-3 border-b border-nobel/20">
                   <p className="text-sm font-medium text-white truncate">{userName}</p>
-                  <p className="text-xs text-gray-500">{t('collaborator.portal')}</p>
+                  {userEmail && (
+                    <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                  )}
+                  <p className="text-xs text-gray-600 mt-0.5">{t('collaborator.portal')}</p>
                 </div>
               )}
+
+              {/* Settings */}
+              <button
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowSettingsModal(true);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 text-sm text-gray-300 hover:bg-nobel/10 hover:text-white transition-colors border-b border-nobel/10"
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </button>
+
+              {/* Logout */}
               {onLogout && (
                 <button
                   onClick={() => {
@@ -232,6 +253,13 @@ export function CollaboratorTopBar({
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <CollaboratorSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        userEmail={userEmail}
+      />
     </header>
   );
 }

@@ -101,6 +101,7 @@ export default function CollaboratorDashboardPage() {
   const { isChecking, isAuthorized } = useCollaboratorAuth();
 
   const [userName, setUserName] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     newOrdersToday: 0,
@@ -142,6 +143,7 @@ export default function CollaboratorDashboardPage() {
           .eq('id', user.id)
           .single();
         setUserName(profile?.full_name || user.email || '');
+        setUserEmail(user.email || '');
       }
     };
     if (isAuthorized) {
@@ -268,6 +270,7 @@ export default function CollaboratorDashboardPage() {
         <CollaboratorTopBar
           title={locale === 'zh' ? '仪表板' : 'Dashboard'}
           userName={userName}
+          userEmail={userEmail}
           notifications={notifications}
           unreadCount={unreadCount}
           onMarkAsRead={markAsRead}

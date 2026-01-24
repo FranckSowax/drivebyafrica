@@ -102,6 +102,7 @@ export type Database = {
           avatar_url: string | null;
           role: 'user' | 'admin' | 'super_admin' | 'collaborator';
           assigned_country: string | null;
+          theme_preference: 'light' | 'dark' | null;
           created_at: string;
           updated_at: string;
         };
@@ -118,6 +119,7 @@ export type Database = {
           avatar_url?: string | null;
           role?: 'user' | 'admin' | 'super_admin' | 'collaborator';
           assigned_country?: string | null;
+          theme_preference?: 'light' | 'dark' | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -134,6 +136,7 @@ export type Database = {
           avatar_url?: string | null;
           role?: 'user' | 'admin' | 'super_admin' | 'collaborator';
           assigned_country?: string | null;
+          theme_preference?: 'light' | 'dark' | null;
           created_at?: string;
           updated_at?: string;
         };
