@@ -1161,6 +1161,164 @@ export type Database = {
           }
         ];
       };
+      vehicle_batches: {
+        Row: {
+          id: string;
+          added_by_collaborator_id: string;
+          make: string;
+          model: string;
+          year: number;
+          title: string;
+          description: string | null;
+          price_per_unit_usd: number;
+          total_quantity: number;
+          available_quantity: number;
+          minimum_order_quantity: number;
+          source_country: 'china' | 'korea' | 'dubai';
+          specs: Json | null;
+          images: string[] | null;
+          status: 'pending' | 'approved' | 'rejected' | 'sold_out';
+          is_visible: boolean;
+          rejection_reason: string | null;
+          admin_notes: string | null;
+          collaborator_notes: string | null;
+          approved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          added_by_collaborator_id: string;
+          make: string;
+          model: string;
+          year: number;
+          title: string;
+          description?: string | null;
+          price_per_unit_usd: number;
+          total_quantity: number;
+          available_quantity: number;
+          minimum_order_quantity: number;
+          source_country: 'china' | 'korea' | 'dubai';
+          specs?: Json | null;
+          images?: string[] | null;
+          status?: 'pending' | 'approved' | 'rejected' | 'sold_out';
+          is_visible?: boolean;
+          rejection_reason?: string | null;
+          admin_notes?: string | null;
+          collaborator_notes?: string | null;
+          approved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          added_by_collaborator_id?: string;
+          make?: string;
+          model?: string;
+          year?: number;
+          title?: string;
+          description?: string | null;
+          price_per_unit_usd?: number;
+          total_quantity?: number;
+          available_quantity?: number;
+          minimum_order_quantity?: number;
+          source_country?: 'china' | 'korea' | 'dubai';
+          specs?: Json | null;
+          images?: string[] | null;
+          status?: 'pending' | 'approved' | 'rejected' | 'sold_out';
+          is_visible?: boolean;
+          rejection_reason?: string | null;
+          admin_notes?: string | null;
+          collaborator_notes?: string | null;
+          approved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_batches_added_by_collaborator_id_fkey";
+            columns: ["added_by_collaborator_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      batch_orders: {
+        Row: {
+          id: string;
+          batch_id: string;
+          user_id: string;
+          quantity_ordered: number;
+          price_per_unit_usd: number;
+          total_price_usd: number;
+          destination_country: string;
+          destination_port: string | null;
+          status: 'pending' | 'confirmed' | 'in_transit' | 'delivered' | 'cancelled';
+          payment_status: 'pending' | 'paid' | 'failed';
+          payment_reference: string | null;
+          shipping_reference: string | null;
+          estimated_delivery_date: string | null;
+          actual_delivery_date: string | null;
+          customer_notes: string | null;
+          admin_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          batch_id: string;
+          user_id: string;
+          quantity_ordered: number;
+          price_per_unit_usd: number;
+          total_price_usd: number;
+          destination_country: string;
+          destination_port?: string | null;
+          status?: 'pending' | 'confirmed' | 'in_transit' | 'delivered' | 'cancelled';
+          payment_status?: 'pending' | 'paid' | 'failed';
+          payment_reference?: string | null;
+          shipping_reference?: string | null;
+          estimated_delivery_date?: string | null;
+          actual_delivery_date?: string | null;
+          customer_notes?: string | null;
+          admin_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          batch_id?: string;
+          user_id?: string;
+          quantity_ordered?: number;
+          price_per_unit_usd?: number;
+          total_price_usd?: number;
+          destination_country?: string;
+          destination_port?: string | null;
+          status?: 'pending' | 'confirmed' | 'in_transit' | 'delivered' | 'cancelled';
+          payment_status?: 'pending' | 'paid' | 'failed';
+          payment_reference?: string | null;
+          shipping_reference?: string | null;
+          estimated_delivery_date?: string | null;
+          actual_delivery_date?: string | null;
+          customer_notes?: string | null;
+          admin_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "batch_orders_batch_id_fkey";
+            columns: ["batch_id"];
+            referencedRelation: "vehicle_batches";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "batch_orders_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1197,6 +1355,8 @@ export type AdminNotification = Database['public']['Tables']['admin_notification
 export type ShippingRoute = Database['public']['Tables']['shipping_routes']['Row'];
 export type CollaboratorNotification = Database['public']['Tables']['collaborator_notifications']['Row'];
 export type CollaboratorActivityLog = Database['public']['Tables']['collaborator_activity_log']['Row'];
+export type VehicleBatchDb = Database['public']['Tables']['vehicle_batches']['Row'];
+export type BatchOrder = Database['public']['Tables']['batch_orders']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -1206,6 +1366,8 @@ export type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 export type FavoriteInsert = Database['public']['Tables']['favorites']['Insert'];
 export type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
 export type QuoteInsert = Database['public']['Tables']['quotes']['Insert'];
+export type VehicleBatchInsert = Database['public']['Tables']['vehicle_batches']['Insert'];
+export type BatchOrderInsert = Database['public']['Tables']['batch_orders']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -1213,3 +1375,5 @@ export type VehicleUpdate = Database['public']['Tables']['vehicles']['Update'];
 export type BidUpdate = Database['public']['Tables']['bids']['Update'];
 export type OrderUpdate = Database['public']['Tables']['orders']['Update'];
 export type QuoteUpdate = Database['public']['Tables']['quotes']['Update'];
+export type VehicleBatchUpdate = Database['public']['Tables']['vehicle_batches']['Update'];
+export type BatchOrderUpdate = Database['public']['Tables']['batch_orders']['Update'];
