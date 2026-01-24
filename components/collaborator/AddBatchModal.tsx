@@ -54,7 +54,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
         const file = files[i];
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `batch-images/${fileName}`;
+        const filePath = `vehicle-images/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('vehicles')
