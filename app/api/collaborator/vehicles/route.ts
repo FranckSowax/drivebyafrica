@@ -90,7 +90,6 @@ export async function POST(request: Request) {
         admin_notes: adminNotesContent || null,
         added_by_collaborator_id: user.id,
         is_collaborator_listing: true,
-        collaborator_approved: true,
       })
       .select()
       .single();
