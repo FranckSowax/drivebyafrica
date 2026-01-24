@@ -84,12 +84,12 @@ export async function POST(request: Request) {
         buy_now_price_usd: price || null,
         current_price_usd: price || null,
         auction_status: 'available',
-        status: 'pending',
-        is_visible: false,
+        status: 'available',
+        is_visible: true,
         admin_notes: adminNotesContent || null,
         added_by_collaborator_id: user.id,
         is_collaborator_listing: true,
-        collaborator_approved: false,
+        collaborator_approved: true,
       })
       .select()
       .single();
@@ -108,11 +108,11 @@ export async function POST(request: Request) {
       );
 
       await notifyAdmins(supabaseAdmin, {
-        type: 'vehicle_submitted',
-        title: `New vehicle submitted by collaborator`,
-        titleZh: `协作员提交了新车辆`,
-        message: `${year} ${make} ${model} - Awaiting approval`,
-        messageZh: `${year} ${make} ${model} - 等待批准`,
+        type: 'vehicle_published',
+        title: `New vehicle published by collaborator`,
+        titleZh: `协作员发布了新车辆`,
+        message: `${year} ${make} ${model} - Now live on the platform`,
+        messageZh: `${year} ${make} ${model} - 已在平台上线`,
         data: {
           vehicleId: vehicle.id,
           make,
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
         excludeUserId: user.id,
       });
 
-      console.log('✅ Admin notified of new vehicle submission');
+      console.log('✅ Admin notified of new vehicle publication');
     } catch (notifError) {
       console.error('❌ Failed to notify admins:', notifError);
     }

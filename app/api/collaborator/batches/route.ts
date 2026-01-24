@@ -115,8 +115,8 @@ export async function POST(request: Request) {
         condition,
         features: features || [],
         collaborator_notes,
-        status: 'pending',
-        is_visible: false,
+        status: 'approved',
+        is_visible: true,
       })
       .select()
       .single();
@@ -135,11 +135,11 @@ export async function POST(request: Request) {
       );
 
       await notifyAdmins(supabaseAdmin, {
-        type: 'batch_submitted',
-        title: `New vehicle batch submitted by collaborator`,
-        titleZh: `协作员提交了新的车辆批次`,
-        message: `${total_quantity}x ${year} ${make} ${model} from ${source_country.toUpperCase()} - Awaiting approval`,
-        messageZh: `${total_quantity}辆 ${year} ${make} ${model} 来自${source_country === 'china' ? '中国' : source_country === 'korea' ? '韩国' : '迪拜'} - 等待批准`,
+        type: 'batch_published',
+        title: `New vehicle batch published by collaborator`,
+        titleZh: `协作员发布了新的车辆批次`,
+        message: `${total_quantity}x ${year} ${make} ${model} from ${source_country.toUpperCase()} - Now live on the platform`,
+        messageZh: `${total_quantity}辆 ${year} ${make} ${model} 来自${source_country === 'china' ? '中国' : source_country === 'korea' ? '韩国' : '迪拜'} - 已在平台上线`,
         data: {
           batchId: batch.id,
           make,
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
         excludeUserId: user.id,
       });
 
-      console.log('✅ Admin notified of new batch submission');
+      console.log('✅ Admin notified of new batch publication');
     } catch (notifError) {
       console.error('❌ Failed to notify admins:', notifError);
     }
