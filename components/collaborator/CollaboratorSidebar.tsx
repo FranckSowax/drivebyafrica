@@ -18,7 +18,7 @@ import {
 
 interface CollaboratorSidebarProps {
   className?: string;
-  onLogout: () => void;
+  onLogout?: () => void;
   collapsed?: boolean;
   onCollapse?: (value: boolean) => void;
 }
@@ -101,22 +101,24 @@ export function CollaboratorSidebar({ className, onLogout, collapsed, onCollapse
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-gray-700">
-        <button
-          onClick={() => {
-            setIsMobileOpen(false);
-            onLogout();
-          }}
-          className={cn(
-            'flex items-center gap-3 px-4 py-3 rounded-xl w-full',
-            'text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-red-500/10',
-            'transition-all'
-          )}
-        >
-          <LogOut className="h-5 w-5" />
-          <span>{t('collaborator.logout')}</span>
-        </button>
-      </div>
+      {onLogout && (
+        <div className="p-4 border-t border-gray-700">
+          <button
+            onClick={() => {
+              setIsMobileOpen(false);
+              onLogout();
+            }}
+            className={cn(
+              'flex items-center gap-3 px-4 py-3 rounded-xl w-full',
+              'text-sm font-medium text-gray-300 hover:text-red-400 hover:bg-red-500/10',
+              'transition-all'
+            )}
+          >
+            <LogOut className="h-5 w-5" />
+            <span>{t('collaborator.logout')}</span>
+          </button>
+        </div>
+      )}
     </>
   );
 
