@@ -43,7 +43,7 @@ interface CreateNotificationParams {
   message: string;
   messageZh: string;
   data: NotificationData;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   actionUrl?: string;
   relatedEntityType?: 'order' | 'quote' | 'document' | 'vehicle' | 'batch' | 'batch_order';
   relatedEntityId?: string;
@@ -67,7 +67,7 @@ export async function notifyAdmins(
       message: params.message,
       message_zh: params.messageZh,
       data: params.data,
-      priority: params.priority || 'medium',
+      priority: params.priority || 'normal',
       action_url: params.actionUrl,
       related_entity_type: params.relatedEntityType,
       related_entity_id: params.relatedEntityId,
@@ -109,7 +109,7 @@ export async function notifyCollaborators(
       message: params.message,
       message_zh: params.messageZh,
       data: notificationData,
-      priority: params.priority || 'medium',
+      priority: params.priority || 'normal',
       action_url: params.actionUrl,
       related_entity_type: params.relatedEntityType,
       related_entity_id: params.relatedEntityId,
@@ -209,7 +209,7 @@ export async function notifyOrderStatusUpdate(
       customerName,
       updatedByRole,
     },
-    priority: 'medium' as const,
+    priority: 'normal' as const,
     actionUrl: `/admin/orders?orderId=${orderId}`,
     relatedEntityType: 'order' as const,
     relatedEntityId: orderId,
@@ -261,7 +261,7 @@ export async function notifyDocumentUpload(
       vehicleInfo,
       uploadedByRole,
     },
-    priority: 'medium' as const,
+    priority: 'normal' as const,
     actionUrl: `/admin/orders?orderId=${orderId}`,
     relatedEntityType: 'document' as const,
     relatedEntityId: orderId,
