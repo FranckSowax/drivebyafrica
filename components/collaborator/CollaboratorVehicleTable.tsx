@@ -19,27 +19,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
-
-interface Vehicle {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  title: string;
-  price: number;
-  mileage?: number;
-  fuel_type?: string;
-  transmission?: string;
-  images: string[];
-  status: string;
-  is_visible: boolean;
-  rejection_reason?: string;
-  created_at: string;
-  source?: string;
-}
+import type { CollaboratorVehicle } from '@/app/collaborator/vehicles/page';
 
 interface CollaboratorVehicleTableProps {
-  vehicles: Vehicle[];
+  vehicles: CollaboratorVehicle[];
   total: number;
   page: number;
   totalPages: number;
@@ -50,7 +33,7 @@ interface CollaboratorVehicleTableProps {
     search: string;
   };
   onFilterChange: (filters: Record<string, string>) => void;
-  onView?: (vehicle: Vehicle) => void;
+  onView?: (vehicle: CollaboratorVehicle) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -97,7 +80,7 @@ export function CollaboratorVehicleTable({
     setLocalSearch(filters.search);
   }, [filters.search]);
 
-  const getStatusBadge = (vehicle: Vehicle) => {
+  const getStatusBadge = (vehicle: CollaboratorVehicle) => {
     if (vehicle.status === 'available' && vehicle.is_visible) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/10 text-green-400 rounded-full text-xs font-medium">

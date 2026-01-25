@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
-import { AddVehicleModal } from '@/components/collaborator/AddVehicleModal';
-import { CollaboratorVehicleTable } from '@/components/collaborator/CollaboratorVehicleTable';
+import { AddCollaboratorVehicleModal } from '@/components/collaborator/AddCollaboratorVehicleModal';
+import { CollaboratorCollaboratorVehicleTable } from '@/components/collaborator/CollaboratorCollaboratorVehicleTable';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -17,7 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 
-interface Vehicle {
+export interface CollaboratorCollaboratorVehicle {
   id: string;
   make: string;
   model: string;
@@ -39,9 +39,9 @@ interface Vehicle {
   source?: string;
 }
 
-export default function CollaboratorVehiclesPage() {
+export default function CollaboratorCollaboratorVehiclesPage() {
   const { t } = useCollaboratorLocale();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setCollaboratorVehicles] = useState<CollaboratorVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,10 +56,10 @@ export default function CollaboratorVehiclesPage() {
   });
 
   useEffect(() => {
-    fetchVehicles();
+    fetchCollaboratorVehicles();
   }, [filters.status, filters.search, currentPage]);
 
-  const fetchVehicles = async () => {
+  const fetchCollaboratorVehicles = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -77,7 +77,7 @@ export default function CollaboratorVehiclesPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setVehicles(data.vehicles || []);
+        setCollaboratorVehicles(data.vehicles || []);
         setTotal(data.total || 0);
         setTotalPages(data.totalPages || 1);
       }
@@ -93,12 +93,12 @@ export default function CollaboratorVehiclesPage() {
     setCurrentPage(1);
   };
 
-  const handleViewVehicle = (vehicle: Vehicle) => {
+  const handleViewCollaboratorVehicle = (vehicle: CollaboratorVehicle) => {
     // TODO: Open modal with vehicle details
     console.log('View vehicle:', vehicle);
   };
 
-  const handleDeleteVehicle = async (id: string) => {
+  const handleDeleteCollaboratorVehicle = async (id: string) => {
     if (!confirm('Are you sure you want to delete this vehicle?')) {
       return;
     }
@@ -110,7 +110,7 @@ export default function CollaboratorVehiclesPage() {
 
       if (response.ok) {
         // Refresh the list
-        fetchVehicles();
+        fetchCollaboratorVehicles();
       } else {
         alert('Failed to delete vehicle');
       }
@@ -120,7 +120,7 @@ export default function CollaboratorVehiclesPage() {
     }
   };
 
-  const filteredVehicles = vehicles.filter(vehicle => {
+  const filteredCollaboratorVehicles = vehicles.filter(vehicle => {
     if (!filters.search) return true;
     const query = filters.search.toLowerCase();
     return (
@@ -153,7 +153,7 @@ export default function CollaboratorVehiclesPage() {
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                 <Car className="w-7 h-7 text-alto-orange" />
-                My Vehicles
+                My CollaboratorVehicles
               </h1>
               <p className="text-sm text-nobel mt-1">
                 Manage your vehicle listings
@@ -164,7 +164,7 @@ export default function CollaboratorVehiclesPage() {
               className="flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              Add Vehicle
+              Add CollaboratorVehicle
             </Button>
           </div>
 
@@ -197,10 +197,10 @@ export default function CollaboratorVehiclesPage() {
             </Card>
           </div>
 
-          {/* Vehicle Table */}
+          {/* CollaboratorVehicle Table */}
           <Card className="p-6 bg-surface border-nobel/20">
-            <CollaboratorVehicleTable
-              vehicles={filteredVehicles}
+            <CollaboratorCollaboratorVehicleTable
+              vehicles={filteredCollaboratorVehicles}
               total={total}
               page={currentPage}
               totalPages={totalPages}
@@ -208,19 +208,19 @@ export default function CollaboratorVehiclesPage() {
               onPageChange={setCurrentPage}
               filters={filters}
               onFilterChange={handleFilterChange}
-              onView={handleViewVehicle}
-              onDelete={handleDeleteVehicle}
+              onView={handleViewCollaboratorVehicle}
+              onDelete={handleDeleteCollaboratorVehicle}
             />
           </Card>
         </div>
       </div>
 
-      {/* Add Vehicle Modal */}
-      <AddVehicleModal
+      {/* Add CollaboratorVehicle Modal */}
+      <AddCollaboratorVehicleModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
-          fetchVehicles();
+          fetchCollaboratorVehicles();
         }}
       />
     </div>
