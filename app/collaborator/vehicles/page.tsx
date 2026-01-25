@@ -143,30 +143,30 @@ export default function CollaboratorVehiclesPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-nobel">Total</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.total}</div>
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-gray-600">{t('stats.total')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-yellow-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-yellow-600 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                Pending
+                {t('stats.pending')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.pending}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.pending}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-green-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-green-600 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
-                Published
+                {t('stats.published')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.approved}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.approved}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-red-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-red-600 flex items-center gap-1">
                 <XCircle className="w-3 h-3" />
-                Rejected
+                {t('stats.rejected')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.rejected}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.rejected}</div>
             </Card>
           </div>
 

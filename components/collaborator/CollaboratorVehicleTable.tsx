@@ -57,10 +57,10 @@ const SOURCE_FLAGS: Record<string, string> = {
   dubai: '🇦🇪',
 };
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Published' },
+const getStatusOptions = (t: (key: string) => string) => [
+  { value: 'all', label: t('filters.allStatuses') },
+  { value: 'pending', label: t('filters.pending') },
+  { value: 'approved', label: t('filters.published') },
 ];
 
 export function CollaboratorVehicleTable({
@@ -75,6 +75,7 @@ export function CollaboratorVehicleTable({
 }: CollaboratorVehicleTableProps) {
   const { t } = useCollaboratorLocale();
   const [localSearch, setLocalSearch] = useState(filters.search);
+  const statusOptions = getStatusOptions(t);
 
   // Debounce search input
   useEffect(() => {
@@ -163,7 +164,7 @@ export function CollaboratorVehicleTable({
                     : "border-nobel/20 text-white hover:border-alto-orange/50"
                 )}
               >
-                {STATUS_OPTIONS.map(opt => (
+                {statusOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
@@ -199,7 +200,7 @@ export function CollaboratorVehicleTable({
             )}
             {filters.status !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-alto-orange/10 text-alto-orange text-xs rounded-full">
-                Status: {STATUS_OPTIONS.find(o => o.value === filters.status)?.label}
+                Status: {statusOptions.find(o => o.value === filters.status)?.label}
                 <button onClick={() => onFilterChange({ status: 'all' })} className="hover:text-alto-orange/70">
                   <X className="w-3 h-3" />
                 </button>
@@ -224,13 +225,13 @@ export function CollaboratorVehicleTable({
         <table className="w-full text-sm">
           <thead className="bg-surface">
             <tr>
-              <th className="p-3 text-left text-nobel font-medium">Image</th>
-              <th className="p-3 text-left text-nobel font-medium">Vehicle</th>
-              <th className="p-3 text-left text-nobel font-medium">Source</th>
-              <th className="p-3 text-left text-nobel font-medium">Price</th>
-              <th className="p-3 text-left text-nobel font-medium">Status</th>
-              <th className="p-3 text-left text-nobel font-medium">Added</th>
-              <th className="p-3 text-right text-nobel font-medium">Actions</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.image')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.vehicle')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.source')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.price')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.status')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.added')}</th>
+              <th className="p-3 text-right text-gray-900 font-medium">{t('table.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-nobel/20">

@@ -62,12 +62,12 @@ const SOURCE_FLAGS: Record<string, string> = {
   dubai: '🇦🇪',
 };
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'sold_out', label: 'Sold Out' },
+const getStatusOptions = (t: (key: string) => string) => [
+  { value: 'all', label: t('filters.allStatuses') },
+  { value: 'pending', label: t('filters.pending') },
+  { value: 'approved', label: t('filters.approved') },
+  { value: 'rejected', label: t('filters.rejected') },
+  { value: 'sold_out', label: t('filters.soldOut') },
 ];
 
 export function CollaboratorBatchTable({
@@ -82,6 +82,7 @@ export function CollaboratorBatchTable({
 }: CollaboratorBatchTableProps) {
   const { t } = useCollaboratorLocale();
   const [localSearch, setLocalSearch] = useState(filters.search);
+  const statusOptions = getStatusOptions(t);
 
   // Debounce search input
   useEffect(() => {
@@ -176,7 +177,7 @@ export function CollaboratorBatchTable({
                     : "border-nobel/20 text-white hover:border-alto-orange/50"
                 )}
               >
-                {STATUS_OPTIONS.map(opt => (
+                {statusOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
@@ -212,7 +213,7 @@ export function CollaboratorBatchTable({
             )}
             {filters.status !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-alto-orange/10 text-alto-orange text-xs rounded-full">
-                Status: {STATUS_OPTIONS.find(o => o.value === filters.status)?.label}
+                Status: {statusOptions.find(o => o.value === filters.status)?.label}
                 <button onClick={() => onFilterChange({ status: 'all' })} className="hover:text-alto-orange/70">
                   <X className="w-3 h-3" />
                 </button>
@@ -237,14 +238,14 @@ export function CollaboratorBatchTable({
         <table className="w-full text-sm">
           <thead className="bg-surface">
             <tr>
-              <th className="p-3 text-left text-nobel font-medium">Image</th>
-              <th className="p-3 text-left text-nobel font-medium">Batch</th>
-              <th className="p-3 text-left text-nobel font-medium">Source</th>
-              <th className="p-3 text-left text-nobel font-medium">Price/Unit</th>
-              <th className="p-3 text-left text-nobel font-medium">Quantity</th>
-              <th className="p-3 text-left text-nobel font-medium">Min. Order</th>
-              <th className="p-3 text-left text-nobel font-medium">Status</th>
-              <th className="p-3 text-left text-nobel font-medium">Added</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.image')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.batch')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.source')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.pricePerUnit')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.quantity')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.minOrder')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.status')}</th>
+              <th className="p-3 text-left text-gray-900 font-medium">{t('table.added')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-nobel/20">

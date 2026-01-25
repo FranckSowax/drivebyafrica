@@ -152,6 +152,7 @@
     "pending": "待审核",
     "approved": "已批准",
     "rejected": "已拒绝",
+    "published": "已发布",
     "totalBatches": "批次总数",
     "totalVehicles": "车辆总数",
     "available": "可用",
@@ -262,5 +263,26 @@
     "thumbnailHelper": "第一张图片（标有⭐）将用作主缩略图。点击任意图片上的\"设为主图\"以将其设为缩略图。",
     "clickToUpload": "点击上传图片",
     "uploading": "上传中..."
+  },
+  "filters": {
+    "allStatuses": "所有状态",
+    "pending": "待审核",
+    "published": "已发布",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "soldOut": "已售罄"
+  },
+  "table": {
+    "image": "图片",
+    "vehicle": "车辆",
+    "source": "来源",
+    "price": "价格",
+    "status": "状态",
+    "added": "添加时间",
+    "actions": "操作",
+    "batch": "批次",
+    "pricePerUnit": "单价",
+    "quantity": "数量",
+    "minOrder": "最小订单"
   }
 }

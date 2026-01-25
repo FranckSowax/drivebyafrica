@@ -410,6 +410,7 @@
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
+    "published": "Published",
     "totalBatches": "Total Batches",
     "totalVehicles": "Total Vehicles",
     "available": "Available",
@@ -472,5 +473,26 @@
     "thumbnailHelper": "The first image (marked with ⭐) will be used as the main thumbnail. Click \"Set as main\" on any image to make it the thumbnail.",
     "clickToUpload": "Click to upload images",
     "uploading": "Uploading..."
+  },
+  "filters": {
+    "allStatuses": "All Statuses",
+    "pending": "Pending",
+    "published": "Published",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "soldOut": "Sold Out"
+  },
+  "table": {
+    "image": "Image",
+    "vehicle": "Vehicle",
+    "source": "Source",
+    "price": "Price",
+    "status": "Status",
+    "added": "Added",
+    "actions": "Actions",
+    "batch": "Batch",
+    "pricePerUnit": "Price/Unit",
+    "quantity": "Quantity",
+    "minOrder": "Min. Order"
   }
 }

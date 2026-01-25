@@ -122,41 +122,41 @@ export default function CollaboratorBatchesPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-6 gap-4 mb-6">
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-nobel">{t('stats.totalBatches')}</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.total}</div>
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-gray-600">{t('stats.totalBatches')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-yellow-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-yellow-600 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {t('stats.pending')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.pending}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.pending}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-green-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-green-600 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 {t('stats.approved')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.approved}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.approved}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-red-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-red-600 flex items-center gap-1">
                 <XCircle className="w-3 h-3" />
                 {t('stats.rejected')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.rejected}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.rejected}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-nobel">{t('stats.totalVehicles')}</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.totalVehicles}</div>
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-gray-600">{t('stats.totalVehicles')}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.totalVehicles}</div>
             </Card>
-            <Card className="p-4 bg-surface border-nobel/20">
-              <div className="text-sm text-blue-400 flex items-center gap-1">
+            <Card className="p-4 bg-white border-nobel/20">
+              <div className="text-sm text-blue-600 flex items-center gap-1">
                 <ShoppingCart className="w-3 h-3" />
                 {t('stats.available')}
               </div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.availableVehicles}</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.availableVehicles}</div>
             </Card>
           </div>
 
