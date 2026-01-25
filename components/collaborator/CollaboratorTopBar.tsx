@@ -145,7 +145,7 @@ export function CollaboratorTopBar({
                         <div className="flex-1 min-w-0">
                           <p className={cn(
                             'text-sm font-medium truncate',
-                            notification.read ? 'text-gray-300' : 'text-white'
+                            notification.read ? 'text-gray-600' : 'text-gray-900'
                           )}>
                             {notification.title}
                           </p>
