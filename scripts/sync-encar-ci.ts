@@ -107,6 +107,106 @@ const bodyTypeMap: Record<string, string> = {
   'Other': 'other',
 };
 
+// Standard options mapping
+const standardOptionsMap: Record<string, string> = {
+  "010": "Sunroof",
+  "059": "Power Tailgate",
+  "080": "Soft-Close Doors",
+  "024": "Power Folding Mirrors",
+  "017": "Alloy Wheels",
+  "062": "Roof Rails",
+  "082": "Heated Steering Wheel",
+  "083": "Power Adjustable Steering Wheel",
+  "084": "Paddle Shifters",
+  "031": "Steering Wheel Audio Controls",
+  "030": "Auto-Dimming Rearview Mirror (ECM)",
+  "074": "Hi-pass System",
+  "006": "Central Locking",
+  "008": "Power Steering",
+  "007": "Power Windows",
+  "029": "HID Headlights",
+  "075": "LED Headlights",
+  "020": "Side Airbags",
+  "056": "Curtain Airbags",
+  "001": "Anti-lock Braking System (ABS)",
+  "019": "Traction Control System (TCS)",
+  "055": "Electronic Stability Control (ESC)",
+  "033": "Tire Pressure Monitoring System (TPMS)",
+  "088": "Lane Departure Warning System (LDWS)",
+  "002": "Electronic Controlled Suspension (ECS)",
+  "086": "Blind Spot Monitoring",
+  "058": "Rear View Camera",
+  "087": "360° Around View Monitor",
+  "026": "Driver Airbag",
+  "027": "Passenger Airbag",
+  "085": "Front Parking Sensors",
+  "032": "Rear Parking Sensors",
+  "095": "Head-Up Display (HUD)",
+  "094": "Electronic Parking Brake (EPB)",
+  "023": "Automatic Climate Control",
+  "057": "Smart Key",
+  "015": "Keyless Entry",
+  "081": "Rain Sensor",
+  "097": "Automatic Headlights",
+  "005": "Navigation System",
+  "004": "Front AV Monitor",
+  "054": "Rear AV Monitor",
+  "096": "Bluetooth",
+  "003": "CD Player",
+  "072": "USB Port",
+  "071": "AUX Input",
+  "068": "Cruise Control",
+  "079": "Adaptive Cruise Control",
+  "092": "Rear Sunshades",
+  "093": "Rear Window Sunshade",
+  "014": "Leather Seats",
+  "089": "Power Rear Seats",
+  "090": "Ventilated Rear Seats",
+  "091": "Massage Seats",
+  "021": "Power Driver Seat",
+  "035": "Power Passenger Seat",
+  "022": "Heated Front Seats",
+  "063": "Heated Rear Seats",
+  "051": "Driver Seat Memory",
+  "078": "Passenger Seat Memory",
+  "034": "Ventilated Driver Seat",
+  "077": "Ventilated Passenger Seat"
+};
+
+// Tuning options mapping
+const tuningOptionsMap: Record<string, string> = {
+  "001": "Roof Wrap",
+  "002": "Body Wrap (Vinyl Wrapping)",
+  "003": "Body Kit",
+  "004": "Spoiler",
+  "005": "Side Skirts",
+  "006": "LED Brake Lights",
+  "007": "Tow Hitch",
+  "008": "Comfort Seats",
+  "009": "Bucket Seats",
+  "010": "D-Cut Steering Wheel",
+  "011": "LED Interior Lighting",
+  "012": "Head Unit (Audio System)",
+  "013": "Speakers/Amplifier/Subwoofer",
+  "014": "Sound Deadening/Undercoating",
+  "015": "Intake System Tuning",
+  "016": "Exhaust System Tuning",
+  "017": "Performance Exhaust",
+  "018": "ECU Tuning (Chip Tuning)",
+  "019": "Performance Sway Bar",
+  "020": "Strut Bar",
+  "021": "Brake System Upgrade",
+  "022": "Sport Pedals",
+  "023": "Dash Cam",
+  "024": "Push Start Button",
+  "025": "Remote Start",
+  "026": "Wheel Inch-Up",
+  "027": "Aftermarket Wheels",
+  "028": "Lowering Springs",
+  "029": "Coilovers",
+  "030": "Adjustable Suspension"
+};
+
 interface ApiOffer {
   id: number;
   inner_id: string;
@@ -135,6 +235,12 @@ interface ApiOffer {
     images: string | string[];
     displacement?: string;
     extra?: any;
+  };
+  options?: {
+    standard?: string[];
+    choice?: string[];
+    tuning?: string[];
+    etc?: string[];
   };
 }
 
@@ -179,6 +285,47 @@ function parseImages(imagesData: any): string[] {
   return images
     .filter((img): img is string => typeof img === 'string' && img.startsWith('http'))
     .slice(0, 20); // Limit to 20 images
+}
+
+/**
+ * Parse vehicle options (standard and tuning) from API data
+ */
+function parseOptions(offer: ApiOffer): string[] {
+  const allOptions: string[] = [];
+
+  if (!offer.options) return allOptions;
+
+  // Parse standard options
+  if (offer.options.standard && Array.isArray(offer.options.standard)) {
+    for (const code of offer.options.standard) {
+      const optionName = standardOptionsMap[code];
+      if (optionName) {
+        allOptions.push(optionName);
+      }
+    }
+  }
+
+  // Parse choice options (also from standard map)
+  if (offer.options.choice && Array.isArray(offer.options.choice)) {
+    for (const code of offer.options.choice) {
+      const optionName = standardOptionsMap[code];
+      if (optionName && !allOptions.includes(optionName)) {
+        allOptions.push(optionName);
+      }
+    }
+  }
+
+  // Parse tuning options
+  if (offer.options.tuning && Array.isArray(offer.options.tuning)) {
+    for (const code of offer.options.tuning) {
+      const optionName = tuningOptionsMap[code];
+      if (optionName) {
+        allOptions.push(`[Tuning] ${optionName}`);
+      }
+    }
+  }
+
+  return allOptions;
 }
 
 /**
@@ -237,6 +384,9 @@ function mapToDbRecord(offer: ApiOffer) {
     }
   }
 
+  // Parse vehicle options (standard + tuning)
+  const features = parseOptions(offer);
+
   return {
     source: 'korea',
     source_id: sourceId,
@@ -258,6 +408,7 @@ function mapToDbRecord(offer: ApiOffer) {
     auction_status: 'ongoing',
     auction_platform: 'encar',
     condition_report: v.extra ? JSON.stringify(v.extra) : null,
+    features: features.length > 0 ? features : null,
     images,
   };
 }
