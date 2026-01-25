@@ -93,6 +93,33 @@ export default function CollaboratorVehiclesPage() {
     setCurrentPage(1);
   };
 
+  const handleViewVehicle = (vehicle: Vehicle) => {
+    // TODO: Open modal with vehicle details
+    console.log('View vehicle:', vehicle);
+  };
+
+  const handleDeleteVehicle = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this vehicle?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/collaborator/vehicles/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh the list
+        fetchVehicles();
+      } else {
+        alert('Failed to delete vehicle');
+      }
+    } catch (error) {
+      console.error('Error deleting vehicle:', error);
+      alert('Error deleting vehicle');
+    }
+  };
+
   const filteredVehicles = vehicles.filter(vehicle => {
     if (!filters.search) return true;
     const query = filters.search.toLowerCase();
@@ -181,6 +208,8 @@ export default function CollaboratorVehiclesPage() {
               onPageChange={setCurrentPage}
               filters={filters}
               onFilterChange={handleFilterChange}
+              onView={handleViewVehicle}
+              onDelete={handleDeleteVehicle}
             />
           </Card>
         </div>

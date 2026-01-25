@@ -70,6 +70,33 @@ export default function CollaboratorBatchesPage() {
     setCurrentPage(1);
   };
 
+  const handleViewBatch = (batch: VehicleBatch) => {
+    // TODO: Open modal with batch details
+    console.log('View batch:', batch);
+  };
+
+  const handleDeleteBatch = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this batch?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/collaborator/batches/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Refresh the list
+        fetchBatches();
+      } else {
+        alert('Failed to delete batch');
+      }
+    } catch (error) {
+      console.error('Error deleting batch:', error);
+      alert('Error deleting batch');
+    }
+  };
+
   const filteredBatches = batches.filter(batch => {
     if (!filters.search) return true;
     const query = filters.search.toLowerCase();
@@ -171,6 +198,8 @@ export default function CollaboratorBatchesPage() {
               onPageChange={setCurrentPage}
               filters={filters}
               onFilterChange={handleFilterChange}
+              onView={handleViewBatch}
+              onDelete={handleDeleteBatch}
             />
           </Card>
         </div>

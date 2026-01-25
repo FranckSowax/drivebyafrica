@@ -288,9 +288,15 @@ export function CollaboratorVehicleTable({
                     <span className="text-xl">{SOURCE_FLAGS[vehicle.source || 'china'] || '🇨🇳'}</span>
                   </td>
                   <td className="p-3">
-                    <p className="font-medium text-alto-orange">
-                      {vehicle.price != null ? `$${vehicle.price.toLocaleString()}` : 'On Request'}
-                    </p>
+                    {vehicle.price != null ? (
+                      <p className="font-medium text-alto-orange">
+                        ${vehicle.price.toLocaleString()}
+                      </p>
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        On Request
+                      </p>
+                    )}
                   </td>
                   <td className="p-3">
                     {getStatusBadge(vehicle)}
