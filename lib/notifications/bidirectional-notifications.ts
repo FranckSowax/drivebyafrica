@@ -74,7 +74,6 @@ export async function notifyAdmins(
       related_entity_type: params.relatedEntityType,
       related_entity_id: params.relatedEntityId,
       target_roles: ['admin', 'super_admin'] as UserRole[],
-      created_by: params.excludeUserId,
     };
 
     const { error } = await supabase
