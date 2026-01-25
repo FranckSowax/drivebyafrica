@@ -153,8 +153,8 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
           <div className="mt-4">
             <p className="text-xs text-[var(--text-muted)]">{t('vehicles.card.fobPrice')}</p>
             <p className="text-mandarin font-bold text-xl">
-              {vehicle.start_price_usd
-                ? formatPrice(vehicle.start_price_usd + getExportTax(vehicle.source))
+              {(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd)
+                ? formatPrice((vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) + getExportTax(vehicle.source))
                 : t('vehicles.card.onRequest')}
             </p>
           </div>

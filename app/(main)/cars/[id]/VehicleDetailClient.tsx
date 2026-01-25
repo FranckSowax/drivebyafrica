@@ -367,8 +367,8 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 <div>
                   <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
                   <p className="text-2xl font-bold text-mandarin">
-                    {vehicle.start_price_usd
-                      ? formatPrice(vehicle.start_price_usd + getExportTax(vehicle.source))
+                    {(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd)
+                      ? formatPrice((vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) + getExportTax(vehicle.source))
                       : 'Sur demande'}
                   </p>
                 </div>
@@ -377,9 +377,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               {/* Actions */}
               <div className="space-y-3">
                 {/* Shipping Estimator - only show if price is available */}
-                {vehicle.start_price_usd && (
+                {(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) && (
                   <ShippingEstimator
-                    vehiclePriceUSD={vehicle.start_price_usd}
+                    vehiclePriceUSD={vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd}
                     vehicleSource={source}
                     vehicleId={vehicle.id}
                     vehicleMake={vehicle.make || 'Unknown'}
@@ -391,7 +391,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 )}
 
                 {/* Price Request Button - show for Dubai vehicles without price */}
-                {!vehicle.start_price_usd && source === 'dubai' && (
+                {!(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) && source === 'dubai' && (
                   <PriceRequestButton
                     vehicleId={vehicle.id}
                     vehicleMake={vehicle.make || 'Unknown'}
