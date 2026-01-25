@@ -431,7 +431,7 @@ export default function CollaboratorDashboardPage() {
                       <div className="p-2 bg-mandarin/10 rounded-lg">
                         <Package className="w-5 h-5 text-mandarin" />
                       </div>
-                      <h3 className="font-semibold text-white">
+                      <h3 className="font-semibold text-gray-900">
                         {locale === 'zh' ? '最近订单' : 'Recent Orders'}
                       </h3>
                     </div>
@@ -513,7 +513,7 @@ export default function CollaboratorDashboardPage() {
                       <div className="p-2 bg-blue-500/10 rounded-lg">
                         <Bell className="w-5 h-5 text-blue-500" />
                       </div>
-                      <h3 className="font-semibold text-white">
+                      <h3 className="font-semibold text-gray-900">
                         {locale === 'zh' ? '通知' : 'Notifications'}
                       </h3>
                       {unreadCount > 0 && (
@@ -559,7 +559,7 @@ export default function CollaboratorDashboardPage() {
                               notification.read ? 'bg-gray-500' : 'bg-mandarin'
                             )} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-white font-medium truncate">
+                              <p className="text-sm text-gray-900 font-medium truncate">
                                 {notification.title}
                               </p>
                               {notification.message && (
@@ -592,7 +592,7 @@ export default function CollaboratorDashboardPage() {
                     </Button>
                   </Link>
                   <Link href="/collaborator/orders?status=deposit_paid">
-                    <Button variant="outline" className="border-nobel/40 bg-white text-cod-gray hover:bg-gray-100">
+                    <Button variant="outline" className="border-nobel/40 bg-white text-gray-900 hover:bg-gray-100">
                       <Clock className="w-4 h-4 mr-2" />
                       {locale === 'zh' ? '待处理订单' : 'Pending Orders'}
                       {dailyStats.pendingAction > 0 && (
