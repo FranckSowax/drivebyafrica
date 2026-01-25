@@ -46,6 +46,29 @@ const getArg = (name: string, defaultVal: string) => {
 const MAX_PAGES = parseInt(getArg('max-pages', '2000'));
 const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
 
+// Allowed makes - Korean and Japanese priority brands
+const ALLOWED_MAKES = [
+  // Korean brands
+  'Hyundai',
+  'Kia',
+  'KGM',
+  'SsangYong', // Old name for KGM
+  'Genesis',
+  // Japanese brands
+  'Toyota',
+  'Honda',
+  'Lexus',
+  'Nissan',
+  'Mazda',
+  'Mitsubishi',
+  'Suzuki',
+  'Subaru',
+  // American brands (popular in Korea)
+  'Chevrolet',
+  'ChevroletGMDaewoo', // Korean Chevrolet variant
+  'GM',
+];
+
 // Transmission type mapping
 const transmissionMap: Record<string, string> = {
   'Automatic': 'automatic',
@@ -299,17 +322,29 @@ async function main() {
     }
   }
 
-  console.log(`  Total vehicles to sync: ${allVehicles.length}`);
+  console.log(`  Total vehicles fetched: ${allVehicles.length}`);
+
+  // Filter by allowed makes
+  const filteredVehicles = allVehicles.filter(offer => {
+    const make = offer.data?.mark;
+    return make && ALLOWED_MAKES.some(allowed =>
+      make.toLowerCase().includes(allowed.toLowerCase()) ||
+      allowed.toLowerCase().includes(make.toLowerCase())
+    );
+  });
+
+  console.log(`  Filtered to ${filteredVehicles.length} vehicles from allowed makes`);
+  console.log(`  Allowed makes: ${ALLOWED_MAKES.join(', ')}`);
 
   // Step 3: Upsert vehicles
   console.log('\n[3/4] Upserting vehicles to database...');
 
-  const stats = { added: 0, updated: 0, skipped: 0, errors: 0 };
+  const stats = { added: 0, updated: 0, skipped: 0, errors: 0, filtered_out: allVehicles.length - filteredVehicles.length };
   const batchSize = 100;
   const currentSourceIds = new Set<string>();
 
-  for (let i = 0; i < allVehicles.length; i += batchSize) {
-    const batch = allVehicles.slice(i, i + batchSize);
+  for (let i = 0; i < filteredVehicles.length; i += batchSize) {
+    const batch = filteredVehicles.slice(i, i + batchSize);
     const records = batch
       .map(v => {
         try {
@@ -353,7 +388,7 @@ async function main() {
     }
 
     if ((i + batchSize) % 1000 === 0) {
-      console.log(`  Processed ${i + batchSize}/${allVehicles.length}`);
+      console.log(`  Processed ${i + batchSize}/${filteredVehicles.length}`);
     }
   }
 
@@ -412,7 +447,9 @@ async function main() {
   const duration = Math.round((Date.now() - startTime) / 1000);
   console.log('\n=== Summary ===');
   console.log(`Duration: ${Math.floor(duration / 60)}m ${duration % 60}s`);
-  console.log(`Total vehicles processed: ${allVehicles.length}`);
+  console.log(`Total vehicles fetched: ${allVehicles.length}`);
+  console.log(`Filtered by make: ${filteredVehicles.length}`);
+  console.log(`Filtered out: ${stats.filtered_out}`);
   console.log(`Added: ${stats.added}`);
   console.log(`Updated: ${stats.updated}`);
   console.log(`Removed: ${removed}`);
@@ -427,12 +464,16 @@ async function main() {
 | Metric | Value |
 |--------|-------|
 | Duration | ${Math.floor(duration / 60)}m ${duration % 60}s |
-| Vehicles Processed | ${allVehicles.length} |
+| Vehicles Fetched | ${allVehicles.length} |
+| Filtered (by make) | ${filteredVehicles.length} |
+| Filtered Out | ${stats.filtered_out} |
 | Added | ${stats.added} |
 | Updated | ${stats.updated} |
 | Removed | ${removed} |
-| Skipped | ${stats.skipped} |
+| Skipped (no images) | ${stats.skipped} |
 | Errors | ${stats.errors} |
+
+**Allowed Makes**: ${ALLOWED_MAKES.join(', ')}
 `;
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
   }
