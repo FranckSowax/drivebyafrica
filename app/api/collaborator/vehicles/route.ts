@@ -83,7 +83,6 @@ export async function POST(request: Request) {
         images: images || [],
         buy_now_price_usd: price || null,
         current_price_usd: price || null,
-        auction_status: 'available',
         status: 'available',
         is_visible: true,
         admin_notes: adminNotesContent || null,
