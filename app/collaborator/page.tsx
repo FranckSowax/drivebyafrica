@@ -315,7 +315,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-blue-400 mb-1">
                         {t('stats.todayNewOrders')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.newOrdersToday}</p>
+                      <p className="text-3xl font-bold text-gray-900">{dailyStats.newOrdersToday}</p>
                       {dailyStats.newOrdersYesterday > 0 && (
                         <p className="text-xs text-gray-500 mt-1">
                           {t('stats.yesterday')}: {dailyStats.newOrdersYesterday}
@@ -335,7 +335,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-purple-400 mb-1">
                         {t('stats.processedToday')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.processedToday}</p>
+                      <p className="text-3xl font-bold text-gray-900">{dailyStats.processedToday}</p>
                     </div>
                     <div className="p-3 bg-purple-500/20 rounded-xl">
                       <TrendingUp className="w-6 h-6 text-purple-400" />
@@ -350,7 +350,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-emerald-400 mb-1">
                         {t('stats.completedToday')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.completedToday}</p>
+                      <p className="text-3xl font-bold text-gray-900">{dailyStats.completedToday}</p>
                     </div>
                     <div className="p-3 bg-jewel/20 rounded-xl">
                       <CheckCircle className="w-6 h-6 text-emerald-400" />
@@ -365,7 +365,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-amber-400 mb-1">
                         {t('stats.pendingAction')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.pendingAction}</p>
+                      <p className="text-3xl font-bold text-gray-900">{dailyStats.pendingAction}</p>
                     </div>
                     <div className="p-3 bg-amber-500/20 rounded-xl">
                       <AlertCircle className="w-6 h-6 text-amber-400" />
@@ -383,7 +383,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.inProgress')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.inProgress}</p>
+                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.inProgress}</p>
                     </div>
                   </div>
                 </Card>
@@ -394,7 +394,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.inTransit')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.inTransit}</p>
+                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.inTransit}</p>
                     </div>
                   </div>
                 </Card>
@@ -405,7 +405,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.shipping')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.shipping}</p>
+                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.shipping}</p>
                     </div>
                   </div>
                 </Card>
@@ -416,7 +416,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.completed')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.completed}</p>
+                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.completed}</p>
                     </div>
                   </div>
                 </Card>
