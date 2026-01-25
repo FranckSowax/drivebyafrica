@@ -15,6 +15,7 @@ import {
   Clock,
   XCircle,
   ExternalLink,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
@@ -49,6 +50,8 @@ interface CollaboratorVehicleTableProps {
     search: string;
   };
   onFilterChange: (filters: Record<string, string>) => void;
+  onView?: (vehicle: Vehicle) => void;
+  onDelete?: (id: string) => void;
 }
 
 const SOURCE_FLAGS: Record<string, string> = {
@@ -72,6 +75,8 @@ export function CollaboratorVehicleTable({
   onPageChange,
   filters,
   onFilterChange,
+  onView,
+  onDelete,
 }: CollaboratorVehicleTableProps) {
   const { t } = useCollaboratorLocale();
   const [localSearch, setLocalSearch] = useState(filters.search);
@@ -147,7 +152,7 @@ export function CollaboratorVehicleTable({
 
           {/* Filter Pills */}
           <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
-            <div className="flex items-center gap-1.5 text-sm text-nobel">
+            <div className="flex items-center gap-1.5 text-sm text-gray-900">
               <Filter className="w-4 h-4" />
               <span className="hidden sm:inline">Filters:</span>
             </div>
@@ -237,13 +242,13 @@ export function CollaboratorVehicleTable({
           <tbody className="divide-y divide-nobel/20">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-nobel">
+                <td colSpan={8} className="p-8 text-center text-nobel">
                   Loading...
                 </td>
               </tr>
             ) : vehicles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-nobel">
+                <td colSpan={8} className="p-8 text-center text-nobel">
                   No vehicles found
                 </td>
               </tr>
@@ -300,11 +305,29 @@ export function CollaboratorVehicleTable({
                   </td>
                   <td className="p-3">
                     <div className="flex items-center justify-end gap-1">
+                      {onView && (
+                        <button
+                          onClick={() => onView(vehicle)}
+                          className="p-2 text-blue-500 hover:bg-blue-500/10 rounded transition-colors"
+                          title="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      )}
                       <Link href={`/cars/${vehicle.id}`} target="_blank">
-                        <button className="p-2 text-royal-blue hover:bg-royal-blue/10 rounded transition-colors">
+                        <button className="p-2 text-royal-blue hover:bg-royal-blue/10 rounded transition-colors" title="View on website">
                           <ExternalLink className="w-4 h-4" />
                         </button>
                       </Link>
+                      {onDelete && (
+                        <button
+                          onClick={() => onDelete(vehicle.id)}
+                          className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+                          title="Delete vehicle"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
