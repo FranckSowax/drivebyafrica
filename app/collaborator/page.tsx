@@ -33,6 +33,7 @@ import {
 import Link from 'next/link';
 import { format, formatDistanceToNow, isToday, isYesterday, startOfDay, subDays } from 'date-fns';
 import { enUS, zhCN } from 'date-fns/locale';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 
 interface Order {
   id: string;
@@ -466,22 +467,13 @@ export default function CollaboratorDashboardPage() {
                             <div className="w-16 h-12 rounded-lg overflow-hidden bg-nobel/20 flex-shrink-0">
                               {order.vehicle_image_url ? (
                                 <img
-                                  src={order.vehicle_image_url}
+                                  src={getProxiedImageUrl(order.vehicle_image_url)}
                                   alt={`${order.vehicle_make} ${order.vehicle_model}`}
                                   className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const parent = e.currentTarget.parentElement;
-                                    if (parent) {
-                                      parent.innerHTML = '<div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-nobel/30 to-nobel/10"><svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg></div>';
-                                    }
-                                  }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-nobel/30 to-nobel/10">
-                                  <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                  </svg>
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-5 h-5 text-gray-500" />
                                 </div>
                               )}
                             </div>
