@@ -252,7 +252,7 @@ export default function CollaboratorVehiclesPage() {
 
                     <div className="flex items-center justify-between text-sm mb-3">
                       <span className="text-alto-orange font-semibold">
-                        ${vehicle.price.toLocaleString()}
+                        {vehicle.price != null ? `$${vehicle.price.toLocaleString()}` : 'Sur demande'}
                       </span>
                       {vehicle.mileage && (
                         <span className="text-nobel">
