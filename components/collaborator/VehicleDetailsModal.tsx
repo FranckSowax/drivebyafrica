@@ -3,6 +3,7 @@
 import { X, ExternalLink, Calendar, Gauge, Fuel, Settings, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import type { CollaboratorVehicle } from '@/app/collaborator/vehicles/page';
 
 interface VehicleDetailsModalProps {
@@ -18,6 +19,8 @@ const SOURCE_FLAGS: Record<string, string> = {
 };
 
 export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetailsModalProps) {
+  const { t } = useCollaboratorLocale();
+
   if (!isOpen || !vehicle) return null;
 
   const getStatusBadge = () => {
@@ -72,7 +75,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
           {/* Images */}
           {vehicle.images && vehicle.images.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Images</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('vehicleDetails.images')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {vehicle.images.map((image, index) => (
                   <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-surface">
@@ -84,7 +87,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                     />
                     {index === 0 && (
                       <div className="absolute top-2 left-2 bg-alto-orange text-gray-900 text-xs px-2 py-1 rounded-full">
-                        Main
+                        {t('vehicleDetails.main')}
                       </div>
                     )}
                   </div>
@@ -95,7 +98,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
 
           {/* Price */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Price</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('vehicleDetails.price')}</h3>
             <div className="bg-surface rounded-lg p-4 border border-nobel/20">
               {vehicle.price != null ? (
                 <p className="text-3xl font-bold text-alto-orange">
@@ -103,7 +106,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                 </p>
               ) : (
                 <p className="text-2xl font-medium text-gray-900">
-                  On Request
+                  {t('vehicleDetails.onRequest')}
                 </p>
               )}
             </div>
@@ -111,12 +114,12 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
 
           {/* Vehicle Details */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Vehicle Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('vehicleDetails.vehicleDetails')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-surface rounded-lg p-4 border border-nobel/20">
                 <div className="flex items-center gap-2 text-nobel mb-1">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-sm">Year</span>
+                  <span className="text-sm">{t('vehicleDetails.year')}</span>
                 </div>
                 <p className="text-gray-900 font-semibold">{vehicle.year}</p>
               </div>
@@ -125,7 +128,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                 <div className="bg-surface rounded-lg p-4 border border-nobel/20">
                   <div className="flex items-center gap-2 text-nobel mb-1">
                     <Gauge className="w-4 h-4" />
-                    <span className="text-sm">Mileage</span>
+                    <span className="text-sm">{t('vehicleDetails.mileage')}</span>
                   </div>
                   <p className="text-gray-900 font-semibold">{vehicle.mileage.toLocaleString()} km</p>
                 </div>
@@ -135,7 +138,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                 <div className="bg-surface rounded-lg p-4 border border-nobel/20">
                   <div className="flex items-center gap-2 text-nobel mb-1">
                     <Fuel className="w-4 h-4" />
-                    <span className="text-sm">Fuel Type</span>
+                    <span className="text-sm">{t('vehicleDetails.fuelType')}</span>
                   </div>
                   <p className="text-gray-900 font-semibold capitalize">{vehicle.fuel_type}</p>
                 </div>
@@ -145,7 +148,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                 <div className="bg-surface rounded-lg p-4 border border-nobel/20">
                   <div className="flex items-center gap-2 text-nobel mb-1">
                     <Settings className="w-4 h-4" />
-                    <span className="text-sm">Transmission</span>
+                    <span className="text-sm">{t('vehicleDetails.transmission')}</span>
                   </div>
                   <p className="text-gray-900 font-semibold capitalize">{vehicle.transmission}</p>
                 </div>
@@ -155,7 +158,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                 <div className="bg-surface rounded-lg p-4 border border-nobel/20">
                   <div className="flex items-center gap-2 text-nobel mb-1">
                     <Package className="w-4 h-4" />
-                    <span className="text-sm">Condition</span>
+                    <span className="text-sm">{t('vehicleDetails.condition')}</span>
                   </div>
                   <p className="text-gray-900 font-semibold capitalize">{vehicle.condition}</p>
                 </div>
@@ -165,26 +168,26 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
 
           {/* Status Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Status Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('vehicleDetails.statusInfo')}</h3>
             <div className="bg-surface rounded-lg p-4 border border-nobel/20 space-y-3">
               <div className="flex justify-between">
-                <span className="text-nobel">Status</span>
+                <span className="text-nobel">{t('vehicleDetails.status')}</span>
                 <span className="text-gray-900 font-medium capitalize">{vehicle.status || 'Pending'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-nobel">Visible</span>
+                <span className="text-nobel">{t('vehicleDetails.visible')}</span>
                 <span className={`font-medium ${vehicle.is_visible ? 'text-green-400' : 'text-red-400'}`}>
-                  {vehicle.is_visible ? 'Yes' : 'No'}
+                  {vehicle.is_visible ? t('vehicleDetails.yes') : t('vehicleDetails.no')}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-nobel">Added</span>
+                <span className="text-nobel">{t('vehicleDetails.added')}</span>
                 <span className="text-gray-900 font-medium">
                   {format(new Date(vehicle.created_at), 'MMM dd, yyyy HH:mm')}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-nobel">Last Updated</span>
+                <span className="text-nobel">{t('vehicleDetails.lastUpdated')}</span>
                 <span className="text-gray-900 font-medium">
                   {format(new Date(vehicle.updated_at), 'MMM dd, yyyy HH:mm')}
                 </span>
@@ -195,7 +198,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
           {/* Rejection Reason */}
           {vehicle.rejection_reason && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Rejection Reason</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('vehicleDetails.rejectionReason')}</h3>
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                 <p className="text-red-400">{vehicle.rejection_reason}</p>
               </div>
@@ -207,14 +210,14 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
             <Link href={`/cars/${vehicle.id}`} target="_blank" className="flex-1">
               <button className="w-full px-4 py-2 bg-royal-blue hover:bg-royal-blue/90 text-gray-900 rounded-lg transition-colors flex items-center justify-center gap-2">
                 <ExternalLink className="w-4 h-4" />
-                View on Website
+                {t('vehicleDetails.viewOnWebsite')}
               </button>
             </Link>
             <button
               onClick={onClose}
               className="px-6 py-2 bg-surface hover:bg-surface-hover text-gray-900 rounded-lg transition-colors border border-nobel/20"
             >
-              Close
+              {t('vehicleDetails.close')}
             </button>
           </div>
         </div>
