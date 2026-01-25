@@ -6,6 +6,7 @@ import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSideb
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
 import { AddVehicleModal } from '@/components/collaborator/AddVehicleModal';
 import { CollaboratorVehicleTable } from '@/components/collaborator/CollaboratorVehicleTable';
+import { VehicleDetailsModal } from '@/components/collaborator/VehicleDetailsModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -44,6 +45,8 @@ export default function CollaboratorVehiclesPage() {
   const [vehicles, setVehicles] = useState<CollaboratorVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<CollaboratorVehicle | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -94,8 +97,8 @@ export default function CollaboratorVehiclesPage() {
   };
 
   const handleViewVehicle = (vehicle: CollaboratorVehicle) => {
-    // TODO: Open modal with vehicle details
-    console.log('View vehicle:', vehicle);
+    setSelectedVehicle(vehicle);
+    setIsDetailsModalOpen(true);
   };
 
   const handleDeleteVehicle = async (id: string) => {
@@ -221,6 +224,16 @@ export default function CollaboratorVehiclesPage() {
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
           fetchVehicles();
+        }}
+      />
+
+      {/* Vehicle Details Modal */}
+      <VehicleDetailsModal
+        vehicle={selectedVehicle}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedVehicle(null);
         }}
       />
     </div>

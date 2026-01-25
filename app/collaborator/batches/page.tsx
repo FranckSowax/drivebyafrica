@@ -6,6 +6,7 @@ import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSideb
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
 import { AddBatchModal } from '@/components/collaborator/AddBatchModal';
 import { CollaboratorBatchTable } from '@/components/collaborator/CollaboratorBatchTable';
+import { BatchDetailsModal } from '@/components/collaborator/BatchDetailsModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -23,6 +24,8 @@ export default function CollaboratorBatchesPage() {
   const [batches, setBatches] = useState<VehicleBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<VehicleBatch | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -71,8 +74,8 @@ export default function CollaboratorBatchesPage() {
   };
 
   const handleViewBatch = (batch: VehicleBatch) => {
-    // TODO: Open modal with batch details
-    console.log('View batch:', batch);
+    setSelectedBatch(batch);
+    setIsDetailsModalOpen(true);
   };
 
   const handleDeleteBatch = async (id: string) => {
@@ -211,6 +214,16 @@ export default function CollaboratorBatchesPage() {
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
           fetchBatches();
+        }}
+      />
+
+      {/* Batch Details Modal */}
+      <BatchDetailsModal
+        batch={selectedBatch}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedBatch(null);
         }}
       />
     </div>
