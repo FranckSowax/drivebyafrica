@@ -367,9 +367,10 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 <div>
                   <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
                   <p className="text-2xl font-bold text-mandarin">
-                    {(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd)
-                      ? formatPrice((vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) + getExportTax(vehicle.source))
-                      : 'Sur demande'}
+                    {(() => {
+                      const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                      return price != null ? formatPrice(price + getExportTax(vehicle.source)) : 'Sur demande';
+                    })()}
                   </p>
                 </div>
               </div>
@@ -377,29 +378,35 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               {/* Actions */}
               <div className="space-y-3">
                 {/* Shipping Estimator - only show if price is available */}
-                {(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) && (
-                  <ShippingEstimator
-                    vehiclePriceUSD={vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd}
-                    vehicleSource={source}
-                    vehicleId={vehicle.id}
-                    vehicleMake={vehicle.make || 'Unknown'}
-                    vehicleModel={vehicle.model || 'Unknown'}
-                    vehicleYear={vehicle.year || new Date().getFullYear()}
-                    autoOpenQuote={shouldAutoOpenQuote}
-                    onSelectionComplete={setIsShippingSelected}
-                  />
-                )}
+                {(() => {
+                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                  return price != null ? (
+                    <ShippingEstimator
+                      vehiclePriceUSD={price}
+                      vehicleSource={source}
+                      vehicleId={vehicle.id}
+                      vehicleMake={vehicle.make || 'Unknown'}
+                      vehicleModel={vehicle.model || 'Unknown'}
+                      vehicleYear={vehicle.year || new Date().getFullYear()}
+                      autoOpenQuote={shouldAutoOpenQuote}
+                      onSelectionComplete={setIsShippingSelected}
+                    />
+                  ) : null;
+                })()}
 
                 {/* Price Request Button - show for Dubai vehicles without price */}
-                {!(vehicle.start_price_usd || vehicle.buy_now_price_usd || vehicle.current_price_usd) && source === 'dubai' && (
-                  <PriceRequestButton
-                    vehicleId={vehicle.id}
-                    vehicleMake={vehicle.make || 'Unknown'}
-                    vehicleModel={vehicle.model || 'Unknown'}
-                    vehicleYear={vehicle.year || new Date().getFullYear()}
-                    vehicleSource={source}
-                  />
-                )}
+                {(() => {
+                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                  return price == null && source === 'dubai' ? (
+                    <PriceRequestButton
+                      vehicleId={vehicle.id}
+                      vehicleMake={vehicle.make || 'Unknown'}
+                      vehicleModel={vehicle.model || 'Unknown'}
+                      vehicleYear={vehicle.year || new Date().getFullYear()}
+                      vehicleSource={source}
+                    />
+                  ) : null;
+                })()}
 
                 {/* Ask Question Button - only show after destination and shipping type are selected */}
                 {isShippingSelected && (

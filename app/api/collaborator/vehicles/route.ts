@@ -169,11 +169,11 @@ export async function GET(request: Request) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Filter by approval status
+    // Filter by status
     if (status === 'pending') {
-      query = query.eq('collaborator_approved', false).eq('is_visible', false);
+      query = query.neq('status', 'available').eq('is_visible', false);
     } else if (status === 'approved') {
-      query = query.eq('collaborator_approved', true);
+      query = query.eq('status', 'available').eq('is_visible', true);
     }
 
     const { data: vehicles, error, count } = await query;
@@ -222,7 +222,7 @@ export async function PUT(request: Request) {
     // Check if vehicle belongs to collaborator and is pending
     const { data: vehicle, error: checkError } = await supabase
       .from('vehicles')
-      .select('id, collaborator_approved, added_by_collaborator_id')
+      .select('id, status, added_by_collaborator_id')
       .eq('id', vehicleId)
       .eq('added_by_collaborator_id', user.id)
       .single();
@@ -234,9 +234,9 @@ export async function PUT(request: Request) {
       );
     }
 
-    if (vehicle.collaborator_approved) {
+    if (vehicle.status === 'available') {
       return NextResponse.json(
-        { error: 'Cannot update approved vehicle', error_zh: '无法更新已批准的车辆' },
+        { error: 'Cannot update published vehicle', error_zh: '无法更新已发布的车辆' },
         { status: 403 }
       );
     }
@@ -290,7 +290,7 @@ export async function DELETE(request: Request) {
     // Check if vehicle belongs to collaborator and is pending
     const { data: vehicle, error: checkError } = await supabase
       .from('vehicles')
-      .select('id, collaborator_approved, added_by_collaborator_id, make, model, year')
+      .select('id, status, added_by_collaborator_id, make, model, year')
       .eq('id', vehicleId)
       .eq('added_by_collaborator_id', user.id)
       .single();
@@ -302,9 +302,9 @@ export async function DELETE(request: Request) {
       );
     }
 
-    if (vehicle.collaborator_approved) {
+    if (vehicle.status === 'available') {
       return NextResponse.json(
-        { error: 'Cannot delete approved vehicle', error_zh: '无法删除已批准的车辆' },
+        { error: 'Cannot delete published vehicle', error_zh: '无法删除已发布的车辆' },
         { status: 403 }
       );
     }

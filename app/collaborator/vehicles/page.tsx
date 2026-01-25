@@ -37,7 +37,7 @@ interface Vehicle {
   images: string[];
   thumbnail_url?: string;
   is_collaborator_listing: boolean;
-  collaborator_approved: boolean;
+  status: string;
   is_visible: boolean;
   rejection_reason?: string;
   created_at: string;
@@ -86,11 +86,11 @@ export default function CollaboratorVehiclesPage() {
   };
 
   const getStatusBadge = (vehicle: Vehicle) => {
-    if (vehicle.collaborator_approved && vehicle.is_visible) {
+    if (vehicle.status === 'available' && vehicle.is_visible) {
       return (
         <div className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/20 rounded text-xs text-green-400">
           <CheckCircle className="w-3 h-3" />
-          Approved
+          Published
         </div>
       );
     }
@@ -124,8 +124,8 @@ export default function CollaboratorVehiclesPage() {
 
   const stats = {
     total: vehicles.length,
-    pending: vehicles.filter(v => !v.collaborator_approved && !v.rejection_reason).length,
-    approved: vehicles.filter(v => v.collaborator_approved).length,
+    pending: vehicles.filter(v => v.status !== 'available' && !v.rejection_reason).length,
+    approved: vehicles.filter(v => v.status === 'available' && v.is_visible).length,
     rejected: vehicles.filter(v => v.rejection_reason).length,
   };
 
