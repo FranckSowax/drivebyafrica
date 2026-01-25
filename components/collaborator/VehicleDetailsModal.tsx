@@ -51,13 +51,13 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
         <div className="sticky top-0 bg-cod-gray border-b border-nobel/20 p-6 flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-gray-900">
                 {vehicle.make} {vehicle.model}
               </h2>
               <span className="text-2xl">{SOURCE_FLAGS[vehicle.source || 'china'] || '🇨🇳'}</span>
               {getStatusBadge()}
             </div>
-            <p className="text-nobel">{vehicle.title}</p>
+            <p className="text-gray-900">{vehicle.title}</p>
           </div>
           <button
             onClick={onClose}
@@ -72,7 +72,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
           {/* Images */}
           {vehicle.images && vehicle.images.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold text-white mb-3">Images</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Images</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {vehicle.images.map((image, index) => (
                   <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-surface">
@@ -83,7 +83,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                       className="w-full h-full object-cover"
                     />
                     {index === 0 && (
-                      <div className="absolute top-2 left-2 bg-alto-orange text-white text-xs px-2 py-1 rounded-full">
+                      <div className="absolute top-2 left-2 bg-alto-orange text-gray-900 text-xs px-2 py-1 rounded-full">
                         Main
                       </div>
                     )}
@@ -95,7 +95,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
 
           {/* Price */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-3">Price</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Price</h3>
             <div className="bg-surface rounded-lg p-4 border border-nobel/20">
               {vehicle.price != null ? (
                 <p className="text-3xl font-bold text-alto-orange">
@@ -111,14 +111,14 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
 
           {/* Vehicle Details */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-3">Vehicle Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Vehicle Details</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-surface rounded-lg p-4 border border-nobel/20">
                 <div className="flex items-center gap-2 text-nobel mb-1">
                   <Calendar className="w-4 h-4" />
                   <span className="text-sm">Year</span>
                 </div>
-                <p className="text-white font-semibold">{vehicle.year}</p>
+                <p className="text-gray-900 font-semibold">{vehicle.year}</p>
               </div>
 
               {vehicle.mileage && (
@@ -127,7 +127,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                     <Gauge className="w-4 h-4" />
                     <span className="text-sm">Mileage</span>
                   </div>
-                  <p className="text-white font-semibold">{vehicle.mileage.toLocaleString()} km</p>
+                  <p className="text-gray-900 font-semibold">{vehicle.mileage.toLocaleString()} km</p>
                 </div>
               )}
 
@@ -137,7 +137,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                     <Fuel className="w-4 h-4" />
                     <span className="text-sm">Fuel Type</span>
                   </div>
-                  <p className="text-white font-semibold capitalize">{vehicle.fuel_type}</p>
+                  <p className="text-gray-900 font-semibold capitalize">{vehicle.fuel_type}</p>
                 </div>
               )}
 
@@ -147,7 +147,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                     <Settings className="w-4 h-4" />
                     <span className="text-sm">Transmission</span>
                   </div>
-                  <p className="text-white font-semibold capitalize">{vehicle.transmission}</p>
+                  <p className="text-gray-900 font-semibold capitalize">{vehicle.transmission}</p>
                 </div>
               )}
 
@@ -157,7 +157,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                     <Package className="w-4 h-4" />
                     <span className="text-sm">Condition</span>
                   </div>
-                  <p className="text-white font-semibold capitalize">{vehicle.condition}</p>
+                  <p className="text-gray-900 font-semibold capitalize">{vehicle.condition}</p>
                 </div>
               )}
             </div>
@@ -165,11 +165,11 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
 
           {/* Status Information */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-3">Status Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Status Information</h3>
             <div className="bg-surface rounded-lg p-4 border border-nobel/20 space-y-3">
               <div className="flex justify-between">
                 <span className="text-nobel">Status</span>
-                <span className="text-white font-medium capitalize">{vehicle.status || 'Pending'}</span>
+                <span className="text-gray-900 font-medium capitalize">{vehicle.status || 'Pending'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-nobel">Visible</span>
@@ -179,13 +179,13 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
               </div>
               <div className="flex justify-between">
                 <span className="text-nobel">Added</span>
-                <span className="text-white font-medium">
+                <span className="text-gray-900 font-medium">
                   {format(new Date(vehicle.created_at), 'MMM dd, yyyy HH:mm')}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-nobel">Last Updated</span>
-                <span className="text-white font-medium">
+                <span className="text-gray-900 font-medium">
                   {format(new Date(vehicle.updated_at), 'MMM dd, yyyy HH:mm')}
                 </span>
               </div>
@@ -195,7 +195,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
           {/* Rejection Reason */}
           {vehicle.rejection_reason && (
             <div>
-              <h3 className="text-lg font-semibold text-white mb-3">Rejection Reason</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Rejection Reason</h3>
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
                 <p className="text-red-400">{vehicle.rejection_reason}</p>
               </div>
@@ -205,14 +205,14 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-nobel/20">
             <Link href={`/cars/${vehicle.id}`} target="_blank" className="flex-1">
-              <button className="w-full px-4 py-2 bg-royal-blue hover:bg-royal-blue/90 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+              <button className="w-full px-4 py-2 bg-royal-blue hover:bg-royal-blue/90 text-gray-900 rounded-lg transition-colors flex items-center justify-center gap-2">
                 <ExternalLink className="w-4 h-4" />
                 View on Website
               </button>
             </Link>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-surface hover:bg-surface-hover text-white rounded-lg transition-colors border border-nobel/20"
+              className="px-6 py-2 bg-surface hover:bg-surface-hover text-gray-900 rounded-lg transition-colors border border-nobel/20"
             >
               Close
             </button>
