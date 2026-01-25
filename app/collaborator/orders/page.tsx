@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { cn } from '@/lib/utils';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
@@ -642,7 +643,7 @@ function CollaboratorOrdersContent() {
                               <div className="w-14 h-10 rounded-lg overflow-hidden bg-nobel/20 flex-shrink-0">
                                 {order.vehicle_image_url ? (
                                   <img
-                                    src={order.vehicle_image_url}
+                                    src={getProxiedImageUrl(order.vehicle_image_url)}
                                     alt={`${order.vehicle_make} ${order.vehicle_model}`}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
@@ -806,7 +807,7 @@ function CollaboratorOrdersContent() {
                   {selectedOrder.vehicle_image_url && (
                     <div className="w-16 h-12 rounded-lg overflow-hidden bg-nobel/20 flex-shrink-0">
                       <img
-                        src={selectedOrder.vehicle_image_url}
+                        src={getProxiedImageUrl(selectedOrder.vehicle_image_url)}
                         alt={`${selectedOrder.vehicle_make} ${selectedOrder.vehicle_model}`}
                         className="w-full h-full object-cover"
                       />

@@ -3,6 +3,7 @@
 import { X, ExternalLink, Calendar, Gauge, Fuel, Settings, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import type { CollaboratorVehicle } from '@/app/collaborator/vehicles/page';
 
@@ -81,7 +82,7 @@ export function VehicleDetailsModal({ vehicle, isOpen, onClose }: VehicleDetails
                   <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-surface">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={image}
+                      src={getProxiedImageUrl(image)}
                       alt={`${vehicle.make} ${vehicle.model} - Image ${index + 1}`}
                       className="w-full h-full object-cover"
                     />

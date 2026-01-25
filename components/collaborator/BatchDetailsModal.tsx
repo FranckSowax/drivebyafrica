@@ -2,6 +2,7 @@
 
 import { X, Calendar, DollarSign, Package, Truck, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import type { VehicleBatch } from '@/types/vehicle-batch';
 
@@ -85,7 +86,7 @@ export function BatchDetailsModal({ batch, isOpen, onClose }: BatchDetailsModalP
                   <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-surface">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={image}
+                      src={getProxiedImageUrl(image)}
                       alt={`${batch.title} - Image ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
