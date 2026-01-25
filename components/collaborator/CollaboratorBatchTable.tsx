@@ -20,28 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
-
-interface VehicleBatch {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  title: string;
-  description?: string;
-  source: string;
-  source_country: 'china' | 'korea' | 'dubai';
-  price_per_unit_usd: number;
-  total_quantity: number;
-  available_quantity: number;
-  minimum_order_quantity: number;
-  images: string[];
-  thumbnail_url?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'sold_out';
-  rejection_reason?: string;
-  admin_notes?: string;
-  created_at: string;
-  approved_at?: string;
-}
+import type { VehicleBatch } from '@/types/vehicle-batch';
 
 interface CollaboratorBatchTableProps {
   batches: VehicleBatch[];
