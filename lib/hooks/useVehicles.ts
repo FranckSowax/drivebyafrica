@@ -64,7 +64,7 @@ function buildQueryString(
     'status',
     'auction_status',
     'auction_platform',
-    'auction_end_date',
+    'auction_date',
     'is_visible',
     'created_at',
     'updated_at',
