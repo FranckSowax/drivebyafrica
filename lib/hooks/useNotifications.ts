@@ -22,8 +22,8 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     limit = 50,
     includeRead = true,
     includeDismissed = false,
-    autoRefresh = true,
-    refreshInterval = 30000, // 30 seconds
+    autoRefresh = false, // Disabled by default - realtime handles updates
+    refreshInterval = 300000, // 5 minutes (only if autoRefresh is enabled)
   } = options;
 
   const [notifications, setNotifications] = useState<NotificationWithMeta[]>([]);
@@ -225,8 +225,8 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
 export function useAdminNotifications(options: UseNotificationsOptions = {}) {
   const {
     limit = 50,
-    autoRefresh = true,
-    refreshInterval = 30000,
+    autoRefresh = false, // Disabled by default - realtime handles updates
+    refreshInterval = 300000, // 5 minutes (only if autoRefresh is enabled)
   } = options;
 
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
