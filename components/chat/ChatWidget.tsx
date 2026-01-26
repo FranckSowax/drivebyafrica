@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 interface Message {
   id: string;
@@ -46,10 +46,7 @@ export function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createClient();
 
   // Check authentication status
   useEffect(() => {
@@ -143,7 +140,11 @@ export function ChatWidget() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.warn('Chat realtime subscription error:', err.message);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

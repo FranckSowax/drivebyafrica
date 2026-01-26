@@ -197,7 +197,11 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
           );
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.warn('Notifications realtime subscription error:', err.message);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -420,7 +424,11 @@ export function useAdminNotifications(options: UseNotificationsOptions = {}) {
           setNotifications(prev => [newNotification, ...prev]);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.warn('Admin notifications realtime subscription error:', err.message);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
