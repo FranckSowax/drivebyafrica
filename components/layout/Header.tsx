@@ -60,18 +60,20 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 h-14 sm:h-16 bg-[var(--header-bg)] backdrop-blur-md border-b border-[var(--card-border)]">
       <div className="container mx-auto px-3 sm:px-4 h-full">
         <div className="flex items-center justify-between h-full gap-2">
-          {/* Logo - Ensure clickable on mobile with proper touch target */}
+          {/* Logo - Optimized for immediate click response on mobile and desktop */}
           <Link
             href="/"
-            className="flex-shrink-0 relative z-20 flex items-center justify-center hover:opacity-90 active:opacity-70 transition-opacity touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 pr-3"
+            className="flex-shrink-0 relative flex items-center justify-center min-h-[48px] min-w-[48px] px-2 -ml-2 rounded-lg cursor-pointer select-none active:scale-95 active:opacity-80 transition-transform duration-100 touch-manipulation"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <Image
               src={logoSrc}
               alt="Driveby Africa"
               width={200}
               height={50}
-              className="h-8 sm:h-10 w-auto object-contain pointer-events-none"
+              className="h-8 sm:h-10 w-auto object-contain pointer-events-none select-none"
               priority
+              draggable={false}
             />
           </Link>
 
