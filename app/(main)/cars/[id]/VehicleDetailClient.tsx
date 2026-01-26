@@ -300,7 +300,12 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   body_type: vehicle.body_type,
                   drive_type: vehicle.drive_type,
                   engine_cc: vehicle.engine_cc,
-                  condition_report: vehicle.condition_report,
+                  condition_report:
+                    typeof vehicle.condition_report === 'string'
+                      ? vehicle.condition_report
+                      : vehicle.condition_report != null
+                        ? JSON.stringify(vehicle.condition_report)
+                        : null,
                 }}
                 locale="fr"
               />
