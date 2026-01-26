@@ -7,8 +7,13 @@
  * Usage: npx tsx scripts/sync-encar-ci.ts [options]
  *
  * Options:
- *   --max-pages=N         Max pages to fetch (default: 2000 = ~40,000 vehicles)
+ *   --max-pages=N         Max pages to fetch (default: 4000 = ~80,000 vehicles)
  *   --remove-expired=bool Remove vehicles no longer in API (default: true)
+ *
+ * Filters:
+ *   - Only allowed makes (Korean, Japanese, American brands)
+ *   - Minimum price: $1200 USD (source price)
+ *   - Must have at least one image
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -43,8 +48,9 @@ const getArg = (name: string, defaultVal: string) => {
   return arg ? arg.split('=')[1] : defaultVal;
 };
 
-const MAX_PAGES = parseInt(getArg('max-pages', '2000'));
+const MAX_PAGES = parseInt(getArg('max-pages', '4000'));
 const REMOVE_EXPIRED = getArg('remove-expired', 'true') === 'true';
+const MIN_PRICE_USD = 1200; // Minimum price in USD
 
 // Allowed makes - Korean and Japanese priority brands
 const ALLOWED_MAKES = [
@@ -476,7 +482,7 @@ async function main() {
   console.log(`  Total vehicles fetched: ${allVehicles.length}`);
 
   // Filter by allowed makes
-  const filteredVehicles = allVehicles.filter(offer => {
+  const makeFilteredVehicles = allVehicles.filter(offer => {
     const make = offer.data?.mark;
     return make && ALLOWED_MAKES.some(allowed =>
       make.toLowerCase().includes(allowed.toLowerCase()) ||
@@ -484,13 +490,35 @@ async function main() {
     );
   });
 
-  console.log(`  Filtered to ${filteredVehicles.length} vehicles from allowed makes`);
+  console.log(`  Filtered to ${makeFilteredVehicles.length} vehicles from allowed makes`);
   console.log(`  Allowed makes: ${ALLOWED_MAKES.join(', ')}`);
+
+  // Filter by minimum price (>= $1200 USD)
+  const filteredVehicles = makeFilteredVehicles.filter(offer => {
+    const v = offer.data;
+    const price = typeof v.price === 'string' ? parseInt(v.price, 10) : v.price;
+    if (isNaN(price) || price <= 0) return false;
+    // Encar prices are in 만원 (10,000 KRW units)
+    const priceUsd = Math.round(price * 10000 * KRW_TO_USD);
+    return priceUsd >= MIN_PRICE_USD;
+  });
+
+  const priceFiltered = makeFilteredVehicles.length - filteredVehicles.length;
+  console.log(`  Filtered out ${priceFiltered} vehicles below $${MIN_PRICE_USD} USD`);
+  console.log(`  Final count: ${filteredVehicles.length} vehicles`);
 
   // Step 3: Upsert vehicles
   console.log('\n[3/4] Upserting vehicles to database...');
 
-  const stats = { added: 0, updated: 0, skipped: 0, errors: 0, filtered_out: allVehicles.length - filteredVehicles.length };
+  const stats = {
+    added: 0,
+    updated: 0,
+    skipped: 0,
+    errors: 0,
+    filtered_by_make: allVehicles.length - makeFilteredVehicles.length,
+    filtered_by_price: priceFiltered,
+    filtered_out: allVehicles.length - filteredVehicles.length
+  };
   const batchSize = 100;
   const currentSourceIds = new Set<string>();
 
@@ -599,8 +627,10 @@ async function main() {
   console.log('\n=== Summary ===');
   console.log(`Duration: ${Math.floor(duration / 60)}m ${duration % 60}s`);
   console.log(`Total vehicles fetched: ${allVehicles.length}`);
-  console.log(`Filtered by make: ${filteredVehicles.length}`);
-  console.log(`Filtered out: ${stats.filtered_out}`);
+  console.log(`Filtered out (by make): ${stats.filtered_by_make}`);
+  console.log(`Filtered out (by price < $${MIN_PRICE_USD}): ${stats.filtered_by_price}`);
+  console.log(`Total filtered out: ${stats.filtered_out}`);
+  console.log(`Final vehicles to process: ${filteredVehicles.length}`);
   console.log(`Added: ${stats.added}`);
   console.log(`Updated: ${stats.updated}`);
   console.log(`Removed: ${removed}`);
@@ -616,8 +646,10 @@ async function main() {
 |--------|-------|
 | Duration | ${Math.floor(duration / 60)}m ${duration % 60}s |
 | Vehicles Fetched | ${allVehicles.length} |
-| Filtered (by make) | ${filteredVehicles.length} |
-| Filtered Out | ${stats.filtered_out} |
+| Filtered Out (by make) | ${stats.filtered_by_make} |
+| Filtered Out (price < $${MIN_PRICE_USD}) | ${stats.filtered_by_price} |
+| Total Filtered Out | ${stats.filtered_out} |
+| Final Vehicles to Process | ${filteredVehicles.length} |
 | Added | ${stats.added} |
 | Updated | ${stats.updated} |
 | Removed | ${removed} |
@@ -625,6 +657,7 @@ async function main() {
 | Errors | ${stats.errors} |
 
 **Allowed Makes**: ${ALLOWED_MAKES.join(', ')}
+**Min Price Filter**: $${MIN_PRICE_USD} USD
 `;
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
   }
