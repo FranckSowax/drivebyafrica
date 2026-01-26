@@ -12,6 +12,7 @@ import type {
   EncarPriceChange,
 } from '@/types/encar';
 import { convertEncarPriceToUSD } from '@/types/encar';
+import { getFeatureNames, getFeaturesByCategory } from './encar-options';
 
 // Client Supabase admin pour les opérations d'écriture (typé)
 function getSupabaseAdmin() {
@@ -71,6 +72,23 @@ export function mapEncarToVehicle(encarData: EncarVehicleData): VehicleInsert {
 
   const priceUsd = convertEncarPriceToUSD(encarData.price);
 
+  // Build condition report with extra data and parsed features
+  const conditionReport: Record<string, unknown> = {};
+
+  // Add extra data (diagnosis, inspection, accidents)
+  if (encarData.extra) {
+    conditionReport.extra = encarData.extra;
+  }
+
+  // Add options data with human-readable feature names
+  if (encarData.options) {
+    conditionReport.options = {
+      raw: encarData.options, // Keep raw codes for reference
+      features: getFeatureNames(encarData.options), // Human-readable feature list
+      byCategory: getFeaturesByCategory(encarData.options), // Features grouped by category
+    };
+  }
+
   return {
     source: 'korea',
     source_id: `encar_${encarData.inner_id}`,
@@ -85,7 +103,7 @@ export function mapEncarToVehicle(encarData: EncarVehicleData): VehicleInsert {
     color: encarData.color,
     body_type: bodyTypeMap[encarData.body_type] || 'other',
     grade: encarData.complectation || encarData.configuration,
-    condition_report: encarData.extra ? JSON.stringify(encarData.extra) : null,
+    condition_report: Object.keys(conditionReport).length > 0 ? JSON.stringify(conditionReport) : null,
     start_price_usd: priceUsd,
     current_price_usd: priceUsd,
     auction_platform: 'encar',

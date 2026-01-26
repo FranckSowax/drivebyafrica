@@ -60,13 +60,22 @@ export interface EncarVehicleData {
   offer_created?: string;
   images: string[];
   extra?: EncarExtraData;
-  options?: string[];
+  options?: EncarOptionsData;
 }
 
 export interface EncarExtraData {
   diagnosis?: Record<string, unknown>;
   inspection?: Record<string, unknown>;
   accidents?: unknown[];
+}
+
+// Options structure from the API
+export interface EncarOptionsData {
+  standard?: string[];  // Factory/OEM features (e.g., ["001", "003", "006"])
+  tuning?: string[];    // Aftermarket modifications
+  choice?: string[];    // Choice options
+  etc?: string[];       // Other options
+  type?: string;        // Vehicle type (e.g., "CAR")
 }
 
 // Réponse de /offers
