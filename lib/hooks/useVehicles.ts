@@ -1,9 +1,8 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
-import { getEffectiveVehiclePrice } from '@/lib/utils/pricing';
 
 interface UseVehiclesOptions {
   filters?: VehicleFilters;
@@ -69,6 +68,7 @@ function buildQueryString(
     'is_visible',
     'created_at',
     'updated_at',
+    'effective_price_usd', // Computed column: start_price_usd + export tax (for China)
   ].join(','));
 
   // CRITICAL: Always filter visible vehicles only (reduces 190k+ to much smaller set)
@@ -145,10 +145,12 @@ function buildQueryString(
       orderBy = 'id.desc';
       break;
     case 'price_asc':
-      orderBy = 'start_price_usd.asc.nullslast,id.desc';
+      // Use effective_price_usd (includes export tax for China) for correct sorting
+      orderBy = 'effective_price_usd.asc.nullslast,id.desc';
       break;
     case 'price_desc':
-      orderBy = 'start_price_usd.desc.nullsfirst,id.desc';
+      // Use effective_price_usd (includes export tax for China) for correct sorting
+      orderBy = 'effective_price_usd.desc.nullsfirst,id.desc';
       break;
     case 'year_desc':
       orderBy = 'year.desc.nullslast,id.desc';
@@ -289,42 +291,12 @@ export function useVehicles({
     await queryRefetch();
   };
 
-  // Sort vehicles by effective price (includes export tax for China)
-  // This ensures Korean/Dubai vehicles at $5500 appear before Chinese at $5000 + $980 tax = $5980
-  const sortedVehicles = useMemo(() => {
-    const vehicles = data?.vehicles ?? [];
-    const sortBy = filters?.sortBy;
-
-    // Only apply client-side sorting for price sorts
-    if (sortBy !== 'price_asc' && sortBy !== 'price_desc') {
-      return vehicles;
-    }
-
-    // Sort by effective price (base price + export tax)
-    return [...vehicles].sort((a, b) => {
-      const priceA = getEffectiveVehiclePrice(a.start_price_usd ?? 0, a.source ?? '');
-      const priceB = getEffectiveVehiclePrice(b.start_price_usd ?? 0, b.source ?? '');
-
-      if (sortBy === 'price_asc') {
-        // Handle nulls - put them at the end
-        if (a.start_price_usd == null) return 1;
-        if (b.start_price_usd == null) return -1;
-        return priceA - priceB;
-      } else {
-        // price_desc - put nulls at the beginning
-        if (a.start_price_usd == null) return -1;
-        if (b.start_price_usd == null) return 1;
-        return priceB - priceA;
-      }
-    });
-  }, [data?.vehicles, filters?.sortBy]);
-
   // Calculate if there are more pages based on totalCount
   const currentOffset = (page - 1) * limit + (data?.vehicles.length ?? 0);
   const hasMorePages = currentOffset < (data?.totalCount ?? 0);
 
   return {
-    vehicles: sortedVehicles,
+    vehicles: data?.vehicles ?? [],
     isLoading: isLoading || isFetching,
     error: error as Error | null,
     totalCount: data?.totalCount ?? 0,

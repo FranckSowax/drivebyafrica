@@ -118,6 +118,7 @@ export async function GET(request: NextRequest) {
         current_price_usd,
         start_price_usd,
         buy_now_price_usd,
+        effective_price_usd,
         status,
         is_visible,
         images,

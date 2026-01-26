@@ -164,6 +164,7 @@ export type Database = {
           start_price_usd: number | null;
           current_price_usd: number | null;
           buy_now_price_usd: number | null;
+          effective_price_usd: number | null; // Computed: start_price_usd + export tax (for China)
           auction_platform: string | null;
           auction_date: string | null;
           auction_status: string;
