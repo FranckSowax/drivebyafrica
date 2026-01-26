@@ -73,6 +73,8 @@ export default function AdminVehiclesPage() {
     status: 'all',
     search: '',
     isVisible: 'all',
+    priceMin: '',
+    priceMax: '',
   });
 
   // Active tab
@@ -115,6 +117,8 @@ export default function AdminVehiclesPage() {
         ...(currentFilters.status !== 'all' && { status: currentFilters.status }),
         ...(currentFilters.search && { search: currentFilters.search }),
         ...(currentFilters.isVisible !== 'all' && { isVisible: currentFilters.isVisible }),
+        ...(currentFilters.priceMin && { priceMin: currentFilters.priceMin }),
+        ...(currentFilters.priceMax && { priceMax: currentFilters.priceMax }),
       });
 
       const response = await fetch(`/api/admin/vehicles?${params}`);
@@ -148,7 +152,7 @@ export default function AdminVehiclesPage() {
     if (activeTab === 'vehicles') {
       fetchVehicles(page, filters);
     }
-  }, [activeTab, page, filters.source, filters.status, filters.search, filters.isVisible]);
+  }, [activeTab, page, filters.source, filters.status, filters.search, filters.isVisible, filters.priceMin, filters.priceMax]);
 
   // Handle sync
   const handleSync = async (mode: 'full' | 'changes') => {

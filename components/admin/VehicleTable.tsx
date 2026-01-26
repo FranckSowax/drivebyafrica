@@ -33,6 +33,8 @@ interface VehicleTableProps {
     status: string;
     search: string;
     isVisible: string;
+    priceMin: string;
+    priceMax: string;
   };
   onFilterChange: (filters: Record<string, string>) => void;
 }
@@ -152,10 +154,10 @@ export function VehicleTable({
     );
   };
 
-  const hasActiveFilters = filters.source !== 'all' || filters.status !== 'all' || filters.isVisible !== 'all' || filters.search !== '';
+  const hasActiveFilters = filters.source !== 'all' || filters.status !== 'all' || filters.isVisible !== 'all' || filters.search !== '' || filters.priceMin !== '' || filters.priceMax !== '';
 
   const resetFilters = () => {
-    onFilterChange({ source: 'all', status: 'all', isVisible: 'all', search: '' });
+    onFilterChange({ source: 'all', status: 'all', isVisible: 'all', search: '', priceMin: '', priceMax: '' });
   };
 
   return (
@@ -248,6 +250,36 @@ export function VehicleTable({
               </div>
             </div>
 
+            {/* Price Range Filter */}
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                placeholder="Prix min"
+                value={filters.priceMin}
+                onChange={(e) => onFilterChange({ priceMin: e.target.value })}
+                className={cn(
+                  "h-10 w-24 px-3 rounded-full text-sm font-medium border-2 transition-all bg-[var(--card-bg)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                  filters.priceMin !== ''
+                    ? "border-purple-500 text-purple-500 bg-purple-500/10"
+                    : "border-[var(--card-border)] text-[var(--text-primary)] hover:border-purple-500/50 placeholder:text-[var(--text-muted)]"
+                )}
+              />
+              <span className="text-[var(--text-muted)] text-sm">-</span>
+              <input
+                type="number"
+                placeholder="Prix max"
+                value={filters.priceMax}
+                onChange={(e) => onFilterChange({ priceMax: e.target.value })}
+                className={cn(
+                  "h-10 w-24 px-3 rounded-full text-sm font-medium border-2 transition-all bg-[var(--card-bg)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                  filters.priceMax !== ''
+                    ? "border-purple-500 text-purple-500 bg-purple-500/10"
+                    : "border-[var(--card-border)] text-[var(--text-primary)] hover:border-purple-500/50 placeholder:text-[var(--text-muted)]"
+                )}
+              />
+              <span className="text-xs text-[var(--text-muted)]">USD</span>
+            </div>
+
             {/* Reset Button */}
             {hasActiveFilters && (
               <button
@@ -293,6 +325,22 @@ export function VehicleTable({
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-royal-blue/10 text-royal-blue text-xs rounded-full">
                 Visibilité: {VISIBILITY_OPTIONS.find(o => o.value === filters.isVisible)?.label}
                 <button onClick={() => onFilterChange({ isVisible: 'all' })} className="hover:text-royal-blue/70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.priceMin !== '' && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/10 text-purple-500 text-xs rounded-full">
+                Prix min: ${Number(filters.priceMin).toLocaleString()}
+                <button onClick={() => onFilterChange({ priceMin: '' })} className="hover:text-purple-500/70">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.priceMax !== '' && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-500/10 text-purple-500 text-xs rounded-full">
+                Prix max: ${Number(filters.priceMax).toLocaleString()}
+                <button onClick={() => onFilterChange({ priceMax: '' })} className="hover:text-purple-500/70">
                   <X className="w-3 h-3" />
                 </button>
               </span>

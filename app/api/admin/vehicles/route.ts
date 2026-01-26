@@ -24,6 +24,8 @@ function applyFilters(
     status?: string | null;
     isVisible?: string | null;
     search?: string | null;
+    priceMin?: number | null;
+    priceMax?: number | null;
   }
 ) {
   if (params.source && params.source !== 'all') {
@@ -40,6 +42,15 @@ function applyFilters(
 
   if (params.search) {
     query = query.or(`make.ilike.%${params.search}%,model.ilike.%${params.search}%,source_id.ilike.%${params.search}%`);
+  }
+
+  // Price filters (source price = start_price_usd)
+  if (params.priceMin !== null && params.priceMin !== undefined) {
+    query = query.gte('start_price_usd', params.priceMin);
+  }
+
+  if (params.priceMax !== null && params.priceMax !== undefined) {
+    query = query.lte('start_price_usd', params.priceMax);
   }
 
   return query;
@@ -64,16 +75,24 @@ export async function GET(request: NextRequest) {
   const sortBy = searchParams.get('sortBy') || 'created_at';
   const sortOrder = searchParams.get('sortOrder') || 'desc';
   const isVisible = searchParams.get('isVisible');
+  const priceMinParam = searchParams.get('priceMin');
+  const priceMaxParam = searchParams.get('priceMax');
 
   // Optimization: Ignore search if less than 2 characters to prevent DB timeout
   // on expensive wildcard queries like '%a%' or '%j%'
   const effectiveSearch = search && search.length >= 2 ? search : null;
 
-  const filterParams = { 
-    source, 
-    status, 
-    isVisible, 
-    search: effectiveSearch 
+  // Parse price filters
+  const priceMin = priceMinParam ? parseInt(priceMinParam, 10) : null;
+  const priceMax = priceMaxParam ? parseInt(priceMaxParam, 10) : null;
+
+  const filterParams = {
+    source,
+    status,
+    isVisible,
+    search: effectiveSearch,
+    priceMin: !isNaN(priceMin as number) ? priceMin : null,
+    priceMax: !isNaN(priceMax as number) ? priceMax : null,
   };
 
   try {
