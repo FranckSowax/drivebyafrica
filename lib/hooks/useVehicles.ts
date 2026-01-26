@@ -70,6 +70,9 @@ function buildQueryString(
     'updated_at',
   ].join(','));
 
+  // CRITICAL: Always filter visible vehicles only (reduces 190k+ to much smaller set)
+  params.append('is_visible', 'eq.true');
+
   // Apply filters
   if (filters?.source && filters.source !== 'all') {
     params.append('source', `eq.${filters.source}`);
@@ -193,8 +196,8 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use exact count for accurate pagination - estimated can be inaccurate
-      'Prefer': 'count=exact',
+      // Use estimated count for faster queries (exact count is expensive on large tables)
+      'Prefer': 'count=estimated',
     },
   });
 
