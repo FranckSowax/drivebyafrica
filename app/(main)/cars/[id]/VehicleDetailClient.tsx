@@ -26,6 +26,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { PriceRequestButton } from '@/components/vehicles/PriceRequestButton';
+import { VehicleFeatures } from '@/components/vehicles/VehicleFeatures';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
@@ -285,6 +286,24 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   </div>
                 )}
               </div>
+            </Card>
+
+            {/* Features / Équipements */}
+            <Card>
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Équipements</h2>
+              <VehicleFeatures
+                vehicle={{
+                  make: vehicle.make,
+                  model: vehicle.model,
+                  transmission: vehicle.transmission,
+                  fuel_type: vehicle.fuel_type,
+                  body_type: vehicle.body_type,
+                  drive_type: vehicle.drive_type,
+                  engine_cc: vehicle.engine_cc,
+                  condition_report: vehicle.condition_report,
+                }}
+                locale="fr"
+              />
             </Card>
 
             {/* Inspection Sheet */}
