@@ -39,8 +39,36 @@ function buildQueryString(
 ): string {
   const params = new URLSearchParams();
 
-  // Select all columns
-  params.set('select', '*');
+  // Select only necessary columns for list view (much faster than *)
+  // Avoid loading large JSONB columns like full condition_report and all features
+  params.set('select', [
+    'id',
+    'source',
+    'source_id',
+    'source_url',
+    'make',
+    'model',
+    'grade',
+    'year',
+    'mileage',
+    'start_price_usd',
+    'current_price_usd',
+    'buy_now_price_usd',
+    'fuel_type',
+    'transmission',
+    'drive_type',
+    'body_type',
+    'color',
+    'engine_cc',
+    'images', // Keep images for thumbnails
+    'status',
+    'auction_status',
+    'auction_platform',
+    'auction_end_date',
+    'is_visible',
+    'created_at',
+    'updated_at',
+  ].join(','));
 
   // Apply filters
   if (filters?.source && filters.source !== 'all') {
