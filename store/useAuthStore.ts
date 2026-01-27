@@ -53,16 +53,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const supabase = createClient();
 
     try {
-      // Use getUser() instead of getSession() to validate the session server-side
-      // getSession() can return cached/expired sessions, getUser() validates with the server
+      // First check for cached session (fast, from localStorage)
+      const { data: { session: cachedSession } } = await supabase.auth.getSession();
+
+      // Use getUser() to validate the session server-side
+      // This is more reliable than just checking the cached session
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
 
-      console.log('Auth initialize: user exists:', !!user, userError?.message || '');
+      console.log('Auth initialize: user exists:', !!user, 'error:', userError?.message || 'none');
 
       if (user && !userError) {
+        // Session is valid
         set({ user });
         setAuthMarkerCookie(true); // Set marker for middleware
 
@@ -74,15 +78,51 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           .single();
 
         set({ profile });
-      } else {
-        // Session invalid or expired - clean up completely
-        // This handles stale cookies from old sessions
-        if (userError) {
-          console.log('Auth initialize: clearing invalid session');
+      } else if (userError) {
+        // Distinguish between session errors and network errors
+        const errorMessage = userError.message?.toLowerCase() || '';
+        const isSessionInvalid =
+          errorMessage.includes('invalid') ||
+          errorMessage.includes('expired') ||
+          errorMessage.includes('jwt') ||
+          errorMessage.includes('token') ||
+          errorMessage.includes('not authenticated') ||
+          userError.status === 401 ||
+          userError.status === 403;
+
+        if (isSessionInvalid) {
+          // Session is truly invalid - clean up completely
+          console.log('Auth initialize: session invalid, signing out');
           await supabase.auth.signOut();
+          set({ user: null, profile: null });
+          setAuthMarkerCookie(false);
+        } else {
+          // Network or other temporary error - use cached session if available
+          console.log('Auth initialize: temporary error, using cached session');
+          if (cachedSession?.user) {
+            set({ user: cachedSession.user });
+            setAuthMarkerCookie(true);
+            // Try to fetch profile even with cached session
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', cachedSession.user.id)
+                .single();
+              set({ profile });
+            } catch {
+              // Ignore profile fetch errors with cached session
+            }
+          } else {
+            // No cached session available
+            set({ user: null, profile: null });
+            setAuthMarkerCookie(false);
+          }
         }
+      } else {
+        // No user and no error means no session exists
         set({ user: null, profile: null });
-        setAuthMarkerCookie(false); // Remove marker
+        setAuthMarkerCookie(false);
       }
 
       // Listen for auth changes (only set up once)
