@@ -119,24 +119,11 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
       if (orderError) throw orderError;
 
       // 3. Create order_tracking record with initial status
-      // The order_tracking table uses quote_id and order_status columns
       await supabase.from('order_tracking').insert({
-        quote_id: quote.id,
-        order_status: 'vehicle_locked',
-        tracking_steps: [
-          {
-            status: 'deposit_paid',
-            timestamp: new Date(Date.now() - 60000).toISOString(),
-            note: 'Acompte de $1,000 reçu (Demo)',
-            updated_by: 'system',
-          },
-          {
-            status: 'vehicle_locked',
-            timestamp: new Date().toISOString(),
-            note: 'Le véhicule est maintenant bloqué',
-            updated_by: 'system',
-          }
-        ],
+        order_id: order.id,
+        status: 'vehicle_locked',
+        title: 'Véhicule bloqué',
+        description: 'Le véhicule est maintenant réservé. Acompte de $1,000 reçu.',
       });
 
       // 4. Mark vehicle as reserved
