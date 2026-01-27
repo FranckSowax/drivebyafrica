@@ -27,9 +27,7 @@ import { useToast } from '@/components/ui/Toast';
 import { BatchQuotePDFModal } from './BatchQuotePDFModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { INSURANCE_RATE, INSPECTION_FEE_USD, getExportTax } from '@/lib/utils/pricing';
-
-// Types d'expedition
-type ShippingType = 'container' | 'groupage';
+import { useShippingDestinations, type ShippingDestination, type ShippingType } from '@/lib/hooks/useShippingDestinations';
 
 const shippingTypes = [
   {
@@ -46,27 +44,6 @@ const shippingTypes = [
     icon: Users,
     multiplier: 0.5,
   },
-];
-
-// Type pour les destinations
-interface Destination {
-  id: string;
-  name: string;
-  country: string;
-  flag: string;
-  shippingCost: {
-    korea: number;
-    china: number;
-    dubai: number;
-  };
-}
-
-// Destinations de secours
-const FALLBACK_DESTINATIONS: Destination[] = [
-  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 } },
-  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 3400, china: 4000, dubai: 3000 } },
-  { id: 'dakar', name: 'Dakar', country: 'Senegal', flag: '🇸🇳', shippingCost: { korea: 4600, china: 5200, dubai: 4200 } },
-  { id: 'abidjan', name: 'Abidjan', country: "Cote d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 4200, china: 4800, dubai: 3800 } },
 ];
 
 interface BatchShippingEstimatorProps {
@@ -105,17 +82,21 @@ export function BatchShippingEstimator({
 
   const quoteCurrencyCode = getQuoteCurrencyCode();
 
-  const [destinations, setDestinations] = useState<Destination[]>(FALLBACK_DESTINATIONS);
-  const [isLoadingDestinations, setIsLoadingDestinations] = useState(true);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  // Use shared hook for destinations (53 destinations from API)
+  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    destinations,
+    filteredDestinations,
+    isLoading: isLoadingDestinations,
+    lastUpdatedAt,
+  } = useShippingDestinations({ searchQuery });
 
-  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<ShippingDestination | null>(null);
   const [selectedShippingType, setSelectedShippingType] = useState<ShippingType>('container');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isShippingTypeOpen, setIsShippingTypeOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const [isGeneratingQuote, setIsGeneratingQuote] = useState(false);
 
@@ -124,36 +105,13 @@ export function BatchShippingEstimator({
   const shippingTypeRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Charger les destinations depuis l'API
-  useEffect(() => {
-    const fetchDestinations = async () => {
-      try {
-        const response = await fetch('/api/shipping');
-        const data = await response.json();
-
-        if (data.destinations && data.destinations.length > 0) {
-          setDestinations(data.destinations);
-        }
-        if (data.lastUpdatedAt) {
-          setLastUpdatedAt(data.lastUpdatedAt);
-        }
-      } catch (error) {
-        console.error('Error fetching shipping destinations:', error);
-      } finally {
-        setIsLoadingDestinations(false);
-      }
-    };
-
-    fetchDestinations();
-  }, []);
-
   // Restaurer la destination depuis l'URL apres le login
   useEffect(() => {
     if (!isLoadingDestinations && destinations.length > 0) {
       const destParam = searchParams.get('dest');
       const shippingParam = searchParams.get('shipping') as ShippingType | null;
 
-      if (destParam) {
+      if (destParam && !selectedDestination) {
         const savedDest = destinations.find(d => d.id === destParam);
         if (savedDest) {
           setSelectedDestination(savedDest);
@@ -164,7 +122,7 @@ export function BatchShippingEstimator({
         setSelectedShippingType(shippingParam);
       }
     }
-  }, [isLoadingDestinations, destinations, searchParams]);
+  }, [isLoadingDestinations, destinations, searchParams, selectedDestination]);
 
   // Calculate dropdown position
   useEffect(() => {
@@ -231,13 +189,6 @@ export function BatchShippingEstimator({
       return () => clearTimeout(timer);
     }
   }, [autoOpenQuote, user, hasAutoOpened, selectedDestination, isLoadingDestinations]);
-
-  // Filter destinations
-  const filteredDestinations = destinations.filter(
-    (dest) =>
-      dest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dest.country.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   // Calculate costs for batch
   const calculations = useMemo(() => {
