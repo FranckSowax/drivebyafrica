@@ -1,17 +1,42 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { Sidebar } from '@/components/layout/Sidebar';
+'use client';
 
-export default async function DashboardLayout({
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { useAuthStore } from '@/store/useAuthStore';
+import { Spinner } from '@/components/ui/Spinner';
+
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const router = useRouter();
+  const { user, isLoading, isInitialized } = useAuthStore();
 
+  useEffect(() => {
+    // Wait for auth to initialize before checking
+    if (isInitialized && !user) {
+      router.replace('/login?redirect=/dashboard');
+    }
+  }, [isInitialized, user, router]);
+
+  // Show loading while auth is initializing
+  if (!isInitialized || isLoading) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Don't render until we have a user
   if (!user) {
-    redirect('/login?redirect=/dashboard');
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (

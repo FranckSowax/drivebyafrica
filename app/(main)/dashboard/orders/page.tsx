@@ -1,62 +1,118 @@
-import { createClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 import { OrderCard } from '@/components/orders/OrderCard';
-import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
+import { authFetch } from '@/lib/supabase/auth-helpers';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   Package,
   FileText,
   ArrowRight,
   Clock,
   CheckCircle,
-  Truck,
   Ship,
-  MapPin,
 } from 'lucide-react';
 import type { Order } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
 
-export default async function OrdersPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+interface OrdersData {
+  orders: Order[];
+  pendingQuotes: any[];
+  vehicles: Pick<Vehicle, 'id' | 'make' | 'model' | 'year' | 'images'>[];
+}
 
-  if (!user) return null;
+export default function OrdersPage() {
+  const { user } = useAuthStore();
+  const [data, setData] = useState<OrdersData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch orders
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  useEffect(() => {
+    async function fetchOrdersData() {
+      if (!user) return;
 
-  // Fetch pending quotes (using any to bypass type check for quotes table)
-  let pendingQuotes: any[] = [];
-  try {
-    const { data: quotes } = await (supabase as any)
-      .from('quotes')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(3);
-    pendingQuotes = quotes || [];
-  } catch (e) {
-    // quotes table may not exist
+      try {
+        // Fetch orders
+        const ordersResponse = await authFetch('/api/orders');
+        if (!ordersResponse.ok) {
+          throw new Error('Erreur de chargement');
+        }
+        const { orders } = await ordersResponse.json();
+
+        // Fetch pending quotes
+        let pendingQuotes: any[] = [];
+        try {
+          const quotesResponse = await authFetch('/api/quotes?status=pending&limit=3');
+          if (quotesResponse.ok) {
+            const quotesData = await quotesResponse.json();
+            pendingQuotes = quotesData.quotes || [];
+          }
+        } catch {
+          // Quotes may not exist
+        }
+
+        // Fetch vehicles for orders
+        const vehicleIds = (orders || []).map((o: Order) => o.vehicle_id);
+        let vehicles: any[] = [];
+        if (vehicleIds.length > 0) {
+          try {
+            const vehiclesResponse = await fetch(`/api/vehicles?ids=${vehicleIds.join(',')}`);
+            if (vehiclesResponse.ok) {
+              const vehiclesData = await vehiclesResponse.json();
+              vehicles = vehiclesData.vehicles || [];
+            }
+          } catch {
+            // Vehicles fetch optional
+          }
+        }
+
+        setData({
+          orders: orders || [],
+          pendingQuotes,
+          vehicles,
+        });
+      } catch (err) {
+        console.error('Orders fetch error:', err);
+        setError('Impossible de charger les commandes');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchOrdersData();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
-  const ordersData = (orders || []) as Order[];
+  if (error) {
+    return (
+      <Card className="text-center py-12">
+        <p className="text-red-500">{error}</p>
+        <Button
+          variant="primary"
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Reessayer
+        </Button>
+      </Card>
+    );
+  }
 
-  // Fetch vehicle info for each order
-  const vehicleIds = ordersData.map((o) => o.vehicle_id);
-  const { data: vehicles } = await supabase
-    .from('vehicles')
-    .select('id, make, model, year, images')
-    .in('id', vehicleIds.length > 0 ? vehicleIds : ['']);
-
+  const ordersData = data?.orders || [];
+  const pendingQuotes = data?.pendingQuotes || [];
   const vehiclesMap = new Map(
-    ((vehicles || []) as Pick<Vehicle, 'id' | 'make' | 'model' | 'year' | 'images'>[]).map((v) => [v.id, v])
+    (data?.vehicles || []).map((v) => [v.id, v])
   );
 
   // Group orders by status

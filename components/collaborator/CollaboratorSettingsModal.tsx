@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { useCollaboratorLocale } from './CollaboratorLocaleProvider';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Sun, Moon, Eye, EyeOff, Lock, Palette } from 'lucide-react';
 
 interface CollaboratorSettingsModalProps {
@@ -19,6 +20,7 @@ export function CollaboratorSettingsModal({
   userEmail,
 }: CollaboratorSettingsModalProps) {
   const { t } = useCollaboratorLocale();
+  const { user } = useAuthStore();
   const supabase = createClient();
 
   // Password change state
@@ -41,12 +43,9 @@ export function CollaboratorSettingsModal({
   // Load current theme preference when modal opens
   useEffect(() => {
     const loadThemePreference = async () => {
-      if (!isOpen) return;
+      if (!isOpen || !user) return;
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const { data: profile } = await supabase
           .from('profiles')
           .select('theme_preference')
@@ -65,7 +64,7 @@ export function CollaboratorSettingsModal({
     };
 
     loadThemePreference();
-  }, [isOpen, supabase]);
+  }, [isOpen, user, supabase]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,9 +89,7 @@ export function CollaboratorSettingsModal({
     setChangingPassword(true);
 
     try {
-      // First, get the user's email
-      const { data: { user } } = await supabase.auth.getUser();
-
+      // Use user from auth store
       if (!user?.email) {
         throw new Error('Unable to retrieve user email');
       }
@@ -140,8 +137,7 @@ export function CollaboratorSettingsModal({
     setSavingTheme(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
+      // Use user from auth store
       if (!user) {
         throw new Error('No user found');
       }

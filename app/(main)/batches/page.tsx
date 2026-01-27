@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Search, SlidersHorizontal, Package, ShoppingCart, MapPin, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -48,7 +48,7 @@ export default function BatchesPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuthStore();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Order modal state
@@ -62,22 +62,8 @@ export default function BatchesPage() {
   const [orderError, setOrderError] = useState('');
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  useEffect(() => {
     fetchBatches();
   }, [currentPage, countryFilter, sortBy, searchQuery]);
-
-  const checkUser = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-  };
 
   const fetchBatches = async () => {
     setLoading(true);

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface Message {
   id: string;
@@ -41,23 +42,19 @@ export function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isRequestingAgent, setIsRequestingAgent] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { user } = useAuthStore();
+  const isAuthenticated = !!user;
   const supabase = createClient();
 
-  // Check authentication status
+  // No longer need checkAuth - auth store handles this
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-    };
-    checkAuth();
-
+    // Subscribe to auth changes for realtime updates
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session?.user);
+      // Auth store will handle the actual state update
     });
 
     return () => subscription.unsubscribe();

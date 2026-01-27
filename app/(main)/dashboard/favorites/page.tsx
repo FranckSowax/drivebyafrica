@@ -1,16 +1,17 @@
-import { createClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
+import { authFetch } from '@/lib/supabase/auth-helpers';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   Heart,
   Car,
-  MapPin,
-  Calendar,
-  Trash2,
-  ExternalLink,
   Search,
 } from 'lucide-react';
 import type { Vehicle } from '@/types/vehicle';
@@ -21,20 +22,61 @@ const SOURCE_FLAGS: Record<string, string> = {
   dubai: '🇦🇪',
 };
 
-export default async function FavoritesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+interface FavoriteWithVehicle {
+  id: string;
+  vehicles: Vehicle | null;
+}
 
-  if (!user) return null;
+export default function FavoritesPage() {
+  const { user } = useAuthStore();
+  const [favorites, setFavorites] = useState<FavoriteWithVehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch favorites with vehicle info
-  const { data: favorites } = await supabase
-    .from('favorites')
-    .select('*, vehicles(*)')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  useEffect(() => {
+    async function fetchFavorites() {
+      if (!user) return;
 
-  const favoritesData = (favorites || []) as any[];
+      try {
+        const response = await authFetch('/api/favorites');
+        if (!response.ok) {
+          throw new Error('Erreur de chargement');
+        }
+        const data = await response.json();
+        setFavorites(data.favorites || []);
+      } catch (err) {
+        console.error('Favorites fetch error:', err);
+        setError('Impossible de charger les favoris');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchFavorites();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="text-center py-12">
+        <p className="text-red-500">{error}</p>
+        <Button
+          variant="primary"
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Reessayer
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -61,7 +103,7 @@ export default async function FavoritesPage() {
           </div>
           <div>
             <p className="font-medium text-[var(--text-primary)]">
-              {favoritesData.length} vehicule{favoritesData.length !== 1 ? 's' : ''} sauvegarde{favoritesData.length !== 1 ? 's' : ''}
+              {favorites.length} vehicule{favorites.length !== 1 ? 's' : ''} sauvegarde{favorites.length !== 1 ? 's' : ''}
             </p>
             <p className="text-sm text-[var(--text-muted)]">
               Ajoutez des vehicules a vos favoris pour les retrouver facilement
@@ -71,9 +113,9 @@ export default async function FavoritesPage() {
       </Card>
 
       {/* Favorites Grid */}
-      {favoritesData.length > 0 ? (
+      {favorites.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {favoritesData.map((favorite) => {
+          {favorites.map((favorite) => {
             const vehicle = favorite.vehicles as Vehicle | null;
             if (!vehicle) return null;
 

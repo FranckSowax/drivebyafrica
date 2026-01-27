@@ -1,7 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
+import { Spinner } from '@/components/ui/Spinner';
+import { authFetch } from '@/lib/supabase/auth-helpers';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   Package,
   FileText,
@@ -17,48 +22,68 @@ import { formatUsdToLocal } from '@/lib/utils/currency';
 import { OrderCardCompact } from '@/components/orders/OrderCard';
 import type { Order, Profile } from '@/types/database';
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+interface DashboardData {
+  profile: Profile | null;
+  orders: Order[];
+  favorites: any[];
+  quotes: any[];
+}
 
-  if (!user) return null;
+export default function DashboardPage() {
+  const { user } = useAuthStore();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch dashboard data in parallel
-  const [
-    { data: profile },
-    { data: orders },
-    { data: favorites },
-  ] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('favorites')
-      .select('*')
-      .eq('user_id', user.id),
-  ]);
+  useEffect(() => {
+    async function fetchDashboardData() {
+      if (!user) return;
 
-  // Fetch quotes separately (using any to bypass type check for quotes table)
-  let quotesData: any[] = [];
-  try {
-    const { data: quotes } = await (supabase as any)
-      .from('quotes')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    quotesData = quotes || [];
-  } catch (e) {
-    // quotes table may not exist
+      try {
+        const response = await authFetch('/api/dashboard');
+        if (!response.ok) {
+          throw new Error('Erreur de chargement');
+        }
+        const dashboardData = await response.json();
+        setData(dashboardData);
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+        setError('Impossible de charger les donnees');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
-  const profileData = profile as Profile | null;
-  const ordersData = (orders || []) as Order[];
-  const favoritesCount = favorites?.length || 0;
+  if (error) {
+    return (
+      <Card className="text-center py-12">
+        <p className="text-red-500">{error}</p>
+        <Button
+          variant="primary"
+          className="mt-4"
+          onClick={() => window.location.reload()}
+        >
+          Reessayer
+        </Button>
+      </Card>
+    );
+  }
+
+  const profileData = data?.profile;
+  const ordersData = data?.orders || [];
+  const quotesData = data?.quotes || [];
+  const favoritesCount = data?.favorites?.length || 0;
 
   // Calculate stats
   const activeOrders = ordersData.filter(
