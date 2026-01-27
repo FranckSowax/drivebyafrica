@@ -199,8 +199,8 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use estimated count for faster queries (exact count is expensive on large tables)
-      'Prefer': 'count=estimated',
+      // Use exact count for accurate pagination (required for large vehicle counts)
+      'Prefer': 'count=exact',
     },
   });
 
