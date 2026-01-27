@@ -957,6 +957,16 @@ function CollaboratorOrdersContent() {
                       </p>
                     </div>
                   )}
+                  {/* Status Documents Section - Upload documents for current status */}
+                  <StatusDocumentsSection
+                    orderId={selectedOrder.id}
+                    orderNumber={selectedOrder.order_number}
+                    currentStatus={selectedOrder.order_status}
+                    uploadedDocuments={(selectedOrder.uploaded_documents || []) as UploadedStatusDocument[]}
+                    onDocumentsUpdated={fetchOrders}
+                    isAdmin={false}
+                    locale={locale}
+                  />
                   <div className="flex gap-3">
                     <input
                       type="date"
@@ -981,19 +991,6 @@ function CollaboratorOrdersContent() {
                     </Button>
                   </div>
                 </div>
-              </div>
-
-              {/* Status Documents Section - Upload documents for current status */}
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
-                <StatusDocumentsSection
-                  orderId={selectedOrder.id}
-                  orderNumber={selectedOrder.order_number}
-                  currentStatus={selectedOrder.order_status}
-                  uploadedDocuments={(selectedOrder.uploaded_documents || []) as UploadedStatusDocument[]}
-                  onDocumentsUpdated={fetchOrders}
-                  isAdmin={false}
-                  locale={locale}
-                />
               </div>
 
               {/* Customer Info */}
