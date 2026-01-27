@@ -110,7 +110,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
           destination_port: quote.destination_name || null,
           shipping_method: 'container_20ft',
           container_type: 'shared',
-          status: 'processing', // Valid status in DB, simulating paid deposit
+          status: 'vehicle_locked', // Step 2: Deposit paid completes step 1, vehicle locked is current
           documents: {},
         })
         .select()
@@ -118,23 +118,26 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
 
       if (orderError) throw orderError;
 
-      // 3. Create tracking entries
-      await supabase.from('order_tracking').insert([
-        {
-          order_id: order.id,
-          status: 'pending_payment',
-          title: 'Commande créée',
-          description: 'Votre commande a été créée avec succès.',
-          completed_at: new Date(Date.now() - 60000).toISOString(), // 1 min ago
-        },
-        {
-          order_id: order.id,
-          status: 'processing',
-          title: 'Acompte reçu (Demo)',
-          description: 'Acompte de $1,000 simulé. Le véhicule est maintenant bloqué.',
-          completed_at: new Date().toISOString(),
-        }
-      ]);
+      // 3. Create order_tracking record with initial status
+      // The order_tracking table uses quote_id and order_status columns
+      await supabase.from('order_tracking').insert({
+        quote_id: quote.id,
+        order_status: 'vehicle_locked',
+        tracking_steps: [
+          {
+            status: 'deposit_paid',
+            timestamp: new Date(Date.now() - 60000).toISOString(),
+            note: 'Acompte de $1,000 reçu (Demo)',
+            updated_by: 'system',
+          },
+          {
+            status: 'vehicle_locked',
+            timestamp: new Date().toISOString(),
+            note: 'Le véhicule est maintenant bloqué',
+            updated_by: 'system',
+          }
+        ],
+      });
 
       // 4. Mark vehicle as reserved
       await supabase
