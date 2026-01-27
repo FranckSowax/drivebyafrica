@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json().catch(() => ({}));
-    const maxPages = Math.min(body.maxPages || 500, 2000); // Limit for admin panel
+    const maxPages = Math.min(body.maxPages || 500, 3000); // Limit for admin panel (3000 pages = 60,000 vehicles max)
     const removeExpired = body.removeExpired !== false;
 
     console.log(`Dubicars sync started: maxPages=${maxPages}, removeExpired=${removeExpired}`);
@@ -241,6 +241,8 @@ export async function POST(request: NextRequest) {
     const currentSourceIds = new Set<string>();
     const batchSize = 100;
 
+    const MIN_PRICE_USD = 1000; // Filter out vehicles under $1000
+
     for (let i = 0; i < allVehicles.length; i += batchSize) {
       const batch = allVehicles.slice(i, i + batchSize);
       const records = batch
@@ -248,6 +250,11 @@ export async function POST(request: NextRequest) {
           try {
             const record = mapToDbRecord(v);
             if (!record.images || record.images.length === 0) {
+              stats.skipped++;
+              return null;
+            }
+            // Filter out vehicles under minimum price
+            if (!record.current_price_usd || record.current_price_usd < MIN_PRICE_USD) {
               stats.skipped++;
               return null;
             }
