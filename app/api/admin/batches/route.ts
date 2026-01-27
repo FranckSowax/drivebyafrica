@@ -19,30 +19,17 @@ async function isUserAdmin(supabase: Awaited<ReturnType<typeof createClient>>, u
 // GET - Get all vehicle batches
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
-    const collaboratorId = searchParams.get('collaboratorId');
     const isPublic = searchParams.get('public') === 'true';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = (page - 1) * limit;
 
-    // Type-narrow status to allowed values
-    const allowedStatuses = ['pending', 'approved', 'rejected', 'sold_out'] as const;
-    type AllowedStatus = typeof allowedStatuses[number];
-    const status: AllowedStatus | null = statusParam && allowedStatuses.includes(statusParam as AllowedStatus)
-      ? (statusParam as AllowedStatus)
-      : null;
+    const supabase = await createClient();
 
-    // For public access, only show approved and visible batches
+    // For public access, skip auth check and return only approved visible batches
     if (isPublic) {
+      const page = parseInt(searchParams.get('page') || '1');
+      const limit = parseInt(searchParams.get('limit') || '20');
+      const offset = (page - 1) * limit;
+
       const query = supabase
         .from('vehicle_batches')
         .select('*', { count: 'exact' })
@@ -59,13 +46,32 @@ export async function GET(request: Request) {
       }
 
       return NextResponse.json({
-        batches: batches || [],
+        batches,
         total: count || 0,
         page,
         limit,
-        totalPages: Math.ceil((count || 0) / limit),
       });
     }
+
+    // For non-public access, require authentication
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const statusParam = searchParams.get('status');
+    const collaboratorId = searchParams.get('collaboratorId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = (page - 1) * limit;
+
+    // Type-narrow status to allowed values
+    const allowedStatuses = ['pending', 'approved', 'rejected', 'sold_out'] as const;
+    type AllowedStatus = typeof allowedStatuses[number];
+    const status: AllowedStatus | null = statusParam && allowedStatuses.includes(statusParam as AllowedStatus)
+      ? (statusParam as AllowedStatus)
+      : null;
 
     // Admin/collaborator access
     const isAdmin = await isUserAdmin(supabase, user.id);
