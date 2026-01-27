@@ -1,18 +1,26 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
 // Singleton instance to prevent multiple clients in React Strict Mode
-let supabaseInstance: ReturnType<typeof createBrowserClient<Database>> | null = null;
+let supabaseInstance: SupabaseClient<Database> | null = null;
 
 export function createClient() {
   if (supabaseInstance) {
     return supabaseInstance;
   }
 
-  supabaseInstance = createBrowserClient<Database>(
+  supabaseInstance = createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      auth: {
+        // Use localStorage instead of cookies
+        persistSession: true,
+        storageKey: 'driveby-africa-auth',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
       realtime: {
         params: {
           eventsPerSecond: 10,
