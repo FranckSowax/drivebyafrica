@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 /**
  * Filters loaded directly from Supabase vehicles table
@@ -259,130 +258,31 @@ interface FilterData {
 }
 
 /**
- * Fetch all filter options from Supabase
- * Optimized: Uses direct PostgREST API with efficient queries
+ * Fetch all filter options via API route
+ * The API uses service role for efficient queries with proper timeouts
  */
 async function fetchFilters(): Promise<FilterData> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // Use the API route which has service role access for efficient queries
+  const response = await fetch('/api/vehicles/filters');
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase configuration missing');
+  if (!response.ok) {
+    throw new Error(`Failed to fetch filters: ${response.status}`);
   }
 
-  const headers = {
-    'apikey': supabaseKey,
-    'Authorization': `Bearer ${supabaseKey}`,
-    'Content-Type': 'application/json',
-  };
+  const data = await response.json();
 
-  // Fetch all filter data in parallel using optimized queries
-  // Using direct PostgREST for better performance
-  const baseUrl = `${supabaseUrl}/rest/v1/vehicles`;
-
-  // Fetch brands from EACH source separately to ensure all brands are captured
-  // (With 200k+ vehicles, a single query misses brands from less common sources)
-  const [
-    brandsChinaResponse,
-    brandsKoreaResponse,
-    brandsDubaiResponse,
-    transmissionsResponse,
-    fuelTypesResponse,
-    driveTypesResponse,
-    bodyTypesResponse,
-    colorsResponse,
-    yearsResponse,
-  ] = await Promise.all([
-    // Brands per source - 15k each ensures coverage
-    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&source=eq.china&make=not.is.null&limit=15000`, { headers }),
-    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&source=eq.korea&make=not.is.null&limit=15000`, { headers }),
-    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&source=eq.dubai&make=not.is.null&limit=15000`, { headers }),
-    // Other filters - just need unique values, sample 5k is enough
-    fetch(`${baseUrl}?select=transmission&is_visible=eq.true&transmission=not.is.null&limit=5000`, { headers }),
-    fetch(`${baseUrl}?select=fuel_type&is_visible=eq.true&fuel_type=not.is.null&limit=5000`, { headers }),
-    fetch(`${baseUrl}?select=drive_type&is_visible=eq.true&drive_type=not.is.null&limit=5000`, { headers }),
-    fetch(`${baseUrl}?select=body_type&is_visible=eq.true&body_type=not.is.null&limit=5000`, { headers }),
-    fetch(`${baseUrl}?select=color&is_visible=eq.true&color=not.is.null&limit=5000`, { headers }),
-    fetch(`${baseUrl}?select=year&is_visible=eq.true&year=not.is.null&limit=5000`, { headers }),
-  ]);
-
-  // Parse all responses
-  const [
-    brandsChinaData,
-    brandsKoreaData,
-    brandsDubaiData,
-    transmissionsData,
-    fuelTypesData,
-    driveTypesData,
-    bodyTypesData,
-    colorsData,
-    yearsData,
-  ] = await Promise.all([
-    brandsChinaResponse.ok ? brandsChinaResponse.json() : [],
-    brandsKoreaResponse.ok ? brandsKoreaResponse.json() : [],
-    brandsDubaiResponse.ok ? brandsDubaiResponse.json() : [],
-    transmissionsResponse.ok ? transmissionsResponse.json() : [],
-    fuelTypesResponse.ok ? fuelTypesResponse.json() : [],
-    driveTypesResponse.ok ? driveTypesResponse.json() : [],
-    bodyTypesResponse.ok ? bodyTypesResponse.json() : [],
-    colorsResponse.ok ? colorsResponse.json() : [],
-    yearsResponse.ok ? yearsResponse.json() : [],
-  ]) as [
-    { make: string | null; model: string | null }[],
-    { make: string | null; model: string | null }[],
-    { make: string | null; model: string | null }[],
-    { transmission: string | null }[],
-    { fuel_type: string | null }[],
-    { drive_type: string | null }[],
-    { body_type: string | null }[],
-    { color: string | null }[],
-    { year: number | null }[],
-  ];
-
-  // Merge brands from all sources
-  const brandsData = [...brandsChinaData, ...brandsKoreaData, ...brandsDubaiData];
-
-  // Process brands and models
-  const brandModelMap: Record<string, Set<string>> = {};
-  for (const row of brandsData) {
-    if (row.make) {
-      if (!brandModelMap[row.make]) {
-        brandModelMap[row.make] = new Set();
-      }
-      if (row.model) {
-        brandModelMap[row.make].add(row.model);
-      }
-    }
-  }
-
-  const brands = Object.keys(brandModelMap).sort();
-  const modelsByBrand: Record<string, string[]> = {};
-  for (const [brand, models] of Object.entries(brandModelMap)) {
-    modelsByBrand[brand] = Array.from(models).sort();
-  }
-
-  // Extract unique values with proper type narrowing
-  const transmissions = [...new Set(transmissionsData.map(r => r.transmission).filter((v): v is string => !!v))];
-  const fuelTypes = [...new Set(fuelTypesData.map(r => r.fuel_type).filter((v): v is string => !!v))];
-  const driveTypes = [...new Set(driveTypesData.map(r => r.drive_type).filter((v): v is string => !!v))];
-  const bodyTypes = [...new Set(bodyTypesData.map(r => r.body_type).filter((v): v is string => !!v))];
-  const colors = [...new Set(colorsData.map(r => r.color).filter((v): v is string => !!v))];
-
-  // Get year range
-  const years = yearsData.map(r => r.year).filter((y): y is number => y !== null && y !== undefined);
-  const minYear = years.length > 0 ? Math.min(...years) : 2000;
-  const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
-
+  // modelsByBrand is not provided by the API (would require too much data)
+  // It will be fetched separately when a brand is selected
   return {
-    brands,
-    modelsByBrand,
-    transmissions,
-    fuelTypes,
-    driveTypes,
-    bodyTypes,
-    colors,
-    minYear,
-    maxYear,
+    brands: data.makes || [],
+    modelsByBrand: {}, // Models can be loaded on-demand when brand selected
+    transmissions: data.transmissions || [],
+    fuelTypes: data.fuelTypes || [],
+    driveTypes: data.driveTypes || [],
+    bodyTypes: data.bodyTypes || [],
+    colors: data.colors || [],
+    minYear: data.minYear || 2000,
+    maxYear: data.maxYear || new Date().getFullYear(),
   };
 }
 
