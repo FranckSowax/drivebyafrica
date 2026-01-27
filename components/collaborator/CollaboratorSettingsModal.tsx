@@ -72,6 +72,11 @@ export function CollaboratorSettingsModal({
     setPasswordError('');
     setPasswordSuccess('');
 
+    if (!currentPassword) {
+      setPasswordError('Current password is required');
+      return;
+    }
+
     if (newPassword.length < 8) {
       setPasswordError('Password must be at least 8 characters');
       return;
@@ -85,13 +90,30 @@ export function CollaboratorSettingsModal({
     setChangingPassword(true);
 
     try {
-      // Update password via Supabase Auth
-      const { error } = await supabase.auth.updateUser({
+      // First, get the user's email
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user?.email) {
+        throw new Error('Unable to retrieve user email');
+      }
+
+      // Re-authenticate with current password to verify identity
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        throw new Error('Current password is incorrect');
+      }
+
+      // Now update to the new password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (error) {
-        throw error;
+      if (updateError) {
+        throw updateError;
       }
 
       setPasswordSuccess('Password changed successfully');
