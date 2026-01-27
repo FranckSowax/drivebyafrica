@@ -166,6 +166,8 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   useEffect(() => {
     if (!user?.id) return;
 
+    let isSubscribed = true;
+
     const channel = supabase
       .channel(`notifications-${user.id}`)
       .on(
@@ -177,6 +179,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          if (!isSubscribed) return;
           const newNotification = payload.new as NotificationWithMeta;
           newNotification.isNew = true;
           setNotifications(prev => [newNotification, ...prev]);
@@ -191,19 +194,26 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          if (!isSubscribed) return;
           const updatedNotification = payload.new as NotificationWithMeta;
           setNotifications(prev =>
             prev.map(n => (n.id === updatedNotification.id ? updatedNotification : n))
           );
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) {
-          console.warn('Notifications realtime subscription error:', err.message);
+          // Check if it's a JWT expiration error - if so, unsubscribe to stop retries
+          if (err.message?.includes('InvalidJWTToken') || err.message?.includes('expired')) {
+            console.log('Notifications: JWT expired, unsubscribing');
+            isSubscribed = false;
+            supabase.removeChannel(channel);
+          }
         }
       });
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
   }, [supabase, user?.id]);
@@ -410,6 +420,8 @@ export function useAdminNotifications(options: UseNotificationsOptions = {}) {
   useEffect(() => {
     if (!isAdmin) return;
 
+    let isSubscribed = true;
+
     const channel = supabase
       .channel('admin-notifications')
       .on(
@@ -420,17 +432,24 @@ export function useAdminNotifications(options: UseNotificationsOptions = {}) {
           table: 'admin_notifications',
         },
         (payload) => {
+          if (!isSubscribed) return;
           const newNotification = payload.new as AdminNotification;
           setNotifications(prev => [newNotification, ...prev]);
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((_status, err) => {
         if (err) {
-          console.warn('Admin notifications realtime subscription error:', err.message);
+          // Check if it's a JWT expiration error - if so, unsubscribe to stop retries
+          if (err.message?.includes('InvalidJWTToken') || err.message?.includes('expired')) {
+            console.log('Admin notifications: JWT expired, unsubscribing');
+            isSubscribed = false;
+            supabase.removeChannel(channel);
+          }
         }
       });
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
   }, [supabase, isAdmin]);
