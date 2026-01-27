@@ -133,8 +133,16 @@ export function BatchQuotePDFModal({ isOpen, onClose, quoteData, user, profile }
     }
   }, [quoteData?.calculations?.quoteCurrencyCode]);
 
-  const saveQuoteToDatabase = useCallback(async (qNumber: string) => {
-    if (!quoteData || !user || quoteSaved) return;
+  const saveQuoteToDatabase = useCallback(async (qNumber: string): Promise<boolean> => {
+    if (!quoteData || !user) {
+      console.error('saveQuoteToDatabase: Missing quoteData or user');
+      return false;
+    }
+
+    if (quoteSaved) {
+      console.log('saveQuoteToDatabase: Quote already saved');
+      return true;
+    }
 
     const calc = quoteData.calculations;
 
@@ -167,11 +175,24 @@ export function BatchQuotePDFModal({ isOpen, onClose, quoteData, user, profile }
 
       if (response.ok) {
         setQuoteSaved(true);
+        return true;
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('saveQuoteToDatabase: API error', response.status, errorData);
+
+        if (response.status === 401) {
+          toast.error('Session expirée', 'Veuillez vous reconnecter');
+        } else {
+          toast.error('Erreur', errorData.error || 'Impossible d\'enregistrer le devis');
+        }
+        return false;
       }
     } catch (error) {
-      console.error('Error saving batch quote:', error);
+      console.error('saveQuoteToDatabase: Network error', error);
+      toast.error('Erreur réseau', 'Vérifiez votre connexion internet');
+      return false;
     }
-  }, [quoteData, user, quoteSaved]);
+  }, [quoteData, user, quoteSaved, toast]);
 
   const isExpired = useCallback(() => {
     if (!quoteData) return false;
@@ -530,11 +551,14 @@ export function BatchQuotePDFModal({ isOpen, onClose, quoteData, user, profile }
     }
 
     setIsGenerating(true);
-    await saveQuoteToDatabase(quoteNumber);
+    const success = await saveQuoteToDatabase(quoteNumber);
     setIsGenerating(false);
 
-    toast.success('Devis enregistre avec succes');
-    router.push('/dashboard/quotes');
+    if (success) {
+      toast.success('Devis enregistré avec succès');
+      router.push('/dashboard/quotes');
+    }
+    // Error messages are shown by saveQuoteToDatabase
   };
 
   const handleShare = async () => {

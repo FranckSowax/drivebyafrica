@@ -150,8 +150,17 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
   }, [quoteData?.calculations?.quoteCurrencyCode]);
 
   // 5. Action: Save to DB (always save in USD for consistency)
-  const saveQuoteToDatabase = useCallback(async (qNumber: string) => {
-    if (!quoteData || !user || quoteSaved) return;
+  // Returns true on success, false on failure
+  const saveQuoteToDatabase = useCallback(async (qNumber: string): Promise<boolean> => {
+    if (!quoteData || !user) {
+      console.error('saveQuoteToDatabase: Missing quoteData or user');
+      return false;
+    }
+
+    if (quoteSaved) {
+      console.log('saveQuoteToDatabase: Quote already saved');
+      return true;
+    }
 
     // Use USD values if available, otherwise use the converted values
     const calc = quoteData.calculations;
@@ -185,11 +194,25 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
 
       if (response.ok) {
         setQuoteSaved(true);
+        return true;
+      } else {
+        // Handle specific error cases
+        const errorData = await response.json().catch(() => ({}));
+        console.error('saveQuoteToDatabase: API error', response.status, errorData);
+
+        if (response.status === 401) {
+          toast.error('Session expirée', 'Veuillez vous reconnecter');
+        } else {
+          toast.error('Erreur', errorData.error || 'Impossible d\'enregistrer le devis');
+        }
+        return false;
       }
     } catch (error) {
-      console.error('Error saving quote:', error);
+      console.error('saveQuoteToDatabase: Network error', error);
+      toast.error('Erreur réseau', 'Vérifiez votre connexion internet');
+      return false;
     }
-  }, [quoteData, user, quoteSaved]);
+  }, [quoteData, user, quoteSaved, toast]);
 
   const isExpired = useCallback(() => {
     if (!quoteData) return false;
@@ -563,13 +586,16 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
       router.push('/dashboard/quotes');
       return;
     }
-    
+
     setIsGenerating(true); // Show loading state
-    await saveQuoteToDatabase(quoteNumber);
+    const success = await saveQuoteToDatabase(quoteNumber);
     setIsGenerating(false);
-    
-    toast.success('Devis enregistré avec succès');
-    router.push('/dashboard/quotes');
+
+    if (success) {
+      toast.success('Devis enregistré avec succès');
+      router.push('/dashboard/quotes');
+    }
+    // Error messages are shown by saveQuoteToDatabase
   };
 
   const handleShare = async () => {
