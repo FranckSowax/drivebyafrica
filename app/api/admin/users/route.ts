@@ -196,10 +196,10 @@ export async function PUT(request: Request) {
 
     // Validate and add assigned_country if provided
     if (assignedCountry !== undefined) {
-      const validCountries = ['china', 'korea', 'dubai', null];
+      const validCountries = ['all', 'china', 'korea', 'dubai', null];
       if (!validCountries.includes(assignedCountry)) {
         return NextResponse.json(
-          { error: 'Pays assigné invalide. Valeurs autorisées: china, korea, dubai' },
+          { error: 'Pays assigné invalide. Valeurs autorisées: all, china, korea, dubai' },
           { status: 400 }
         );
       }
@@ -228,6 +228,7 @@ export async function PUT(request: Request) {
 
 // Source country labels for display
 const SOURCE_COUNTRY_LABELS: Record<string, string> = {
+  all: '🌍 Tous les pays',
   china: '🇨🇳 Chine',
   korea: '🇰🇷 Corée du Sud',
   dubai: '🇦🇪 Dubaï',
@@ -260,10 +261,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const validCountries = ['china', 'korea', 'dubai'];
+    const validCountries = ['all', 'china', 'korea', 'dubai'];
     if (!validCountries.includes(assignedCountry)) {
       return NextResponse.json(
-        { error: 'Pays source invalide. Valeurs autorisées: china, korea, dubai' },
+        { error: 'Pays source invalide. Valeurs autorisées: all, china, korea, dubai' },
         { status: 400 }
       );
     }

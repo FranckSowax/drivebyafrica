@@ -119,11 +119,12 @@ export default function AdminUsersPage() {
     password: '',
     fullName: '',
     phone: '',
-    assignedCountry: '' as '' | 'china' | 'korea' | 'dubai',
+    assignedCountry: '' as '' | 'all' | 'china' | 'korea' | 'dubai',
   });
 
   // Source country options for collaborators
   const sourceCountryOptions = [
+    { value: 'all', label: '🌍 Tous les pays', description: 'Accès à toutes les commandes (Chine, Corée, Dubaï)' },
     { value: 'china', label: '🇨🇳 Chine', description: 'Véhicules CHE168, Dongchedi' },
     { value: 'korea', label: '🇰🇷 Corée du Sud', description: 'Véhicules Encar' },
     { value: 'dubai', label: '🇦🇪 Dubaï', description: 'Véhicules Dubicars' },
@@ -870,7 +871,7 @@ export default function AdminUsersPage() {
                         name="assignedCountry"
                         value={option.value}
                         checked={createForm.assignedCountry === option.value}
-                        onChange={(e) => setCreateForm(prev => ({ ...prev, assignedCountry: e.target.value as 'china' | 'korea' | 'dubai' }))}
+                        onChange={(e) => setCreateForm(prev => ({ ...prev, assignedCountry: e.target.value as 'all' | 'china' | 'korea' | 'dubai' }))}
                         className="sr-only"
                         required
                       />
