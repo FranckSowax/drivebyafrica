@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Upload, X, Plus, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface AddVehicleModalProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
     setError('');
 
     try {
-      const response = await fetch('/api/collaborator/vehicles', {
+      const response = await authFetch('/api/collaborator/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface UploadedDocument {
   name: string;
@@ -106,7 +107,7 @@ export function DocumentUploader({
       }
 
       // Update order with new documents
-      const response = await fetch('/api/admin/orders/documents', {
+      const response = await authFetch('/api/admin/orders/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -183,7 +184,7 @@ export function DocumentUploader({
     setError(null);
 
     try {
-      const response = await fetch('/api/admin/orders/documents', {
+      const response = await authFetch('/api/admin/orders/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

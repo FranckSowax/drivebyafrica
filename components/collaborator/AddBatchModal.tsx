@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Upload, X, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface AddBatchModalProps {
   isOpen: boolean;
@@ -108,7 +109,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
     }
 
     try {
-      const response = await fetch('/api/collaborator/batches', {
+      const response = await authFetch('/api/collaborator/batches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

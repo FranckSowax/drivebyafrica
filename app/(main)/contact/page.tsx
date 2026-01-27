@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/useAuthStore';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 const contactMethods = [
   {
@@ -71,7 +72,7 @@ export default function ContactPage() {
       // If user is logged in, redirect to chat with message
       if (user) {
         // Create a conversation and send the message
-        const response = await fetch('/api/chat', {
+        const response = await authFetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -83,7 +84,7 @@ export default function ContactPage() {
           const data = await response.json();
 
           // Get AI response
-          await fetch('/api/chat/ai', {
+          await authFetch('/api/chat/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

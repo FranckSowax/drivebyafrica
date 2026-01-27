@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import type { VehicleBatch } from '@/types/vehicle-batch';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -74,7 +75,7 @@ export default function BatchesPage() {
         public: 'true',
       });
 
-      const response = await fetch(`/api/admin/batches?${params}`);
+      const response = await authFetch(`/api/admin/batches?${params}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -163,7 +164,7 @@ export default function BatchesPage() {
     setOrderError('');
 
     try {
-      const response = await fetch('/api/admin/batches', {
+      const response = await authFetch('/api/admin/batches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
