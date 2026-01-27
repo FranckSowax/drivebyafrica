@@ -120,20 +120,15 @@ function LoginForm() {
         // Non-blocking - continue with login
       }
 
-      // Update auth store with full state (avoids race condition)
-      // This also sets isInitialized=true to prevent re-initialization on navigation
+      // Update auth store with full state
       setAuthenticated(authData.user, profile);
 
       toast.success('Connexion réussie!');
 
-      // Small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Navigate using router.push for smoother transition
-      // The auth state is already updated, so the new page will have the user
+      // Use window.location for full page reload
+      // This ensures the auth state is properly initialized from localStorage on the new page
       console.log('Login: Navigating to', redirect);
-      router.push(redirect);
-      router.refresh(); // Refresh server components
+      window.location.href = redirect;
     } catch (err) {
       console.error('Login: Unexpected error:', err);
       toast.error('Erreur', 'Une erreur est survenue');

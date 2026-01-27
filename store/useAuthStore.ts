@@ -28,7 +28,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
-  setAuthenticated: (user: User, profile?: Profile | null) => void; // For login flow
+  setAuthenticated: (user: User, profile?: Profile | null) => void;
   initialize: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -36,6 +36,42 @@ interface AuthState {
 
 // Track if we've already set up the auth listener to avoid duplicates
 let authListenerSetup = false;
+
+// Helper to set up auth listener (extracted to avoid duplication)
+function setupAuthListener(
+  supabase: ReturnType<typeof createClient>,
+  set: (state: Partial<AuthState>) => void
+) {
+  if (authListenerSetup) return;
+  authListenerSetup = true;
+
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event, !!session?.user);
+
+    // Handle sign out
+    if (event === 'SIGNED_OUT') {
+      set({ user: null, profile: null });
+      setAuthMarkerCookie(false);
+      return;
+    }
+
+    // Handle sign in or token refresh
+    if (session?.user) {
+      set({ user: session.user });
+      setAuthMarkerCookie(true);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      set({ profile });
+    } else if (event !== 'INITIAL_SESSION') {
+      // Only clear state if it's not the initial session event
+      set({ user: null, profile: null });
+      setAuthMarkerCookie(false);
+    }
+  });
+}
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
@@ -62,22 +98,61 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   initialize: async () => {
     // Prevent multiple initializations
-    if (get().isInitialized) return;
+    if (get().isInitialized) {
+      console.log('Auth initialize: Already initialized, skipping');
+      return;
+    }
 
+    console.log('Auth initialize: Starting...');
     const supabase = createClient();
 
     try {
       // First check for cached session (fast, from localStorage)
-      const { data: { session: cachedSession } } = await supabase.auth.getSession();
+      const { data: { session: cachedSession }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Auth initialize: Cached session exists:', !!cachedSession, 'error:', sessionError?.message || 'none');
 
-      // Use getUser() to validate the session server-side
-      // This is more reliable than just checking the cached session
+      // If we have a cached session with a valid token, we can use it directly
+      // This is faster and avoids unnecessary network calls
+      if (cachedSession?.user && cachedSession?.access_token) {
+        // Check if token is not expired
+        const expiresAt = cachedSession.expires_at || 0;
+        const now = Math.floor(Date.now() / 1000);
+        const isExpired = expiresAt < now;
+
+        if (!isExpired) {
+          console.log('Auth initialize: Using cached session (not expired)');
+          set({ user: cachedSession.user });
+          setAuthMarkerCookie(true);
+
+          // Fetch profile in background (don't await)
+          (async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', cachedSession.user.id)
+                .single();
+              if (profile) set({ profile });
+            } catch {
+              // Ignore profile fetch errors
+            }
+          })();
+
+          // Set up listener and finish
+          setupAuthListener(supabase, set);
+          set({ isLoading: false, isInitialized: true });
+          return;
+        }
+        console.log('Auth initialize: Cached session expired, validating with server...');
+      }
+
+      // Validate with server if no valid cached session
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
 
-      console.log('Auth initialize: user exists:', !!user, 'error:', userError?.message || 'none');
+      console.log('Auth initialize: getUser result - user exists:', !!user, 'error:', userError?.message || 'none');
 
       if (user && !userError) {
         // Session is valid
@@ -140,34 +215,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
 
       // Listen for auth changes (only set up once)
-      if (!authListenerSetup) {
-        authListenerSetup = true;
-        supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth state changed:', event, !!session?.user);
-
-          // Handle sign out
-          if (event === 'SIGNED_OUT') {
-            set({ user: null, profile: null });
-            setAuthMarkerCookie(false); // Remove marker
-            return;
-          }
-
-          // Handle sign in or token refresh
-          if (session?.user) {
-            set({ user: session.user });
-            setAuthMarkerCookie(true); // Set marker for middleware
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            set({ profile });
-          } else {
-            set({ user: null, profile: null });
-            setAuthMarkerCookie(false); // Remove marker
-          }
-        });
-      }
+      setupAuthListener(supabase, set);
     } catch (error) {
       // Ignore AbortError - this happens in React Strict Mode due to double mount
       if (error instanceof Error && error.name === 'AbortError') {
