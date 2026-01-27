@@ -799,8 +799,8 @@ function CollaboratorOrdersContent() {
       {/* Order Detail Modal */}
       {showDetailModal && selectedOrder && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-cod-gray border border-nobel/20 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-nobel/20">
+          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[var(--card-border)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {/* Vehicle image in modal header */}
@@ -814,11 +814,11 @@ function CollaboratorOrdersContent() {
                     </div>
                   )}
                   <div>
-                    <h3 className="text-lg font-bold text-white">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">
                       {locale === 'zh' ? '订单' : 'Order'} {selectedOrder.order_number}
                     </h3>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-[var(--text-muted)]">
                         {selectedOrder.vehicle_make} {selectedOrder.vehicle_model} {selectedOrder.vehicle_year}
                       </p>
                       {selectedOrder.vehicle_id && (
@@ -846,7 +846,7 @@ function CollaboratorOrdersContent() {
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleCloseModal} className="text-gray-400 hover:text-white">
+                <Button variant="ghost" size="sm" onClick={handleCloseModal} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
                   <X className="w-5 h-5" />
                 </Button>
               </div>
@@ -855,7 +855,7 @@ function CollaboratorOrdersContent() {
             <div className="p-6 space-y-6">
               {/* Progress Timeline */}
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-4">
+                <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-4">
                   {locale === 'zh' ? '订单进度' : 'Order Progress'}
                 </h4>
                 <div className="relative">
@@ -885,7 +885,7 @@ function CollaboratorOrdersContent() {
                           <div className={`flex-1 ${isCompleted ? '' : 'opacity-50'}`}>
                             <div className="flex items-center gap-2">
                               <StatusIcon className={`w-4 h-4 ${isCompleted ? config.color : 'text-gray-500'}`} />
-                              <span className={`text-sm font-medium ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
+                              <span className={`text-sm font-medium ${isCompleted ? 'text-[var(--text-primary)]' : 'text-gray-500'}`}>
                                 {locale === 'zh' ? config.labelZh : config.label}
                               </span>
                               {isCurrent && (
@@ -896,11 +896,11 @@ function CollaboratorOrdersContent() {
                             </div>
                             {trackingStep && (
                               <div className="mt-1">
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-[var(--text-muted)]">
                                   {format(new Date(trackingStep.timestamp), "dd/MM/yyyy HH:mm", { locale: dateLocale })}
                                 </p>
                                 {trackingStep.note && (
-                                  <p className="text-xs text-gray-300 mt-0.5">{trackingStep.note}</p>
+                                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">{trackingStep.note}</p>
                                 )}
                               </div>
                             )}
@@ -913,15 +913,15 @@ function CollaboratorOrdersContent() {
               </div>
 
               {/* Update Status Form */}
-              <div className="bg-nobel/10 rounded-xl p-4">
-                <h4 className="text-sm font-medium text-white mb-3">
+              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+                <h4 className="text-sm font-medium text-[var(--text-primary)] mb-3">
                   {locale === 'zh' ? '更新状态' : 'Update Status'}
                 </h4>
                 <div className="space-y-3">
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-cod-gray border border-nobel/30 rounded-lg text-white focus:border-mandarin focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
                   >
                     {Object.entries(statusConfig).map(([key, config]) => (
                       <option key={key} value={key}>
@@ -934,13 +934,13 @@ function CollaboratorOrdersContent() {
                     placeholder={locale === 'zh' ? '备注（可选）' : 'Note (optional)'}
                     value={statusNote}
                     onChange={(e) => setStatusNote(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-cod-gray border border-nobel/30 rounded-lg text-white placeholder-gray-500 focus:border-mandarin focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] placeholder-gray-500 focus:border-mandarin focus:outline-none"
                   />
                   {/* Actual Purchase Price - Only shown for 'vehicle_purchased' status */}
                   {newStatus === 'vehicle_purchased' && (
                     <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                      <label className="block text-sm font-medium text-amber-400 mb-2">
-                        {locale === 'zh' ? '实际购买价格 (USD)' : 'Actual Purchase Price (USD)'} <span className="text-red-400">*</span>
+                      <label className="block text-sm font-medium text-amber-600 dark:text-amber-400 mb-2">
+                        {locale === 'zh' ? '实际购买价格 (USD)' : 'Actual Purchase Price (USD)'} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"
@@ -950,9 +950,9 @@ function CollaboratorOrdersContent() {
                         value={actualPurchasePrice}
                         onChange={(e) => setActualPurchasePrice(e.target.value)}
                         required
-                        className="w-full px-4 py-2.5 bg-cod-gray border border-amber-500/50 rounded-lg text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-amber-500/50 rounded-lg text-[var(--text-primary)] placeholder-gray-500 focus:border-amber-500 focus:outline-none"
                       />
-                      <p className="text-xs text-amber-300 mt-1">
+                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
                         {locale === 'zh' ? '此信息仅对管理员和协作者可见' : 'This information is only visible to admins and collaborators'}
                       </p>
                     </div>
@@ -963,7 +963,7 @@ function CollaboratorOrdersContent() {
                       placeholder="ETA"
                       value={newEta}
                       onChange={(e) => setNewEta(e.target.value)}
-                      className="flex-1 px-4 py-2.5 bg-cod-gray border border-nobel/30 rounded-lg text-white focus:border-mandarin focus:outline-none"
+                      className="flex-1 px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
                     />
                     <Button
                       onClick={handleUpdateStatus}
@@ -984,7 +984,7 @@ function CollaboratorOrdersContent() {
               </div>
 
               {/* Status Documents Section - Upload documents for current status */}
-              <div className="bg-nobel/10 rounded-xl p-4">
+              <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
                 <StatusDocumentsSection
                   orderId={selectedOrder.id}
                   orderNumber={selectedOrder.order_number}
@@ -998,26 +998,26 @@ function CollaboratorOrdersContent() {
 
               {/* Customer Info */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-nobel/10 rounded-xl p-4">
-                  <h4 className="text-sm font-medium text-gray-400 mb-2">
+                <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+                  <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">
                     {locale === 'zh' ? '客户' : 'Customer'}
                   </h4>
-                  <p className="font-medium text-white">{selectedOrder.customer_name}</p>
-                  <p className="text-sm text-gray-400">{selectedOrder.customer_country}</p>
+                  <p className="font-medium text-[var(--text-primary)]">{selectedOrder.customer_name}</p>
+                  <p className="text-sm text-[var(--text-muted)]">{selectedOrder.customer_country}</p>
                 </div>
-                <div className="bg-nobel/10 rounded-xl p-4">
-                  <h4 className="text-sm font-medium text-gray-400 mb-2">
+                <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+                  <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">
                     {locale === 'zh' ? '目的地' : 'Destination'}
                   </h4>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-lg">{countryFlags[selectedOrder.destination_country] || '🌍'}</span>
-                    <p className="font-medium text-white">{selectedOrder.destination_name}</p>
+                    <p className="font-medium text-[var(--text-primary)]">{selectedOrder.destination_name}</p>
                   </div>
-                  <p className="text-sm text-gray-400">{selectedOrder.destination_country}</p>
+                  <p className="text-sm text-[var(--text-muted)]">{selectedOrder.destination_country}</p>
                   {selectedOrder.shipping_eta && (
                     <div className="flex items-center gap-2 mt-2 text-sm">
                       <Calendar className="w-4 h-4 text-mandarin" />
-                      <span className="text-white">
+                      <span className="text-[var(--text-primary)]">
                         ETA: {format(new Date(selectedOrder.shipping_eta), 'dd MMM yyyy', { locale: dateLocale })}
                       </span>
                     </div>
