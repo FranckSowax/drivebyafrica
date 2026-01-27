@@ -280,8 +280,12 @@ async function fetchFilters(): Promise<FilterData> {
   // Using direct PostgREST for better performance
   const baseUrl = `${supabaseUrl}/rest/v1/vehicles`;
 
+  // Fetch brands from EACH source separately to ensure all brands are captured
+  // (With 200k+ vehicles, a single query misses brands from less common sources)
   const [
-    brandsResponse,
+    brandsChinaResponse,
+    brandsKoreaResponse,
+    brandsDubaiResponse,
     transmissionsResponse,
     fuelTypesResponse,
     driveTypesResponse,
@@ -289,8 +293,10 @@ async function fetchFilters(): Promise<FilterData> {
     colorsResponse,
     yearsResponse,
   ] = await Promise.all([
-    // Brands and models - need more data but limit to 10k for performance
-    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&make=not.is.null&limit=10000`, { headers }),
+    // Brands per source - 15k each ensures coverage
+    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&source=eq.china&make=not.is.null&limit=15000`, { headers }),
+    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&source=eq.korea&make=not.is.null&limit=15000`, { headers }),
+    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&source=eq.dubai&make=not.is.null&limit=15000`, { headers }),
     // Other filters - just need unique values, sample 5k is enough
     fetch(`${baseUrl}?select=transmission&is_visible=eq.true&transmission=not.is.null&limit=5000`, { headers }),
     fetch(`${baseUrl}?select=fuel_type&is_visible=eq.true&fuel_type=not.is.null&limit=5000`, { headers }),
@@ -302,7 +308,9 @@ async function fetchFilters(): Promise<FilterData> {
 
   // Parse all responses
   const [
-    brandsData,
+    brandsChinaData,
+    brandsKoreaData,
+    brandsDubaiData,
     transmissionsData,
     fuelTypesData,
     driveTypesData,
@@ -310,7 +318,9 @@ async function fetchFilters(): Promise<FilterData> {
     colorsData,
     yearsData,
   ] = await Promise.all([
-    brandsResponse.ok ? brandsResponse.json() : [],
+    brandsChinaResponse.ok ? brandsChinaResponse.json() : [],
+    brandsKoreaResponse.ok ? brandsKoreaResponse.json() : [],
+    brandsDubaiResponse.ok ? brandsDubaiResponse.json() : [],
     transmissionsResponse.ok ? transmissionsResponse.json() : [],
     fuelTypesResponse.ok ? fuelTypesResponse.json() : [],
     driveTypesResponse.ok ? driveTypesResponse.json() : [],
@@ -319,6 +329,8 @@ async function fetchFilters(): Promise<FilterData> {
     yearsResponse.ok ? yearsResponse.json() : [],
   ]) as [
     { make: string | null; model: string | null }[],
+    { make: string | null; model: string | null }[],
+    { make: string | null; model: string | null }[],
     { transmission: string | null }[],
     { fuel_type: string | null }[],
     { drive_type: string | null }[],
@@ -326,6 +338,9 @@ async function fetchFilters(): Promise<FilterData> {
     { color: string | null }[],
     { year: number | null }[],
   ];
+
+  // Merge brands from all sources
+  const brandsData = [...brandsChinaData, ...brandsKoreaData, ...brandsDubaiData];
 
   // Process brands and models
   const brandModelMap: Record<string, Set<string>> = {};
