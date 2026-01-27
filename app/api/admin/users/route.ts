@@ -154,7 +154,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT: Update user role and/or assigned country
+// PUT: Update user profile (role, assigned country, and profile fields)
 export async function PUT(request: Request) {
   try {
     // Vérification admin obligatoire
@@ -166,7 +166,7 @@ export async function PUT(request: Request) {
     // Use service role client for full access
     const supabase = createAdminClient();
     const body = await request.json();
-    const { userId, role, assignedCountry } = body;
+    const { userId, role, assignedCountry, fullName, phone, whatsappNumber, country, city } = body;
 
     if (!userId) {
       return NextResponse.json(
@@ -209,6 +209,23 @@ export async function PUT(request: Request) {
       updateData.assigned_country = assignedCountry;
     }
 
+    // Add profile fields if provided
+    if (fullName !== undefined) {
+      updateData.full_name = fullName;
+    }
+    if (phone !== undefined) {
+      updateData.phone = phone || null;
+    }
+    if (whatsappNumber !== undefined) {
+      updateData.whatsapp_number = whatsappNumber || null;
+    }
+    if (country !== undefined) {
+      updateData.country = country || null;
+    }
+    if (city !== undefined) {
+      updateData.city = city || null;
+    }
+
     // Update user
     const { error } = await supabase
       .from('profiles')
@@ -224,6 +241,71 @@ export async function PUT(request: Request) {
     console.error('Error updating user:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour de l\'utilisateur' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: Delete a user account
+export async function DELETE(request: Request) {
+  try {
+    // Vérification admin obligatoire
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) {
+      return adminCheck.response;
+    }
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'userId est requis' },
+        { status: 400 }
+      );
+    }
+
+    // Use service role client for admin operations
+    const supabaseAdmin = createAdminClient();
+
+    // First check if user exists and get their info
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: 'Utilisateur non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Prevent deleting super_admin
+    if (profile.role === 'super_admin') {
+      return NextResponse.json(
+        { error: 'Impossible de supprimer un super administrateur' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the user from Supabase Auth (this will cascade delete the profile due to FK constraint)
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (deleteError) {
+      console.error('Delete auth error:', deleteError);
+      throw deleteError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Utilisateur supprimé avec succès'
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors de la suppression de l\'utilisateur' },
       { status: 500 }
     );
   }

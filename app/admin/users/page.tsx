@@ -5,7 +5,6 @@ import {
   Users,
   Search,
   Eye,
-  Mail,
   Phone,
   MapPin,
   Calendar,
@@ -26,6 +25,9 @@ import {
   Shield,
   UserCog,
   Check,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -122,6 +124,23 @@ export default function AdminUsersPage() {
     phone: '',
     assignedCountry: '' as '' | 'all' | 'china' | 'korea' | 'dubai',
   });
+
+  // Edit user state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: '',
+    phone: '',
+    whatsappNumber: '',
+    country: '',
+    city: '',
+  });
+
+  // Delete user state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Source country options for collaborators
   const sourceCountryOptions = [
@@ -300,6 +319,107 @@ export default function AdminUsersPage() {
       }
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // Open edit modal
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setEditForm({
+      fullName: user.full_name,
+      phone: user.phone || '',
+      whatsappNumber: user.whatsapp_number || '',
+      country: user.country || '',
+      city: user.city || '',
+    });
+    setShowEditModal(true);
+  };
+
+  // Update user profile
+  const updateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    setIsEditing(true);
+    try {
+      const response = await authFetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: editingUser.id,
+          fullName: editForm.fullName,
+          phone: editForm.phone,
+          whatsappNumber: editForm.whatsappNumber,
+          country: editForm.country,
+          city: editForm.city,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la mise à jour');
+      }
+
+      // Update local state
+      setUsers(prev => prev.map(u =>
+        u.id === editingUser.id ? {
+          ...u,
+          full_name: editForm.fullName,
+          phone: editForm.phone || null,
+          whatsapp_number: editForm.whatsappNumber || null,
+          country: editForm.country || 'Non spécifié',
+          city: editForm.city || null,
+        } : u
+      ));
+
+      // Close modal
+      setShowEditModal(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert(error instanceof Error ? error.message : 'Erreur lors de la mise à jour');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  // Open delete confirmation
+  const openDeleteConfirm = (user: User) => {
+    setDeletingUser(user);
+    setShowDeleteConfirm(true);
+  };
+
+  // Delete user
+  const deleteUser = async () => {
+    if (!deletingUser) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await authFetch(`/api/admin/users?userId=${deletingUser.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la suppression');
+      }
+
+      // Remove from local state
+      setUsers(prev => prev.filter(u => u.id !== deletingUser.id));
+
+      // Close confirmation and detail modal if open
+      setShowDeleteConfirm(false);
+      setDeletingUser(null);
+      if (selectedUser?.id === deletingUser.id) {
+        setSelectedUser(null);
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(error instanceof Error ? error.message : 'Erreur lors de la suppression');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -573,6 +693,26 @@ export default function AdminUsersPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditModal(user)}
+                            title="Modifier"
+                            className="text-royal-blue hover:text-royal-blue/80"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          {user.role !== 'super_admin' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openDeleteConfirm(user)}
+                              title="Supprimer"
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                           {(user.whatsapp_number || user.phone) && (
                             <Button
                               variant="ghost"
@@ -775,6 +915,34 @@ export default function AdminUsersPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-[var(--card-border)]">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    openEditModal(selectedUser);
+                    setSelectedUser(null);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Modifier
+                </Button>
+                {selectedUser.role !== 'super_admin' && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 text-red-500 border-red-500/30 hover:bg-red-500/10"
+                    onClick={() => {
+                      openDeleteConfirm(selectedUser);
+                      setSelectedUser(null);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Supprimer
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -941,6 +1109,216 @@ export default function AdminUsersPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-[var(--card-border)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-royal-blue/10 rounded-lg">
+                    <Pencil className="w-5 h-5 text-royal-blue" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                      Modifier l&apos;utilisateur
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {editingUser.full_name}
+                    </p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setShowEditModal(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            <form onSubmit={updateUser} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Nom complet
+                </label>
+                <input
+                  type="text"
+                  value={editForm.fullName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Nom complet"
+                  required
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-royal-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Téléphone
+                </label>
+                <input
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+241 XX XX XX XX"
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-royal-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  WhatsApp
+                </label>
+                <input
+                  type="tel"
+                  value={editForm.whatsappNumber}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+                  placeholder="+241 XX XX XX XX"
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-royal-blue focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Pays
+                </label>
+                <select
+                  value={editForm.country}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, country: e.target.value }))}
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-royal-blue focus:outline-none"
+                >
+                  <option value="">Sélectionner un pays</option>
+                  {Object.keys(countryFlags).map(country => (
+                    <option key={country} value={country}>
+                      {countryFlags[country]} {country}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                  Ville
+                </label>
+                <input
+                  type="text"
+                  value={editForm.city}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Ville"
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-royal-blue focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isEditing}
+                  className="flex-1 bg-royal-blue hover:bg-royal-blue/90"
+                >
+                  {isEditing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Mise à jour...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Enregistrer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && deletingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card-bg)] rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-red-500/10 rounded-full">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                    Supprimer l&apos;utilisateur ?
+                  </h3>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    Cette action est irréversible
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-[var(--surface)] rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-mandarin to-jewel rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {getInitials(deletingUser.full_name)}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      {deletingUser.full_name}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {roleLabels[deletingUser.role]} - {deletingUser.country}
+                    </p>
+                  </div>
+                </div>
+                {(deletingUser.quotes_count > 0 || deletingUser.orders_count > 0) && (
+                  <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Cet utilisateur a {deletingUser.quotes_count} devis et {deletingUser.orders_count} commandes.
+                      Ces données seront également supprimées.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingUser(null);
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={deleteUser}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
