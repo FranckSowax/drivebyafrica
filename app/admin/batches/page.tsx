@@ -1,20 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { AdminTopBar } from '@/components/admin/AdminTopBar';
 import { AdminBatchTable } from '@/components/admin/AdminBatchTable';
 import { AdminBatchDetailsModal } from '@/components/admin/AdminBatchDetailsModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import {
-  Package,
-  CheckCircle,
-  Clock,
-  XCircle,
-  ShoppingCart,
-} from 'lucide-react';
+import { Package } from 'lucide-react';
 import type { VehicleBatchWithCollaborator } from '@/types/vehicle-batch';
 
 export default function AdminBatchesPage() {
@@ -23,7 +15,6 @@ export default function AdminBatchesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<VehicleBatchWithCollaborator | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
@@ -139,75 +130,64 @@ export default function AdminBatchesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-cod-gray">
-      <AdminSidebar
-        collapsed={sidebarCollapsed}
-        onCollapse={setSidebarCollapsed}
-      />
-
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-        <AdminTopBar />
-
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Package className="w-7 h-7 text-alto-orange" />
-                Vehicle Batches
-              </h1>
-              <p className="text-sm text-nobel mt-1">
-                Manage collaborator-submitted vehicle batches
-              </p>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-6 gap-4 mb-6">
-            <Card className="p-4">
-              <div className="text-sm text-nobel">Total Batches</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.total}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-yellow-400">Pending</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.pending}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-green-400">Approved</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.approved}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-red-400">Rejected</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.rejected}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-nobel">Total Vehicles</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.totalVehicles}</div>
-            </Card>
-            <Card className="p-4">
-              <div className="text-sm text-blue-400">Available</div>
-              <div className="text-2xl font-bold text-white mt-1">{stats.availableVehicles}</div>
-            </Card>
-          </div>
-
-          {/* Batch Table */}
-          <Card className="p-6 bg-surface border-nobel/20">
-            <AdminBatchTable
-              batches={filteredBatches}
-              total={total}
-              page={currentPage}
-              totalPages={totalPages}
-              isLoading={loading}
-              onPageChange={setCurrentPage}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onView={handleViewBatch}
-              onApprove={handleApproveClick}
-              onReject={handleRejectClick}
-            />
-          </Card>
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+            <Package className="w-7 h-7 text-mandarin" />
+            Vehicle Batches
+          </h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">
+            Manage collaborator-submitted vehicle batches
+          </p>
         </div>
       </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-6 gap-4 mb-6">
+        <Card className="p-4">
+          <div className="text-sm text-[var(--text-muted)]">Total Batches</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">{stats.total}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-yellow-500">Pending</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">{stats.pending}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-green-500">Approved</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">{stats.approved}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-red-500">Rejected</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">{stats.rejected}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-[var(--text-muted)]">Total Vehicles</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">{stats.totalVehicles}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-blue-500">Available</div>
+          <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">{stats.availableVehicles}</div>
+        </Card>
+      </div>
+
+      {/* Batch Table */}
+      <Card className="p-6">
+        <AdminBatchTable
+          batches={filteredBatches}
+          total={total}
+          page={currentPage}
+          totalPages={totalPages}
+          isLoading={loading}
+          onPageChange={setCurrentPage}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onView={handleViewBatch}
+          onApprove={handleApproveClick}
+          onReject={handleRejectClick}
+        />
+      </Card>
 
       {/* Approval Modal */}
       {selectedBatch && (
@@ -219,7 +199,7 @@ export default function AdminBatchesPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-nobel mb-2">
+              <label className="block text-sm font-medium text-[var(--text-muted)] mb-2">
                 {approvalAction === 'approve' ? 'Admin Notes (optional)' : 'Rejection Reason'}
               </label>
               <textarea
@@ -228,7 +208,7 @@ export default function AdminBatchesPage() {
                 rows={4}
                 required={approvalAction === 'reject'}
                 placeholder={approvalAction === 'approve' ? 'Any notes for the collaborator...' : 'Explain why this batch is being rejected...'}
-                className="w-full px-3 py-2 bg-surface border border-nobel/20 rounded-lg text-white placeholder-nobel focus:outline-none focus:border-alto-orange resize-none"
+                className="w-full px-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-mandarin resize-none"
               />
             </div>
 
