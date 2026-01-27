@@ -20,6 +20,24 @@ const SORT_OPTIONS = [
   { value: 'quantity_desc', label: 'Quantité (haute)' },
 ];
 
+// Complete list of African destinations (same as vehicle detail page)
+const DESTINATION_PORTS = [
+  { id: 'dakar', name: 'Dakar', country: 'Sénégal', flag: '🇸🇳' },
+  { id: 'abidjan', name: 'Abidjan', country: "Côte d'Ivoire", flag: '🇨🇮' },
+  { id: 'tema', name: 'Tema/Accra', country: 'Ghana', flag: '🇬🇭' },
+  { id: 'lome', name: 'Lomé', country: 'Togo', flag: '🇹🇬' },
+  { id: 'cotonou', name: 'Cotonou', country: 'Bénin', flag: '🇧🇯' },
+  { id: 'lagos', name: 'Lagos', country: 'Nigeria', flag: '🇳🇬' },
+  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲' },
+  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦' },
+  { id: 'port-gentil', name: 'Port-Gentil', country: 'Gabon', flag: '🇬🇦' },
+  { id: 'pointe-noire', name: 'Pointe-Noire', country: 'Congo', flag: '🇨🇬' },
+  { id: 'mombasa', name: 'Mombasa', country: 'Kenya', flag: '🇰🇪' },
+  { id: 'dar-es-salaam', name: 'Dar es Salaam', country: 'Tanzanie', flag: '🇹🇿' },
+  { id: 'durban', name: 'Durban', country: 'Afrique du Sud', flag: '🇿🇦' },
+  { id: 'casablanca', name: 'Casablanca', country: 'Maroc', flag: '🇲🇦' },
+];
+
 export default function BatchesPage() {
   const router = useRouter();
   const [batches, setBatches] = useState<VehicleBatch[]>([]);
@@ -147,10 +165,12 @@ export default function BatchesPage() {
       return;
     }
 
-    if (!destinationCountry) {
-      setOrderError('Veuillez sélectionner un pays de destination');
+    if (!destinationPort) {
+      setOrderError('Veuillez sélectionner un port de destination');
       return;
     }
+
+    const selectedDestination = DESTINATION_PORTS.find(d => d.id === destinationPort);
 
     setSubmittingOrder(true);
     setOrderError('');
@@ -162,8 +182,8 @@ export default function BatchesPage() {
         body: JSON.stringify({
           batchId: selectedBatch.id,
           quantityOrdered: qty,
-          destinationCountry,
-          destinationPort: destinationPort || undefined,
+          destinationCountry: selectedDestination?.country || destinationCountry,
+          destinationPort: selectedDestination?.name || destinationPort,
           customerNotes: customerNotes || undefined,
         }),
       });
@@ -446,36 +466,31 @@ export default function BatchesPage() {
 
             <div>
               <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                Pays de destination <span className="text-red-400">*</span>
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Port de destination <span className="text-red-400">*</span>
               </label>
               <select
-                value={destinationCountry}
-                onChange={(e) => setDestinationCountry(e.target.value)}
+                value={destinationPort}
+                onChange={(e) => {
+                  const selected = DESTINATION_PORTS.find(d => d.id === e.target.value);
+                  setDestinationPort(e.target.value);
+                  setDestinationCountry(selected?.country || '');
+                }}
                 required
                 className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-alto-orange"
               >
-                <option value="">Sélectionner...</option>
-                <option value="Cameroon">Cameroun</option>
-                <option value="Nigeria">Nigeria</option>
-                <option value="Ghana">Ghana</option>
-                <option value="Kenya">Kenya</option>
-                <option value="Senegal">Sénégal</option>
-                <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-                <option value="Other">Autre</option>
+                <option value="">Sélectionner un port...</option>
+                {DESTINATION_PORTS.map((dest) => (
+                  <option key={dest.id} value={dest.id}>
+                    {dest.flag} {dest.name}, {dest.country}
+                  </option>
+                ))}
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-                Port de destination (Optionnel)
-              </label>
-              <input
-                type="text"
-                value={destinationPort}
-                onChange={(e) => setDestinationPort(e.target.value)}
-                placeholder="ex: Port de Douala"
-                className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-alto-orange"
-              />
+              {destinationPort && (
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Pays: {destinationCountry}
+                </p>
+              )}
             </div>
 
             <div>
