@@ -260,45 +260,49 @@ interface FilterData {
 
 /**
  * Fetch all filter options from Supabase
- * Uses pagination to bypass the 1000 row limit
+ * Optimized: Uses direct PostgREST API with efficient queries
  */
 async function fetchFilters(): Promise<FilterData> {
-  const supabase = createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Helper to fetch all pages of a query
-  async function fetchAllPages<T>(
-    queryFn: (from: number, to: number) => Promise<{ data: T[] | null; error: unknown }>
-  ): Promise<T[]> {
-    const pageSize = 1000;
-    const allData: T[] = [];
-    let from = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      const { data, error } = await queryFn(from, from + pageSize - 1);
-      if (error || !data) break;
-      allData.push(...data);
-      hasMore = data.length === pageSize;
-      from += pageSize;
-    }
-    return allData;
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase configuration missing');
   }
 
-  // Fetch all brands and models with pagination (only visible vehicles)
-  const brandsData = await fetchAllPages<{ make: string | null; model: string | null }>(
-    async (from, to) => {
-      const result = await supabase
-        .from('vehicles')
-        .select('make, model')
-        .eq('is_visible', true)
-        .not('make', 'is', null)
-        .range(from, to);
-      return { data: result.data, error: result.error };
-    }
-  );
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Content-Type': 'application/json',
+  };
 
-  // Fetch other filter values with pagination (only visible vehicles)
+  // Fetch all filter data in parallel using optimized queries
+  // Using direct PostgREST for better performance
+  const baseUrl = `${supabaseUrl}/rest/v1/vehicles`;
+
   const [
+    brandsResponse,
+    transmissionsResponse,
+    fuelTypesResponse,
+    driveTypesResponse,
+    bodyTypesResponse,
+    colorsResponse,
+    yearsResponse,
+  ] = await Promise.all([
+    // Brands and models - need more data but limit to 10k for performance
+    fetch(`${baseUrl}?select=make,model&is_visible=eq.true&make=not.is.null&limit=10000`, { headers }),
+    // Other filters - just need unique values, sample 5k is enough
+    fetch(`${baseUrl}?select=transmission&is_visible=eq.true&transmission=not.is.null&limit=5000`, { headers }),
+    fetch(`${baseUrl}?select=fuel_type&is_visible=eq.true&fuel_type=not.is.null&limit=5000`, { headers }),
+    fetch(`${baseUrl}?select=drive_type&is_visible=eq.true&drive_type=not.is.null&limit=5000`, { headers }),
+    fetch(`${baseUrl}?select=body_type&is_visible=eq.true&body_type=not.is.null&limit=5000`, { headers }),
+    fetch(`${baseUrl}?select=color&is_visible=eq.true&color=not.is.null&limit=5000`, { headers }),
+    fetch(`${baseUrl}?select=year&is_visible=eq.true&year=not.is.null&limit=5000`, { headers }),
+  ]);
+
+  // Parse all responses
+  const [
+    brandsData,
     transmissionsData,
     fuelTypesData,
     driveTypesData,
@@ -306,33 +310,24 @@ async function fetchFilters(): Promise<FilterData> {
     colorsData,
     yearsData,
   ] = await Promise.all([
-    fetchAllPages<{ transmission: string | null }>(async (from, to) => {
-      const result = await supabase.from('vehicles').select('transmission').eq('is_visible', true).not('transmission', 'is', null).range(from, to);
-      return { data: result.data, error: result.error };
-    }),
-    fetchAllPages<{ fuel_type: string | null }>(async (from, to) => {
-      const result = await supabase.from('vehicles').select('fuel_type').eq('is_visible', true).not('fuel_type', 'is', null).range(from, to);
-      return { data: result.data, error: result.error };
-    }),
-    fetchAllPages<{ drive_type: string | null }>(async (from, to) => {
-      const result = await supabase.from('vehicles').select('drive_type').eq('is_visible', true).not('drive_type', 'is', null).range(from, to);
-      return { data: result.data, error: result.error };
-    }),
-    fetchAllPages<{ body_type: string | null }>(async (from, to) => {
-      const result = await supabase.from('vehicles').select('body_type').eq('is_visible', true).not('body_type', 'is', null).range(from, to);
-      return { data: result.data, error: result.error };
-    }),
-    fetchAllPages<{ color: string | null }>(async (from, to) => {
-      const result = await supabase.from('vehicles').select('color').eq('is_visible', true).not('color', 'is', null).range(from, to);
-      return { data: result.data, error: result.error };
-    }),
-    fetchAllPages<{ year: number | null }>(async (from, to) => {
-      const result = await supabase.from('vehicles').select('year').eq('is_visible', true).not('year', 'is', null).range(from, to);
-      return { data: result.data, error: result.error };
-    }),
-  ]);
+    brandsResponse.ok ? brandsResponse.json() : [],
+    transmissionsResponse.ok ? transmissionsResponse.json() : [],
+    fuelTypesResponse.ok ? fuelTypesResponse.json() : [],
+    driveTypesResponse.ok ? driveTypesResponse.json() : [],
+    bodyTypesResponse.ok ? bodyTypesResponse.json() : [],
+    colorsResponse.ok ? colorsResponse.json() : [],
+    yearsResponse.ok ? yearsResponse.json() : [],
+  ]) as [
+    { make: string | null; model: string | null }[],
+    { transmission: string | null }[],
+    { fuel_type: string | null }[],
+    { drive_type: string | null }[],
+    { body_type: string | null }[],
+    { color: string | null }[],
+    { year: number | null }[],
+  ];
 
-  // Process brands and models from paginated data
+  // Process brands and models
   const brandModelMap: Record<string, Set<string>> = {};
   for (const row of brandsData) {
     if (row.make) {
@@ -351,14 +346,14 @@ async function fetchFilters(): Promise<FilterData> {
     modelsByBrand[brand] = Array.from(models).sort();
   }
 
-  // Extract unique values with proper type narrowing (from paginated data)
+  // Extract unique values with proper type narrowing
   const transmissions = [...new Set(transmissionsData.map(r => r.transmission).filter((v): v is string => !!v))];
   const fuelTypes = [...new Set(fuelTypesData.map(r => r.fuel_type).filter((v): v is string => !!v))];
   const driveTypes = [...new Set(driveTypesData.map(r => r.drive_type).filter((v): v is string => !!v))];
   const bodyTypes = [...new Set(bodyTypesData.map(r => r.body_type).filter((v): v is string => !!v))];
   const colors = [...new Set(colorsData.map(r => r.color).filter((v): v is string => !!v))];
 
-  // Get year range from paginated data
+  // Get year range
   const years = yearsData.map(r => r.year).filter((y): y is number => y !== null && y !== undefined);
   const minYear = years.length > 0 ? Math.min(...years) : 2000;
   const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
