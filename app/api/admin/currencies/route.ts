@@ -1,32 +1,10 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
-
-async function createSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
+import { createClient } from '@/lib/supabase/server';
 
 // GET: Fetch all currencies with history
 export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
@@ -138,7 +116,7 @@ export async function GET(request: Request) {
 // PUT: Update currency rate
 export async function PUT(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
@@ -225,7 +203,7 @@ export async function PUT(request: Request) {
 // POST: Add new currency
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
@@ -291,7 +269,7 @@ export async function POST(request: Request) {
 // PATCH: Seed all African currencies
 export async function PATCH() {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
@@ -448,7 +426,7 @@ export async function PATCH() {
 // DELETE: Toggle currency active status
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 

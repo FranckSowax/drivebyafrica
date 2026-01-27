@@ -26,6 +26,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -101,7 +102,7 @@ export default function UserNotificationsPage() {
       params.append('limit', '100');
       if (showUnreadOnly) params.append('unread', 'true');
 
-      const response = await fetch(`/api/notifications?${params}`);
+      const response = await authFetch(`/api/notifications?${params}`);
       const data = await response.json();
 
       if (data.notifications) {
@@ -122,7 +123,7 @@ export default function UserNotificationsPage() {
 
   const markAsRead = async (notificationIds: string[]) => {
     try {
-      const response = await fetch('/api/notifications', {
+      const response = await authFetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notification_ids: notificationIds }),
@@ -138,7 +139,7 @@ export default function UserNotificationsPage() {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications', {
+      const response = await authFetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mark_all: true }),
@@ -156,7 +157,7 @@ export default function UserNotificationsPage() {
 
   const dismissNotification = async (notificationId: string) => {
     try {
-      const response = await fetch(`/api/notifications?id=${notificationId}`, {
+      const response = await authFetch(`/api/notifications?id=${notificationId}`, {
         method: 'DELETE',
       });
 
@@ -170,7 +171,7 @@ export default function UserNotificationsPage() {
 
   const dismissAllNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications?all=true', {
+      const response = await authFetch('/api/notifications?all=true', {
         method: 'DELETE',
       });
 

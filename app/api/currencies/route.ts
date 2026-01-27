@@ -1,31 +1,9 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import type { Database } from '@/types/database';
+import { createClient } from '@/lib/supabase/server';
 
 // Force dynamic to prevent Next.js caching
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-async function createSupabaseClient() {
-  const cookieStore = await cookies();
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
 
 // Complete list of all African currencies (fallback if database not available)
 const DEFAULT_CURRENCIES = [
@@ -95,7 +73,7 @@ const DEFAULT_CURRENCIES = [
 // GET: Fetch all active currencies
 export async function GET() {
   try {
-    const supabase = await createSupabaseClient();
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 

@@ -10,6 +10,7 @@ import { useCollaboratorNotifications } from '@/lib/hooks/useCollaboratorNotific
 import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import {
   Package,
   Truck,
@@ -131,7 +132,7 @@ export default function CollaboratorDashboardPage() {
       try {
         setIsLoading(true);
 
-        const response = await fetch('/api/collaborator/orders?limit=100');
+        const response = await authFetch('/api/collaborator/orders?limit=100');
         if (!response.ok) throw new Error('Failed to fetch orders');
 
         const data = await response.json();

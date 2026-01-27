@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/useAuthStore';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface Message {
   id: string;
@@ -66,7 +67,7 @@ export function ChatWidget() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/chat');
+      const response = await authFetch('/api/chat');
       if (!response.ok) throw new Error('Failed to fetch');
 
       const data = await response.json();
@@ -78,7 +79,7 @@ export function ChatWidget() {
         setConversation(activeConv);
 
         // Fetch messages for this conversation
-        const messagesResponse = await fetch(`/api/chat?conversationId=${activeConv.id}`);
+        const messagesResponse = await authFetch(`/api/chat?conversationId=${activeConv.id}`);
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json();
           setMessages(messagesData.messages || []);
@@ -168,7 +169,7 @@ export function ChatWidget() {
 
     try {
       // Send user message
-      const response = await fetch('/api/chat', {
+      const response = await authFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -196,7 +197,7 @@ export function ChatWidget() {
       );
 
       // Call AI endpoint to get bot response
-      const aiResponse = await fetch('/api/chat/ai', {
+      const aiResponse = await authFetch('/api/chat/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -227,7 +228,7 @@ export function ChatWidget() {
 
     setIsRequestingAgent(true);
     try {
-      const response = await fetch('/api/chat', {
+      const response = await authFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -243,7 +244,7 @@ export function ChatWidget() {
       );
 
       // Refetch messages to get the system message
-      const messagesResponse = await fetch(`/api/chat?conversationId=${conversation.id}`);
+      const messagesResponse = await authFetch(`/api/chat?conversationId=${conversation.id}`);
       if (messagesResponse.ok) {
         const messagesData = await messagesResponse.json();
         setMessages(messagesData.messages || []);

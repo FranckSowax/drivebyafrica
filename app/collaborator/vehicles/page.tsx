@@ -10,6 +10,7 @@ import { VehicleDetailsModal } from '@/components/collaborator/VehicleDetailsMod
 import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import {
   Plus,
   Loader2,
@@ -81,7 +82,7 @@ export default function CollaboratorVehiclesPage() {
         params.append('status', 'approved');
       }
 
-      const response = await fetch(`/api/collaborator/vehicles?${params}`);
+      const response = await authFetch(`/api/collaborator/vehicles?${params}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -112,7 +113,7 @@ export default function CollaboratorVehiclesPage() {
     }
 
     try {
-      const response = await fetch(`/api/collaborator/vehicles/${id}`, {
+      const response = await authFetch(`/api/collaborator/vehicles/${id}`, {
         method: 'DELETE',
       });
 

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -100,7 +101,7 @@ export default function AdminMessagesPage() {
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (searchQuery) params.append('search', searchQuery);
 
-      const response = await fetch(`/api/admin/messages?${params.toString()}`);
+      const response = await authFetch(`/api/admin/messages?${params.toString()}`);
       if (!response.ok) throw new Error('Erreur lors du chargement');
 
       const data = await response.json();
@@ -117,7 +118,7 @@ export default function AdminMessagesPage() {
   const fetchMessages = useCallback(async (conversationId: string) => {
     setIsLoadingMessages(true);
     try {
-      const response = await fetch(`/api/admin/messages?conversationId=${conversationId}`);
+      const response = await authFetch(`/api/admin/messages?conversationId=${conversationId}`);
       if (!response.ok) throw new Error('Erreur lors du chargement des messages');
 
       const data = await response.json();
@@ -181,7 +182,7 @@ export default function AdminMessagesPage() {
     setMessages(prev => [...prev, tempMessage]);
 
     try {
-      const response = await fetch('/api/admin/messages', {
+      const response = await authFetch('/api/admin/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -226,7 +227,7 @@ export default function AdminMessagesPage() {
     if (!selectedConversation) return;
 
     try {
-      const response = await fetch('/api/admin/messages', {
+      const response = await authFetch('/api/admin/messages', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

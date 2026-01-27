@@ -18,6 +18,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -126,7 +127,7 @@ export default function AdminCurrenciesPage() {
   useEffect(() => {
     const fetchCurrencies = async () => {
       try {
-        const response = await fetch('/api/admin/currencies?withHistory=true');
+        const response = await authFetch('/api/admin/currencies?withHistory=true');
         const data = await response.json();
 
         if (data.currencies) {
@@ -156,7 +157,7 @@ export default function AdminCurrenciesPage() {
   const seedCurrencies = async () => {
     setIsSeeding(true);
     try {
-      const response = await fetch('/api/admin/currencies', {
+      const response = await authFetch('/api/admin/currencies', {
         method: 'PATCH',
       });
       const data = await response.json();
@@ -168,7 +169,7 @@ export default function AdminCurrenciesPage() {
           toast.warning(`${data.failed.length} devise(s) n'ont pas pu être ajoutées`);
         }
         // Refresh the list
-        const refreshResponse = await fetch('/api/admin/currencies?withHistory=true');
+        const refreshResponse = await authFetch('/api/admin/currencies?withHistory=true');
         const refreshData = await refreshResponse.json();
         if (refreshData.currencies) {
           setCurrencies(refreshData.currencies);
@@ -215,7 +216,7 @@ export default function AdminCurrenciesPage() {
 
     setIsSaving(true);
     try {
-      const response = await fetch('/api/admin/currencies', {
+      const response = await authFetch('/api/admin/currencies', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -265,7 +266,7 @@ export default function AdminCurrenciesPage() {
 
   const toggleActive = async (currency: CurrencyRate) => {
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/admin/currencies?code=${currency.code}`,
         {
           method: 'DELETE',

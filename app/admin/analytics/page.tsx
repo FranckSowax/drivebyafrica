@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import {
   Area,
   AreaChart,
@@ -241,7 +242,7 @@ export default function AdminAnalyticsPage() {
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      const response = await fetch('/api/admin/analytics');
+      const response = await authFetch('/api/admin/analytics');
       if (!response.ok) throw new Error('Erreur lors du chargement');
       const result = await response.json();
       setData(result);
@@ -256,7 +257,7 @@ export default function AdminAnalyticsPage() {
   const fetchProfitData = useCallback(async () => {
     try {
       setIsProfitLoading(true);
-      const response = await fetch('/api/admin/analytics/profits');
+      const response = await authFetch('/api/admin/analytics/profits');
       if (!response.ok) throw new Error('Erreur lors du chargement des profits');
       const result = await response.json();
       setProfitData(result);

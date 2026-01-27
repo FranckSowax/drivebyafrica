@@ -5,6 +5,7 @@ import { Ship, Save, Plus, Trash2, Loader2, AlertCircle, Search, Clock } from 'l
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -120,7 +121,7 @@ export default function AdminShippingPage() {
   useEffect(() => {
     const fetchRoutes = async () => {
       try {
-        const response = await fetch('/api/admin/shipping');
+        const response = await authFetch('/api/admin/shipping');
         const data = await response.json();
 
         if (data.routes && data.routes.length > 0) {
@@ -152,7 +153,7 @@ export default function AdminShippingPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('/api/admin/shipping', {
+      const response = await authFetch('/api/admin/shipping', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ routes }),
