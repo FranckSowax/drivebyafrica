@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Turnstile } from '@/components/ui/Turnstile';
 import { createClient } from '@/lib/supabase/client';
 import { Spinner } from '@/components/ui/Spinner';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const emailSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -29,6 +30,7 @@ function LoginForm() {
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
 
   const emailForm = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
@@ -39,6 +41,30 @@ function LoginForm() {
   // Check if Turnstile is configured
   const turnstileConfigured = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
+  // Helper to set auth marker cookie
+  const setAuthMarkerCookie = useCallback((authenticated: boolean) => {
+    if (authenticated) {
+      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+    } else {
+      document.cookie = 'dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
+  }, []);
+
+  // Verify session is properly persisted with retries
+  const verifySessionPersisted = useCallback(async (maxRetries = 3): Promise<boolean> => {
+    for (let i = 0; i < maxRetries; i++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        console.log('Login: Session verified on attempt', i + 1);
+        return true;
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+    }
+    return false;
+  }, [supabase]);
+
   const handleEmailLogin = async (data: EmailFormData) => {
     // Only require Turnstile verification if it's configured
     if (turnstileConfigured && !turnstileToken) {
@@ -48,27 +74,68 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
+      console.log('Login: Starting signInWithPassword...');
       const { error, data: authData } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
+        console.error('Login: signInWithPassword error:', error.message);
         toast.error('Erreur de connexion', error.message);
         return;
       }
 
-      // Set auth marker cookie immediately for middleware (don't wait for listener)
-      if (authData?.session) {
-        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-        document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+      if (!authData?.session || !authData?.user) {
+        console.error('Login: No session or user in response');
+        toast.error('Erreur', 'Session non établie');
+        return;
       }
+
+      console.log('Login: signInWithPassword successful, user:', authData.user.id);
+
+      // Set auth marker cookie immediately
+      setAuthMarkerCookie(true);
+
+      // Verify the session is persisted in localStorage
+      const sessionPersisted = await verifySessionPersisted();
+      if (!sessionPersisted) {
+        console.error('Login: Session not persisted after retries');
+        toast.error('Erreur', 'Session non persistée, veuillez réessayer');
+        setAuthMarkerCookie(false);
+        return;
+      }
+
+      // Fetch profile
+      let profile = null;
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+        profile = profileData;
+      } catch (profileError) {
+        console.warn('Login: Could not fetch profile:', profileError);
+        // Non-blocking - continue with login
+      }
+
+      // Update auth store with full state (avoids race condition)
+      // This also sets isInitialized=true to prevent re-initialization on navigation
+      setAuthenticated(authData.user, profile);
 
       toast.success('Connexion réussie!');
 
-      // Use window.location for full page navigation to ensure cookies are sent
-      window.location.href = redirect;
-    } catch {
+      // Small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Navigate using router.push for smoother transition
+      // The auth state is already updated, so the new page will have the user
+      console.log('Login: Navigating to', redirect);
+      router.push(redirect);
+      router.refresh(); // Refresh server components
+    } catch (err) {
+      console.error('Login: Unexpected error:', err);
       toast.error('Erreur', 'Une erreur est survenue');
     } finally {
       setIsLoading(false);

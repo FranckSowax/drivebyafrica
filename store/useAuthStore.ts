@@ -28,6 +28,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
+  setAuthenticated: (user: User, profile?: Profile | null) => void; // For login flow
   initialize: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -45,6 +46,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setLoading: (isLoading) => set({ isLoading }),
+
+  // Use this method after successful login to properly set auth state
+  // This sets user, profile, isInitialized, isLoading, and the marker cookie
+  setAuthenticated: (user, profile = null) => {
+    console.log('Auth store: setAuthenticated called for user:', user.id);
+    setAuthMarkerCookie(true);
+    set({
+      user,
+      profile,
+      isLoading: false,
+      isInitialized: true, // Mark as initialized to prevent re-initialization
+    });
+  },
 
   initialize: async () => {
     // Prevent multiple initializations
