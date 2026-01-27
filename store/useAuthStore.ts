@@ -3,6 +3,23 @@ import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 
+// Cookie name for auth marker (used by middleware for route protection)
+const AUTH_MARKER_COOKIE = 'dba-auth-marker';
+
+// Helper to set/remove auth marker cookie
+function setAuthMarkerCookie(isAuthenticated: boolean) {
+  if (typeof document === 'undefined') return;
+
+  if (isAuthenticated) {
+    // Set marker cookie (expires in 7 days, same as Supabase token)
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+    document.cookie = `${AUTH_MARKER_COOKIE}=1; path=/; expires=${expires}; SameSite=Lax`;
+  } else {
+    // Remove marker cookie
+    document.cookie = `${AUTH_MARKER_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  }
+}
+
 interface AuthState {
   user: User | null;
   profile: Profile | null;
@@ -47,6 +64,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
       if (user && !userError) {
         set({ user });
+        setAuthMarkerCookie(true); // Set marker for middleware
 
         // Fetch profile
         const { data: profile } = await supabase
@@ -64,6 +82,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           await supabase.auth.signOut();
         }
         set({ user: null, profile: null });
+        setAuthMarkerCookie(false); // Remove marker
       }
 
       // Listen for auth changes (only set up once)
@@ -75,12 +94,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           // Handle sign out
           if (event === 'SIGNED_OUT') {
             set({ user: null, profile: null });
+            setAuthMarkerCookie(false); // Remove marker
             return;
           }
 
           // Handle sign in or token refresh
           if (session?.user) {
             set({ user: session.user });
+            setAuthMarkerCookie(true); // Set marker for middleware
             const { data: profile } = await supabase
               .from('profiles')
               .select('*')
@@ -89,6 +110,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
             set({ profile });
           } else {
             set({ user: null, profile: null });
+            setAuthMarkerCookie(false); // Remove marker
           }
         });
       }
@@ -115,6 +137,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const supabase = createClient();
     await supabase.auth.signOut();
     set({ user: null, profile: null });
+    setAuthMarkerCookie(false); // Remove marker
   },
 
   refreshProfile: async () => {
