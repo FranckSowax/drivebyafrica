@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import { cn } from '@/lib/utils';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
@@ -98,11 +97,9 @@ export default function CollaboratorDashboardPage() {
   const router = useRouter();
   const dateLocale = locale === 'zh' ? zhCN : enUS;
 
-  // Check if user is authorized to access this page
-  const { isChecking, isAuthorized } = useCollaboratorAuth();
+  // Auth hook - handles authentication, provides user info and signOut
+  const { isChecking, isAuthorized, userName, userEmail, signOut } = useCollaboratorAuth();
 
-  const [userName, setUserName] = useState<string>('');
-  const [userEmail, setUserEmail] = useState<string>('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     newOrdersToday: 0,
@@ -127,30 +124,6 @@ export default function CollaboratorDashboardPage() {
     markAllAsRead,
     dismiss,
   } = useCollaboratorNotifications();
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  // Fetch user info
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        setUserName(profile?.full_name || user.email || '');
-        setUserEmail(user.email || '');
-      }
-    };
-    if (isAuthorized) {
-      fetchUser();
-    }
-  }, [supabase, isAuthorized]);
 
   // Fetch dashboard data
   useEffect(() => {
@@ -223,19 +196,6 @@ export default function CollaboratorDashboardPage() {
     fetchDashboardData();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push('/collaborator/login');
-      router.refresh();
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Force redirect even if signOut fails
-      router.push('/collaborator/login');
-      router.refresh();
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     const config = statusConfig[status];
     if (!config) return status;
@@ -265,7 +225,7 @@ export default function CollaboratorDashboardPage() {
 
   return (
     <div className="min-h-screen bg-cod-gray">
-      <CollaboratorSidebar onLogout={handleLogout} />
+      <CollaboratorSidebar onLogout={signOut} />
 
       <div className="lg:pl-64">
         <CollaboratorTopBar
@@ -277,7 +237,7 @@ export default function CollaboratorDashboardPage() {
           onMarkAsRead={markAsRead}
           onMarkAllRead={markAllAsRead}
           onDismiss={dismiss}
-          onLogout={handleLogout}
+          onLogout={signOut}
         />
 
         <main className="p-4 lg:p-6">

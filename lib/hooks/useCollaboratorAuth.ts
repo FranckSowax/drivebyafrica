@@ -1,60 +1,188 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
+
+interface CollaboratorAuthState {
+  isChecking: boolean;
+  isAuthorized: boolean;
+  user: User | null;
+  userName: string;
+  userEmail: string;
+  signOut: () => Promise<void>;
+}
+
+// Valid roles for collaborator portal access
+const ALLOWED_ROLES = ['collaborator', 'admin', 'super_admin'];
 
 /**
  * Hook to protect collaborator pages
- * Redirects to /collaborator/login if user is not authenticated or not a collaborator
+ * - Uses singleton Supabase client for consistent auth state
+ * - Listens for auth changes (logout, session expiration)
+ * - Returns user info and signOut function
+ * - Redirects to /collaborator/login if user is not authenticated or not authorized
  */
-export function useCollaboratorAuth() {
+export function useCollaboratorAuth(): CollaboratorAuthState {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Track if we've set up the auth listener to prevent duplicates
+  const authListenerSetup = useRef(false);
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+
+  const supabase = createClient();
+
+  const redirectToLogin = useCallback(() => {
+    router.push('/collaborator/login');
+    router.refresh();
+  }, [router]);
+
+  const signOut = useCallback(async () => {
+    try {
+      // Clear state first
+      if (isMounted.current) {
+        setIsAuthorized(false);
+        setUser(null);
+        setUserName('');
+        setUserEmail('');
+      }
+
+      // Then sign out from Supabase
+      await supabase.auth.signOut();
+
+      // Force redirect
+      redirectToLogin();
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Still redirect even if signOut fails
+      redirectToLogin();
+    }
+  }, [supabase, redirectToLogin]);
 
   useEffect(() => {
+    isMounted.current = true;
+
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // Use getUser() to validate session server-side (not getSession() which can be stale)
+        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
 
-        if (!user) {
-          // Not authenticated - redirect to login
-          router.push('/collaborator/login');
+        if (!currentUser || userError) {
+          // Not authenticated or session invalid
+          if (userError) {
+            console.log('Auth check: session invalid, clearing');
+            await supabase.auth.signOut();
+          }
+          if (isMounted.current) {
+            setIsAuthorized(false);
+            setIsChecking(false);
+          }
+          redirectToLogin();
           return;
         }
 
-        // Check if user has collaborator role
-        const { data: profile } = await supabase
+        // Check if user has allowed role
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role')
-          .eq('id', user.id)
+          .select('role, full_name')
+          .eq('id', currentUser.id)
           .single();
 
-        if (!profile || profile.role !== 'collaborator') {
-          // Not a collaborator - sign out and redirect to login
+        if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
+          // Not authorized - sign out and redirect
+          console.log('Auth check: user not authorized for collaborator portal');
           await supabase.auth.signOut();
-          router.push('/collaborator/login');
+          if (isMounted.current) {
+            setIsAuthorized(false);
+            setIsChecking(false);
+          }
+          redirectToLogin();
           return;
         }
 
         // User is authorized
-        setIsAuthorized(true);
+        if (isMounted.current) {
+          setUser(currentUser);
+          setUserName(profile.full_name || currentUser.email || '');
+          setUserEmail(currentUser.email || '');
+          setIsAuthorized(true);
+          setIsChecking(false);
+        }
       } catch (error) {
         console.error('Auth check error:', error);
-        router.push('/collaborator/login');
-      } finally {
-        setIsChecking(false);
+        if (isMounted.current) {
+          setIsAuthorized(false);
+          setIsChecking(false);
+        }
+        redirectToLogin();
       }
     };
 
     checkAuth();
-  }, [router, supabase]);
 
-  return { isChecking, isAuthorized };
+    // Set up auth state listener (only once)
+    if (!authListenerSetup.current) {
+      authListenerSetup.current = true;
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Collaborator auth state changed:', event);
+
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          // User signed out or session expired
+          if (isMounted.current) {
+            setUser(null);
+            setUserName('');
+            setUserEmail('');
+            setIsAuthorized(false);
+          }
+          redirectToLogin();
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          // Re-check authorization on sign in or token refresh
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, full_name')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!profile || !ALLOWED_ROLES.includes(profile.role)) {
+            await supabase.auth.signOut();
+            if (isMounted.current) {
+              setIsAuthorized(false);
+            }
+            redirectToLogin();
+            return;
+          }
+
+          if (isMounted.current) {
+            setUser(session.user);
+            setUserName(profile.full_name || session.user.email || '');
+            setUserEmail(session.user.email || '');
+            setIsAuthorized(true);
+          }
+        }
+      });
+
+      // Cleanup subscription on unmount
+      return () => {
+        subscription.unsubscribe();
+        authListenerSetup.current = false;
+      };
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [supabase, redirectToLogin]);
+
+  return { isChecking, isAuthorized, user, userName, userEmail, signOut };
 }

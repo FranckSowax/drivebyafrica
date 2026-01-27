@@ -7,6 +7,7 @@ import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar
 import { AddVehicleModal } from '@/components/collaborator/AddVehicleModal';
 import { CollaboratorVehicleTable } from '@/components/collaborator/CollaboratorVehicleTable';
 import { VehicleDetailsModal } from '@/components/collaborator/VehicleDetailsModal';
+import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -42,6 +43,10 @@ export interface CollaboratorVehicle {
 
 export default function CollaboratorVehiclesPage() {
   const { t } = useCollaboratorLocale();
+
+  // Auth hook - handles authentication, provides user info and signOut
+  const { isChecking, isAuthorized, userName, userEmail, signOut } = useCollaboratorAuth();
+
   const [vehicles, setVehicles] = useState<CollaboratorVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -140,15 +145,29 @@ export default function CollaboratorVehiclesPage() {
     rejected: vehicles.filter(v => v.rejection_reason).length,
   };
 
+  // Show loading spinner while checking auth
+  if (isChecking || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-cod-gray flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-alto-orange animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cod-gray">
       <CollaboratorSidebar
         collapsed={sidebarCollapsed}
         onCollapse={setSidebarCollapsed}
+        onLogout={signOut}
       />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-        <CollaboratorTopBar />
+        <CollaboratorTopBar
+          userName={userName}
+          userEmail={userEmail}
+          onLogout={signOut}
+        />
 
         <div className="p-6">
           {/* Header */}

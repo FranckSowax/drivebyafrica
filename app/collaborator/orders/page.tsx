@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
 import { cn } from '@/lib/utils';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
 import { useCollaboratorNotifications } from '@/lib/hooks/useCollaboratorNotifications';
+import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -247,7 +247,9 @@ function CollaboratorOrdersContent() {
   const selectedOrderId = searchParams.get('order');
   const dateLocale = locale === 'zh' ? zhCN : enUS;
 
-  const [userName, setUserName] = useState('');
+  // Auth hook - handles authentication, provides user info and signOut
+  const { isChecking, isAuthorized, userName, userEmail, signOut } = useCollaboratorAuth();
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -272,27 +274,6 @@ function CollaboratorOrdersContent() {
     markAllAsRead,
     dismiss,
   } = useCollaboratorNotifications();
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  // Fetch user info
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        setUserName(profile?.full_name || user.email || '');
-      }
-    };
-    fetchUser();
-  }, [supabase]);
 
   // Fetch orders
   const fetchOrders = useCallback(async () => {
@@ -359,12 +340,6 @@ function CollaboratorOrdersContent() {
       }
     }
   }, [selectedOrderId, orders]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/collaborator/login');
-    router.refresh();
-  };
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
@@ -465,20 +440,30 @@ function CollaboratorOrdersContent() {
     return locale === 'zh' ? config.labelZh : config.label;
   };
 
+  // Show loading spinner while checking auth
+  if (isChecking || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-cod-gray flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-mandarin animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cod-gray">
-      <CollaboratorSidebar onLogout={handleLogout} />
+      <CollaboratorSidebar onLogout={signOut} />
 
       <div className="lg:pl-64">
         <CollaboratorTopBar
           title={t('orders.title')}
           userName={userName}
+          userEmail={userEmail}
           notifications={notifications}
           unreadCount={unreadCount}
           onMarkAsRead={markAsRead}
           onMarkAllRead={markAllAsRead}
           onDismiss={dismiss}
-          onLogout={handleLogout}
+          onLogout={signOut}
         />
 
         <main className="p-4 lg:p-6">

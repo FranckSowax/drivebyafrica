@@ -7,6 +7,7 @@ import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar
 import { AddBatchModal } from '@/components/collaborator/AddBatchModal';
 import { CollaboratorBatchTable } from '@/components/collaborator/CollaboratorBatchTable';
 import { BatchDetailsModal } from '@/components/collaborator/BatchDetailsModal';
+import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
@@ -16,11 +17,16 @@ import {
   Clock,
   XCircle,
   ShoppingCart,
+  Loader2,
 } from 'lucide-react';
 import type { VehicleBatch } from '@/types/vehicle-batch';
 
 export default function CollaboratorBatchesPage() {
   const { t } = useCollaboratorLocale();
+
+  // Auth hook - handles authentication, provides user info and signOut
+  const { isChecking, isAuthorized, userName, userEmail, signOut } = useCollaboratorAuth();
+
   const [batches, setBatches] = useState<VehicleBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -119,15 +125,29 @@ export default function CollaboratorBatchesPage() {
     availableVehicles: batches.reduce((sum, b) => sum + b.available_quantity, 0),
   };
 
+  // Show loading spinner while checking auth
+  if (isChecking || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-cod-gray flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-alto-orange animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cod-gray">
       <CollaboratorSidebar
         collapsed={sidebarCollapsed}
         onCollapse={setSidebarCollapsed}
+        onLogout={signOut}
       />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-        <CollaboratorTopBar />
+        <CollaboratorTopBar
+          userName={userName}
+          userEmail={userEmail}
+          onLogout={signOut}
+        />
 
         <div className="p-6">
           {/* Header */}
