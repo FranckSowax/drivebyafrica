@@ -68,7 +68,7 @@ function buildQueryString(
     'is_visible',
     'created_at',
     'updated_at',
-    // Note: effective_price_usd removed - computed on frontend instead
+    'effective_price_usd', // Computed column: start_price_usd + export tax (980$ for China)
   ].join(','));
 
   // CRITICAL: Always filter visible vehicles only (reduces 190k+ to much smaller set)
@@ -145,12 +145,12 @@ function buildQueryString(
       orderBy = 'id.desc';
       break;
     case 'price_asc':
-      // Use start_price_usd for sorting (export tax computed on frontend for display)
-      orderBy = 'start_price_usd.asc.nullslast,id.desc';
+      // Use effective_price_usd (includes 980$ export tax for China)
+      orderBy = 'effective_price_usd.asc.nullslast,id.desc';
       break;
     case 'price_desc':
-      // Use start_price_usd for sorting (export tax computed on frontend for display)
-      orderBy = 'start_price_usd.desc.nullsfirst,id.desc';
+      // Use effective_price_usd (includes 980$ export tax for China)
+      orderBy = 'effective_price_usd.desc.nullsfirst,id.desc';
       break;
     case 'year_desc':
       orderBy = 'year.desc.nullslast,id.desc';
