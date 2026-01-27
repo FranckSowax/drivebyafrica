@@ -37,12 +37,25 @@ export async function POST(request: Request) {
 
     console.log('Quote API: Received request body', body);
 
+    // Support both vehicle quotes and batch quotes
+    // For batch quotes: use batch_id as vehicle_id, and accept _usd fields
+    const vehicleId = body.vehicle_id || body.batch_id;
+    if (!vehicleId) {
+      return NextResponse.json({ error: 'vehicle_id ou batch_id requis' }, { status: 400 });
+    }
+
+    // Accept either _xaf or _usd fields (prefer _xaf for backwards compatibility)
+    const shippingCost = body.shipping_cost_xaf ?? body.shipping_cost_usd ?? 0;
+    const insuranceCost = body.insurance_cost_xaf ?? body.insurance_cost_usd ?? 0;
+    const inspectionFee = body.inspection_fee_xaf ?? body.inspection_fee_usd ?? 0;
+    const totalCost = body.total_cost_xaf ?? body.total_cost_usd ?? 0;
+
     // Insert quote into database
     console.log('Quote API: Inserting into Supabase');
     const { data, error } = await supabase.from('quotes').insert({
       quote_number: body.quote_number,
       user_id: user.id,
-      vehicle_id: body.vehicle_id,
+      vehicle_id: vehicleId,
       vehicle_make: body.vehicle_make,
       vehicle_model: body.vehicle_model,
       vehicle_year: body.vehicle_year,
@@ -52,10 +65,10 @@ export async function POST(request: Request) {
       destination_name: body.destination_name,
       destination_country: body.destination_country,
       shipping_type: body.shipping_type || 'container',
-      shipping_cost_xaf: Math.round(body.shipping_cost_xaf),
-      insurance_cost_xaf: Math.round(body.insurance_cost_xaf),
-      inspection_fee_xaf: Math.round(body.inspection_fee_xaf),
-      total_cost_xaf: Math.round(body.total_cost_xaf),
+      shipping_cost_xaf: Math.round(shippingCost),
+      insurance_cost_xaf: Math.round(insuranceCost),
+      inspection_fee_xaf: Math.round(inspectionFee),
+      total_cost_xaf: Math.round(totalCost),
       status: 'pending',
       valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     }).select().single();
