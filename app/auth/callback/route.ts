@@ -36,7 +36,14 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${safePath}`);
+      // Set auth marker cookie for middleware (expires in 7 days)
+      const response = NextResponse.redirect(`${origin}${safePath}`);
+      response.cookies.set('dba-auth-marker', '1', {
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        sameSite: 'lax',
+      });
+      return response;
     }
   }
 

@@ -48,7 +48,7 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data: authData } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
@@ -58,9 +58,16 @@ function LoginForm() {
         return;
       }
 
+      // Set auth marker cookie immediately for middleware (don't wait for listener)
+      if (authData?.session) {
+        const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+      }
+
       toast.success('Connexion réussie!');
-      router.push(redirect);
-      router.refresh();
+
+      // Use window.location for full page navigation to ensure cookies are sent
+      window.location.href = redirect;
     } catch {
       toast.error('Erreur', 'Une erreur est survenue');
     } finally {

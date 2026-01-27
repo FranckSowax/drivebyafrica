@@ -39,10 +39,12 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // 2. Check if user is admin via API
+      // 2. Check if user is admin via API (pass token for localStorage-based auth)
       const response = await fetch('/api/admin/check-role', {
         method: 'GET',
-        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${data.session?.access_token}`,
+        },
       });
 
       const roleData = await response.json();
@@ -55,7 +57,11 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // 3. Success - redirect to admin dashboard
+      // 3. Set auth marker cookie for middleware
+      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+
+      // 4. Success - redirect to admin dashboard
       // Use window.location for a hard navigation to ensure cookies are sent
       window.location.href = '/admin';
     } catch (err) {

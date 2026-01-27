@@ -63,9 +63,12 @@ function CollaboratorLoginContent() {
         return;
       }
 
-      // Successful login - redirect
-      router.push(redirectTo);
-      router.refresh();
+      // Set auth marker cookie immediately for middleware
+      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+
+      // Successful login - use window.location for full page navigation
+      window.location.href = redirectTo;
     } catch {
       setError(t('errors.serverError'));
     } finally {
