@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 export type AdminRole = 'admin' | 'super_admin';
 
@@ -39,10 +40,8 @@ async function checkAdminRoleViaAPI(): Promise<{ isAdmin: boolean; role: AdminRo
   try {
     console.log('[useAdminAuth] Checking role via API...');
 
-    const response = await fetch('/api/admin/check-role', {
-      method: 'GET',
-      credentials: 'include',
-    });
+    // Use authFetch to include Authorization header with localStorage token
+    const response = await authFetch('/api/admin/check-role');
 
     if (!response.ok) {
       console.error('[useAdminAuth] API check failed:', response.status);

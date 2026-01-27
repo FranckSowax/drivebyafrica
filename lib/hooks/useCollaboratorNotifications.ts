@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface Notification {
   id: string;
@@ -48,9 +49,7 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
     try {
       setIsLoading(true);
 
-      const response = await fetch('/api/collaborator/notifications', {
-        credentials: 'include',
-      });
+      const response = await authFetch('/api/collaborator/notifications');
 
       // Silently handle auth errors (user not logged in) or server errors (table doesn't exist)
       if (!response.ok) {
@@ -155,11 +154,9 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   // Mark as read
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const response = await fetch('/api/collaborator/notifications', {
+      const response = await authFetch('/api/collaborator/notifications', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId: id }),
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -178,11 +175,9 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch('/api/collaborator/notifications', {
+      const response = await authFetch('/api/collaborator/notifications', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markAllRead: true }),
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -201,11 +196,9 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   // Dismiss notification
   const dismiss = useCallback(async (id: string) => {
     try {
-      const response = await fetch('/api/collaborator/notifications', {
+      const response = await authFetch('/api/collaborator/notifications', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId: id }),
-        credentials: 'include',
       });
 
       if (!response.ok) {

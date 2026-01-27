@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ interface AdminAuthGuardProps {
 
 /**
  * Garde d'authentification simplifiée pour les pages admin
- * Vérifie le rôle via l'API une seule fois
+ * Vérifie le rôle via l'API avec le token Authorization (localStorage-based auth)
  */
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const pathname = usePathname();
@@ -27,10 +28,8 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
 
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/admin/check-role', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        // Use authFetch to include Authorization header with localStorage token
+        const response = await authFetch('/api/admin/check-role');
 
         if (!response.ok) {
           setError('Erreur de vérification');

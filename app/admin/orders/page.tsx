@@ -37,6 +37,7 @@ import { StatusDocumentsSection, MissingDocsBadge } from '@/components/shared/St
 import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge';
 import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { UploadedStatusDocument } from '@/lib/order-documents-config';
@@ -285,9 +286,7 @@ export default function AdminOrdersPage() {
         params.set('search', searchQuery);
       }
 
-      const response = await fetch(`/api/admin/orders?${params}`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`/api/admin/orders?${params}`);
       const data = await response.json();
 
       if (data.orders) {
@@ -386,10 +385,8 @@ export default function AdminOrdersPage() {
             eta: newEta || undefined,
           };
 
-      const response = await fetch('/api/admin/orders', {
+      const response = await authFetch('/api/admin/orders', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(requestBody),
       });
 
