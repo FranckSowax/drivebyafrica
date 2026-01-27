@@ -208,25 +208,41 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Fetch vehicle images separately to avoid join issues
+    // Fetch vehicle/batch images separately to avoid join issues
     let quotesWithImages = quotes || [];
     if (quotes && quotes.length > 0) {
       const vehicleIds = [...new Set(quotes.map(q => q.vehicle_id).filter(Boolean))];
       if (vehicleIds.length > 0) {
+        // Try to fetch from vehicles table first
         const { data: vehicles } = await supabase
           .from('vehicles')
           .select('id, images')
           .in('id', vehicleIds);
 
-        if (vehicles) {
-          const vehicleMap = new Map(vehicles.map(v => [v.id, v.images]));
-          quotesWithImages = quotes.map(q => ({
-            ...q,
-            vehicles: q.vehicle_id && vehicleMap.has(q.vehicle_id)
-              ? { images: vehicleMap.get(q.vehicle_id) }
-              : null
-          }));
+        const vehicleMap = new Map(vehicles?.map(v => [v.id, v.images]) || []);
+
+        // For IDs not found in vehicles, try vehicle_batches table
+        const missingIds = vehicleIds.filter(id => !vehicleMap.has(id));
+        if (missingIds.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: batches } = await (supabase as any)
+            .from('vehicle_batches')
+            .select('id, images')
+            .in('id', missingIds);
+
+          if (batches) {
+            for (const batch of batches) {
+              vehicleMap.set(batch.id, batch.images);
+            }
+          }
         }
+
+        quotesWithImages = quotes.map(q => ({
+          ...q,
+          vehicles: q.vehicle_id && vehicleMap.has(q.vehicle_id)
+            ? { images: vehicleMap.get(q.vehicle_id) }
+            : null
+        }));
       }
     }
 
