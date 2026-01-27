@@ -260,12 +260,20 @@ export default function AdminUsersPage() {
   const createCollaborator = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
+
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     try {
       const response = await authFetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createForm),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -282,8 +290,14 @@ export default function AdminUsersPage() {
 
       alert(`Collaborateur créé avec succès!\nEmail: ${data.user.email}`);
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Error creating collaborator:', error);
-      alert(error instanceof Error ? error.message : 'Erreur lors de la création du collaborateur');
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        alert('La requête a expiré. Veuillez réessayer.');
+      } else {
+        alert(error instanceof Error ? error.message : 'Erreur lors de la création du collaborateur');
+      }
     } finally {
       setIsCreating(false);
     }

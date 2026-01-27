@@ -4,9 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 
 // Create admin client with service role key for full access
 function createAdminClient() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
@@ -237,6 +240,15 @@ const SOURCE_COUNTRY_LABELS: Record<string, string> = {
 // POST: Create a new collaborator account
 export async function POST(request: Request) {
   try {
+    // Check service role key is configured
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY not configured');
+      return NextResponse.json(
+        { error: 'Configuration serveur manquante (service role)' },
+        { status: 500 }
+      );
+    }
+
     // Vérification admin obligatoire
     const adminCheck = await requireAdmin();
     if (!adminCheck.isAdmin) {
@@ -280,7 +292,7 @@ export async function POST(request: Request) {
     // Use service role client for admin operations
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
