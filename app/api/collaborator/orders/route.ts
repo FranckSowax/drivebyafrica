@@ -192,6 +192,26 @@ export async function GET(request: Request) {
       }
     }
 
+    // Fetch modifier profiles (collaborators/admins who modified orders)
+    const modifierIds = [...new Set(orders.map(o => o.last_modified_by).filter((id): id is string => id !== null))];
+    let modifierProfiles: Record<string, { full_name: string | null; badge_color: string | null }> = {};
+    if (modifierIds.length > 0) {
+      const { data: modifiersData } = await supabase
+        .from('profiles')
+        .select('id, full_name, badge_color')
+        .in('id', modifierIds);
+
+      if (modifiersData) {
+        modifierProfiles = modifiersData.reduce((acc, p) => {
+          acc[p.id] = {
+            full_name: p.full_name,
+            badge_color: p.badge_color,
+          };
+          return acc;
+        }, {} as typeof modifierProfiles);
+      }
+    }
+
     // Transform orders from orders table
     const transformedOrders = orders.map(o => {
       const vehicle = vehicles[o.vehicle_id] || {};
@@ -229,6 +249,11 @@ export async function GET(request: Request) {
         updated_at: o.updated_at,
         source: 'orders_table',
         uploaded_documents: o.uploaded_documents || [],
+        // Modifier tracking for collaborator badges
+        last_modified_by: o.last_modified_by || null,
+        last_modified_by_name: o.last_modified_by ? modifierProfiles[o.last_modified_by]?.full_name || null : null,
+        last_modified_by_color: o.last_modified_by ? modifierProfiles[o.last_modified_by]?.badge_color || null : null,
+        last_modified_at: o.last_modified_at || null,
       };
     });
 
@@ -282,6 +307,11 @@ export async function GET(request: Request) {
       updated_at: q.updated_at,
       source: 'quotes_table',
       uploaded_documents: [],
+      // Legacy quotes don't have modifier tracking
+      last_modified_by: null,
+      last_modified_by_name: null,
+      last_modified_by_color: null,
+      last_modified_at: null,
     }));
 
     // Combine all orders
@@ -454,16 +484,20 @@ export async function PUT(request: Request) {
         vehicle = vehicleData;
       }
 
-      // Update order status in orders table
+      // Update order status in orders table (including last_modified_by tracking)
       const updateData: {
         status: string;
         estimated_arrival: string | null;
         updated_at: string;
         actual_purchase_price_usd?: number;
+        last_modified_by: string;
+        last_modified_at: string;
       } = {
         status: orderStatus,
         estimated_arrival: eta || null,
         updated_at: now,
+        last_modified_by: authCheck.user.id,
+        last_modified_at: now,
       };
 
       // Add actual purchase price if provided (for 'vehicle_purchased' status)

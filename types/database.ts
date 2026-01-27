@@ -103,6 +103,7 @@ export type Database = {
           role: 'user' | 'admin' | 'super_admin' | 'collaborator';
           assigned_country: string | null;
           theme_preference: 'light' | 'dark' | null;
+          badge_color: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -120,6 +121,7 @@ export type Database = {
           role?: 'user' | 'admin' | 'super_admin' | 'collaborator';
           assigned_country?: string | null;
           theme_preference?: 'light' | 'dark' | null;
+          badge_color?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -137,6 +139,7 @@ export type Database = {
           role?: 'user' | 'admin' | 'super_admin' | 'collaborator';
           assigned_country?: string | null;
           theme_preference?: 'light' | 'dark' | null;
+          badge_color?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -364,6 +367,8 @@ export type Database = {
           documentation_fee_usd: number | null;
           uploaded_documents: Json;
           documents_sent_at: string | null;
+          last_modified_by: string | null;
+          last_modified_at: string | null;
         };
         Insert: {
           id?: string;
@@ -422,6 +427,8 @@ export type Database = {
           documentation_fee_usd?: number | null;
           uploaded_documents?: Json;
           documents_sent_at?: string | null;
+          last_modified_by?: string | null;
+          last_modified_at?: string | null;
         };
         Update: {
           id?: string;
@@ -480,6 +487,8 @@ export type Database = {
           documentation_fee_usd?: number | null;
           uploaded_documents?: Json;
           documents_sent_at?: string | null;
+          last_modified_by?: string | null;
+          last_modified_at?: string | null;
         };
         Relationships: [
           {

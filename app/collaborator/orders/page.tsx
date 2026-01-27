@@ -44,6 +44,8 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { StatusDocumentsSection, MissingDocsBadge } from '@/components/shared/StatusDocumentsSection';
+import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge';
+import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
 import type { UploadedStatusDocument } from '@/lib/order-documents-config';
 
@@ -79,6 +81,11 @@ interface Order {
   updated_at: string;
   source: string;
   uploaded_documents?: UploadedDocument[];
+  // Modifier tracking for collaborator badges
+  last_modified_by?: string | null;
+  last_modified_by_name?: string | null;
+  last_modified_by_color?: string | null;
+  last_modified_at?: string | null;
 }
 
 interface TrackingStep {
@@ -709,6 +716,13 @@ function CollaboratorOrdersContent() {
                                 <span className={`text-xs font-medium ${status.color}`}>
                                   {getStatusLabel(order.order_status)}
                                 </span>
+                                {order.last_modified_by && (
+                                  <CollaboratorBadgeCompact
+                                    collaboratorId={order.last_modified_by}
+                                    collaboratorName={order.last_modified_by_name}
+                                    badgeColor={order.last_modified_by_color}
+                                  />
+                                )}
                               </div>
                               <div className="w-full h-2 bg-nobel/20 rounded-full overflow-hidden">
                                 <div
@@ -992,6 +1006,9 @@ function CollaboratorOrdersContent() {
                   </div>
                 </div>
               </div>
+
+              {/* Activity History - Shows who modified the order */}
+              <OrderActivityHistory orderId={selectedOrder.id} locale={locale} />
 
               {/* Customer Info */}
               <div className="grid grid-cols-2 gap-4">

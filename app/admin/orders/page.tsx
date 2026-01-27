@@ -34,6 +34,8 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusDocumentsSection, MissingDocsBadge } from '@/components/shared/StatusDocumentsSection';
+import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge';
+import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -72,6 +74,11 @@ interface Order {
   created_at: string;
   updated_at: string;
   uploaded_documents?: UploadedStatusDocument[];
+  // Modifier tracking for collaborator badges
+  last_modified_by?: string | null;
+  last_modified_by_name?: string | null;
+  last_modified_by_color?: string | null;
+  last_modified_at?: string | null;
 }
 
 interface TrackingStep {
@@ -639,10 +646,19 @@ export default function AdminOrdersPage() {
                         <div className="w-36 mx-auto">
                           <div className="flex items-center justify-between mb-1">
                             <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
-                            <MissingDocsBadge
-                              status={order.order_status}
-                              uploadedDocuments={order.uploaded_documents || []}
-                            />
+                            <div className="flex items-center gap-1">
+                              {order.last_modified_by && (
+                                <CollaboratorBadgeCompact
+                                  collaboratorId={order.last_modified_by}
+                                  collaboratorName={order.last_modified_by_name}
+                                  badgeColor={order.last_modified_by_color}
+                                />
+                              )}
+                              <MissingDocsBadge
+                                status={order.order_status}
+                                uploadedDocuments={order.uploaded_documents || []}
+                              />
+                            </div>
                           </div>
                           <div className="w-full h-2 bg-[var(--surface)] rounded-full overflow-hidden">
                             <div
@@ -881,6 +897,9 @@ export default function AdminOrdersPage() {
                   locale="fr"
                 />
               </div>
+
+              {/* Activity History - Shows who modified the order */}
+              <OrderActivityHistory orderId={selectedOrder.id} locale="fr" />
 
               {/* Customer Info */}
               <div className="grid grid-cols-2 gap-4">
