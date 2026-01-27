@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -12,14 +12,30 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isLoading, isInitialized } = useAuthStore();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
+  // Use individual selectors for better reactivity
+  const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const initialize = useAuthStore((state) => state.initialize);
+
+  // Ensure auth is initialized
   useEffect(() => {
-    // Wait for auth to initialize before checking
-    if (isInitialized && !user) {
+    if (!isInitialized && !isLoading) {
+      console.log('Dashboard: Triggering auth initialization');
+      initialize();
+    }
+  }, [isInitialized, isLoading, initialize]);
+
+  // Handle redirect when not authenticated
+  useEffect(() => {
+    if (isInitialized && !user && !isRedirecting) {
+      console.log('Dashboard: No user after init, redirecting to login');
+      setIsRedirecting(true);
       router.replace('/login?redirect=/dashboard');
     }
-  }, [isInitialized, user, router]);
+  }, [isInitialized, user, router, isRedirecting]);
 
   // Show loading while auth is initializing
   if (!isInitialized || isLoading) {
@@ -30,7 +46,7 @@ export default function DashboardLayout({
     );
   }
 
-  // Don't render until we have a user
+  // Show loading while redirecting (no user)
   if (!user) {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
