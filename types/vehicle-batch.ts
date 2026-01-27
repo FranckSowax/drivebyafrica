@@ -14,7 +14,7 @@ export interface VehicleBatch {
   description?: string;
 
   // Source
-  source: string;
+  source?: string;
   source_country: 'china' | 'korea' | 'dubai';
 
   // Pricing

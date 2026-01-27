@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { Search, SlidersHorizontal, Package, ShoppingCart, MapPin, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Search, SlidersHorizontal, Package, ShoppingCart, MapPin, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -319,34 +320,38 @@ export default function BatchesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {batches.map((batch) => (
                 <Card key={batch.id} className="overflow-hidden hover:border-alto-orange/50 transition-all duration-200 group">
-                  {/* Image */}
-                  <div className="relative h-56 bg-surface overflow-hidden">
-                    {batch.thumbnail_url || batch.images[0] ? (
-                      <img
-                        src={batch.thumbnail_url || batch.images[0]}
-                        alt={batch.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-16 h-16 text-nobel" />
+                  {/* Image - clickable to detail page */}
+                  <Link href={`/batches/${batch.id}`} className="block">
+                    <div className="relative h-56 bg-surface overflow-hidden cursor-pointer">
+                      {batch.thumbnail_url || batch.images[0] ? (
+                        <img
+                          src={batch.thumbnail_url || batch.images[0]}
+                          alt={batch.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-16 h-16 text-nobel" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 right-3 px-3 py-1.5 bg-alto-orange text-white text-xs font-bold rounded-full shadow-lg">
+                        {batch.source_country.toUpperCase()}
                       </div>
-                    )}
-                    <div className="absolute top-3 right-3 px-3 py-1.5 bg-alto-orange text-white text-xs font-bold rounded-full shadow-lg">
-                      {batch.source_country.toUpperCase()}
+                      {batch.available_quantity <= 10 && batch.available_quantity > 0 && (
+                        <div className="absolute top-3 left-3 px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">
+                          Stock limité
+                        </div>
+                      )}
                     </div>
-                    {batch.available_quantity <= 10 && batch.available_quantity > 0 && (
-                      <div className="absolute top-3 left-3 px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">
-                        Stock limité
-                      </div>
-                    )}
-                  </div>
+                  </Link>
 
                   {/* Content */}
                   <div className="p-5">
-                    <h3 className="font-bold text-[var(--text-primary)] text-lg mb-2 line-clamp-2 group-hover:text-alto-orange transition-colors">
-                      {batch.title}
-                    </h3>
+                    <Link href={`/batches/${batch.id}`}>
+                      <h3 className="font-bold text-[var(--text-primary)] text-lg mb-2 line-clamp-2 group-hover:text-alto-orange transition-colors cursor-pointer">
+                        {batch.title}
+                      </h3>
+                    </Link>
                     <p className="text-sm text-[var(--text-muted)] mb-4">
                       {batch.year} • {batch.make} {batch.model}
                     </p>
@@ -381,15 +386,26 @@ export default function BatchesPage() {
                       </p>
                     )}
 
-                    {/* Order Button */}
-                    <Button
-                      onClick={() => handleOrderClick(batch)}
-                      className="w-full"
-                      variant="primary"
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Commander
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Link href={`/batches/${batch.id}`} className="flex-1">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Voir détails
+                        </Button>
+                      </Link>
+                      <Button
+                        onClick={() => handleOrderClick(batch)}
+                        className="flex-1"
+                        variant="primary"
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Commander
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}
