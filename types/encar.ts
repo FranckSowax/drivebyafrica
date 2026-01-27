@@ -85,6 +85,8 @@ export interface EncarOfferResult {
   change_type: EncarChangeType;
   created_at: string;
   data: EncarVehicleData;
+  // Options can be at top level OR inside data, depending on API endpoint
+  options?: EncarOptionsData;
 }
 
 export interface EncarOffersResponse {
@@ -103,6 +105,8 @@ export interface EncarChangeResult {
   change_type: EncarChangeType;
   created_at: string;
   data?: EncarVehicleData | EncarPriceChange;
+  // Options can be at top level for 'added' changes
+  options?: EncarOptionsData;
 }
 
 export interface EncarPriceChange {

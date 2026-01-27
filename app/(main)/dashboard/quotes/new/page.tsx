@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/components/ui/Toast';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface QuoteData {
   vehicleId: string;
@@ -464,10 +465,9 @@ export default function NewQuotePage() {
       // Save the PDF
       doc.save(`Devis-${quoteNumber}.pdf`);
 
-      // Save quote to database
-      const response = await fetch('/api/quotes', {
+      // Save quote to database with authFetch for localStorage-based auth
+      const response = await authFetch('/api/quotes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quote_number: quoteNumber,
           user_id: user.id,

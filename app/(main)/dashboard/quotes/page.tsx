@@ -29,6 +29,7 @@ import { QuoteValidationModal } from '@/components/vehicles/QuoteValidationModal
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { getExportTax } from '@/lib/utils/pricing';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface Quote {
   id: string;
@@ -158,7 +159,8 @@ export default function QuotesPage() {
 
   const fetchQuotes = async () => {
     try {
-      const response = await fetch('/api/quotes');
+      // Use authFetch to include Authorization header for localStorage-based auth
+      const response = await authFetch('/api/quotes');
       if (response.ok) {
         const data = await response.json();
         setQuotes(data.quotes || []);
@@ -184,7 +186,8 @@ export default function QuotesPage() {
 
     setDeletingQuote(quoteId);
     try {
-      const response = await fetch(`/api/quotes?id=${quoteId}`, {
+      // Use authFetch to include Authorization header for localStorage-based auth
+      const response = await authFetch(`/api/quotes?id=${quoteId}`, {
         method: 'DELETE',
       });
 

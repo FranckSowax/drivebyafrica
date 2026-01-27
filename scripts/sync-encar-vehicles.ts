@@ -85,6 +85,105 @@ interface EncarVehicle {
     displacement?: string;
     extra?: any;
   };
+  options?: {
+    standard?: string[];
+    choice?: string[];
+    tuning?: string[];
+    etc?: string[];
+  };
+}
+
+// Standard options mapping for Encar
+const STANDARD_OPTIONS_MAP: Record<string, string> = {
+  "010": "Sunroof",
+  "059": "Power Tailgate",
+  "017": "Alloy Wheels",
+  "082": "Heated Steering Wheel",
+  "084": "Paddle Shifters",
+  "031": "Steering Wheel Audio Controls",
+  "029": "HID Headlights",
+  "075": "LED Headlights",
+  "020": "Side Airbags",
+  "056": "Curtain Airbags",
+  "001": "Anti-lock Braking System (ABS)",
+  "019": "Traction Control System (TCS)",
+  "055": "Electronic Stability Control (ESC)",
+  "033": "Tire Pressure Monitoring System (TPMS)",
+  "088": "Lane Departure Warning System (LDWS)",
+  "086": "Blind Spot Monitoring",
+  "058": "Rear View Camera",
+  "087": "360° Around View Monitor",
+  "026": "Driver Airbag",
+  "027": "Passenger Airbag",
+  "085": "Front Parking Sensors",
+  "032": "Rear Parking Sensors",
+  "095": "Head-Up Display (HUD)",
+  "094": "Electronic Parking Brake (EPB)",
+  "023": "Automatic Climate Control",
+  "057": "Smart Key",
+  "015": "Keyless Entry",
+  "005": "Navigation System",
+  "096": "Bluetooth",
+  "072": "USB Port",
+  "068": "Cruise Control",
+  "079": "Adaptive Cruise Control",
+  "014": "Leather Seats",
+  "021": "Power Driver Seat",
+  "035": "Power Passenger Seat",
+  "022": "Heated Front Seats",
+  "034": "Ventilated Driver Seat",
+  "077": "Ventilated Passenger Seat",
+};
+
+// Tuning options mapping
+const TUNING_OPTIONS_MAP: Record<string, string> = {
+  "001": "Roof Wrap",
+  "002": "Body Wrap (Vinyl Wrapping)",
+  "003": "Body Kit",
+  "004": "Spoiler",
+  "023": "Dash Cam",
+  "026": "Wheel Inch-Up",
+  "027": "Aftermarket Wheels",
+  "028": "Lowering Springs",
+  "029": "Coilovers",
+};
+
+function parseVehicleOptions(vehicle: EncarVehicle): string[] {
+  const allOptions: string[] = [];
+
+  if (!vehicle.options) return allOptions;
+
+  // Parse standard options
+  if (vehicle.options.standard && Array.isArray(vehicle.options.standard)) {
+    for (const code of vehicle.options.standard) {
+      const optionName = STANDARD_OPTIONS_MAP[code];
+      if (optionName) {
+        allOptions.push(optionName);
+      }
+    }
+  }
+
+  // Parse choice options (also from standard map)
+  if (vehicle.options.choice && Array.isArray(vehicle.options.choice)) {
+    for (const code of vehicle.options.choice) {
+      const optionName = STANDARD_OPTIONS_MAP[code];
+      if (optionName && !allOptions.includes(optionName)) {
+        allOptions.push(optionName);
+      }
+    }
+  }
+
+  // Parse tuning options
+  if (vehicle.options.tuning && Array.isArray(vehicle.options.tuning)) {
+    for (const code of vehicle.options.tuning) {
+      const optionName = TUNING_OPTIONS_MAP[code];
+      if (optionName) {
+        allOptions.push(`[Tuning] ${optionName}`);
+      }
+    }
+  }
+
+  return allOptions;
 }
 
 function mapTransmission(encarType: string): string {
@@ -162,6 +261,25 @@ function convertToVehicle(encar: EncarVehicle) {
   const priceUsd = Math.round(price * 10000 * KRW_TO_USD);
   const images = parseImages(data.images);
 
+  // Parse vehicle options (standard + tuning)
+  const features = parseVehicleOptions(encar);
+
+  // Build condition_report with extra data AND options
+  // This is the format expected by extractVehicleFeatures()
+  const conditionReport: Record<string, unknown> = {};
+
+  if (data.extra) {
+    conditionReport.extra = data.extra;
+  }
+
+  if (features.length > 0) {
+    // Store features in the format expected by vehicle-features.ts
+    conditionReport.options = {
+      features: features, // Human-readable feature list
+      raw: encar.options, // Keep raw codes for reference
+    };
+  }
+
   return {
     source: 'korea',
     source_id: `encar_${data.inner_id}`,
@@ -176,7 +294,7 @@ function convertToVehicle(encar: EncarVehicle) {
     color: data.color,
     body_type: mapBodyType(data.body_type),
     grade: data.complectation || data.configuration,
-    condition_report: data.extra ? JSON.stringify(data.extra) : null,
+    condition_report: Object.keys(conditionReport).length > 0 ? JSON.stringify(conditionReport) : null,
     start_price_usd: priceUsd,
     current_price_usd: priceUsd,
     original_price: price * 10000, // Store full KRW price

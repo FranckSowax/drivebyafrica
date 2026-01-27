@@ -393,6 +393,22 @@ function mapToDbRecord(offer: ApiOffer) {
   // Parse vehicle options (standard + tuning)
   const features = parseOptions(offer);
 
+  // Build condition_report with extra data AND options
+  // This is the format expected by extractVehicleFeatures()
+  const conditionReport: Record<string, unknown> = {};
+
+  if (v.extra) {
+    conditionReport.extra = v.extra;
+  }
+
+  if (features.length > 0) {
+    // Store features in the format expected by vehicle-features.ts
+    conditionReport.options = {
+      features: features, // Human-readable feature list
+      raw: offer.options, // Keep raw codes for reference
+    };
+  }
+
   return {
     source: 'korea',
     source_id: sourceId,
@@ -413,8 +429,7 @@ function mapToDbRecord(offer: ApiOffer) {
     original_currency: 'KRW',
     auction_status: 'ongoing',
     auction_platform: 'encar',
-    condition_report: v.extra ? JSON.stringify(v.extra) : null,
-    features: features.length > 0 ? features : null,
+    condition_report: Object.keys(conditionReport).length > 0 ? JSON.stringify(conditionReport) : null,
     images,
   };
 }

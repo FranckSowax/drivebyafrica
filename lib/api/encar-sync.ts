@@ -10,6 +10,7 @@ import type {
   EncarOfferResult,
   EncarChangeResult,
   EncarPriceChange,
+  EncarOptionsData,
 } from '@/types/encar';
 import { convertEncarPriceToUSD } from '@/types/encar';
 import { getFeatureNames, getFeaturesByCategory } from './encar-options';
@@ -30,8 +31,13 @@ function getSupabaseAdminUntyped() {
 
 /**
  * Convertit les données Encar vers le format de notre base de données
+ * @param encarData - Vehicle data from API
+ * @param offerOptions - Options from offer level (some endpoints return options at top level)
  */
-export function mapEncarToVehicle(encarData: EncarVehicleData): VehicleInsert {
+export function mapEncarToVehicle(
+  encarData: EncarVehicleData,
+  offerOptions?: EncarOptionsData
+): VehicleInsert {
   // Convertir le type de transmission
   const transmissionMap: Record<string, string> = {
     'Automatic': 'automatic',
@@ -81,11 +87,13 @@ export function mapEncarToVehicle(encarData: EncarVehicleData): VehicleInsert {
   }
 
   // Add options data with human-readable feature names
-  if (encarData.options) {
+  // Options can be at encarData.options OR at offer level (offerOptions)
+  const options = encarData.options || offerOptions;
+  if (options) {
     conditionReport.options = {
-      raw: encarData.options, // Keep raw codes for reference
-      features: getFeatureNames(encarData.options), // Human-readable feature list
-      byCategory: getFeaturesByCategory(encarData.options), // Features grouped by category
+      raw: options, // Keep raw codes for reference
+      features: getFeatureNames(options), // Human-readable feature list
+      byCategory: getFeaturesByCategory(options), // Features grouped by category
     };
   }
 
@@ -147,7 +155,8 @@ export async function syncEncarVehicles(
 
       for (const offer of response.result) {
         try {
-          const vehicleData = mapEncarToVehicle(offer.data);
+          // Pass offer-level options as second parameter (API returns options at top level)
+          const vehicleData = mapEncarToVehicle(offer.data, offer.options);
 
           // Vérifier si le véhicule existe déjà
           const { data: existing } = await supabase
@@ -236,7 +245,8 @@ export async function applyEncarChanges(
         switch (change.change_type) {
           case 'added':
             if (change.data && 'mark' in change.data) {
-              const vehicleData = mapEncarToVehicle(change.data as EncarVehicleData);
+              // Pass change-level options as second parameter
+              const vehicleData = mapEncarToVehicle(change.data as EncarVehicleData, change.options);
               const { error } = await supabase
                 .from('vehicles')
                 .insert(vehicleData);
