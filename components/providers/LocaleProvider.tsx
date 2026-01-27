@@ -35,7 +35,7 @@ interface LocaleContextType {
 
   // Quote currency functions (USD, EUR, XAF support full conversion; others show USD)
   isQuoteCurrency: () => boolean;
-  getQuoteCurrency: () => CurrencyInfo | null;
+  getQuoteCurrency: () => CurrencyInfo;
   getQuoteCurrencyCode: () => string;
   formatQuotePrice: (amountUsd: number) => string;
   convertToQuoteCurrency: (amountUsd: number) => number;
@@ -254,11 +254,41 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, [currencyInfo]);
 
   // Get the currency to use for quotes (selected if quote currency, otherwise USD)
-  const getQuoteCurrency = useCallback((): CurrencyInfo | null => {
-    if (isQuoteCurrency()) {
-      return currencyInfo;
+  const getQuoteCurrency = useCallback((): CurrencyInfo => {
+    const code = currencyInfo?.code || currency || 'USD';
+
+    // If current currency is a quote currency, use it
+    if (QUOTE_CURRENCIES.includes(code as QuoteCurrency)) {
+      // Return currencyInfo if available
+      if (currencyInfo && currencyInfo.rateToUsd) {
+        return currencyInfo;
+      }
+      // Try to find in availableCurrencies
+      const found = availableCurrencies.find(c => c.code === code);
+      if (found && found.rateToUsd) {
+        return found;
+      }
+      // Fallback with default rates for quote currencies
+      if (code === 'XAF' || code === 'XOF') {
+        return {
+          code: code,
+          name: code === 'XAF' ? 'Franc CFA BEAC' : 'Franc CFA BCEAO',
+          symbol: 'FCFA',
+          rateToUsd: 615,
+          countries: [],
+        };
+      }
+      if (code === 'EUR') {
+        return {
+          code: 'EUR',
+          name: 'Euro',
+          symbol: '€',
+          rateToUsd: 0.92,
+          countries: [],
+        };
+      }
     }
-    // Return USD info for non-quote currencies
+    // Return USD info for non-quote currencies or as ultimate fallback
     return availableCurrencies.find(c => c.code === 'USD') || {
       code: 'USD',
       name: 'US Dollar',
@@ -266,18 +296,18 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       rateToUsd: 1,
       countries: [],
     };
-  }, [isQuoteCurrency, currencyInfo, availableCurrencies]);
+  }, [currencyInfo, currency, availableCurrencies]);
 
   // Get the currency code to use for quotes
   const getQuoteCurrencyCode = useCallback((): string => {
-    return isQuoteCurrency() ? (currencyInfo?.code || 'USD') : 'USD';
-  }, [isQuoteCurrency, currencyInfo]);
+    return getQuoteCurrency().code;
+  }, [getQuoteCurrency]);
 
   // Convert USD to quote currency (selected if quote currency, otherwise USD)
   const convertToQuoteCurrency = useCallback(
     (amountUsd: number): number => {
       const quoteCurrency = getQuoteCurrency();
-      const rate = quoteCurrency?.rateToUsd || 1;
+      const rate = quoteCurrency.rateToUsd || 1;
       return amountUsd * rate;
     },
     [getQuoteCurrency]
@@ -288,8 +318,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     (amountUsd: number): string => {
       const quoteCurrency = getQuoteCurrency();
       const converted = convertToQuoteCurrency(amountUsd);
-      const code = quoteCurrency?.code || 'USD';
-      const symbol = quoteCurrency?.symbol || '$';
+      const code = quoteCurrency.code;
+      const symbol = quoteCurrency.symbol;
 
       // For CFA currencies, use custom format with regular spaces
       if (code === 'XAF' || code === 'XOF') {
