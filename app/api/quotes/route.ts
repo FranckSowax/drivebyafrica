@@ -8,6 +8,30 @@ import {
   isRateLimitConfigured,
 } from '@/lib/rate-limit';
 
+// Default XAF rate (fallback if database unavailable)
+const DEFAULT_XAF_RATE = 615;
+
+// Fetch current XAF rate directly from currency_rates table (same source as /api/admin/currencies)
+async function getXafRate(supabase: Awaited<ReturnType<typeof createClient>>): Promise<number> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseAny = supabase as any;
+    const { data, error } = await supabaseAny
+      .from('currency_rates')
+      .select('rate_to_usd')
+      .eq('currency_code', 'XAF')
+      .eq('is_active', true)
+      .single();
+
+    if (!error && data?.rate_to_usd) {
+      return Number(data.rate_to_usd);
+    }
+  } catch (error) {
+    console.error('Error fetching XAF rate from database:', error);
+  }
+  return DEFAULT_XAF_RATE;
+}
+
 export async function POST(request: Request) {
   try {
     // Rate limiting check (if configured)
@@ -44,14 +68,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'vehicle_id ou batch_id requis' }, { status: 400 });
     }
 
-    // Accept either _xaf or _usd fields (prefer _xaf for backwards compatibility)
-    const shippingCost = body.shipping_cost_xaf ?? body.shipping_cost_usd ?? 0;
-    const insuranceCost = body.insurance_cost_xaf ?? body.insurance_cost_usd ?? 0;
-    const inspectionFee = body.inspection_fee_xaf ?? body.inspection_fee_usd ?? 0;
-    const totalCost = body.total_cost_xaf ?? body.total_cost_usd ?? 0;
+    // Determine if values are in USD (batch quotes send _usd fields)
+    const isUsdValues = body.shipping_cost_usd !== undefined || body.total_cost_usd !== undefined;
+
+    let shippingCostXaf: number;
+    let insuranceCostXaf: number;
+    let inspectionFeeXaf: number;
+    let totalCostXaf: number;
+
+    if (isUsdValues) {
+      // Convert USD values to XAF using rate from currency_rates table
+      const xafRate = await getXafRate(supabase);
+      console.log('Quote API: Converting USD to XAF with rate:', xafRate);
+
+      shippingCostXaf = Math.round((body.shipping_cost_usd ?? 0) * xafRate);
+      insuranceCostXaf = Math.round((body.insurance_cost_usd ?? 0) * xafRate);
+      inspectionFeeXaf = Math.round((body.inspection_fee_usd ?? 0) * xafRate);
+      totalCostXaf = Math.round((body.total_cost_usd ?? 0) * xafRate);
+    } else {
+      // Use XAF values directly
+      shippingCostXaf = body.shipping_cost_xaf ?? 0;
+      insuranceCostXaf = body.insurance_cost_xaf ?? 0;
+      inspectionFeeXaf = body.inspection_fee_xaf ?? 0;
+      totalCostXaf = body.total_cost_xaf ?? 0;
+    }
 
     // Insert quote into database
-    console.log('Quote API: Inserting into Supabase');
+    console.log('Quote API: Inserting into Supabase with XAF values:', {
+      shippingCostXaf,
+      insuranceCostXaf,
+      inspectionFeeXaf,
+      totalCostXaf,
+    });
     const { data, error } = await supabase.from('quotes').insert({
       quote_number: body.quote_number,
       user_id: user.id,
@@ -65,10 +113,10 @@ export async function POST(request: Request) {
       destination_name: body.destination_name,
       destination_country: body.destination_country,
       shipping_type: body.shipping_type || 'container',
-      shipping_cost_xaf: Math.round(shippingCost),
-      insurance_cost_xaf: Math.round(insuranceCost),
-      inspection_fee_xaf: Math.round(inspectionFee),
-      total_cost_xaf: Math.round(totalCost),
+      shipping_cost_xaf: shippingCostXaf,
+      insurance_cost_xaf: insuranceCostXaf,
+      inspection_fee_xaf: inspectionFeeXaf,
+      total_cost_xaf: totalCostXaf,
       status: 'pending',
       valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     }).select().single();
