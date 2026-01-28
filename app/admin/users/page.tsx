@@ -445,10 +445,27 @@ export default function AdminUsersPage() {
     if (!deletingUser) return;
 
     setIsDeleting(true);
+
+    // Create AbortController for timeout (45s - Netlify has 26s limit for functions)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
     try {
       const response = await authFetch(`/api/admin/users?userId=${deletingUser.id}`, {
         method: 'DELETE',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      // Handle non-JSON responses (like 504 Gateway Timeout which returns HTML)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        if (response.status === 504) {
+          throw new Error('La suppression a pris trop de temps. L\'utilisateur a peut-être été supprimé. Actualisez la page pour vérifier.');
+        }
+        throw new Error(`Erreur serveur (${response.status})`);
+      }
 
       const data = await response.json();
 
@@ -466,8 +483,20 @@ export default function AdminUsersPage() {
         setSelectedUser(null);
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Error deleting user:', error);
-      alert(error instanceof Error ? error.message : 'Erreur lors de la suppression');
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        alert('La requête a expiré. L\'utilisateur a peut-être été supprimé. Actualisez la page pour vérifier.');
+        // Refresh the list in case the deletion succeeded
+        fetchUsers();
+      } else {
+        alert(error instanceof Error ? error.message : 'Erreur lors de la suppression');
+      }
+
+      // Close modals anyway
+      setShowDeleteConfirm(false);
+      setDeletingUser(null);
     } finally {
       setIsDeleting(false);
     }
