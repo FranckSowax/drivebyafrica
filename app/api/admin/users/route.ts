@@ -290,7 +290,15 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Delete the user from Supabase Auth (this will cascade delete the profile due to FK constraint)
+    // Delete related data first to speed up the cascade (run in parallel)
+    // This prevents Supabase from having to do slow cascade deletes
+    await Promise.all([
+      supabaseAdmin.from('quotes').delete().eq('user_id', userId),
+      supabaseAdmin.from('favorites').delete().eq('user_id', userId),
+      supabaseAdmin.from('orders').delete().eq('user_id', userId),
+    ]);
+
+    // Delete the user from Supabase Auth (profile will cascade delete)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
