@@ -117,7 +117,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT - Approve or reject a batch
+// PUT - Approve/reject a batch OR edit batch fields (admin)
 export async function PUT(request: Request) {
   try {
     const supabase = await createClient();
@@ -132,11 +132,11 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { batchId, action, adminNotes } = body; // action: 'approve' or 'reject'
+    const { batchId, action, adminNotes, ...fieldUpdates } = body;
 
-    if (!batchId || !action || !['approve', 'reject'].includes(action)) {
+    if (!batchId) {
       return NextResponse.json(
-        { error: 'Batch ID et action (approve/reject) requis' },
+        { error: 'Batch ID requis' },
         { status: 400 }
       );
     }
@@ -155,25 +155,128 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Update batch based on action
-    const updates: Record<string, unknown> = {
-      admin_notes: adminNotes || null,
-    };
+    // If action is approve/reject, handle approval workflow
+    if (action && ['approve', 'reject'].includes(action)) {
+      const updates: Record<string, unknown> = {
+        admin_notes: adminNotes || null,
+      };
 
-    if (action === 'approve') {
-      updates.status = 'approved';
-      updates.is_visible = true;
-      updates.approved_at = new Date().toISOString();
-      updates.approved_by_admin_id = user.id;
-    } else if (action === 'reject') {
-      updates.status = 'rejected';
-      updates.is_visible = false;
-      updates.rejection_reason = adminNotes || 'Rejected by admin';
+      if (action === 'approve') {
+        updates.status = 'approved';
+        updates.is_visible = true;
+        updates.approved_at = new Date().toISOString();
+        updates.approved_by_admin_id = user.id;
+      } else if (action === 'reject') {
+        updates.status = 'rejected';
+        updates.is_visible = false;
+        updates.rejection_reason = adminNotes || 'Rejected by admin';
+      }
+
+      const { data: updatedBatch, error: updateError } = await supabase
+        .from('vehicle_batches')
+        .update(updates)
+        .eq('id', batchId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Notify collaborator
+      try {
+        const { createClient: createAdminClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createAdminClient<Database>(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        if (action === 'approve') {
+          await notifyCollaborators(supabaseAdmin, {
+            type: 'batch_approved',
+            title: `Your vehicle batch has been approved`,
+            titleZh: `您的车辆批次已获批准`,
+            message: `${batch.total_quantity}x ${batch.year} ${batch.make} ${batch.model} is now visible on the platform`,
+            messageZh: `${batch.total_quantity}辆 ${batch.year} ${batch.make} ${batch.model} 现已在平台上可见`,
+            data: {
+              batchId: batch.id,
+              make: batch.make,
+              model: batch.model,
+              year: batch.year,
+              total_quantity: batch.total_quantity,
+            },
+            priority: 'high',
+            actionUrl: `/collaborator/batches?batchId=${batch.id}`,
+            relatedEntityType: 'batch',
+            relatedEntityId: batch.id,
+            targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
+          });
+        } else {
+          await notifyCollaborators(supabaseAdmin, {
+            type: 'batch_rejected',
+            title: `Your batch submission was rejected`,
+            titleZh: `您的批次提交被拒绝`,
+            message: adminNotes || 'Please review and resubmit',
+            messageZh: adminNotes || '请检查并重新提交',
+            data: {
+              batchId: batch.id,
+              make: batch.make,
+              model: batch.model,
+              year: batch.year,
+              reason: adminNotes,
+            },
+            priority: 'normal',
+            actionUrl: `/collaborator/batches?batchId=${batch.id}`,
+            relatedEntityType: 'batch',
+            relatedEntityId: batch.id,
+            targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
+          });
+        }
+
+        console.log(`✅ Collaborator notified of batch ${action}`);
+      } catch (notifError) {
+        console.error('❌ Failed to notify collaborator:', notifError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        batch: updatedBatch,
+        action,
+      });
+    }
+
+    // Otherwise, handle field editing (admin can edit any batch)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allowedUpdates: Record<string, any> = { ...fieldUpdates };
+    // Prevent overriding approval-related fields via field edit
+    delete allowedUpdates.status;
+    delete allowedUpdates.approved_by_admin_id;
+    delete allowedUpdates.approved_at;
+    delete allowedUpdates.added_by_collaborator_id;
+    delete allowedUpdates.rejection_reason;
+
+    // If updating quantities, validate
+    if (allowedUpdates.total_quantity !== undefined || allowedUpdates.minimum_order_quantity !== undefined) {
+      const totalQty = allowedUpdates.total_quantity !== undefined ? allowedUpdates.total_quantity : batch.total_quantity;
+      const minQty = allowedUpdates.minimum_order_quantity !== undefined ? allowedUpdates.minimum_order_quantity : batch.minimum_order_quantity;
+
+      if (totalQty < minQty) {
+        return NextResponse.json(
+          { error: 'Total quantity must be greater than or equal to minimum order quantity' },
+          { status: 400 }
+        );
+      }
+
+      // Update available_quantity if total_quantity changes
+      if (allowedUpdates.total_quantity !== undefined) {
+        const sold = batch.total_quantity - batch.available_quantity;
+        allowedUpdates.available_quantity = Math.max(0, allowedUpdates.total_quantity - sold);
+      }
     }
 
     const { data: updatedBatch, error: updateError } = await supabase
       .from('vehicle_batches')
-      .update(updates)
+      .update(allowedUpdates)
       .eq('id', batchId)
       .select()
       .single();
@@ -182,68 +285,9 @@ export async function PUT(request: Request) {
       throw updateError;
     }
 
-    // Notify collaborator
-    try {
-      const { createClient: createAdminClient } = await import('@supabase/supabase-js');
-      const supabaseAdmin = createAdminClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
-
-      const collaboratorProfile = batch.profiles as unknown as { full_name: string | null; email: string | null } | null;
-      const collaboratorName = collaboratorProfile?.full_name || 'Collaborator';
-
-      if (action === 'approve') {
-        await notifyCollaborators(supabaseAdmin, {
-          type: 'batch_approved',
-          title: `Your vehicle batch has been approved`,
-          titleZh: `您的车辆批次已获批准`,
-          message: `${batch.total_quantity}x ${batch.year} ${batch.make} ${batch.model} is now visible on the platform`,
-          messageZh: `${batch.total_quantity}辆 ${batch.year} ${batch.make} ${batch.model} 现已在平台上可见`,
-          data: {
-            batchId: batch.id,
-            make: batch.make,
-            model: batch.model,
-            year: batch.year,
-            total_quantity: batch.total_quantity,
-          },
-          priority: 'high',
-          actionUrl: `/collaborator/batches?batchId=${batch.id}`,
-          relatedEntityType: 'batch',
-          relatedEntityId: batch.id,
-          targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
-        });
-      } else {
-        await notifyCollaborators(supabaseAdmin, {
-          type: 'batch_rejected',
-          title: `Your batch submission was rejected`,
-          titleZh: `您的批次提交被拒绝`,
-          message: adminNotes || 'Please review and resubmit',
-          messageZh: adminNotes || '请检查并重新提交',
-          data: {
-            batchId: batch.id,
-            make: batch.make,
-            model: batch.model,
-            year: batch.year,
-            reason: adminNotes,
-          },
-          priority: 'normal',
-          actionUrl: `/collaborator/batches?batchId=${batch.id}`,
-          relatedEntityType: 'batch',
-          relatedEntityId: batch.id,
-          targetCollaboratorId: batch.added_by_collaborator_id ?? undefined,
-        });
-      }
-
-      console.log(`✅ Collaborator notified of batch ${action}`);
-    } catch (notifError) {
-      console.error('❌ Failed to notify collaborator:', notifError);
-    }
-
     return NextResponse.json({
       success: true,
       batch: updatedBatch,
-      action,
     });
   } catch (error) {
     console.error('Error updating batch:', error);

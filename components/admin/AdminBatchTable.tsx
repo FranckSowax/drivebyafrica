@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
   Eye,
+  Pencil,
   Search,
   Filter,
   RotateCcw,
@@ -33,6 +34,7 @@ interface AdminBatchTableProps {
   };
   onFilterChange: (filters: Record<string, string>) => void;
   onView?: (batch: VehicleBatchWithCollaborator) => void;
+  onEdit?: (batch: VehicleBatchWithCollaborator) => void;
   onApprove?: (batch: VehicleBatchWithCollaborator) => void;
   onReject?: (batch: VehicleBatchWithCollaborator) => void;
 }
@@ -61,6 +63,7 @@ export function AdminBatchTable({
   filters,
   onFilterChange,
   onView,
+  onEdit,
   onApprove,
   onReject,
 }: AdminBatchTableProps) {
@@ -333,6 +336,15 @@ export function AdminBatchTable({
                           title="View details"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                      )}
+                      {onEdit && (
+                        <button
+                          onClick={() => onEdit(batch)}
+                          className="p-2 text-amber-500 hover:bg-amber-500/10 rounded transition-colors"
+                          title="Edit batch"
+                        >
+                          <Pencil className="w-4 h-4" />
                         </button>
                       )}
                       {batch.status === 'pending' && onApprove && (

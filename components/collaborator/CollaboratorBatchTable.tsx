@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import {
   Eye,
+  Pencil,
   Search,
   Filter,
   RotateCcw,
@@ -35,6 +36,7 @@ interface CollaboratorBatchTableProps {
   };
   onFilterChange: (filters: Record<string, string>) => void;
   onView?: (batch: VehicleBatch) => void;
+  onEdit?: (batch: VehicleBatch) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -62,6 +64,7 @@ export function CollaboratorBatchTable({
   filters,
   onFilterChange,
   onView,
+  onEdit,
   onDelete,
 }: CollaboratorBatchTableProps) {
   const { t } = useCollaboratorLocale();
@@ -323,6 +326,15 @@ export function CollaboratorBatchTable({
                           title="View details"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                      )}
+                      {onEdit && (
+                        <button
+                          onClick={() => onEdit(batch)}
+                          className="p-2 text-amber-500 hover:bg-amber-500/10 rounded transition-colors"
+                          title="Edit batch"
+                        >
+                          <Pencil className="w-4 h-4" />
                         </button>
                       )}
                       {onDelete && (

@@ -5,6 +5,7 @@ import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLoc
 import { CollaboratorSidebar } from '@/components/collaborator/CollaboratorSidebar';
 import { CollaboratorTopBar } from '@/components/collaborator/CollaboratorTopBar';
 import { AddBatchModal } from '@/components/collaborator/AddBatchModal';
+import { EditBatchModal } from '@/components/collaborator/EditBatchModal';
 import { CollaboratorBatchTable } from '@/components/collaborator/CollaboratorBatchTable';
 import { BatchDetailsModal } from '@/components/collaborator/BatchDetailsModal';
 import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
@@ -31,6 +32,7 @@ export default function CollaboratorBatchesPage() {
   const [batches, setBatches] = useState<VehicleBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<VehicleBatch | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,6 +85,11 @@ export default function CollaboratorBatchesPage() {
   const handleViewBatch = (batch: VehicleBatch) => {
     setSelectedBatch(batch);
     setIsDetailsModalOpen(true);
+  };
+
+  const handleEditBatch = (batch: VehicleBatch) => {
+    setSelectedBatch(batch);
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteBatch = async (id: string) => {
@@ -223,6 +230,7 @@ export default function CollaboratorBatchesPage() {
               filters={filters}
               onFilterChange={handleFilterChange}
               onView={handleViewBatch}
+              onEdit={handleEditBatch}
               onDelete={handleDeleteBatch}
             />
           </Card>
@@ -236,6 +244,19 @@ export default function CollaboratorBatchesPage() {
         onSuccess={() => {
           fetchBatches();
         }}
+      />
+
+      {/* Edit Batch Modal */}
+      <EditBatchModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedBatch(null);
+        }}
+        onSuccess={() => {
+          fetchBatches();
+        }}
+        batch={selectedBatch}
       />
 
       {/* Batch Details Modal */}

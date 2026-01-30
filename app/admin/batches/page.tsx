@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { AdminBatchTable } from '@/components/admin/AdminBatchTable';
 import { AdminBatchDetailsModal } from '@/components/admin/AdminBatchDetailsModal';
+import { EditBatchModal } from '@/components/collaborator/EditBatchModal';
+import { CollaboratorLocaleProvider } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { authFetch } from '@/lib/supabase/auth-helpers';
@@ -18,6 +20,7 @@ export default function AdminBatchesPage() {
   const [total, setTotal] = useState(0);
   const [selectedBatch, setSelectedBatch] = useState<VehicleBatchWithCollaborator | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve');
   const [adminNotes, setAdminNotes] = useState('');
@@ -68,6 +71,11 @@ export default function AdminBatchesPage() {
   const handleViewBatch = (batch: VehicleBatchWithCollaborator) => {
     setSelectedBatch(batch);
     setIsDetailsModalOpen(true);
+  };
+
+  const handleEditBatch = (batch: VehicleBatchWithCollaborator) => {
+    setSelectedBatch(batch);
+    setIsEditModalOpen(true);
   };
 
   const handleApproveClick = (batch: VehicleBatchWithCollaborator) => {
@@ -185,10 +193,27 @@ export default function AdminBatchesPage() {
           filters={filters}
           onFilterChange={handleFilterChange}
           onView={handleViewBatch}
+          onEdit={handleEditBatch}
           onApprove={handleApproveClick}
           onReject={handleRejectClick}
         />
       </Card>
+
+      {/* Edit Batch Modal - wrapped in CollaboratorLocaleProvider for translations */}
+      <CollaboratorLocaleProvider>
+        <EditBatchModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedBatch(null);
+          }}
+          onSuccess={() => {
+            fetchBatches();
+          }}
+          batch={selectedBatch}
+          apiEndpoint="/api/admin/batches"
+        />
+      </CollaboratorLocaleProvider>
 
       {/* Approval Modal */}
       {selectedBatch && (
