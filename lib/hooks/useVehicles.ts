@@ -197,12 +197,13 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use exact count for accurate pagination (required for large vehicle counts)
-      'Prefer': 'count=exact',
+      // Use estimated count to avoid timeout on 190k+ rows (exact count causes 500)
+      'Prefer': 'count=estimated',
     },
   });
 
-  if (!response.ok) {
+  // 200 = all results, 206 = partial content (paginated with count header)
+  if (!response.ok && response.status !== 206) {
     throw new Error(`Failed to fetch vehicles: ${response.status}`);
   }
 
