@@ -271,6 +271,7 @@
     "loginSubtitle": "Sign in to your collaborator account",
     "addVehicle": "Add Vehicle",
     "addBatch": "Add Vehicle Batch",
+    "editBatch": "Edit Batch",
     "vehicleForm": {
       "basicInfo": "Basic Information",
       "make": "Make",

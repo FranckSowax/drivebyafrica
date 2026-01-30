@@ -254,10 +254,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Check if batch belongs to collaborator and is pending
+    // Check if batch belongs to collaborator
     const { data: batch, error: checkError } = await supabase
       .from('vehicle_batches')
-      .select('id, status, added_by_collaborator_id, total_quantity, minimum_order_quantity')
+      .select('id, status, added_by_collaborator_id, total_quantity, available_quantity, minimum_order_quantity')
       .eq('id', batchId)
       .eq('added_by_collaborator_id', user.id)
       .single();
@@ -269,9 +269,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    if (batch.status !== 'pending') {
+    // Allow editing pending and approved batches (not rejected or sold_out)
+    if (batch.status === 'rejected' || batch.status === 'sold_out') {
       return NextResponse.json(
-        { error: 'Cannot update non-pending batch', error_zh: '无法更新非待处理批次' },
+        { error: 'Cannot update rejected or sold out batch', error_zh: '无法更新已拒绝或已售罄的批次' },
         { status: 403 }
       );
     }
@@ -298,9 +299,10 @@ export async function PUT(request: Request) {
         );
       }
 
-      // Update available_quantity proportionally
+      // Update available_quantity, preserving sold count
       if (allowedUpdates.total_quantity !== undefined) {
-        allowedUpdates.available_quantity = allowedUpdates.total_quantity;
+        const sold = batch.total_quantity - batch.available_quantity;
+        allowedUpdates.available_quantity = Math.max(0, allowedUpdates.total_quantity - sold);
       }
     }
 

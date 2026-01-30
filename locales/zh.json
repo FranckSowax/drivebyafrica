@@ -13,6 +13,7 @@
     "loginSubtitle": "登录您的协作者账户",
     "addVehicle": "添加车辆",
     "addBatch": "添加车辆批次",
+    "editBatch": "编辑批次",
     "vehicleForm": {
       "basicInfo": "基本信息",
       "make": "品牌",
