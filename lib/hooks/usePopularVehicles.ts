@@ -35,7 +35,7 @@ async function fetchPopularVehicles(): Promise<Vehicle[]> {
     'buy_now_price_usd', 'fuel_type', 'transmission', 'drive_type',
     'body_type', 'color', 'engine_cc', 'images', 'status',
     'auction_status', 'auction_platform', 'auction_date', 'is_visible',
-    'created_at', 'updated_at', 'effective_price_usd',
+    'created_at', 'updated_at',
     'views_count', 'favorites_count',
   ].join(','));
 
