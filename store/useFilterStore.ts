@@ -71,6 +71,12 @@ export const useFilterStore = create<FilterState>()(
     }),
     {
       name: 'filter-storage',
+      partialize: (state) => {
+        // Exclude runtime-only flags and functions from persistence
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { _hasHydrated, ...rest } = state;
+        return rest;
+      },
       onRehydrateStorage: () => () => {
         useFilterStore.setState({ _hasHydrated: true });
       },

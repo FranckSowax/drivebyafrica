@@ -27,9 +27,18 @@ export default function CarsPage() {
   const { filters, setFilters, _hasHydrated } = useFilterStore();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
-
   // Local search state - synced with store
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Safety timeout: if hydration hasn't completed after 2s, force it
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!useFilterStore.getState()._hasHydrated) {
+        useFilterStore.setState({ _hasHydrated: true });
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Track previous filters to detect changes
   const prevFiltersRef = useRef<string>('');
