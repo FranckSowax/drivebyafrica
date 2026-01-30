@@ -24,10 +24,9 @@ const SORT_OPTIONS = [
 const ITEMS_PER_PAGE = 36;
 
 export default function CarsPage() {
-  const { filters, setFilters } = useFilterStore();
+  const { filters, setFilters, _hasHydrated } = useFilterStore();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
-  const [isHydrated, setIsHydrated] = useState(false);
 
   // Local search state - synced with store
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,19 +34,12 @@ export default function CarsPage() {
   // Track previous filters to detect changes
   const prevFiltersRef = useRef<string>('');
 
-  // Handle hydration - wait for store to be ready
+  // Sync local search when store hydrates from localStorage
   useEffect(() => {
-    setIsHydrated(true);
-    // Sync local search with store after hydration
-    setSearchQuery(filters.search || '');
-  }, []);
-
-  // Update local search when filters.search changes (e.g., from store hydration)
-  useEffect(() => {
-    if (isHydrated && filters.search !== undefined) {
+    if (_hasHydrated) {
       setSearchQuery(filters.search || '');
     }
-  }, [filters.search, isHydrated]);
+  }, [_hasHydrated, filters.search]);
 
   // Use vehicles hook with current filters
   // Always pass filters to ensure data loads (defaultFilters are used before hydration)
@@ -63,18 +55,18 @@ export default function CarsPage() {
 
   // Reset page when filters change (but not on initial hydration)
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!_hasHydrated) return;
 
     const currentFiltersStr = JSON.stringify(filters);
     if (prevFiltersRef.current && prevFiltersRef.current !== currentFiltersStr) {
       setPage(1);
     }
     prevFiltersRef.current = currentFiltersStr;
-  }, [filters, isHydrated]);
+  }, [filters, _hasHydrated]);
 
   // Debounced search - update store after user stops typing
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!_hasHydrated) return;
 
     const debounce = setTimeout(() => {
       const currentSearch = filters.search || '';
@@ -84,11 +76,11 @@ export default function CarsPage() {
     }, 300);
 
     return () => clearTimeout(debounce);
-  }, [searchQuery, isHydrated]);
+  }, [searchQuery, _hasHydrated]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isHydrated) {
+    if (_hasHydrated) {
       setFilters({ search: searchQuery || undefined });
     }
   };
@@ -100,7 +92,7 @@ export default function CarsPage() {
   };
 
   // Show loading state during hydration
-  if (!isHydrated) {
+  if (!_hasHydrated) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
         <div className="bg-gradient-to-b from-[var(--surface)] to-transparent py-10 lg:py-14">

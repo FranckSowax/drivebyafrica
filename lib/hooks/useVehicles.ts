@@ -1,8 +1,9 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
+import { useFilterStore } from '@/store/useFilterStore';
 
 interface UseVehiclesOptions {
   filters?: VehicleFilters;
@@ -241,23 +242,31 @@ export function useVehicles({
   limit = 36,
 }: UseVehiclesOptions = {}): UseVehiclesReturn {
   const queryClient = useQueryClient();
+  const hasHydrated = useFilterStore((s) => s._hasHydrated);
 
-  // Stable filters reference for query key
-  const filtersRef = useRef(filters);
-  filtersRef.current = filters;
+  // Stable serialized filters for query key to avoid reference changes
+  const stableFilters = useMemo(
+    () => JSON.stringify(filters),
+    [filters]
+  );
 
-  const queryKey = vehicleKeys.list(filters, page, limit);
+  const queryKey = useMemo(
+    () => vehicleKeys.list(filters, page, limit),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stableFilters, page, limit]
+  );
 
   const {
     data,
     isLoading,
-    isFetching,
     error,
     refetch: queryRefetch,
   } = useQuery({
     queryKey,
     queryFn: () => fetchVehicles(filters, page, limit),
-    // Keep previous data while fetching new data (smooth pagination)
+    // Don't fetch until Zustand store has hydrated from localStorage
+    enabled: hasHydrated,
+    // Keep previous data while fetching new data (smooth pagination & filter changes)
     placeholderData: (previousData) => previousData,
     // Data is fresh for 2 minutes
     staleTime: 2 * 60 * 1000,
@@ -297,7 +306,7 @@ export function useVehicles({
 
   return {
     vehicles: data?.vehicles ?? [],
-    isLoading: isLoading || isFetching,
+    isLoading: !hasHydrated || isLoading,
     error: error as Error | null,
     totalCount: data?.totalCount ?? 0,
     hasMore: hasMorePages,

@@ -4,6 +4,7 @@ import type { VehicleFilters } from '@/types/vehicle';
 
 interface FilterState {
   filters: VehicleFilters;
+  _hasHydrated: boolean;
   setFilters: (filters: Partial<VehicleFilters>) => void;
   resetFilters: () => void;
   savedFilters: { id: string; name: string; filters: VehicleFilters }[];
@@ -36,6 +37,7 @@ export const useFilterStore = create<FilterState>()(
   persist(
     (set, get) => ({
       filters: defaultFilters,
+      _hasHydrated: false,
 
       setFilters: (newFilters) =>
         set((state) => ({
@@ -69,6 +71,9 @@ export const useFilterStore = create<FilterState>()(
     }),
     {
       name: 'filter-storage',
+      onRehydrateStorage: () => () => {
+        useFilterStore.setState({ _hasHydrated: true });
+      },
     }
   )
 );
