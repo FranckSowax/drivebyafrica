@@ -1,9 +1,24 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle } from '@/types/vehicle';
 
 const FEATURED_BRANDS = ['jetour', 'changan', 'toyota', 'haval', 'zeekr', 'byd', 'geely'];
+
+/**
+ * Check if the first image URL of a vehicle has a valid (non-expired) signed URL
+ */
+function hasValidImage(vehicle: Vehicle): boolean {
+  const images = parseImagesField(vehicle.images);
+  if (images.length === 0) return false;
+  const firstImage = images[0];
+  // Check for x-expires in signed URLs
+  const match = firstImage.match(/x-expires=(\d+)/);
+  if (!match) return true; // No expiry = always valid
+  const expiresTimestamp = parseInt(match[1]) * 1000;
+  return Date.now() < expiresTimestamp;
+}
 
 async function fetchPopularVehicles(): Promise<Vehicle[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -71,12 +86,18 @@ async function fetchPopularVehicles(): Promise<Vehicle[]> {
     return (await fallbackResponse.json()) as Vehicle[];
   }
 
-  // Score and sort
+  // Score and sort, prioritizing vehicles with valid (non-expired) images
   const scored = vehicles.map(v => ({
     vehicle: v,
     score: (v.views_count || 0) + ((v.favorites_count || 0) * 3),
+    validImage: hasValidImage(v),
   }));
-  scored.sort((a, b) => b.score - a.score);
+
+  // Put vehicles with valid images first, then sort by score
+  scored.sort((a, b) => {
+    if (a.validImage !== b.validImage) return a.validImage ? -1 : 1;
+    return b.score - a.score;
+  });
 
   return scored.slice(0, 6).map(s => s.vehicle);
 }

@@ -46,6 +46,16 @@ function needsProxy(url: string): boolean {
   return CHINA_CDN_DOMAINS.some(domain => url.includes(domain));
 }
 
+/**
+ * Check if a signed URL has expired (Dongchedi uses x-expires parameter)
+ */
+function isUrlExpired(url: string): boolean {
+  const match = url.match(/x-expires=(\d+)/);
+  if (!match) return false;
+  const expiresTimestamp = parseInt(match[1]) * 1000;
+  return Date.now() > expiresTimestamp;
+}
+
 interface OptimizedImageProps {
   src: string | null | undefined;
   alt: string;
@@ -100,6 +110,9 @@ export function OptimizedImage({
   const getImageUrl = useCallback(() => {
     if (!src || imgError) return PLACEHOLDER_IMAGE;
 
+    // If the signed URL has expired, show placeholder immediately (no retry needed)
+    if (isUrlExpired(src)) return PLACEHOLDER_IMAGE;
+
     // Use proxy for Chinese CDN images that block external Referer
     if (useProxy && needsProxy(src)) {
       // Add retry count to bust cache on retry
@@ -123,8 +136,11 @@ export function OptimizedImage({
   };
 
   const handleError = useCallback(() => {
-    // Try to retry before showing placeholder
-    if (retryCount < MAX_RETRIES && src && needsProxy(src)) {
+    // Don't retry expired signed URLs - they won't become valid again
+    const expired = src ? isUrlExpired(src) : false;
+
+    // Try to retry before showing placeholder (only for non-expired transient errors)
+    if (!expired && retryCount < MAX_RETRIES && src && needsProxy(src)) {
       setTimeout(() => {
         setRetryCount(prev => prev + 1);
         setIsLoading(true);
