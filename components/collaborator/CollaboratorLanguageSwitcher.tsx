@@ -11,6 +11,7 @@ interface CollaboratorLanguageSwitcherProps {
 const localeConfig: Record<Locale, { flag: string; label: string; shortLabel: string }> = {
   en: { flag: '🇬🇧', label: 'English', shortLabel: 'EN' },
   zh: { flag: '🇨🇳', label: '中文', shortLabel: '中' },
+  fr: { flag: '🇫🇷', label: 'Français', shortLabel: 'FR' },
 };
 
 export function CollaboratorLanguageSwitcher({

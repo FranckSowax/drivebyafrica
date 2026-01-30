@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import enTranslations from '@/locales/en.json';
 import zhTranslations from '@/locales/zh.json';
+import frTranslations from '@/locales/fr.json';
 
-type Locale = 'en' | 'zh';
+type Locale = 'en' | 'zh' | 'fr';
 
 type TranslationKeys = typeof enTranslations;
 
@@ -19,6 +20,7 @@ const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 const translations: Record<Locale, TranslationKeys> = {
   en: enTranslations as TranslationKeys,
   zh: zhTranslations as unknown as TranslationKeys,
+  fr: frTranslations as unknown as TranslationKeys,
 };
 
 const LOCALE_STORAGE_KEY = 'collaborator-locale';
@@ -59,22 +61,25 @@ function interpolate(template: string, params: Record<string, string | number>):
 interface CollaboratorLocaleProviderProps {
   children: React.ReactNode;
   defaultLocale?: Locale;
+  forceLocale?: Locale;
 }
 
 export function CollaboratorLocaleProvider({
   children,
-  defaultLocale
+  defaultLocale,
+  forceLocale
 }: CollaboratorLocaleProviderProps) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale || 'en');
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [locale, setLocaleState] = useState<Locale>(forceLocale || defaultLocale || 'en');
+  const [isInitialized, setIsInitialized] = useState(!!forceLocale);
 
-  // Initialize locale from storage or browser detection
+  // Initialize locale from storage or browser detection (skip if forceLocale is set)
   useEffect(() => {
+    if (forceLocale) return;
     if (typeof window === 'undefined') return;
 
     const storedLocale = localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null;
 
-    if (storedLocale && (storedLocale === 'en' || storedLocale === 'zh')) {
+    if (storedLocale && (storedLocale === 'en' || storedLocale === 'zh' || storedLocale === 'fr')) {
       setLocaleState(storedLocale);
     } else {
       const detected = detectBrowserLocale();
@@ -83,7 +88,7 @@ export function CollaboratorLocaleProvider({
     }
 
     setIsInitialized(true);
-  }, []);
+  }, [forceLocale]);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);

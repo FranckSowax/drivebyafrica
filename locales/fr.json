@@ -244,6 +244,42 @@
     "contact": "Contactez-nous",
     "copyright": "© {year} Driveby Africa. Tous droits réservés."
   },
+  "collaborator": {
+    "addVehicle": "Ajouter un véhicule",
+    "vehicleForm": {
+      "basicInfo": "Informations de base",
+      "make": "Marque",
+      "model": "Modèle",
+      "year": "Année",
+      "price": "Prix (USD)",
+      "title": "Titre",
+      "description": "Description",
+      "vehicleDetails": "Détails du véhicule",
+      "mileage": "Kilométrage (km)",
+      "fuelType": "Type de carburant",
+      "transmission": "Transmission",
+      "driveType": "Type de transmission",
+      "engineSize": "Cylindrée (cc)",
+      "bodyType": "Type de carrosserie",
+      "color": "Couleur",
+      "condition": "État",
+      "features": "Équipements",
+      "addFeature": "Ajouter un équipement",
+      "images": "Images",
+      "selectImages": "Sélectionner des images",
+      "submit": "Ajouter le véhicule",
+      "submitting": "Ajout en cours..."
+    }
+  },
+  "imageUpload": {
+    "vehicleImages": "Images du véhicule",
+    "main": "Principale",
+    "setAsMain": "Définir comme principale",
+    "setAsMainTitle": "Définir comme miniature principale",
+    "thumbnailHelper": "La première image (marquée ⭐) sera utilisée comme miniature principale. Cliquez sur « Définir comme principale » sur une image pour la choisir.",
+    "clickToUpload": "Cliquez pour télécharger des images",
+    "uploading": "Téléchargement en cours..."
+  },
   "errors": {
     "required": "Ce champ est requis",
     "invalidEmail": "Email invalide",

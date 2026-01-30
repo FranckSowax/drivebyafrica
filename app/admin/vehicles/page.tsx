@@ -350,7 +350,7 @@ export default function AdminVehiclesPage() {
       </div>
 
       {/* Add Vehicle Modal */}
-      <CollaboratorLocaleProvider>
+      <CollaboratorLocaleProvider forceLocale="fr">
         <AddVehicleModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
