@@ -174,6 +174,30 @@ function buildQueryString(
 }
 
 /**
+ * Check if any meaningful filter is active (narrows results beyond default)
+ */
+function hasActiveFilters(filters: VehicleFilters | undefined): boolean {
+  if (!filters) return false;
+  return !!(
+    (filters.source && filters.source !== 'all') ||
+    (filters.makes && filters.makes.length > 0) ||
+    (filters.models && filters.models.length > 0) ||
+    filters.yearFrom ||
+    filters.yearTo ||
+    filters.priceFrom ||
+    filters.priceTo ||
+    filters.mileageMax ||
+    filters.transmission ||
+    filters.fuelType ||
+    filters.driveType ||
+    filters.color ||
+    filters.bodyType ||
+    filters.status ||
+    (filters.search && filters.search.trim().length >= 3)
+  );
+}
+
+/**
  * Fetch vehicles directly via PostgREST API (bypasses Supabase client auth issues)
  */
 async function fetchVehicles(
@@ -197,8 +221,9 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use estimated count to avoid timeout on 190k+ rows (exact count causes 500)
-      'Prefer': 'count=estimated',
+      // Use exact count when filters narrow the result set (safe, accurate)
+      // Use estimated count for unfiltered queries (190k+ rows would timeout with exact)
+      'Prefer': hasActiveFilters(filters) ? 'count=exact' : 'count=estimated',
     },
   });
 
