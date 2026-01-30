@@ -25,6 +25,7 @@ if (!API_KEY) {
   process.exit(1);
 }
 const AED_TO_USD = 0.27;
+const MIN_PRICE_USD = 1000; // Filter out vehicles under $1000
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY');
@@ -314,6 +315,11 @@ async function main() {
             stats.skipped++;
             return null;
           }
+          // Filter out vehicles under minimum price
+          if (!record.current_price_usd || record.current_price_usd < MIN_PRICE_USD) {
+            stats.skipped++;
+            return null;
+          }
           currentSourceIds.add(record.source_id);
           return record;
         } catch (e) {
@@ -411,7 +417,7 @@ async function main() {
   console.log(`Added: ${stats.added}`);
   console.log(`Updated: ${stats.updated}`);
   console.log(`Removed: ${removed}`);
-  console.log(`Skipped (no images): ${stats.skipped}`);
+  console.log(`Skipped (no images / price < $${MIN_PRICE_USD}): ${stats.skipped}`);
   console.log(`Errors: ${stats.errors}`);
 
   // Output for GitHub Actions summary
