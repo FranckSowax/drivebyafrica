@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Car, RefreshCw, BarChart3 } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Car, RefreshCw, BarChart3, Plus } from 'lucide-react';
 import { AdminStats, SyncStatus, VehicleTable } from '@/components/admin';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { authFetch } from '@/lib/supabase/auth-helpers';
+import { AddVehicleModal } from '@/components/collaborator/AddVehicleModal';
+import { CollaboratorLocaleProvider } from '@/components/collaborator/CollaboratorLocaleProvider';
 import type { Vehicle } from '@/types/vehicle';
 
 interface StatsData {
@@ -54,6 +57,15 @@ interface SyncLog {
 
 export default function AdminVehiclesPage() {
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Open modal if ?add=true in URL (from sidebar link)
+  useEffect(() => {
+    if (searchParams.get('add') === 'true') {
+      setIsAddModalOpen(true);
+    }
+  }, [searchParams]);
 
   // Stats state
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -241,13 +253,22 @@ export default function AdminVehiclesPage() {
     <div className="min-h-screen bg-[var(--background)] py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-            <span className="text-mandarin">Administration</span> Véhicules
-          </h1>
-          <p className="text-[var(--text-muted)] mt-1">
-            Gérez les véhicules, la synchronisation et les statistiques
-          </p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)]">
+              <span className="text-mandarin">Administration</span> Véhicules
+            </h1>
+            <p className="text-[var(--text-muted)] mt-1">
+              Gérez les véhicules, la synchronisation et les statistiques
+            </p>
+          </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-mandarin text-white font-semibold rounded-xl hover:bg-mandarin/90 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Ajouter un véhicule
+          </button>
         </div>
 
         {/* Tabs */}
@@ -327,6 +348,21 @@ export default function AdminVehiclesPage() {
           />
         )}
       </div>
+
+      {/* Add Vehicle Modal */}
+      <CollaboratorLocaleProvider>
+        <AddVehicleModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            fetchVehicles(page, filters);
+            fetchStats();
+            toast.success('Véhicule ajouté avec succès');
+          }}
+          apiEndpoint="/api/admin/vehicles"
+          showSourceField
+        />
+      </CollaboratorLocaleProvider>
     </div>
   );
 }

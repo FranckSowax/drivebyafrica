@@ -56,6 +56,93 @@ function applyFilters(
   return query;
 }
 
+// POST - Create a vehicle manually
+export async function POST(request: NextRequest) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) {
+    return adminCheck.response;
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  try {
+    const body = await request.json();
+    const {
+      make,
+      model,
+      year,
+      source,
+      title,
+      description,
+      price,
+      mileage,
+      fuel_type,
+      transmission,
+      drive_type,
+      engine_size,
+      body_type,
+      color,
+      condition,
+      images,
+    } = body;
+
+    if (!make || !model || !year || !source) {
+      return NextResponse.json(
+        { error: 'Make, model, year and source are required' },
+        { status: 400 }
+      );
+    }
+
+    const validSources = ['china', 'korea', 'dubai'];
+    if (!validSources.includes(source)) {
+      return NextResponse.json(
+        { error: 'Source must be china, korea or dubai' },
+        { status: 400 }
+      );
+    }
+
+    const sourceId = `admin-${adminCheck.user.id.substring(0, 8)}-${Date.now()}`;
+    const adminNotes = title ? `${title}${description ? '\n\n' + description : ''}` : (description || null);
+
+    const { data: vehicle, error: createError } = await supabase
+      .from('vehicles')
+      .insert({
+        source,
+        source_id: sourceId,
+        make,
+        model,
+        year,
+        mileage: mileage || null,
+        fuel_type: fuel_type || null,
+        transmission: transmission || null,
+        drive_type: drive_type || null,
+        engine_cc: engine_size || null,
+        body_type: body_type || null,
+        color: color || null,
+        grade: condition || null,
+        images: images || [],
+        start_price_usd: price || null,
+        buy_now_price_usd: price || null,
+        current_price_usd: price || null,
+        status: 'available',
+        is_visible: true,
+        admin_notes: adminNotes,
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Error creating vehicle:', createError);
+      return NextResponse.json({ error: createError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, vehicle });
+  } catch (error) {
+    console.error('Error creating vehicle:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // GET - List vehicles with filters
 export async function GET(request: NextRequest) {
   // Vérification admin obligatoire

@@ -20,6 +20,7 @@ import {
   Briefcase,
   Bell,
   Package,
+  PlusCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,7 @@ const mainNavItems: NavItem[] = [
     ]
   },
   { href: '/admin/orders', label: 'Commandes', icon: CreditCard },
+  { href: '/admin/vehicles?add=true', label: 'Ajouter véhicule', icon: PlusCircle, exact: true },
   { href: '/admin/batches', label: 'Lots de véhicules', icon: Package },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },

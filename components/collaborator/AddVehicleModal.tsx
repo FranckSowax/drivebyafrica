@@ -11,9 +11,11 @@ interface AddVehicleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  apiEndpoint?: string;
+  showSourceField?: boolean;
 }
 
-export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalProps) {
+export function AddVehicleModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/collaborator/vehicles', showSourceField = false }: AddVehicleModalProps) {
   const { t } = useCollaboratorLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,6 +36,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
   const [bodyType, setBodyType] = useState('');
   const [color, setColor] = useState('');
   const [condition, setCondition] = useState('');
+  const [source, setSource] = useState('');
   const [images, setImages] = useState<string[]>([]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +98,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
     setError('');
 
     try {
-      const response = await authFetch('/api/collaborator/vehicles', {
+      const response = await authFetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,6 +116,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
           body_type: bodyType || undefined,
           color: color || undefined,
           condition: condition || undefined,
+          ...(showSourceField && source ? { source } : {}),
           images,
         }),
       });
@@ -138,6 +142,7 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
       setBodyType('');
       setColor('');
       setCondition('');
+      setSource('');
       setImages([]);
 
       onSuccess?.();
@@ -243,6 +248,25 @@ export function AddVehicleModal({ isOpen, onClose, onSuccess }: AddVehicleModalP
             placeholder="2023 Toyota Camry - Low Mileage"
           />
         </div>
+
+        {showSourceField && (
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">
+              Pays d&apos;origine <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              required
+              className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+            >
+              <option value="">Sélectionner...</option>
+              <option value="china">Chine</option>
+              <option value="korea">Corée</option>
+              <option value="dubai">Dubaï</option>
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-900 mb-1">
