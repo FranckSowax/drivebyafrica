@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { VehicleCard } from '@/components/vehicles/VehicleCard';
 import { SearchFilterBar } from '@/components/home/SearchFilterBar';
 import { useTranslation } from '@/components/providers/LocaleProvider';
-import type { Vehicle } from '@/types/vehicle';
+import { usePopularVehicles } from '@/lib/hooks/usePopularVehicles';
 
 const featureIcons = {
   verified: Car,
@@ -26,14 +26,11 @@ const stepNumbers = ['01', '02', '03', '04'];
 const statValues = ['15,000+', '2,500+', '12', '98%'];
 const statKeys = ['vehicles', 'clients', 'countries', 'satisfaction'] as const;
 
-interface LandingContentProps {
-  featuredVehicles: Vehicle[];
-}
-
-export function LandingContent({ featuredVehicles }: LandingContentProps) {
+export function LandingContent() {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const { vehicles: featuredVehicles, isLoading: isLoadingPopular } = usePopularVehicles();
 
   const toggleVideo = () => {
     const video = videoRef.current;
@@ -180,33 +177,46 @@ export function LandingContent({ featuredVehicles }: LandingContentProps) {
       </section>
 
       {/* Featured Vehicles */}
-      {featuredVehicles && featuredVehicles.length > 0 && (
-        <section className="py-20 bg-[var(--background)]">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-end mb-10">
-              <div>
-                <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-                  {t('landing.featured.title')} <span className="text-mandarin">{t('landing.featured.titleHighlight')}</span>
-                </h2>
-                <p className="text-[var(--text-muted)]">
-                  {t('landing.featured.subtitle')}
-                </p>
-              </div>
-              <Link href="/cars">
-                <Button variant="outline" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                  {t('landing.featured.viewAll')}
-                </Button>
-              </Link>
+      <section className="py-20 bg-[var(--background)]">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-end mb-10">
+            <div>
+              <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+                {t('landing.featured.title')} <span className="text-mandarin">{t('landing.featured.titleHighlight')}</span>
+              </h2>
+              <p className="text-[var(--text-muted)]">
+                {t('landing.featured.subtitle')}
+              </p>
             </div>
+            <Link href="/cars">
+              <Button variant="outline" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                {t('landing.featured.viewAll')}
+              </Button>
+            </Link>
+          </div>
 
+          {isLoadingPopular ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl overflow-hidden animate-pulse">
+                  <div className="aspect-[4/3] bg-[var(--surface)]" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-[var(--surface)] rounded w-3/4" />
+                    <div className="h-3 bg-[var(--surface)] rounded w-1/2" />
+                    <div className="h-5 bg-[var(--surface)] rounded w-1/3 mt-4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : featuredVehicles.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} />
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          ) : null}
+        </div>
+      </section>
 
       {/* How It Works */}
       <section className="py-20 bg-gradient-to-b from-[var(--background)] to-[var(--surface)]">
