@@ -16,6 +16,13 @@ const CHINA_CDN_DOMAINS = [
   'dongchedi.com',   // Dongchedi direct
 ];
 
+// Blocked CDN servers that return 403 from outside China - skip immediately
+const BLOCKED_CDN_PATTERNS = [
+  'p1-dcd-sign.byteimg.com',
+  'p3-dcd-sign.byteimg.com',
+  'p6-dcd-sign.byteimg.com',
+];
+
 // A tiny blurred placeholder for loading state
 const shimmer = (w: number, h: number) => `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -44,6 +51,13 @@ const blurDataURL = (w: number, h: number) =>
  */
 function needsProxy(url: string): boolean {
   return CHINA_CDN_DOMAINS.some(domain => url.includes(domain));
+}
+
+/**
+ * Check if URL is from a blocked CDN that always returns 403 from outside China
+ */
+function isBlockedCdn(url: string): boolean {
+  return BLOCKED_CDN_PATTERNS.some(pattern => url.includes(pattern));
 }
 
 /**
@@ -112,6 +126,9 @@ export function OptimizedImage({
 
     // If the signed URL has expired, show placeholder immediately (no retry needed)
     if (isUrlExpired(src)) return PLACEHOLDER_IMAGE;
+
+    // If the URL is from a blocked CDN, show placeholder immediately (no proxy attempt)
+    if (isBlockedCdn(src)) return PLACEHOLDER_IMAGE;
 
     // Use proxy for Chinese CDN images that block external Referer
     if (useProxy && needsProxy(src)) {

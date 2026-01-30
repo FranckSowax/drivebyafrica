@@ -9,6 +9,13 @@ const PROXY_DOMAINS = [
   'dongchedi.com',
 ];
 
+// Blocked CDN servers that return 403 from outside China
+const BLOCKED_CDN_PATTERNS = [
+  'p1-dcd-sign.byteimg.com',
+  'p3-dcd-sign.byteimg.com',
+  'p6-dcd-sign.byteimg.com',
+];
+
 /**
  * Parse images field that might be stored as PostgreSQL array string
  * e.g., '{"url1","url2"}' or '{url1,url2}' -> ['url1', 'url2']
@@ -122,12 +129,31 @@ function simpleHash(str: string): string {
 }
 
 /**
+ * Check if URL is from a blocked CDN or has expired
+ */
+export function isUnavailableImage(url: string): boolean {
+  if (!url) return true;
+  // Blocked CDN servers return 403 from outside China
+  if (BLOCKED_CDN_PATTERNS.some(pattern => url.includes(pattern))) return true;
+  // Expired signed URLs won't become valid again
+  const expiresMatch = url.match(/x-expires=(\d+)/);
+  if (expiresMatch) {
+    const expiresTimestamp = parseInt(expiresMatch[1]) * 1000;
+    if (Date.now() > expiresTimestamp) return true;
+  }
+  return false;
+}
+
+/**
  * Get the proxied URL for an image
  * Uses proxy for autoimg.cn (CHE168) which blocks requests with external Referer.
- * byteimg.com (Dongchedi) images work directly.
+ * Returns empty string for blocked/expired URLs (caller should use placeholder).
  */
 export function getProxiedImageUrl(url: string): string {
   if (!url) return url;
+
+  // Skip blocked CDN and expired URLs immediately
+  if (isUnavailableImage(url)) return '';
 
   // Use proxy for autoimg.cn (CHE168) - blocks external Referer
   if (url.includes('autoimg.cn')) {
@@ -141,9 +167,9 @@ export function getProxiedImageUrl(url: string): string {
 }
 
 /**
- * Process an array of image URLs
+ * Process an array of image URLs, filtering out blocked/expired ones
  */
 export function getProxiedImageUrls(urls: string[] | null | undefined): string[] {
   if (!urls || !Array.isArray(urls)) return [];
-  return urls.map(getProxiedImageUrl);
+  return urls.map(getProxiedImageUrl).filter(Boolean);
 }
