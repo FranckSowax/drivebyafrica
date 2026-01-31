@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drive by Africa</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        :root {
+            --brand: #F97316;
+            --brand-dark: #EA580C;
+            --brand-glow: rgba(249, 115, 22, 0.3);
+            --bg: var(--tg-theme-bg-color, #0a0a0a);
+            --text: var(--tg-theme-text-color, #ffffff);
+            --hint: var(--tg-theme-hint-color, #666666);
+            --card-bg: var(--tg-theme-secondary-bg-color, #1f1f1f);
+            --border: #2d2d2d;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px var(--brand-glow);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.4em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 0.85em;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.9;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        /* Search */
+        .search-container {
+            padding: 12px 16px;
+            background: var(--card-bg);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 25px;
+            background: #1a1a1a;
+            color: var(--text);
+            font-size: 0.95em;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--brand);
+        }
+
+        .search-input::placeholder {
+            color: var(--hint);
+        }
+
+        .search-btn {
+            background: var(--brand);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .search-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text);
+        }
+
+        .filter-chip.active {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+        }
+
+        .filter-chip:active {
+            transform: scale(0.95);
+        }
+
+        /* Source filter row */
+        .source-filters {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .source-filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .source-chip {
+            padding: 6px 14px;
+            background: transparent;
+            border-radius: 16px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--hint);
+        }
+
+        .source-chip.active {
+            background: rgba(249, 115, 22, 0.15);
+            border-color: var(--brand);
+            color: var(--brand);
+        }
+
+        /* Cars list */
+        .cars-list {
+            padding: 8px 16px;
+        }
+
+        .car-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            animation: slideUp 0.3s ease-out;
+            border: 1px solid var(--border);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .car-image-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+
+        .car-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .car-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            color: #fff;
+        }
+
+        .car-badge.source-china { border-left: 3px solid #EF4444; }
+        .car-badge.source-korea { border-left: 3px solid #3B82F6; }
+        .car-badge.source-dubai { border-left: 3px solid #F59E0B; }
+
+        .car-info {
+            padding: 14px;
+        }
+
+        .car-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .car-name {
+            font-size: 1.05em;
+            font-weight: bold;
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .car-year {
+            color: var(--hint);
+            font-weight: normal;
+        }
+
+        .car-price {
+            color: var(--brand);
+            font-weight: bold;
+            font-size: 1em;
+            white-space: nowrap;
+        }
+
+        .car-price-usd {
+            color: var(--hint);
+            font-size: 0.8em;
+            font-weight: normal;
+        }
+
+        .car-specs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.85em;
+            color: var(--hint);
+            flex-wrap: wrap;
+        }
+
+        .car-spec {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .car-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--brand);
+            color: #ffffff;
+        }
+
+        .btn-primary:active {
+            background: var(--brand-dark);
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:active {
+            background: #3d3d3d;
+        }
+
+        /* Bottom nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.7em;
+            color: var(--hint);
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--brand);
+        }
+
+        .nav-item:active {
+            background: rgba(249, 115, 22, 0.1);
+        }
+
+        .nav-icon {
+            font-size: 1.6em;
+        }
+
+        /* Loading / Empty */
+        .loading {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--hint);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--hint);
+        }
+
+        .empty-icon {
+            font-size: 3.5em;
+            margin-bottom: 16px;
+        }
+
+        /* How it works */
+        .section-content {
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .step {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 14px;
+            background: var(--card-bg);
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: var(--brand);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            flex-shrink: 0;
+            color: #fff;
+        }
+
+        .step-content h3 {
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 0.85em;
+            color: var(--hint);
+            line-height: 1.4;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .pagination-btn {
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn:active:not(:disabled) {
+            background: var(--brand);
+            border-color: var(--brand);
+        }
+
+        .pagination-info {
+            font-size: 0.85em;
+            color: var(--hint);
+        }
+
+        .results-count {
+            text-align: center;
+            padding: 8px 16px 4px;
+            font-size: 0.85em;
+            color: var(--hint);
+        }
+
+        /* Image placeholder */
+        .img-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="https://drivebyafrica.netlify.app/Favcon%20-driveby-africa-dark.png" alt="DBA" onerror="this.parentElement.textContent='🚗'">
+                </div>
+                Drive by Africa
+            </div>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span>🚗</span>
+                <span class="stat-value" id="totalCount">...</span>
+                <span>Véhicules</span>
+            </div>
+            <div class="stat-item">
+                <span>🌍</span>
+                <span class="stat-value">3</span>
+                <span>Sources</span>
+            </div>
+            <div class="stat-item">
+                <span>⭐</span>
+                <span class="stat-value">98%</span>
+                <span>Satisfaction</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="Rechercher (marque, modèle...)">
+            <button class="search-btn" onclick="searchCars()">🔍</button>
+        </div>
+    </div>
+
+    <div class="filters" id="sourceFilters">
+        <div class="filter-chip active" data-source="all" onclick="setSource(this, 'all')">Tous</div>
+        <div class="filter-chip" data-source="china" onclick="setSource(this, 'china')">🇨🇳 Chine</div>
+        <div class="filter-chip" data-source="korea" onclick="setSource(this, 'korea')">🇰🇷 Corée</div>
+        <div class="filter-chip" data-source="dubai" onclick="setSource(this, 'dubai')">🇦🇪 Dubaï</div>
+    </div>
+
+    <div class="source-filters" id="bodyFilters">
+        <div class="source-chip active" data-body="all" onclick="setBody(this, 'all')">Tous types</div>
+        <div class="source-chip" data-body="suv" onclick="setBody(this, 'suv')">SUV</div>
+        <div class="source-chip" data-body="sedan" onclick="setBody(this, 'sedan')">Berline</div>
+        <div class="source-chip" data-body="pickup" onclick="setBody(this, 'pickup')">Pickup</div>
+        <div class="source-chip" data-body="hatchback" onclick="setBody(this, 'hatchback')">Compact</div>
+        <div class="source-chip" data-body="van" onclick="setBody(this, 'van')">Van</div>
+    </div>
+
+    <div id="resultsCount" class="results-count" style="display:none;"></div>
+
+    <div id="mainContent" class="cars-list">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>Chargement des véhicules...</div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('home', this)">
+            <span class="nav-icon">🏠</span>
+            <span>Accueil</span>
+        </div>
+        <div class="nav-item" onclick="showSection('search', this)">
+            <span class="nav-icon">🔍</span>
+            <span>Rechercher</span>
+        </div>
+        <div class="nav-item" onclick="showSection('how', this)">
+            <span class="nav-icon">📋</span>
+            <span>Guide</span>
+        </div>
+        <div class="nav-item" onclick="showSection('contact', this)">
+            <span class="nav-icon">💬</span>
+            <span>Contact</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // Configuration - Replace with your actual keys
+        // ============================================================
+        const CONFIG = {
+            supabaseUrl: 'https://ggwfilyahaljqqsookls.supabase.co',
+            supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdnd2ZpbHlhaGFsanFxc29va2xzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzYzMjcsImV4cCI6MjA4MzgxMjMyN30.-ml_nY2KWxFwm4V8mI-zcMr9uyYUtIT0Rfh_i4u13Os',
+            siteUrl: 'https://drivebyafrica.netlify.app',
+            whatsapp: '24177000000',
+            xafRate: 615,
+            pageSize: 12,
+        };
+
+        // ============================================================
+        // Telegram Web App Init
+        // ============================================================
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // Apply Telegram theme
+        if (tg.themeParams) {
+            const r = document.documentElement.style;
+            if (tg.themeParams.bg_color) r.setProperty('--bg', tg.themeParams.bg_color);
+            if (tg.themeParams.text_color) r.setProperty('--text', tg.themeParams.text_color);
+            if (tg.themeParams.hint_color) r.setProperty('--hint', tg.themeParams.hint_color);
+            if (tg.themeParams.secondary_bg_color) r.setProperty('--card-bg', tg.themeParams.secondary_bg_color);
+        }
+
+        // ============================================================
+        // State
+        // ============================================================
+        let currentSource = 'all';
+        let currentBody = 'all';
+        let searchQuery = '';
+        let currentPage = 1;
+        let totalVehicles = 0;
+
+        // ============================================================
+        // Supabase API
+        // ============================================================
+        async function fetchVehicles(page = 1) {
+            const container = document.getElementById('mainContent');
+            const resultsDiv = document.getElementById('resultsCount');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><div>Chargement...</div></div>';
+            resultsDiv.style.display = 'none';
+
+            try {
+                const limit = CONFIG.pageSize;
+                const offset = (page - 1) * limit;
+
+                const params = new URLSearchParams();
+                params.set('select', 'id,source,make,model,year,mileage,start_price_usd,current_price_usd,buy_now_price_usd,fuel_type,transmission,body_type,images,status,is_visible');
+                params.append('status', 'eq.available');
+                params.append('is_visible', 'eq.true');
+                params.set('order', 'created_at.desc');
+                params.set('limit', String(limit));
+                params.set('offset', String(offset));
+
+                // Source filter
+                if (currentSource !== 'all') {
+                    params.append('source', `eq.${currentSource}`);
+                }
+
+                // Body type filter
+                if (currentBody !== 'all') {
+                    params.append('body_type', `ilike.*${currentBody}*`);
+                }
+
+                // Search
+                if (searchQuery) {
+                    params.append('or', `(make.ilike.*${searchQuery}*,model.ilike.*${searchQuery}*)`);
+                }
+
+                const url = `${CONFIG.supabaseUrl}/rest/v1/vehicles?${params.toString()}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'apikey': CONFIG.supabaseAnonKey,
+                        'Authorization': `Bearer ${CONFIG.supabaseAnonKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'count=estimated',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                // Parse count from Content-Range header
+                const contentRange = response.headers.get('content-range');
+                if (contentRange) {
+                    const match = contentRange.match(/\/(\d+)/);
+                    if (match) {
+                        totalVehicles = parseInt(match[1]);
+                        document.getElementById('totalCount').textContent = formatNumber(totalVehicles);
+                    }
+                }
+
+                const vehicles = await response.json();
+                currentPage = page;
+
+                if (!vehicles || vehicles.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🔍</div>
+                            <h3>Aucun véhicule trouvé</h3>
+                            <p>Essayez d'autres filtres ou une autre recherche</p>
+                        </div>
+                    `;
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+
+                // Show results count
+                resultsDiv.textContent = `${formatNumber(totalVehicles)} véhicule${totalVehicles > 1 ? 's' : ''} trouvé${totalVehicles > 1 ? 's' : ''}`;
+                resultsDiv.style.display = 'block';
+
+                // Render cards
+                container.innerHTML = vehicles.map(v => renderCard(v)).join('');
+
+                // Pagination
+                const totalPages = Math.ceil(totalVehicles / limit);
+                if (totalPages > 1) {
+                    container.innerHTML += `
+                        <div class="pagination">
+                            <button class="pagination-btn" onclick="fetchVehicles(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← Préc.</button>
+                            <span class="pagination-info">${page} / ${totalPages}</span>
+                            <button class="pagination-btn" onclick="fetchVehicles(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Suiv. →</button>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <h3>Erreur de chargement</h3>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="fetchVehicles(${page})" style="margin-top:16px;max-width:200px;">Réessayer</button>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================================
+        // Render a vehicle card
+        // ============================================================
+        function renderCard(v) {
+            const images = parseImages(v.images);
+            const firstImage = images.length > 0 ? images[0] : null;
+            const price = getPrice(v);
+            const priceFcfa = price ? formatFcfa(price * CONFIG.xafRate) : null;
+            const priceUsd = price ? `$${formatNumber(Math.round(price))}` : null;
+
+            const sourceLabel = { china: '🇨🇳 Chine', korea: '🇰🇷 Corée', dubai: '🇦🇪 Dubaï' }[v.source] || v.source;
+            const sourceClass = `source-${v.source}`;
+
+            const imageHtml = firstImage
+                ? `<img src="${proxyImage(firstImage)}" alt="${v.make} ${v.model}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=img-placeholder>🚗</div>'">`
+                : `<div class="img-placeholder">🚗</div>`;
+
+            return `
+                <div class="car-card">
+                    <div class="car-image-container">
+                        ${imageHtml}
+                        <div class="car-badge ${sourceClass}">${sourceLabel}</div>
+                    </div>
+                    <div class="car-info">
+                        <div class="car-header">
+                            <div class="car-name">
+                                ${v.make} ${v.model}
+                                <span class="car-year">${v.year || ''}</span>
+                            </div>
+                            <div>
+                                ${priceFcfa ? `<div class="car-price">${priceFcfa}</div>` : '<div class="car-price">Sur demande</div>'}
+                                ${priceUsd ? `<div class="car-price-usd">${priceUsd}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="car-specs">
+                            ${v.mileage ? `<div class="car-spec">📏 ${formatNumber(v.mileage)} km</div>` : ''}
+                            ${v.fuel_type ? `<div class="car-spec">⛽ ${v.fuel_type}</div>` : ''}
+                            ${v.transmission ? `<div class="car-spec">⚙️ ${v.transmission}</div>` : ''}
+                            ${v.body_type ? `<div class="car-spec">🚙 ${v.body_type}</div>` : ''}
+                        </div>
+                        <div class="car-actions">
+                            <button class="btn btn-primary" onclick="openVehicle('${v.id}')">Voir détails</button>
+                            <button class="btn btn-secondary" onclick="requestQuote('${v.id}', '${escapeHtml(v.make)} ${escapeHtml(v.model)} ${v.year || ''}')">💬 Devis</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // Utility functions
+        // ============================================================
+        function parseImages(images) {
+            if (!images) return [];
+            if (Array.isArray(images)) return images.filter(Boolean);
+            if (typeof images === 'string') {
+                try { return JSON.parse(images).filter(Boolean); }
+                catch { return []; }
+            }
+            return [];
+        }
+
+        function getPrice(v) {
+            return v.buy_now_price_usd || v.current_price_usd || v.start_price_usd || null;
+        }
+
+        function proxyImage(url) {
+            if (!url) return '';
+            // Use the site's image proxy for Chinese CDN images
+            if (url.includes('byteimg.com') || url.includes('dcd-sign') || url.includes('dongchedi')) {
+                return `${CONFIG.siteUrl}/api/image-proxy?url=${encodeURIComponent(url)}&w=400&q=75`;
+            }
+            return url;
+        }
+
+        function formatFcfa(amount) {
+            return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+        }
+
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        // ============================================================
+        // Filters
+        // ============================================================
+        function setSource(el, source) {
+            currentSource = source;
+            document.querySelectorAll('#sourceFilters .filter-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            currentPage = 1;
+            fetchVehicles(1);
+        }
+
+        function setBody(el, body) {
+            currentBody = body;
+            document.querySelectorAll('#bodyFilters .source-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            currentPage = 1;
+            fetchVehicles(1);
+        }
+
+        function searchCars() {
+            searchQuery = document.getElementById('searchInput').value.trim();
+            currentPage = 1;
+            fetchVehicles(1);
+        }
+
+        // ============================================================
+        // Actions
+        // ============================================================
+        function openVehicle(vehicleId) {
+            const url = `${CONFIG.siteUrl}/cars/${vehicleId}`;
+            tg.openLink(url);
+        }
+
+        function requestQuote(vehicleId, vehicleName) {
+            const vehicleUrl = `${CONFIG.siteUrl}/cars/${vehicleId}`;
+            const message = encodeURIComponent(
+                `Bonjour, je suis intéressé par ce véhicule :\n${vehicleName}\n${vehicleUrl}\n\nPouvez-vous me faire un devis ?`
+            );
+
+            tg.showPopup({
+                title: 'Demander un devis',
+                message: vehicleName,
+                buttons: [
+                    { id: 'whatsapp', text: '💬 WhatsApp', type: 'default' },
+                    { id: 'website', text: '🌐 Voir sur le site', type: 'default' },
+                    { id: 'cancel', text: 'Annuler', type: 'cancel' },
+                ]
+            }, function(buttonId) {
+                if (buttonId === 'whatsapp') {
+                    tg.openLink(`https://wa.me/${CONFIG.whatsapp}?text=${message}`);
+                } else if (buttonId === 'website') {
+                    tg.openLink(`${CONFIG.siteUrl}/cars/${vehicleId}`);
+                }
+            });
+        }
+
+        // ============================================================
+        // Sections
+        // ============================================================
+        function showSection(section, navEl) {
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            if (navEl) navEl.classList.add('active');
+
+            const container = document.getElementById('mainContent');
+            const resultsDiv = document.getElementById('resultsCount');
+            const filtersVisible = section === 'home' || section === 'search';
+
+            document.getElementById('sourceFilters').style.display = filtersVisible ? 'flex' : 'none';
+            document.getElementById('bodyFilters').style.display = filtersVisible ? 'flex' : 'none';
+            document.querySelector('.search-container').style.display = filtersVisible ? 'block' : 'none';
+            resultsDiv.style.display = filtersVisible ? resultsDiv.style.display : 'none';
+
+            switch (section) {
+                case 'home':
+                    fetchVehicles(currentPage);
+                    break;
+                case 'search':
+                    document.getElementById('searchInput').focus();
+                    break;
+                case 'how':
+                    container.innerHTML = renderHowItWorks();
+                    break;
+                case 'contact':
+                    container.innerHTML = renderContact();
+                    break;
+            }
+        }
+
+        function renderHowItWorks() {
+            return `
+                <div class="section-content">
+                    <div class="section-title">📋 Comment ça marche</div>
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Choisissez</h3>
+                            <p>Parcourez notre catalogue et trouvez le véhicule idéal parmi des milliers d'options venant de Chine, Corée et Dubaï.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Estimez</h3>
+                            <p>Calculez les frais de transport jusqu'à votre port et obtenez un devis personnalisé gratuitement.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Réservez</h3>
+                            <p>Versez un acompte pour bloquer le véhicule et lancer la procédure d'importation.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3>Recevez</h3>
+                            <p>Suivez votre véhicule en temps réel jusqu'à sa livraison au port de votre choix en Afrique.</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="tg.openLink('${CONFIG.siteUrl}')" style="width:100%;margin-top:16px;">
+                        🌐 Visiter le site complet
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderContact() {
+            return `
+                <div class="section-content" style="text-align:center;">
+                    <div class="section-title">💬 Contactez-nous</div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <button class="btn btn-primary" onclick="tg.openLink('https://wa.me/${CONFIG.whatsapp}')">
+                            💬 WhatsApp
+                        </button>
+                        <button class="btn btn-secondary" onclick="tg.openLink('mailto:contact@driveby-africa.com')">
+                            ✉️ Email
+                        </button>
+                        <button class="btn btn-secondary" onclick="tg.openLink('${CONFIG.siteUrl}')">
+                            🌐 Site web
+                        </button>
+                    </div>
+                    <div style="margin-top:24px;padding:16px;background:var(--card-bg);border-radius:14px;border:1px solid var(--border);">
+                        <h3 style="margin-bottom:8px;">Support 24/7</h3>
+                        <p style="font-size:0.9em;color:var(--hint);line-height:1.5;">
+                            Équipe dédiée disponible par WhatsApp.<br>
+                            Assistance en français tout au long du processus d'importation.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // Init
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if API key is configured
+            if (!CONFIG.supabaseAnonKey) {
+                document.getElementById('mainContent').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚙️</div>
+                        <h3>Configuration requise</h3>
+                        <p style="margin-top:8px;">Ajoutez votre clé <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> dans la variable <code>CONFIG.supabaseAnonKey</code> du fichier HTML.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            fetchVehicles(1);
+
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchCars();
+            });
+        });
+    </script>
+</body>
+</html>
