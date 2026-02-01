@@ -36,9 +36,16 @@ const registerSchema = z
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 const countries = [
+  // Afrique Centrale
   { value: 'GA', label: 'Gabon' },
   { value: 'CM', label: 'Cameroun' },
   { value: 'CG', label: 'Congo' },
+  { value: 'CD', label: 'RD Congo' },
+  { value: 'CF', label: 'Centrafrique' },
+  { value: 'TD', label: 'Tchad' },
+  { value: 'GQ', label: 'Guinée Équatoriale' },
+  { value: 'ST', label: 'São Tomé-et-Príncipe' },
+  // Afrique de l'Ouest
   { value: 'CI', label: "Côte d'Ivoire" },
   { value: 'SN', label: 'Sénégal' },
   { value: 'BJ', label: 'Bénin' },
@@ -46,6 +53,54 @@ const countries = [
   { value: 'ML', label: 'Mali' },
   { value: 'BF', label: 'Burkina Faso' },
   { value: 'GN', label: 'Guinée' },
+  { value: 'GW', label: 'Guinée-Bissau' },
+  { value: 'NE', label: 'Niger' },
+  { value: 'NG', label: 'Nigeria' },
+  { value: 'GH', label: 'Ghana' },
+  { value: 'SL', label: 'Sierra Leone' },
+  { value: 'LR', label: 'Liberia' },
+  { value: 'GM', label: 'Gambie' },
+  { value: 'MR', label: 'Mauritanie' },
+  { value: 'CV', label: 'Cap-Vert' },
+  // Afrique de l'Est
+  { value: 'KE', label: 'Kenya' },
+  { value: 'TZ', label: 'Tanzanie' },
+  { value: 'UG', label: 'Ouganda' },
+  { value: 'RW', label: 'Rwanda' },
+  { value: 'BI', label: 'Burundi' },
+  { value: 'ET', label: 'Éthiopie' },
+  { value: 'DJ', label: 'Djibouti' },
+  { value: 'ER', label: 'Érythrée' },
+  { value: 'SO', label: 'Somalie' },
+  { value: 'SS', label: 'Soudan du Sud' },
+  // Afrique du Nord
+  { value: 'MA', label: 'Maroc' },
+  { value: 'DZ', label: 'Algérie' },
+  { value: 'TN', label: 'Tunisie' },
+  { value: 'LY', label: 'Libye' },
+  { value: 'EG', label: 'Égypte' },
+  { value: 'SD', label: 'Soudan' },
+  // Afrique Australe
+  { value: 'ZA', label: 'Afrique du Sud' },
+  { value: 'AO', label: 'Angola' },
+  { value: 'MZ', label: 'Mozambique' },
+  { value: 'ZM', label: 'Zambie' },
+  { value: 'ZW', label: 'Zimbabwe' },
+  { value: 'BW', label: 'Botswana' },
+  { value: 'NA', label: 'Namibie' },
+  { value: 'MW', label: 'Malawi' },
+  { value: 'SZ', label: 'Eswatini' },
+  { value: 'LS', label: 'Lesotho' },
+  // Océan Indien
+  { value: 'MG', label: 'Madagascar' },
+  { value: 'MU', label: 'Maurice' },
+  { value: 'SC', label: 'Seychelles' },
+  { value: 'KM', label: 'Comores' },
+  // Autres
+  { value: 'FR', label: 'France' },
+  { value: 'BE', label: 'Belgique' },
+  { value: 'CH', label: 'Suisse' },
+  { value: 'CA', label: 'Canada' },
   { value: 'OTHER', label: 'Autre' },
 ];
 

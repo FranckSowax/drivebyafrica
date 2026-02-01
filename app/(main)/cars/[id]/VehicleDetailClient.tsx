@@ -296,7 +296,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               </div>
             )}
 
-            {/* Spécifications & Équipements */}
+            {/* Specifications */}
             <Card>
               <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Spécifications</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -340,89 +340,89 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   </div>
                 )}
               </div>
-
-              {/* Équipements intégrés */}
-              {extracted.features.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-[var(--card-border)]">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Équipements</h3>
-
-                  {/* Highlights */}
-                  {extracted.highlights.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {extracted.highlights.slice(0, 5).map((feature) => (
-                        <span
-                          key={feature.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-mandarin/10 text-[var(--text-primary)]"
-                        >
-                          <span className="text-mandarin">
-                            {(() => {
-                              const CatIcon = CATEGORY_ICON_MAP[feature.category];
-                              return <CatIcon className="w-4 h-4" />;
-                            })()}
-                          </span>
-                          {getFeatureName(feature, 'fr')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Expandable categories */}
-                  {extracted.features.length > extracted.highlights.length && (
-                    <div>
-                      <button
-                        onClick={() => setShowAllFeatures(!showAllFeatures)}
-                        className="flex items-center gap-2 text-sm font-medium text-mandarin hover:text-mandarin/80 transition-colors"
-                      >
-                        {showAllFeatures ? (
-                          <>
-                            <ChevronUp className="w-4 h-4" />
-                            Masquer les détails
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4" />
-                            Voir toutes les options ({extracted.features.length})
-                          </>
-                        )}
-                      </button>
-
-                      {showAllFeatures && (
-                        <div className="mt-4 space-y-5">
-                          {categoriesWithFeatures.map((category) => {
-                            const CatIcon = CATEGORY_ICON_MAP[category];
-                            const label = CATEGORY_LABELS[category].fr;
-                            return (
-                              <div key={category} className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <CatIcon className="w-4 h-4 text-mandarin" />
-                                  <h4 className="text-sm font-medium text-[var(--text-secondary)]">{label}</h4>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {extracted.byCategory[category].map((feature) => (
-                                    <span
-                                      key={feature.id}
-                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-mandarin/10 text-[var(--text-primary)]"
-                                    >
-                                      <span className="text-mandarin">
-                                        {(() => {
-                                          const FIcon = CATEGORY_ICON_MAP[feature.category];
-                                          return <FIcon className="w-3 h-3" />;
-                                        })()}
-                                      </span>
-                                      {getFeatureName(feature, 'fr')}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
             </Card>
+
+            {/* Équipements */}
+            {extracted.features.length > 0 && (
+              <Card>
+                <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Équipements</h2>
+
+                {/* Highlights */}
+                {extracted.highlights.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {extracted.highlights.slice(0, 5).map((feature) => (
+                      <span
+                        key={feature.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-mandarin/10 text-[var(--text-primary)]"
+                      >
+                        <span className="text-mandarin">
+                          {(() => {
+                            const CatIcon = CATEGORY_ICON_MAP[feature.category];
+                            return <CatIcon className="w-4 h-4" />;
+                          })()}
+                        </span>
+                        {getFeatureName(feature, 'fr')}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Expandable categories */}
+                {extracted.features.length > extracted.highlights.length && (
+                  <div>
+                    <button
+                      onClick={() => setShowAllFeatures(!showAllFeatures)}
+                      className="flex items-center gap-2 text-sm font-medium text-mandarin hover:text-mandarin/80 transition-colors"
+                    >
+                      {showAllFeatures ? (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          Masquer les détails
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          Voir toutes les options ({extracted.features.length})
+                        </>
+                      )}
+                    </button>
+
+                    {showAllFeatures && (
+                      <div className="mt-4 space-y-5">
+                        {categoriesWithFeatures.map((category) => {
+                          const CatIcon = CATEGORY_ICON_MAP[category];
+                          const label = CATEGORY_LABELS[category].fr;
+                          return (
+                            <div key={category} className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <CatIcon className="w-4 h-4 text-mandarin" />
+                                <h4 className="text-sm font-medium text-[var(--text-secondary)]">{label}</h4>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {extracted.byCategory[category].map((feature) => (
+                                  <span
+                                    key={feature.id}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-mandarin/10 text-[var(--text-primary)]"
+                                  >
+                                    <span className="text-mandarin">
+                                      {(() => {
+                                        const FIcon = CATEGORY_ICON_MAP[feature.category];
+                                        return <FIcon className="w-3 h-3" />;
+                                      })()}
+                                    </span>
+                                    {getFeatureName(feature, 'fr')}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* Inspection Sheet */}
             {vehicle.auction_sheet_url && (
