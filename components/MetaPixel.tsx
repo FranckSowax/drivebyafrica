@@ -1,8 +1,9 @@
 import Script from 'next/script';
 
-export default function MetaPixel() {
+export default function TrackingScripts() {
   return (
     <>
+      {/* Meta Pixel */}
       <Script
         id="meta-pixel"
         strategy="afterInteractive"
@@ -30,6 +31,24 @@ export default function MetaPixel() {
           alt=""
         />
       </noscript>
+
+      {/* Google Analytics (gtag.js) */}
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-24FX086TGW"
+        strategy="afterInteractive"
+      />
+      <Script
+        id="google-analytics"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-24FX086TGW');
+          `,
+        }}
+      />
     </>
   );
 }
