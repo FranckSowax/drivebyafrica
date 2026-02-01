@@ -27,7 +27,7 @@
     # Permissions Policy - Restrict browser features
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     # Content Security Policy
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://graph.facebook.com; frame-ancestors 'none';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://graph.facebook.com https://www.google-analytics.com https://analytics.google.com https://*.facebook.com; frame-ancestors 'none';"
 
 [[headers]]
   for = "/_next/static/*"
