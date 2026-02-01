@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -16,6 +16,15 @@ import {
   Copy,
   Check,
   MessageCircle,
+  Shield,
+  Sofa,
+  Music,
+  Car,
+  Leaf,
+  Wrench,
+  Cog,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -26,7 +35,12 @@ import { useToast } from '@/components/ui/Toast';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import { ShippingEstimator } from '@/components/vehicles/ShippingEstimator';
 import { PriceRequestButton } from '@/components/vehicles/PriceRequestButton';
-import { VehicleFeatures } from '@/components/vehicles/VehicleFeatures';
+import {
+  extractVehicleFeatures,
+  getFeatureName,
+  CATEGORY_LABELS,
+  type FeatureCategory,
+} from '@/lib/features/vehicle-features';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
@@ -56,6 +70,17 @@ const STATUS_STYLES: Record<VehicleStatus, { bg: string; label: string }> = {
 };
 
 const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
+
+const CATEGORY_ICON_MAP: Record<FeatureCategory, React.ElementType> = {
+  drivetrain: Cog,
+  safety: Shield,
+  comfort: Sofa,
+  entertainment: Music,
+  exterior: Car,
+  performance: Gauge,
+  efficiency: Leaf,
+  tuning: Wrench,
+};
 
 export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const router = useRouter();
@@ -132,6 +157,35 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
     { icon: Fuel, label: 'Carburant', value: vehicle.fuel_type || '-' },
     { icon: Settings, label: 'Cylindrée', value: formatEngineSize(vehicle.engine_cc) },
   ];
+
+  // Extract vehicle features for the integrated equipment section
+  const extracted = useMemo(() => {
+    return extractVehicleFeatures({
+      make: vehicle.make,
+      model: vehicle.model,
+      transmission: vehicle.transmission,
+      fuel_type: vehicle.fuel_type,
+      body_type: vehicle.body_type,
+      drive_type: vehicle.drive_type,
+      engine_cc: vehicle.engine_cc,
+      condition_report:
+        typeof vehicle.condition_report === 'string'
+          ? vehicle.condition_report
+          : vehicle.condition_report != null
+            ? JSON.stringify(vehicle.condition_report)
+            : null,
+    }, 'fr');
+  }, [vehicle]);
+
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
+
+  const categoryOrder: FeatureCategory[] = [
+    'efficiency', 'drivetrain', 'safety', 'comfort',
+    'entertainment', 'exterior', 'performance', 'tuning',
+  ];
+  const categoriesWithFeatures = categoryOrder.filter(
+    (cat) => extracted.byCategory[cat].length > 0
+  );
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-24 lg:pb-12">
@@ -242,7 +296,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
               </div>
             )}
 
-            {/* Specifications */}
+            {/* Spécifications & Équipements */}
             <Card>
               <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Spécifications</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -286,29 +340,88 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   </div>
                 )}
               </div>
-            </Card>
 
-            {/* Features / Équipements */}
-            <Card>
-              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Équipements</h2>
-              <VehicleFeatures
-                vehicle={{
-                  make: vehicle.make,
-                  model: vehicle.model,
-                  transmission: vehicle.transmission,
-                  fuel_type: vehicle.fuel_type,
-                  body_type: vehicle.body_type,
-                  drive_type: vehicle.drive_type,
-                  engine_cc: vehicle.engine_cc,
-                  condition_report:
-                    typeof vehicle.condition_report === 'string'
-                      ? vehicle.condition_report
-                      : vehicle.condition_report != null
-                        ? JSON.stringify(vehicle.condition_report)
-                        : null,
-                }}
-                locale="fr"
-              />
+              {/* Équipements intégrés */}
+              {extracted.features.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-[var(--card-border)]">
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Équipements</h3>
+
+                  {/* Highlights */}
+                  {extracted.highlights.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {extracted.highlights.slice(0, 5).map((feature) => (
+                        <span
+                          key={feature.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-mandarin/10 text-[var(--text-primary)]"
+                        >
+                          <span className="text-mandarin">
+                            {(() => {
+                              const CatIcon = CATEGORY_ICON_MAP[feature.category];
+                              return <CatIcon className="w-4 h-4" />;
+                            })()}
+                          </span>
+                          {getFeatureName(feature, 'fr')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Expandable categories */}
+                  {extracted.features.length > extracted.highlights.length && (
+                    <div>
+                      <button
+                        onClick={() => setShowAllFeatures(!showAllFeatures)}
+                        className="flex items-center gap-2 text-sm font-medium text-mandarin hover:text-mandarin/80 transition-colors"
+                      >
+                        {showAllFeatures ? (
+                          <>
+                            <ChevronUp className="w-4 h-4" />
+                            Masquer les détails
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-4 h-4" />
+                            Voir toutes les options ({extracted.features.length})
+                          </>
+                        )}
+                      </button>
+
+                      {showAllFeatures && (
+                        <div className="mt-4 space-y-5">
+                          {categoriesWithFeatures.map((category) => {
+                            const CatIcon = CATEGORY_ICON_MAP[category];
+                            const label = CATEGORY_LABELS[category].fr;
+                            return (
+                              <div key={category} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <CatIcon className="w-4 h-4 text-mandarin" />
+                                  <h4 className="text-sm font-medium text-[var(--text-secondary)]">{label}</h4>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {extracted.byCategory[category].map((feature) => (
+                                    <span
+                                      key={feature.id}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-mandarin/10 text-[var(--text-primary)]"
+                                    >
+                                      <span className="text-mandarin">
+                                        {(() => {
+                                          const FIcon = CATEGORY_ICON_MAP[feature.category];
+                                          return <FIcon className="w-3 h-3" />;
+                                        })()}
+                                      </span>
+                                      {getFeatureName(feature, 'fr')}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
 
             {/* Inspection Sheet */}

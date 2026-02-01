@@ -184,11 +184,14 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     [setStoreCurrency, setCurrencyInfo, availableCurrencies]
   );
 
+  // Check if the rate has been loaded from /api/currencies (rate > 0)
+  const hasRate = !!(currencyInfo && currencyInfo.rateToUsd > 0);
+
   // Convert USD to selected currency
   const convertFromUsd = useCallback(
     (amountUsd: number): number => {
-      const rate = currencyInfo?.rateToUsd || 1;
-      return amountUsd * rate;
+      if (!currencyInfo || currencyInfo.rateToUsd <= 0) return 0;
+      return amountUsd * currencyInfo.rateToUsd;
     },
     [currencyInfo]
   );
@@ -204,6 +207,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   // Format price in selected currency
   const formatPrice = useCallback(
     (amountUsd: number): string => {
+      // Rate not yet loaded from API — show placeholder
+      if (!hasRate) return '-- --';
+
       const converted = convertFromUsd(amountUsd);
       const code = currencyInfo?.code || 'USD';
       const symbol = currencyInfo?.symbol || '$';
@@ -236,15 +242,16 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       // Default: symbol prefix
       return `${symbol}${formatWithSpaces(converted)}`;
     },
-    [convertFromUsd, currencyInfo, formatWithSpaces]
+    [convertFromUsd, currencyInfo, formatWithSpaces, hasRate]
   );
 
   // Get raw converted value
   const formatPriceRaw = useCallback(
     (amountUsd: number): number => {
+      if (!hasRate) return 0;
       return Math.round(convertFromUsd(amountUsd));
     },
-    [convertFromUsd]
+    [convertFromUsd, hasRate]
   );
 
   // Check if current currency supports full quote conversion
@@ -268,13 +275,13 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       if (found && found.rateToUsd) {
         return found;
       }
-      // Fallback with default rates for quote currencies
+      // Fallback: rate not loaded yet — return with rate 0, price will show placeholder
       if (code === 'XAF' || code === 'XOF') {
         return {
           code: code,
           name: code === 'XAF' ? 'Franc CFA BEAC' : 'Franc CFA BCEAO',
           symbol: 'FCFA',
-          rateToUsd: 615,
+          rateToUsd: 0,
           countries: [],
         };
       }
@@ -283,7 +290,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
           code: 'EUR',
           name: 'Euro',
           symbol: '€',
-          rateToUsd: 0.92,
+          rateToUsd: 0,
           countries: [],
         };
       }

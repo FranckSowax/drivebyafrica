@@ -36,12 +36,13 @@ interface LocaleState {
   setIsLoading: (loading: boolean) => void;
 }
 
-// Default currency info
+// Default currency info — rateToUsd is 0 to signal "not yet loaded from API"
+// The real rate is fetched from /api/currencies on mount and persisted in localStorage
 const defaultCurrencyInfo: CurrencyInfo = {
   code: 'XAF',
   name: 'Franc CFA BEAC',
   symbol: 'FCFA',
-  rateToUsd: 615,
+  rateToUsd: 0,
   countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée équatoriale'],
 };
 
@@ -75,6 +76,7 @@ export const useLocaleStore = create<LocaleState>()(
       partialize: (state) => ({
         language: state.language,
         currency: state.currency,
+        currencyInfo: state.currencyInfo,
         country: state.country,
       }),
     }
