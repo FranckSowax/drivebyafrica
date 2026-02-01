@@ -114,8 +114,8 @@ test.describe('Desktop Responsiveness', () => {
     const header = page.locator('header');
     await expect(header).toBeVisible();
 
-    // Check auth buttons are visible in header (desktop nav)
-    const loginButton = page.locator('header a[href*="/login"]:visible').first();
+    // Auth buttons are <button> elements (not <a> links)
+    const loginButton = page.locator('header button:has-text("Se connecter")').first();
     await expect(loginButton).toBeVisible();
 
     await context.close();
