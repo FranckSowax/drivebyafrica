@@ -13,8 +13,6 @@ import {
   Search,
   X,
   Container,
-  Users,
-  Info,
   Clock,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,24 +25,7 @@ import { useToast } from '@/components/ui/Toast';
 import { BatchQuotePDFModal } from './BatchQuotePDFModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { INSURANCE_RATE, INSPECTION_FEE_USD, getExportTax } from '@/lib/utils/pricing';
-import { useShippingDestinations, type ShippingDestination, type ShippingType } from '@/lib/hooks/useShippingDestinations';
-
-const shippingTypes = [
-  {
-    id: 'container' as ShippingType,
-    name: 'Container seul 20HQ',
-    description: 'Expedition exclusive dans un container dedie',
-    icon: Container,
-    multiplier: 1,
-  },
-  {
-    id: 'groupage' as ShippingType,
-    name: 'Groupage maritime',
-    description: 'Partage du container avec d\'autres commandes',
-    icon: Users,
-    multiplier: 0.5,
-  },
-];
+import { useShippingDestinations, type ShippingDestination } from '@/lib/hooks/useShippingDestinations';
 
 interface BatchShippingEstimatorProps {
   batchId: string;
@@ -92,9 +73,7 @@ export function BatchShippingEstimator({
   } = useShippingDestinations({ searchQuery });
 
   const [selectedDestination, setSelectedDestination] = useState<ShippingDestination | null>(null);
-  const [selectedShippingType, setSelectedShippingType] = useState<ShippingType>('container');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isShippingTypeOpen, setIsShippingTypeOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
@@ -102,24 +81,18 @@ export function BatchShippingEstimator({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const shippingTypeRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Restaurer la destination depuis l'URL apres le login
   useEffect(() => {
     if (!isLoadingDestinations && destinations.length > 0) {
       const destParam = searchParams.get('dest');
-      const shippingParam = searchParams.get('shipping') as ShippingType | null;
 
       if (destParam && !selectedDestination) {
         const savedDest = destinations.find(d => d.id === destParam);
         if (savedDest) {
           setSelectedDestination(savedDest);
         }
-      }
-
-      if (shippingParam && (shippingParam === 'container' || shippingParam === 'groupage')) {
-        setSelectedShippingType(shippingParam);
       }
     }
   }, [isLoadingDestinations, destinations, searchParams, selectedDestination]);
@@ -157,22 +130,16 @@ export function BatchShippingEstimator({
         setIsDropdownOpen(false);
         setSearchQuery('');
       }
-      if (
-        shippingTypeRef.current &&
-        !shippingTypeRef.current.contains(event.target as Node)
-      ) {
-        setIsShippingTypeOpen(false);
-      }
     };
 
-    if (isDropdownOpen || isShippingTypeOpen) {
+    if (isDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen, isShippingTypeOpen]);
+  }, [isDropdownOpen]);
 
   // Auto-open quote modal
   useEffect(() => {
@@ -202,27 +169,11 @@ export function BatchShippingEstimator({
     const effectiveUnitPriceUSD = unitPriceUSD + exportTaxUSD;
     const totalVehiclePriceUSD = effectiveUnitPriceUSD * quantity;
 
-    // 40ft container calculation for lots
+    // 40ft container calculation for lots: 4 vehicles per container
     const cost40ft = selectedDestination.shippingCost40ft[batchSource];
-    const has40ftPricing = cost40ft > 0;
-
-    let totalShippingCostUSD: number;
-    let numberOfContainers: number;
-    let shippingPerVehicleUSD: number;
-
-    if (has40ftPricing) {
-      // Use 40ft container pricing: 4 vehicles per container
-      numberOfContainers = Math.ceil(quantity / VEHICLES_PER_40FT);
-      totalShippingCostUSD = numberOfContainers * cost40ft;
-      shippingPerVehicleUSD = totalShippingCostUSD / quantity;
-    } else {
-      // Fallback to 20ft per-vehicle pricing
-      numberOfContainers = 0;
-      const shippingCostPerVehicleUSD = selectedDestination.shippingCost[batchSource];
-      const shippingTypeConfig = shippingTypes.find(t => t.id === selectedShippingType);
-      shippingPerVehicleUSD = shippingCostPerVehicleUSD * (shippingTypeConfig?.multiplier || 1);
-      totalShippingCostUSD = shippingPerVehicleUSD * quantity;
-    }
+    const numberOfContainers = Math.ceil(quantity / VEHICLES_PER_40FT);
+    const totalShippingCostUSD = numberOfContainers * cost40ft;
+    const shippingPerVehicleUSD = totalShippingCostUSD / quantity;
 
     // Insurance: 2.5% of (vehicle price + shipping)
     const insuranceCostUSD = (totalVehiclePriceUSD + totalShippingCostUSD) * INSURANCE_RATE;
@@ -251,11 +202,10 @@ export function BatchShippingEstimator({
       hasExportTax: exportTaxUSD > 0,
       quoteCurrencyCode,
       // 40ft container info
-      has40ftPricing,
       numberOfContainers,
-      cost40ftPerContainer: has40ftPricing ? Math.round(convertToQuoteCurrency(cost40ft)) : 0,
+      cost40ftPerContainer: Math.round(convertToQuoteCurrency(cost40ft)),
     };
-  }, [unitPriceUSD, batchSource, selectedDestination, selectedShippingType, quantity, convertToQuoteCurrency, quoteCurrencyCode]);
+  }, [unitPriceUSD, batchSource, selectedDestination, quantity, convertToQuoteCurrency, quoteCurrencyCode]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -280,7 +230,7 @@ export function BatchShippingEstimator({
 
     if (!user) {
       toast.info('Veuillez vous connecter pour obtenir un devis');
-      const redirectUrl = `/batches/${batchId}?action=quote${selectedDestination ? `&dest=${selectedDestination.id}` : ''}${selectedShippingType ? `&shipping=${selectedShippingType}` : ''}`;
+      const redirectUrl = `/batches/${batchId}?action=quote${selectedDestination ? `&dest=${selectedDestination.id}` : ''}`;
       router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
       return;
     }
@@ -307,8 +257,8 @@ export function BatchShippingEstimator({
       country: selectedDestination.country,
       flag: selectedDestination.flag,
     },
-    shippingType: selectedShippingType,
-    shippingTypeName: shippingTypes.find(t => t.id === selectedShippingType)?.name || 'Container seul 20HQ',
+    shippingType: 'container' as const,
+    shippingTypeName: 'Container 40HQ',
     calculations,
     userId: user?.id || '',
     userEmail: user?.email || '',
@@ -445,7 +395,7 @@ export function BatchShippingEstimator({
         </div>
       </div>
 
-      {/* Shipping Type Selector */}
+      {/* Shipping Type - Fixed to Container 40HQ for batches */}
       <AnimatePresence>
         {selectedDestination && (
           <motion.div
@@ -456,85 +406,16 @@ export function BatchShippingEstimator({
           >
             <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
               <Ship className="w-4 h-4 inline mr-1" />
-              Type d'expedition
+              Type d&apos;expedition
             </label>
-            <div className="relative" ref={shippingTypeRef}>
-              <button
-                onClick={() => setIsShippingTypeOpen(!isShippingTypeOpen)}
-                className={cn(
-                  'w-full px-4 py-3 bg-[var(--card-bg)] border rounded-xl',
-                  'text-left flex items-center justify-between',
-                  'transition-colors',
-                  'text-[var(--text-primary)]',
-                  isShippingTypeOpen
-                    ? 'border-mandarin ring-2 ring-mandarin/20'
-                    : 'border-[var(--card-border)] hover:border-mandarin/50'
-                )}
-              >
-                {(() => {
-                  const selected = shippingTypes.find(t => t.id === selectedShippingType);
-                  const IconComponent = selected?.icon || Container;
-                  return (
-                    <span className="flex items-center gap-3">
-                      <IconComponent className="w-5 h-5 text-mandarin" />
-                      <div>
-                        <span className="font-medium block">{selected?.name}</span>
-                        <span className="text-xs text-[var(--text-muted)]">{selected?.description}</span>
-                      </div>
-                    </span>
-                  );
-                })()}
-                <ChevronDown
-                  className={cn(
-                    'w-5 h-5 text-[var(--text-muted)] transition-transform duration-200',
-                    isShippingTypeOpen && 'rotate-180'
-                  )}
-                />
-              </button>
-
-              {/* Shipping Type Dropdown */}
-              <AnimatePresence>
-                {isShippingTypeOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute z-50 left-0 right-0 top-full mt-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl overflow-hidden"
-                  >
-                    {shippingTypes.map((type) => {
-                      const IconComponent = type.icon;
-                      return (
-                        <button
-                          key={type.id}
-                          onClick={() => {
-                            setSelectedShippingType(type.id);
-                            setIsShippingTypeOpen(false);
-                          }}
-                          className={cn(
-                            'w-full px-4 py-3 text-left flex items-center gap-3',
-                            'hover:bg-mandarin/10 transition-colors',
-                            'border-b border-[var(--card-border)]/30 last:border-b-0',
-                            selectedShippingType === type.id && 'bg-mandarin/10'
-                          )}
-                        >
-                          <IconComponent className={cn(
-                            'w-5 h-5',
-                            selectedShippingType === type.id ? 'text-mandarin' : 'text-[var(--text-muted)]'
-                          )} />
-                          <div className="flex-1">
-                            <span className="text-[var(--text-primary)] font-medium block">{type.name}</span>
-                            <span className="text-[var(--text-muted)] text-xs">{type.description}</span>
-                          </div>
-                          {selectedShippingType === type.id && (
-                            <div className="w-2 h-2 rounded-full bg-mandarin" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="w-full px-4 py-3 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl">
+              <span className="flex items-center gap-3">
+                <Container className="w-5 h-5 text-mandarin" />
+                <div>
+                  <span className="font-medium text-[var(--text-primary)] block">Container 40HQ</span>
+                  <span className="text-xs text-[var(--text-muted)]">4 vehicules par container</span>
+                </div>
+              </span>
             </div>
 
             {/* Last Update Info */}
@@ -545,25 +426,6 @@ export function BatchShippingEstimator({
                   Prix transport actualises {formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })}
                 </span>
               </div>
-            )}
-
-            {/* Groupage Notice */}
-            {selectedShippingType === 'groupage' && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-3 p-3 bg-royal-blue/10 border border-royal-blue/30 rounded-lg"
-              >
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-royal-blue flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-[var(--text-primary)]">
-                    <p className="font-medium text-royal-blue">Groupage maritime</p>
-                    <p className="mt-1 text-[var(--text-muted)]">
-                      La date de depart sera soumise au chargement complet du container.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
             )}
           </motion.div>
         )}
@@ -602,20 +464,12 @@ export function BatchShippingEstimator({
                 <Ship className="w-4 h-4 text-royal-blue" />
                 <div>
                   <span className="text-[var(--text-muted)] block">Transport maritime</span>
-                  {calculations.has40ftPricing ? (
-                    <span className="text-xs text-royal-blue">
-                      Container 40ft x {calculations.numberOfContainers} ({formatCurrency(calculations.cost40ftPerContainer)}/cont.)
-                    </span>
-                  ) : (
-                    <span className="text-xs text-royal-blue">
-                      {selectedShippingType === 'container' ? 'Container 20HQ' : 'Groupage'} x {quantity}
-                    </span>
-                  )}
-                  {calculations.has40ftPricing && (
-                    <span className="text-xs text-[var(--text-muted)] block">
-                      {quantity} vehicules / 4 par container = {calculations.numberOfContainers} containers
-                    </span>
-                  )}
+                  <span className="text-xs text-royal-blue">
+                    Container 40HQ x {calculations.numberOfContainers} ({formatCurrency(calculations.cost40ftPerContainer)}/cont.)
+                  </span>
+                  <span className="text-xs text-[var(--text-muted)] block">
+                    {quantity} vehicules / 4 par container = {calculations.numberOfContainers} container{calculations.numberOfContainers > 1 ? 's' : ''}
+                  </span>
                 </div>
               </div>
               <span className="text-[var(--text-primary)] font-medium">
