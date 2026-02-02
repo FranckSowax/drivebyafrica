@@ -202,8 +202,35 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
 
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Mobile Title - shown above images on mobile only */}
+          <div className="lg:hidden order-1">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{SOURCE_FLAGS[source]}</span>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                {vehicle.make} {vehicle.model}
+              </h1>
+            </div>
+            <p className="text-[var(--text-muted)] mt-1">
+              {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
+            </p>
+            {isAdmin && (
+              <button
+                onClick={copyVehicleId}
+                className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono bg-[var(--surface)] px-2 py-1 rounded"
+                title="Cliquez pour copier l'ID complet"
+              >
+                {idCopied ? (
+                  <Check className="w-3 h-3 text-jewel" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+                <span>ID: {vehicle.id.slice(0, 8)}...</span>
+              </button>
+            )}
+          </div>
+
           {/* Images Section */}
-          <div className="lg:col-span-2 space-y-2">
+          <div className="lg:col-span-2 order-2 lg:order-1 space-y-2">
             {/* Image Gallery */}
             <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[var(--surface)]">
               <AnimatePresence mode="wait">
@@ -298,11 +325,11 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
           </div>
 
           {/* Right Column - Pricing & Actions */}
-          <div className="lg:row-span-2 space-y-6">
+          <div className="lg:row-span-2 order-3 lg:order-2 space-y-6">
             {/* Main Info Card */}
             <Card className="sticky top-24">
-              {/* Title */}
-              <div className="flex items-start justify-between mb-4">
+              {/* Title - hidden on mobile (shown above images) */}
+              <div className="hidden lg:flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{SOURCE_FLAGS[source]}</span>
@@ -441,7 +468,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
           </div>
 
           {/* Left Column continued - Specs & Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 order-4 lg:order-3 space-y-6">
             {/* Specifications */}
             <Card>
               <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Spécifications</h2>
