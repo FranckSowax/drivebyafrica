@@ -69,6 +69,7 @@ export async function GET(request: Request) {
         phone: partner.phone,
         country: partner.country,
       },
+      covered_countries: partner.covered_countries || [],
       destinations: routes || [],
       canSubmit,
       lastSubmission,

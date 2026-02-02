@@ -239,6 +239,10 @@ export default function PartnerShippingForm({ token }: { token: string }) {
         setLastSubmission(data.lastSubmission);
 
         // Initialize routes from destinations (empty prices)
+        // If covered_countries is set, only those countries are active by default
+        const coveredCountries: string[] = data.covered_countries || [];
+        const hasCoveredCountries = coveredCountries.length > 0;
+
         const initialRoutes: RouteEntry[] = (data.destinations || []).map(
           (d: Destination) => ({
             destination_id: d.destination_id,
@@ -248,7 +252,9 @@ export default function PartnerShippingForm({ token }: { token: string }) {
             korea_cost_usd: null,
             china_cost_usd: null,
             dubai_cost_usd: null,
-            is_active: true,
+            is_active: hasCoveredCountries
+              ? coveredCountries.includes(d.destination_country)
+              : true,
           })
         );
         setRoutes(initialRoutes);

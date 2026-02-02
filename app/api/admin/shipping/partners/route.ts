@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const supabase = adminCheck.supabase as any;
     const body = await request.json();
 
-    const { company_name, contact_person, email, phone, country, notes } = body;
+    const { company_name, contact_person, email, phone, country, notes, covered_countries } = body;
 
     if (!company_name || !contact_person || !email || !phone) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -78,6 +78,7 @@ export async function POST(request: Request) {
         phone,
         country: country || '',
         notes: notes || null,
+        covered_countries: covered_countries || [],
       })
       .select('*')
       .single();

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Loader2, Search, BarChart3, Check, Percent, X } from 'lucide-react';
+import { Loader2, Search, BarChart3, Check, Percent, X, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -168,6 +169,13 @@ export default function AdminComparisonPage() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
+          <Link
+            href="/admin/shipping"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-mandarin transition-colors mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour au transport
+          </Link>
           <h1 className="text-3xl font-bold text-[var(--text-primary)]">
             <BarChart3 className="inline-block w-8 h-8 text-mandarin mr-2 -mt-1" />
             <span className="text-mandarin">Comparaison</span> des tarifs

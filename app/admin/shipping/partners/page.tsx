@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Copy, Loader2, Trash2, CheckCircle, Users, Link2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Copy, Loader2, Trash2, CheckCircle, Users, Link2, ToggleLeft, ToggleRight, ArrowLeft, Search, MapPin } from 'lucide-react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -17,10 +18,84 @@ interface Partner {
   email: string;
   phone: string;
   country: string;
+  covered_countries: string[];
   is_active: boolean;
   created_at: string;
   last_quote_at: string | null;
 }
+
+// Destination countries grouped by region (matching shipping_routes)
+const DESTINATION_COUNTRIES: { region: string; countries: { name: string; flag: string }[] }[] = [
+  {
+    region: 'Afrique de l\'Ouest',
+    countries: [
+      { name: 'Sénégal', flag: '🇸🇳' },
+      { name: 'Côte d\'Ivoire', flag: '🇨🇮' },
+      { name: 'Ghana', flag: '🇬🇭' },
+      { name: 'Nigeria', flag: '🇳🇬' },
+      { name: 'Togo', flag: '🇹🇬' },
+      { name: 'Bénin', flag: '🇧🇯' },
+      { name: 'Guinée', flag: '🇬🇳' },
+      { name: 'Sierra Leone', flag: '🇸🇱' },
+      { name: 'Liberia', flag: '🇱🇷' },
+      { name: 'Gambie', flag: '🇬🇲' },
+      { name: 'Guinée-Bissau', flag: '🇬🇼' },
+      { name: 'Mauritanie', flag: '🇲🇷' },
+      { name: 'Cap-Vert', flag: '🇨🇻' },
+    ],
+  },
+  {
+    region: 'Afrique Centrale',
+    countries: [
+      { name: 'Cameroun', flag: '🇨🇲' },
+      { name: 'Gabon', flag: '🇬🇦' },
+      { name: 'Congo', flag: '🇨🇬' },
+      { name: 'RD Congo', flag: '🇨🇩' },
+      { name: 'Angola', flag: '🇦🇴' },
+      { name: 'Guinée équatoriale', flag: '🇬🇶' },
+      { name: 'São Tomé-et-Príncipe', flag: '🇸🇹' },
+    ],
+  },
+  {
+    region: 'Afrique de l\'Est',
+    countries: [
+      { name: 'Kenya', flag: '🇰🇪' },
+      { name: 'Tanzanie', flag: '🇹🇿' },
+      { name: 'Mozambique', flag: '🇲🇿' },
+      { name: 'Djibouti', flag: '🇩🇯' },
+      { name: 'Soudan', flag: '🇸🇩' },
+      { name: 'Érythrée', flag: '🇪🇷' },
+      { name: 'Somalie', flag: '🇸🇴' },
+      { name: 'Maurice', flag: '🇲🇺' },
+      { name: 'Madagascar', flag: '🇲🇬' },
+      { name: 'Comores', flag: '🇰🇲' },
+      { name: 'Seychelles', flag: '🇸🇨' },
+    ],
+  },
+  {
+    region: 'Afrique Australe',
+    countries: [
+      { name: 'Afrique du Sud', flag: '🇿🇦' },
+      { name: 'Namibie', flag: '🇳🇦' },
+      { name: 'Botswana', flag: '🇧🇼' },
+      { name: 'Zimbabwe', flag: '🇿🇼' },
+      { name: 'Zambie', flag: '🇿🇲' },
+      { name: 'Malawi', flag: '🇲🇼' },
+      { name: 'Eswatini', flag: '🇸🇿' },
+      { name: 'Lesotho', flag: '🇱🇸' },
+    ],
+  },
+  {
+    region: 'Afrique du Nord',
+    countries: [
+      { name: 'Égypte', flag: '🇪🇬' },
+      { name: 'Libye', flag: '🇱🇾' },
+      { name: 'Tunisie', flag: '🇹🇳' },
+      { name: 'Algérie', flag: '🇩🇿' },
+      { name: 'Maroc', flag: '🇲🇦' },
+    ],
+  },
+];
 
 export default function AdminPartnersPage() {
   const toast = useToast();
@@ -37,6 +112,8 @@ export default function AdminPartnersPage() {
     phone: '',
     country: '',
   });
+  const [coveredCountries, setCoveredCountries] = useState<string[]>([]);
+  const [countrySearch, setCountrySearch] = useState('');
 
   const fetchPartners = async () => {
     try {
@@ -73,7 +150,7 @@ export default function AdminPartnersPage() {
       const res = await authFetch('/api/admin/shipping/partners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, covered_countries: coveredCountries }),
       });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
@@ -81,6 +158,8 @@ export default function AdminPartnersPage() {
       copyLink(data.partner.token);
       setShowCreateModal(false);
       setForm({ company_name: '', contact_person: '', email: '', phone: '', country: '' });
+      setCoveredCountries([]);
+      setCountrySearch('');
       fetchPartners();
     } catch {
       toast.error('Erreur lors de la création');
@@ -131,6 +210,13 @@ export default function AdminPartnersPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
+            <Link
+              href="/admin/shipping"
+              className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-mandarin transition-colors mb-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour au transport
+            </Link>
             <h1 className="text-3xl font-bold text-[var(--text-primary)]">
               <Users className="inline-block w-8 h-8 text-mandarin mr-2 -mt-1" />
               <span className="text-mandarin">Partenaires</span> Transport
@@ -201,7 +287,14 @@ export default function AdminPartnersPage() {
                         <p className="text-[var(--text-primary)]">{p.contact_person}</p>
                         <p className="text-sm text-[var(--text-muted)]">{p.phone}</p>
                       </td>
-                      <td className="py-4 px-4 text-[var(--text-primary)]">{p.country}</td>
+                      <td className="py-4 px-4">
+                        <p className="text-[var(--text-primary)]">{p.country}</p>
+                        {p.covered_countries && p.covered_countries.length > 0 && (
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {p.covered_countries.length} pays desservis
+                          </p>
+                        )}
+                      </td>
                       <td className="py-4 px-4 text-center">
                         {p.last_quote_at ? (
                           <span className="text-sm text-jewel">
@@ -253,7 +346,7 @@ export default function AdminPartnersPage() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowCreateModal(false)} />
-          <div className="relative bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 w-full max-w-lg shadow-xl">
+          <div className="relative bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
               Nouveau partenaire
             </h2>
@@ -301,13 +394,138 @@ export default function AdminPartnersPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Pays</label>
+                <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Pays du partenaire</label>
                 <input
                   type="text"
                   value={form.country}
                   onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
                   className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
                 />
+              </div>
+
+              {/* Covered countries multi-select */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] mb-2">
+                  <MapPin className="w-4 h-4" />
+                  Pays desservis ({coveredCountries.length} sélectionnés)
+                </label>
+                <p className="text-xs text-[var(--text-muted)] mb-3">
+                  Sélectionnez les pays où ce partenaire a des lignes de transport. Ces destinations seront actives par défaut dans le formulaire du partenaire.
+                </p>
+
+                {/* Search + Select All / Deselect All */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher un pays..."
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-mandarin focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      const allCountries = DESTINATION_COUNTRIES.flatMap((r) => r.countries.map((c) => c.name));
+                      setCoveredCountries(coveredCountries.length === allCountries.length ? [] : allCountries);
+                    }}
+                    className="text-xs px-3 py-2 rounded-lg bg-[var(--surface)] text-mandarin hover:bg-mandarin/10 transition-colors whitespace-nowrap"
+                  >
+                    {coveredCountries.length === DESTINATION_COUNTRIES.flatMap((r) => r.countries).length
+                      ? 'Tout désélectionner'
+                      : 'Tout sélectionner'}
+                  </button>
+                </div>
+
+                {/* Selected countries chips */}
+                {coveredCountries.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {coveredCountries.map((name) => {
+                      const country = DESTINATION_COUNTRIES.flatMap((r) => r.countries).find((c) => c.name === name);
+                      return (
+                        <span
+                          key={name}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-mandarin/10 text-mandarin text-xs rounded-lg"
+                        >
+                          {country?.flag} {name}
+                          <button
+                            onClick={() => setCoveredCountries((prev) => prev.filter((c) => c !== name))}
+                            className="ml-0.5 hover:text-red-500"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Country list by region */}
+                <div className="max-h-60 overflow-y-auto border border-[var(--card-border)] rounded-xl p-3 space-y-4">
+                  {DESTINATION_COUNTRIES.map((region) => {
+                    const filteredCountries = countrySearch
+                      ? region.countries.filter((c) =>
+                          c.name.toLowerCase().includes(countrySearch.toLowerCase())
+                        )
+                      : region.countries;
+
+                    if (filteredCountries.length === 0) return null;
+
+                    const regionCountryNames = region.countries.map((c) => c.name);
+                    const allSelected = regionCountryNames.every((n) => coveredCountries.includes(n));
+
+                    return (
+                      <div key={region.region}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                            {region.region}
+                          </h4>
+                          <button
+                            onClick={() => {
+                              if (allSelected) {
+                                setCoveredCountries((prev) => prev.filter((c) => !regionCountryNames.includes(c)));
+                              } else {
+                                setCoveredCountries((prev) => [...new Set([...prev, ...regionCountryNames])]);
+                              }
+                            }}
+                            className="text-xs text-mandarin hover:underline"
+                          >
+                            {allSelected ? 'Désélectionner' : 'Sélectionner'}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {filteredCountries.map((c) => {
+                            const isSelected = coveredCountries.includes(c.name);
+                            return (
+                              <label
+                                key={c.name}
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
+                                  isSelected
+                                    ? 'bg-mandarin/10 text-mandarin'
+                                    : 'hover:bg-[var(--surface)] text-[var(--text-primary)]'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {
+                                    setCoveredCountries((prev) =>
+                                      isSelected ? prev.filter((n) => n !== c.name) : [...prev, c.name]
+                                    );
+                                  }}
+                                  className="accent-mandarin rounded"
+                                />
+                                <span>{c.flag}</span>
+                                <span className="truncate">{c.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
