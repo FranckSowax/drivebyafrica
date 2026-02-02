@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Copy, Loader2, Trash2, CheckCircle, Users, Link2, ToggleLeft, ToggleRight, ArrowLeft, Search, MapPin } from 'lucide-react';
+import { Plus, Copy, Loader2, Trash2, CheckCircle, Users, Link2, ToggleLeft, ToggleRight, ArrowLeft, Search, MapPin, Pencil, X, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -101,10 +101,14 @@ export default function AdminPartnersPage() {
   const toast = useToast();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [saving, setSaving] = useState(false);
+  const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Partner | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Create form state
+  // Form state (shared between create and edit)
   const [form, setForm] = useState({
     company_name: '',
     contact_person: '',
@@ -114,6 +118,34 @@ export default function AdminPartnersPage() {
   });
   const [coveredCountries, setCoveredCountries] = useState<string[]>([]);
   const [countrySearch, setCountrySearch] = useState('');
+
+  const resetForm = () => {
+    setForm({ company_name: '', contact_person: '', email: '', phone: '', country: '' });
+    setCoveredCountries([]);
+    setCountrySearch('');
+    setEditingPartnerId(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setModalMode('create');
+    setShowModal(true);
+  };
+
+  const openEditModal = (partner: Partner) => {
+    setForm({
+      company_name: partner.company_name,
+      contact_person: partner.contact_person,
+      email: partner.email,
+      phone: partner.phone,
+      country: partner.country,
+    });
+    setCoveredCountries(partner.covered_countries || []);
+    setCountrySearch('');
+    setEditingPartnerId(partner.id);
+    setModalMode('edit');
+    setShowModal(true);
+  };
 
   const fetchPartners = async () => {
     try {
@@ -140,31 +172,39 @@ export default function AdminPartnersPage() {
     toast.success('Lien copié !');
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!form.company_name || !form.contact_person || !form.email || !form.phone) {
       toast.error('Remplissez tous les champs obligatoires');
       return;
     }
-    setCreating(true);
+    setSaving(true);
     try {
-      const res = await authFetch('/api/admin/shipping/partners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, covered_countries: coveredCountries }),
-      });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      toast.success('Partenaire créé !');
-      copyLink(data.partner.token);
-      setShowCreateModal(false);
-      setForm({ company_name: '', contact_person: '', email: '', phone: '', country: '' });
-      setCoveredCountries([]);
-      setCountrySearch('');
+      if (modalMode === 'create') {
+        const res = await authFetch('/api/admin/shipping/partners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, covered_countries: coveredCountries }),
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        toast.success('Partenaire créé !');
+        copyLink(data.partner.token);
+      } else {
+        const res = await authFetch('/api/admin/shipping/partners', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingPartnerId, ...form, covered_countries: coveredCountries }),
+        });
+        if (!res.ok) throw new Error('Failed');
+        toast.success('Partenaire mis à jour !');
+      }
+      setShowModal(false);
+      resetForm();
       fetchPartners();
     } catch {
-      toast.error('Erreur lors de la création');
+      toast.error(modalMode === 'create' ? 'Erreur lors de la création' : 'Erreur lors de la mise à jour');
     } finally {
-      setCreating(false);
+      setSaving(false);
     }
   };
 
@@ -184,13 +224,18 @@ export default function AdminPartnersPage() {
     }
   };
 
-  const deletePartner = async (id: string) => {
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
     try {
-      await authFetch(`/api/admin/shipping/partners?id=${id}`, { method: 'DELETE' });
-      setPartners((prev) => prev.filter((p) => p.id !== id));
+      await authFetch(`/api/admin/shipping/partners?id=${deleteConfirm.id}`, { method: 'DELETE' });
+      setPartners((prev) => prev.filter((p) => p.id !== deleteConfirm.id));
       toast.success('Partenaire supprimé');
+      setDeleteConfirm(null);
     } catch {
-      toast.error('Erreur');
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -225,7 +270,7 @@ export default function AdminPartnersPage() {
               Gérez les transitaires et partagez les liens de devis
             </p>
           </div>
-          <Button variant="primary" onClick={() => setShowCreateModal(true)} leftIcon={<Plus className="w-4 h-4" />}>
+          <Button variant="primary" onClick={openCreateModal} leftIcon={<Plus className="w-4 h-4" />}>
             Ajouter un partenaire
           </Button>
         </div>
@@ -257,7 +302,7 @@ export default function AdminPartnersPage() {
               <Button
                 variant="primary"
                 className="mt-4"
-                onClick={() => setShowCreateModal(true)}
+                onClick={openCreateModal}
                 leftIcon={<Plus className="w-4 h-4" />}
               >
                 Créer le premier partenaire
@@ -316,7 +361,7 @@ export default function AdminPartnersPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => copyLink(p.token)}
                             className="p-2 rounded-lg hover:bg-[var(--surface)] transition-colors text-mandarin"
@@ -325,7 +370,14 @@ export default function AdminPartnersPage() {
                             <Link2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => deletePartner(p.id)}
+                            onClick={() => openEditModal(p)}
+                            className="p-2 rounded-lg hover:bg-[var(--surface)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                            title="Modifier"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(p)}
                             className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-red-500"
                             title="Supprimer"
                           >
@@ -342,13 +394,19 @@ export default function AdminPartnersPage() {
         </Card>
       </div>
 
-      {/* Create Modal */}
-      {showCreateModal && (
+      {/* Create / Edit Modal */}
+      {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowCreateModal(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowModal(false)} />
           <div className="relative bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-[var(--surface)] text-[var(--text-muted)]"
+            >
+              <X className="w-5 h-5" />
+            </button>
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">
-              Nouveau partenaire
+              {modalMode === 'create' ? 'Nouveau partenaire' : 'Modifier le partenaire'}
             </h2>
             <div className="space-y-4">
               <div>
@@ -529,16 +587,53 @@ export default function AdminPartnersPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+              <Button variant="outline" onClick={() => setShowModal(false)}>
                 Annuler
               </Button>
               <Button
                 variant="primary"
-                onClick={handleCreate}
-                disabled={creating}
-                leftIcon={creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                onClick={handleSave}
+                disabled={saving}
+                leftIcon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : modalMode === 'create' ? <Plus className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
               >
-                {creating ? 'Création...' : 'Créer & copier le lien'}
+                {saving
+                  ? (modalMode === 'create' ? 'Création...' : 'Enregistrement...')
+                  : (modalMode === 'create' ? 'Créer & copier le lien' : 'Enregistrer')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setDeleteConfirm(null)} />
+          <div className="relative bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/10 rounded-xl">
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Supprimer le partenaire</h2>
+                <p className="text-sm text-[var(--text-muted)]">{deleteConfirm.company_name}</p>
+              </div>
+            </div>
+            <p className="text-[var(--text-muted)] mb-6">
+              Cette action désactivera le partenaire et son lien de devis ne fonctionnera plus. Les devis existants seront conservés.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="!bg-red-500 hover:!bg-red-600"
+                leftIcon={deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              >
+                {deleting ? 'Suppression...' : 'Supprimer'}
               </Button>
             </div>
           </div>
