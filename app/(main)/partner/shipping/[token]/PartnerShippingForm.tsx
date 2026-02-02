@@ -45,6 +45,8 @@ const T: Record<Lang, Record<string, string>> = {
     search: 'Rechercher une destination...',
     destinations: 'destinations',
     of: 'sur',
+    container20ft: '20 pieds',
+    container40ft: '40 pieds',
     infoTitle: 'Tarifs FOB → CIF',
     infoDesc: 'Indiquez vos prix en USD pour le transport maritime depuis le port d\'origine jusqu\'au port de destination. Laissez vide les origines que vous ne couvrez pas.',
     loading: 'Chargement...',
@@ -80,6 +82,8 @@ const T: Record<Lang, Record<string, string>> = {
     search: 'Search a destination...',
     destinations: 'destinations',
     of: 'of',
+    container20ft: '20ft',
+    container40ft: '40ft',
     infoTitle: 'FOB → CIF Rates',
     infoDesc: 'Enter your prices in USD for maritime shipping from origin port to destination port. Leave blank for origins you don\'t cover.',
     loading: 'Loading...',
@@ -115,6 +119,8 @@ const T: Record<Lang, Record<string, string>> = {
     search: '搜索目的地...',
     destinations: '个目的地',
     of: '/',
+    container20ft: '20尺',
+    container40ft: '40尺',
     infoTitle: 'FOB → CIF 费率',
     infoDesc: '请以美元输入从起运港到目的港的海运价格。不覆盖的起运地请留空。',
     loading: '加载中...',
@@ -150,6 +156,8 @@ const T: Record<Lang, Record<string, string>> = {
     search: '목적지 검색...',
     destinations: '개 목적지',
     of: '/',
+    container20ft: '20피트',
+    container40ft: '40피트',
     infoTitle: 'FOB → CIF 요금',
     infoDesc: '출발항에서 목적항까지의 해상 운송 가격을 USD로 입력해 주세요. 커버하지 않는 출발지는 비워 두세요.',
     loading: '로딩 중...',
@@ -182,6 +190,9 @@ interface RouteEntry {
   korea_cost_usd: number | null;
   china_cost_usd: number | null;
   dubai_cost_usd: number | null;
+  korea_cost_40ft_usd: number | null;
+  china_cost_40ft_usd: number | null;
+  dubai_cost_40ft_usd: number | null;
   is_active: boolean;
 }
 
@@ -252,6 +263,9 @@ export default function PartnerShippingForm({ token }: { token: string }) {
             korea_cost_usd: null,
             china_cost_usd: null,
             dubai_cost_usd: null,
+            korea_cost_40ft_usd: null,
+            china_cost_40ft_usd: null,
+            dubai_cost_40ft_usd: null,
             is_active: hasCoveredCountries
               ? coveredCountries.includes(d.destination_country)
               : true,
@@ -270,7 +284,7 @@ export default function PartnerShippingForm({ token }: { token: string }) {
 
   const handleRouteChange = (
     destId: string,
-    field: 'korea_cost_usd' | 'china_cost_usd' | 'dubai_cost_usd' | 'is_active',
+    field: 'korea_cost_usd' | 'china_cost_usd' | 'dubai_cost_usd' | 'korea_cost_40ft_usd' | 'china_cost_40ft_usd' | 'dubai_cost_40ft_usd' | 'is_active',
     value: number | null | boolean
   ) => {
     setRoutes((prev) =>
@@ -504,22 +518,30 @@ export default function PartnerShippingForm({ token }: { token: string }) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[var(--card-border)]">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                <tr className="border-b border-[var(--card-border)]/50">
+                  <th rowSpan={2} className="text-left py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
                     {t.destination}
                   </th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                  <th colSpan={2} className="text-center py-2 px-4 text-sm font-medium text-[var(--text-muted)] border-b border-[var(--card-border)]/30">
                     {t.korea}
                   </th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                  <th colSpan={2} className="text-center py-2 px-4 text-sm font-medium text-[var(--text-muted)] border-b border-[var(--card-border)]/30">
                     {t.china}
                   </th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                  <th colSpan={2} className="text-center py-2 px-4 text-sm font-medium text-[var(--text-muted)] border-b border-[var(--card-border)]/30">
                     {t.dubai}
                   </th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
+                  <th rowSpan={2} className="text-center py-3 px-4 text-sm font-medium text-[var(--text-muted)]">
                     {t.active}
                   </th>
+                </tr>
+                <tr className="border-b border-[var(--card-border)]">
+                  <th className="text-center py-1 px-2 text-xs font-medium text-[var(--text-muted)]">{t.container20ft}</th>
+                  <th className="text-center py-1 px-2 text-xs font-medium text-mandarin/70">{t.container40ft}</th>
+                  <th className="text-center py-1 px-2 text-xs font-medium text-[var(--text-muted)]">{t.container20ft}</th>
+                  <th className="text-center py-1 px-2 text-xs font-medium text-mandarin/70">{t.container40ft}</th>
+                  <th className="text-center py-1 px-2 text-xs font-medium text-[var(--text-muted)]">{t.container20ft}</th>
+                  <th className="text-center py-1 px-2 text-xs font-medium text-mandarin/70">{t.container40ft}</th>
                 </tr>
               </thead>
               <tbody>
@@ -543,10 +565,11 @@ export default function PartnerShippingForm({ token }: { token: string }) {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
+                    {/* Korea 20ft */}
+                    <td className="py-4 px-2">
                       <div className="flex items-center justify-center">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">$</span>
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
                           <input
                             type="number"
                             placeholder="—"
@@ -559,15 +582,38 @@ export default function PartnerShippingForm({ token }: { token: string }) {
                               )
                             }
                             disabled={!route.is_active}
-                            className="w-28 pl-7 pr-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-center text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
+                            className="w-24 pl-6 pr-2 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-center text-sm text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
                           />
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
+                    {/* Korea 40ft */}
+                    <td className="py-4 px-2">
                       <div className="flex items-center justify-center">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">$</span>
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
+                          <input
+                            type="number"
+                            placeholder="—"
+                            value={route.korea_cost_40ft_usd ?? ''}
+                            onChange={(e) =>
+                              handleRouteChange(
+                                route.destination_id,
+                                'korea_cost_40ft_usd',
+                                e.target.value ? parseInt(e.target.value) : null
+                              )
+                            }
+                            disabled={!route.is_active}
+                            className="w-24 pl-6 pr-2 py-2 bg-mandarin/5 border border-mandarin/20 rounded-lg text-center text-sm text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    {/* China 20ft */}
+                    <td className="py-4 px-2">
+                      <div className="flex items-center justify-center">
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
                           <input
                             type="number"
                             placeholder="—"
@@ -580,15 +626,38 @@ export default function PartnerShippingForm({ token }: { token: string }) {
                               )
                             }
                             disabled={!route.is_active}
-                            className="w-28 pl-7 pr-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-center text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
+                            className="w-24 pl-6 pr-2 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-center text-sm text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
                           />
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
+                    {/* China 40ft */}
+                    <td className="py-4 px-2">
                       <div className="flex items-center justify-center">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">$</span>
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
+                          <input
+                            type="number"
+                            placeholder="—"
+                            value={route.china_cost_40ft_usd ?? ''}
+                            onChange={(e) =>
+                              handleRouteChange(
+                                route.destination_id,
+                                'china_cost_40ft_usd',
+                                e.target.value ? parseInt(e.target.value) : null
+                              )
+                            }
+                            disabled={!route.is_active}
+                            className="w-24 pl-6 pr-2 py-2 bg-mandarin/5 border border-mandarin/20 rounded-lg text-center text-sm text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    {/* Dubai 20ft */}
+                    <td className="py-4 px-2">
+                      <div className="flex items-center justify-center">
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
                           <input
                             type="number"
                             placeholder="—"
@@ -601,7 +670,29 @@ export default function PartnerShippingForm({ token }: { token: string }) {
                               )
                             }
                             disabled={!route.is_active}
-                            className="w-28 pl-7 pr-3 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-center text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
+                            className="w-24 pl-6 pr-2 py-2 bg-[var(--surface)] border border-[var(--card-border)] rounded-lg text-center text-sm text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    {/* Dubai 40ft */}
+                    <td className="py-4 px-2">
+                      <div className="flex items-center justify-center">
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
+                          <input
+                            type="number"
+                            placeholder="—"
+                            value={route.dubai_cost_40ft_usd ?? ''}
+                            onChange={(e) =>
+                              handleRouteChange(
+                                route.destination_id,
+                                'dubai_cost_40ft_usd',
+                                e.target.value ? parseInt(e.target.value) : null
+                              )
+                            }
+                            disabled={!route.is_active}
+                            className="w-24 pl-6 pr-2 py-2 bg-mandarin/5 border border-mandarin/20 rounded-lg text-center text-sm text-[var(--text-primary)] focus:border-mandarin focus:outline-none disabled:opacity-50"
                           />
                         </div>
                       </div>

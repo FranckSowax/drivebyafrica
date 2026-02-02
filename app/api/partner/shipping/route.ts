@@ -159,6 +159,9 @@ export async function POST(request: Request) {
       korea_cost_usd: number | null;
       china_cost_usd: number | null;
       dubai_cost_usd: number | null;
+      korea_cost_40ft_usd: number | null;
+      china_cost_40ft_usd: number | null;
+      dubai_cost_40ft_usd: number | null;
       is_active: boolean;
     }) => ({
       quote_id: quote.id,
@@ -169,6 +172,9 @@ export async function POST(request: Request) {
       korea_cost_usd: route.korea_cost_usd || null,
       china_cost_usd: route.china_cost_usd || null,
       dubai_cost_usd: route.dubai_cost_usd || null,
+      korea_cost_40ft_usd: route.korea_cost_40ft_usd || null,
+      china_cost_40ft_usd: route.china_cost_40ft_usd || null,
+      dubai_cost_40ft_usd: route.dubai_cost_40ft_usd || null,
       is_active: route.is_active ?? true,
     }));
 

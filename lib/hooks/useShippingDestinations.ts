@@ -13,14 +13,19 @@ export interface ShippingDestination {
     china: number;
     dubai: number;
   };
+  shippingCost40ft: {
+    korea: number;
+    china: number;
+    dubai: number;
+  };
 }
 
 // Destinations de secours (utilisees si l'API echoue)
 const FALLBACK_DESTINATIONS: ShippingDestination[] = [
-  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 } },
-  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 3400, china: 4000, dubai: 3000 } },
-  { id: 'dakar', name: 'Dakar', country: 'Senegal', flag: '🇸🇳', shippingCost: { korea: 4600, china: 5200, dubai: 4200 } },
-  { id: 'abidjan', name: 'Abidjan', country: "Cote d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 4200, china: 4800, dubai: 3800 } },
+  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 3400, china: 4000, dubai: 3000 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'dakar', name: 'Dakar', country: 'Senegal', flag: '🇸🇳', shippingCost: { korea: 4600, china: 5200, dubai: 4200 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'abidjan', name: 'Abidjan', country: "Cote d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 4200, china: 4800, dubai: 3800 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
 ];
 
 interface UseShippingDestinationsOptions {

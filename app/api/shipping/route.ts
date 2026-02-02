@@ -34,24 +34,29 @@ interface Destination {
     china: number;
     dubai: number;
   };
+  shippingCost40ft: {
+    korea: number;
+    china: number;
+    dubai: number;
+  };
 }
 
 // Default destinations (fallback if database not available) - prices doubled
 const DEFAULT_DESTINATIONS: Destination[] = [
-  { id: 'dakar', name: 'Dakar', country: 'Sénégal', flag: '🇸🇳', shippingCost: { korea: 4600, china: 5200, dubai: 4200 } },
-  { id: 'abidjan', name: 'Abidjan', country: "Côte d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 4200, china: 4800, dubai: 3800 } },
-  { id: 'tema', name: 'Tema/Accra', country: 'Ghana', flag: '🇬🇭', shippingCost: { korea: 4000, china: 4600, dubai: 3600 } },
-  { id: 'lome', name: 'Lomé', country: 'Togo', flag: '🇹🇬', shippingCost: { korea: 4000, china: 4600, dubai: 3600 } },
-  { id: 'cotonou', name: 'Cotonou', country: 'Bénin', flag: '🇧🇯', shippingCost: { korea: 4100, china: 4700, dubai: 3700 } },
-  { id: 'lagos', name: 'Lagos', country: 'Nigeria', flag: '🇳🇬', shippingCost: { korea: 4400, china: 5000, dubai: 4000 } },
-  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 3400, china: 4000, dubai: 3000 } },
-  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 } },
-  { id: 'port-gentil', name: 'Port-Gentil', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3700, china: 4300, dubai: 3300 } },
-  { id: 'pointe-noire', name: 'Pointe-Noire', country: 'Congo', flag: '🇨🇬', shippingCost: { korea: 3800, china: 4400, dubai: 3400 } },
-  { id: 'mombasa', name: 'Mombasa', country: 'Kenya', flag: '🇰🇪', shippingCost: { korea: 3200, china: 3800, dubai: 2800 } },
-  { id: 'dar-es-salaam', name: 'Dar es Salaam', country: 'Tanzanie', flag: '🇹🇿', shippingCost: { korea: 3300, china: 3900, dubai: 2900 } },
-  { id: 'durban', name: 'Durban', country: 'Afrique du Sud', flag: '🇿🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 } },
-  { id: 'casablanca', name: 'Casablanca', country: 'Maroc', flag: '🇲🇦', shippingCost: { korea: 4400, china: 5000, dubai: 3600 } },
+  { id: 'dakar', name: 'Dakar', country: 'Sénégal', flag: '🇸🇳', shippingCost: { korea: 4600, china: 5200, dubai: 4200 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'abidjan', name: 'Abidjan', country: "Côte d'Ivoire", flag: '🇨🇮', shippingCost: { korea: 4200, china: 4800, dubai: 3800 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'tema', name: 'Tema/Accra', country: 'Ghana', flag: '🇬🇭', shippingCost: { korea: 4000, china: 4600, dubai: 3600 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'lome', name: 'Lomé', country: 'Togo', flag: '🇹🇬', shippingCost: { korea: 4000, china: 4600, dubai: 3600 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'cotonou', name: 'Cotonou', country: 'Bénin', flag: '🇧🇯', shippingCost: { korea: 4100, china: 4700, dubai: 3700 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'lagos', name: 'Lagos', country: 'Nigeria', flag: '🇳🇬', shippingCost: { korea: 4400, china: 5000, dubai: 4000 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'douala', name: 'Douala', country: 'Cameroun', flag: '🇨🇲', shippingCost: { korea: 3400, china: 4000, dubai: 3000 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'libreville', name: 'Libreville', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'port-gentil', name: 'Port-Gentil', country: 'Gabon', flag: '🇬🇦', shippingCost: { korea: 3700, china: 4300, dubai: 3300 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'pointe-noire', name: 'Pointe-Noire', country: 'Congo', flag: '🇨🇬', shippingCost: { korea: 3800, china: 4400, dubai: 3400 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'mombasa', name: 'Mombasa', country: 'Kenya', flag: '🇰🇪', shippingCost: { korea: 3200, china: 3800, dubai: 2800 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'dar-es-salaam', name: 'Dar es Salaam', country: 'Tanzanie', flag: '🇹🇿', shippingCost: { korea: 3300, china: 3900, dubai: 2900 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'durban', name: 'Durban', country: 'Afrique du Sud', flag: '🇿🇦', shippingCost: { korea: 3600, china: 4200, dubai: 3200 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
+  { id: 'casablanca', name: 'Casablanca', country: 'Maroc', flag: '🇲🇦', shippingCost: { korea: 4400, china: 5000, dubai: 3600 }, shippingCost40ft: { korea: 0, china: 0, dubai: 0 } },
 ];
 
 export async function GET() {
@@ -93,6 +98,11 @@ export async function GET() {
         korea: route.korea_cost_usd,
         china: route.china_cost_usd,
         dubai: route.dubai_cost_usd,
+      },
+      shippingCost40ft: {
+        korea: route.korea_cost_40ft_usd || 0,
+        china: route.china_cost_40ft_usd || 0,
+        dubai: route.dubai_cost_40ft_usd || 0,
       },
     }));
 

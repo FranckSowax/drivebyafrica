@@ -191,6 +191,9 @@ export function BatchShippingEstimator({
   }, [autoOpenQuote, user, hasAutoOpened, selectedDestination, isLoadingDestinations]);
 
   // Calculate costs for batch
+  // Lots use 40ft containers: 4 vehicles per container, ceil(qty/4) containers
+  const VEHICLES_PER_40FT = 4;
+
   const calculations = useMemo(() => {
     if (!selectedDestination) return null;
 
@@ -199,11 +202,27 @@ export function BatchShippingEstimator({
     const effectiveUnitPriceUSD = unitPriceUSD + exportTaxUSD;
     const totalVehiclePriceUSD = effectiveUnitPriceUSD * quantity;
 
-    // Shipping cost per vehicle
-    const shippingCostPerVehicleUSD = selectedDestination.shippingCost[batchSource];
-    const shippingTypeConfig = shippingTypes.find(t => t.id === selectedShippingType);
-    const adjustedShippingPerVehicleUSD = shippingCostPerVehicleUSD * (shippingTypeConfig?.multiplier || 1);
-    const totalShippingCostUSD = adjustedShippingPerVehicleUSD * quantity;
+    // 40ft container calculation for lots
+    const cost40ft = selectedDestination.shippingCost40ft[batchSource];
+    const has40ftPricing = cost40ft > 0;
+
+    let totalShippingCostUSD: number;
+    let numberOfContainers: number;
+    let shippingPerVehicleUSD: number;
+
+    if (has40ftPricing) {
+      // Use 40ft container pricing: 4 vehicles per container
+      numberOfContainers = Math.ceil(quantity / VEHICLES_PER_40FT);
+      totalShippingCostUSD = numberOfContainers * cost40ft;
+      shippingPerVehicleUSD = totalShippingCostUSD / quantity;
+    } else {
+      // Fallback to 20ft per-vehicle pricing
+      numberOfContainers = 0;
+      const shippingCostPerVehicleUSD = selectedDestination.shippingCost[batchSource];
+      const shippingTypeConfig = shippingTypes.find(t => t.id === selectedShippingType);
+      shippingPerVehicleUSD = shippingCostPerVehicleUSD * (shippingTypeConfig?.multiplier || 1);
+      totalShippingCostUSD = shippingPerVehicleUSD * quantity;
+    }
 
     // Insurance: 2.5% of (vehicle price + shipping)
     const insuranceCostUSD = (totalVehiclePriceUSD + totalShippingCostUSD) * INSURANCE_RATE;
@@ -218,7 +237,7 @@ export function BatchShippingEstimator({
       vehiclePrice: Math.round(convertToQuoteCurrency(totalVehiclePriceUSD)),
       unitPrice: Math.round(convertToQuoteCurrency(effectiveUnitPriceUSD)),
       shippingCost: Math.round(convertToQuoteCurrency(totalShippingCostUSD)),
-      shippingPerVehicle: Math.round(convertToQuoteCurrency(adjustedShippingPerVehicleUSD)),
+      shippingPerVehicle: Math.round(convertToQuoteCurrency(shippingPerVehicleUSD)),
       insuranceCost: Math.round(convertToQuoteCurrency(insuranceCostUSD)),
       inspectionFee: Math.round(convertToQuoteCurrency(totalInspectionFeeUSD)),
       total: Math.round(convertToQuoteCurrency(totalUSD)),
@@ -231,6 +250,10 @@ export function BatchShippingEstimator({
       totalUSD,
       hasExportTax: exportTaxUSD > 0,
       quoteCurrencyCode,
+      // 40ft container info
+      has40ftPricing,
+      numberOfContainers,
+      cost40ftPerContainer: has40ftPricing ? Math.round(convertToQuoteCurrency(cost40ft)) : 0,
     };
   }, [unitPriceUSD, batchSource, selectedDestination, selectedShippingType, quantity, convertToQuoteCurrency, quoteCurrencyCode]);
 
@@ -579,9 +602,20 @@ export function BatchShippingEstimator({
                 <Ship className="w-4 h-4 text-royal-blue" />
                 <div>
                   <span className="text-[var(--text-muted)] block">Transport maritime</span>
-                  <span className="text-xs text-royal-blue">
-                    {selectedShippingType === 'container' ? 'Container 20HQ' : 'Groupage'} x {quantity}
-                  </span>
+                  {calculations.has40ftPricing ? (
+                    <span className="text-xs text-royal-blue">
+                      Container 40ft x {calculations.numberOfContainers} ({formatCurrency(calculations.cost40ftPerContainer)}/cont.)
+                    </span>
+                  ) : (
+                    <span className="text-xs text-royal-blue">
+                      {selectedShippingType === 'container' ? 'Container 20HQ' : 'Groupage'} x {quantity}
+                    </span>
+                  )}
+                  {calculations.has40ftPricing && (
+                    <span className="text-xs text-[var(--text-muted)] block">
+                      {quantity} vehicules / 4 par container = {calculations.numberOfContainers} containers
+                    </span>
+                  )}
                 </div>
               </div>
               <span className="text-[var(--text-primary)] font-medium">

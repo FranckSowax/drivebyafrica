@@ -19,6 +19,9 @@ interface AdminRoute {
   korea_cost_usd: number;
   china_cost_usd: number;
   dubai_cost_usd: number;
+  korea_cost_40ft_usd: number;
+  china_cost_40ft_usd: number;
+  dubai_cost_40ft_usd: number;
   is_active: boolean;
 }
 
@@ -28,6 +31,9 @@ interface PartnerQuoteRoute {
   korea_cost_usd: number | null;
   china_cost_usd: number | null;
   dubai_cost_usd: number | null;
+  korea_cost_40ft_usd: number | null;
+  china_cost_40ft_usd: number | null;
+  dubai_cost_40ft_usd: number | null;
   is_active: boolean;
 }
 
@@ -55,6 +61,7 @@ export default function AdminComparisonPage() {
     originLabel: string;
     basePrice: number;
     adminPrice: number;
+    is40ft?: boolean;
   } | null>(null);
   const [markupPercent, setMarkupPercent] = useState(0);
 
@@ -84,18 +91,6 @@ export default function AdminComparisonPage() {
     [adminRates, searchQuery]
   );
 
-  // Get partner price for a destination and origin
-  const getPartnerPrice = (
-    partnerData: PartnerQuoteData,
-    destId: string,
-    origin: Origin
-  ): number | null => {
-    const route = partnerData.routes.find((r) => r.destination_id === destId);
-    if (!route || !route.is_active) return null;
-    const field = `${origin}_cost_usd` as keyof PartnerQuoteRoute;
-    return route[field] as number | null;
-  };
-
   // Get price diff class
   const getDiffClass = (adminPrice: number, partnerPrice: number | null): string => {
     if (partnerPrice === null || partnerPrice === 0) return 'text-[var(--text-muted)]';
@@ -105,9 +100,9 @@ export default function AdminComparisonPage() {
   };
 
   // Open markup modal before applying
-  const openMarkupModal = (destId: string, destName: string, origin: Origin, originLabel: string, basePrice: number, adminPrice: number) => {
+  const openMarkupModal = (destId: string, destName: string, origin: Origin, originLabel: string, basePrice: number, adminPrice: number, is40ft = false) => {
     setMarkupPercent(0);
-    setMarkupModal({ destId, destName, origin, originLabel, basePrice, adminPrice });
+    setMarkupModal({ destId, destName, origin, originLabel, basePrice, adminPrice, is40ft });
   };
 
   const getFinalPrice = () => {
@@ -117,16 +112,16 @@ export default function AdminComparisonPage() {
 
   const confirmApplyRate = () => {
     if (!markupModal) return;
-    applyRate(markupModal.destId, markupModal.origin, getFinalPrice());
+    applyRate(markupModal.destId, markupModal.origin, getFinalPrice(), markupModal.is40ft);
     setMarkupModal(null);
   };
 
   // Apply a partner price to admin rates
-  const applyRate = async (destId: string, origin: Origin, value: number) => {
-    const cellKey = `${destId}-${origin}`;
+  const applyRate = async (destId: string, origin: Origin, value: number, is40ft?: boolean) => {
+    const cellKey = `${destId}-${origin}${is40ft ? '-40ft' : ''}`;
     setApplyingCell(cellKey);
     try {
-      const field = `${origin}_cost_usd`;
+      const field = is40ft ? `${origin}_cost_40ft_usd` : `${origin}_cost_usd`;
       const updatedRoutes = adminRates.map((r) =>
         r.destination_id === destId ? { ...r, [field]: value } : r
       );
@@ -158,11 +153,36 @@ export default function AdminComparisonPage() {
     );
   }
 
+  type ContainerSize = '20ft' | '40ft';
+
   const origins: { key: Origin; label: string; flag: string }[] = [
     { key: 'korea', label: 'Corée', flag: '🇰🇷' },
     { key: 'china', label: 'Chine', flag: '🇨🇳' },
     { key: 'dubai', label: 'Dubaï', flag: '🇦🇪' },
   ];
+
+  const getAdminPrice = (rate: AdminRoute, origin: Origin, size: ContainerSize): number => {
+    if (size === '40ft') {
+      const field = `${origin}_cost_40ft_usd` as keyof AdminRoute;
+      return (rate[field] as number) || 0;
+    }
+    const field = `${origin}_cost_usd` as keyof AdminRoute;
+    return rate[field] as number;
+  };
+
+  const getPartnerPriceBySize = (
+    partnerData: PartnerQuoteData,
+    destId: string,
+    origin: Origin,
+    size: ContainerSize
+  ): number | null => {
+    const route = partnerData.routes.find((r) => r.destination_id === destId);
+    if (!route || !route.is_active) return null;
+    const field = size === '40ft'
+      ? `${origin}_cost_40ft_usd` as keyof PartnerQuoteRoute
+      : `${origin}_cost_usd` as keyof PartnerQuoteRoute;
+    return route[field] as number | null;
+  };
 
   return (
     <div className="min-h-screen bg-[var(--background)] py-8">
@@ -252,60 +272,71 @@ export default function AdminComparisonPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRates.map((rate) => {
-                        const adminField = `${origin.key}_cost_usd` as keyof AdminRoute;
-                        const adminPrice = rate[adminField] as number;
+                      {filteredRates.map((rate) => (
+                        (['20ft', '40ft'] as ContainerSize[]).map((size) => {
+                          const adminPrice = getAdminPrice(rate, origin.key, size);
+                          const is40ft = size === '40ft';
 
-                        return (
-                          <tr key={rate.destination_id} className="border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/30">
-                            <td className="py-3 px-4 sticky left-0 bg-[var(--card-bg)] z-10">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{rate.destination_flag}</span>
-                                <div>
-                                  <p className="text-sm font-medium text-[var(--text-primary)]">{rate.destination_name}</p>
-                                  <p className="text-xs text-[var(--text-muted)]">{rate.destination_country}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-center font-medium text-mandarin">
-                              ${adminPrice.toLocaleString()}
-                            </td>
-                            {partnerQuotes.map((pq) => {
-                              const partnerPrice = getPartnerPrice(pq, rate.destination_id, origin.key);
-                              const cellKey = `${rate.destination_id}-${origin.key}`;
-                              const isApplying = applyingCell === cellKey;
-
-                              return (
-                                <td key={pq.partner.id} className="py-3 px-4 text-center">
-                                  {partnerPrice !== null && partnerPrice > 0 ? (
-                                    <div className="flex items-center justify-center gap-1">
-                                      <span className={getDiffClass(adminPrice, partnerPrice)}>
-                                        ${partnerPrice.toLocaleString()}
-                                      </span>
-                                      {partnerPrice !== adminPrice && (
-                                        <button
-                                          onClick={() => openMarkupModal(rate.destination_id, rate.destination_name, origin.key, origin.label, partnerPrice, adminPrice)}
-                                          disabled={isApplying}
-                                          className="p-1 rounded hover:bg-mandarin/10 text-mandarin transition-colors"
-                                          title="Appliquer ce tarif"
-                                        >
-                                          {isApplying ? (
-                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                          ) : (
-                                            <Check className="w-3 h-3" />
-                                          )}
-                                        </button>
-                                      )}
+                          return (
+                            <tr
+                              key={`${rate.destination_id}-${size}`}
+                              className={`border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/30 ${is40ft ? 'bg-mandarin/[0.03]' : ''}`}
+                            >
+                              <td className={`py-2 px-4 sticky left-0 z-10 ${is40ft ? 'bg-mandarin/[0.03]' : 'bg-[var(--card-bg)]'}`}>
+                                {!is40ft ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg">{rate.destination_flag}</span>
+                                    <div>
+                                      <p className="text-sm font-medium text-[var(--text-primary)]">{rate.destination_name}</p>
+                                      <p className="text-xs text-[var(--text-muted)]">{rate.destination_country}</p>
                                     </div>
-                                  ) : (
-                                    <span className="text-[var(--text-muted)]">—</span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
+                                  </div>
+                                ) : (
+                                  <div className="pl-8">
+                                    <span className="text-xs font-medium text-mandarin/70">↳ 40ft</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2 px-4 text-center font-medium text-mandarin text-sm">
+                                {adminPrice > 0 ? `$${adminPrice.toLocaleString()}` : '—'}
+                              </td>
+                              {partnerQuotes.map((pq) => {
+                                const partnerPrice = getPartnerPriceBySize(pq, rate.destination_id, origin.key, size);
+                                const cellKey = `${rate.destination_id}-${origin.key}${is40ft ? '-40ft' : ''}`;
+                                const isApplying = applyingCell === cellKey;
+
+                                return (
+                                  <td key={pq.partner.id} className="py-2 px-4 text-center">
+                                    {partnerPrice !== null && partnerPrice > 0 ? (
+                                      <div className="flex items-center justify-center gap-1">
+                                        <span className={`text-sm ${getDiffClass(adminPrice, partnerPrice)}`}>
+                                          ${partnerPrice.toLocaleString()}
+                                        </span>
+                                        {partnerPrice !== adminPrice && (
+                                          <button
+                                            onClick={() => openMarkupModal(rate.destination_id, rate.destination_name, origin.key, `${origin.label} ${size}`, partnerPrice, adminPrice, is40ft)}
+                                            disabled={isApplying}
+                                            className="p-1 rounded hover:bg-mandarin/10 text-mandarin transition-colors"
+                                            title="Appliquer ce tarif"
+                                          >
+                                            {isApplying ? (
+                                              <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                              <Check className="w-3 h-3" />
+                                            )}
+                                          </button>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-[var(--text-muted)]">—</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })
+                      ))}
                     </tbody>
                   </table>
                 </div>
