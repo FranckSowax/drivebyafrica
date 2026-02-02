@@ -202,8 +202,8 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
 
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Images & Details */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Images Section */}
+          <div className="lg:col-span-2 space-y-2">
             {/* Image Gallery */}
             <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[var(--surface)]">
               <AnimatePresence mode="wait">
@@ -295,7 +295,153 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 ))}
               </div>
             )}
+          </div>
 
+          {/* Right Column - Pricing & Actions */}
+          <div className="lg:row-span-2 space-y-6">
+            {/* Main Info Card */}
+            <Card className="sticky top-24">
+              {/* Title */}
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{SOURCE_FLAGS[source]}</span>
+                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+                      {vehicle.make} {vehicle.model}
+                    </h1>
+                  </div>
+                  <p className="text-[var(--text-muted)] mt-1">
+                    {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
+                  </p>
+                  {/* Vehicle ID - only visible to admins */}
+                  {isAdmin && (
+                    <button
+                      onClick={copyVehicleId}
+                      className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono bg-[var(--surface)] px-2 py-1 rounded"
+                      title="Cliquez pour copier l'ID complet"
+                    >
+                      {idCopied ? (
+                        <Check className="w-3 h-3 text-jewel" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                      <span>ID: {vehicle.id.slice(0, 8)}...</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Reserved/Sold Alert */}
+              {(isReserved || isSold) && (
+                <div className={cn(
+                  'rounded-lg p-4 mb-4 border-2',
+                  isReserved
+                    ? 'bg-mandarin/10 border-mandarin/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                )}>
+                  <p className={cn(
+                    'font-bold text-lg',
+                    isReserved ? 'text-mandarin' : 'text-red-500'
+                  )}>
+                    {isReserved ? 'Ce véhicule est réservé' : 'Ce véhicule a été vendu'}
+                  </p>
+                  <p className="text-sm text-[var(--text-muted)] mt-1">
+                    {isReserved
+                      ? 'Un acompte a été versé. Contactez-nous pour plus d\'informations.'
+                      : 'Ce véhicule n\'est plus disponible.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Price - includes export tax silently for Chinese vehicles */}
+              <div className="bg-[var(--surface)] rounded-lg p-4 mb-4">
+                <div>
+                  <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
+                  <p className="text-2xl font-bold text-mandarin">
+                    {(() => {
+                      const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                      return price != null ? formatPrice(price + getExportTax(vehicle.source)) : 'Sur demande';
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-3">
+                {/* Shipping Estimator - only show if price is available */}
+                {(() => {
+                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                  return price != null ? (
+                    <ShippingEstimator
+                      vehiclePriceUSD={price}
+                      vehicleSource={source}
+                      vehicleId={vehicle.id}
+                      vehicleMake={vehicle.make || 'Unknown'}
+                      vehicleModel={vehicle.model || 'Unknown'}
+                      vehicleYear={vehicle.year || new Date().getFullYear()}
+                      autoOpenQuote={shouldAutoOpenQuote}
+                      onSelectionComplete={setIsShippingSelected}
+                    />
+                  ) : null;
+                })()}
+
+                {/* Price Request Button - show for Dubai vehicles without price */}
+                {(() => {
+                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                  return price == null && source === 'dubai' ? (
+                    <PriceRequestButton
+                      vehicleId={vehicle.id}
+                      vehicleMake={vehicle.make || 'Unknown'}
+                      vehicleModel={vehicle.model || 'Unknown'}
+                      vehicleYear={vehicle.year || new Date().getFullYear()}
+                      vehicleSource={source}
+                    />
+                  ) : null;
+                })()}
+
+                {/* Ask Question Button - only show after destination and shipping type are selected */}
+                {isShippingSelected && (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={handleAskQuestion}
+                    leftIcon={<MessageCircle className="w-4 h-4" />}
+                  >
+                    Poser une question
+                  </Button>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => toggleFavorite(vehicle.id)}
+                    leftIcon={
+                      <Heart
+                        className={cn(
+                          'w-4 h-4',
+                          isFavorite(vehicle.id) && 'fill-mandarin text-mandarin'
+                        )}
+                      />
+                    }
+                  >
+                    {isFavorite(vehicle.id) ? 'Favori' : 'Ajouter'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleShare}
+                    leftIcon={<Share2 className="w-4 h-4" />}
+                  >
+                    Partager
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Left Column continued - Specs & Details */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Specifications */}
             <Card>
               <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Spécifications</h2>
@@ -441,150 +587,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                 </a>
               </Card>
             )}
-          </div>
-
-          {/* Right Column - Pricing & Actions */}
-          <div className="space-y-6">
-            {/* Main Info Card */}
-            <Card className="sticky top-24">
-              {/* Title */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{SOURCE_FLAGS[source]}</span>
-                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">
-                      {vehicle.make} {vehicle.model}
-                    </h1>
-                  </div>
-                  <p className="text-[var(--text-muted)] mt-1">
-                    {vehicle.year} {vehicle.lot_number && `• Réf. #${vehicle.lot_number}`}
-                  </p>
-                  {/* Vehicle ID - only visible to admins */}
-                  {isAdmin && (
-                    <button
-                      onClick={copyVehicleId}
-                      className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)] hover:text-mandarin transition-colors font-mono bg-[var(--surface)] px-2 py-1 rounded"
-                      title="Cliquez pour copier l'ID complet"
-                    >
-                      {idCopied ? (
-                        <Check className="w-3 h-3 text-jewel" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                      <span>ID: {vehicle.id.slice(0, 8)}...</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Reserved/Sold Alert */}
-              {(isReserved || isSold) && (
-                <div className={cn(
-                  'rounded-lg p-4 mb-4 border-2',
-                  isReserved
-                    ? 'bg-mandarin/10 border-mandarin/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                )}>
-                  <p className={cn(
-                    'font-bold text-lg',
-                    isReserved ? 'text-mandarin' : 'text-red-500'
-                  )}>
-                    {isReserved ? 'Ce véhicule est réservé' : 'Ce véhicule a été vendu'}
-                  </p>
-                  <p className="text-sm text-[var(--text-muted)] mt-1">
-                    {isReserved
-                      ? 'Un acompte a été versé. Contactez-nous pour plus d\'informations.'
-                      : 'Ce véhicule n\'est plus disponible.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Price - includes export tax silently for Chinese vehicles */}
-              <div className="bg-[var(--surface)] rounded-lg p-4 mb-4">
-                <div>
-                  <p className="text-xs text-[var(--text-muted)]">Prix FOB</p>
-                  <p className="text-2xl font-bold text-mandarin">
-                    {(() => {
-                      const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
-                      return price != null ? formatPrice(price + getExportTax(vehicle.source)) : 'Sur demande';
-                    })()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="space-y-3">
-                {/* Shipping Estimator - only show if price is available */}
-                {(() => {
-                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
-                  return price != null ? (
-                    <ShippingEstimator
-                      vehiclePriceUSD={price}
-                      vehicleSource={source}
-                      vehicleId={vehicle.id}
-                      vehicleMake={vehicle.make || 'Unknown'}
-                      vehicleModel={vehicle.model || 'Unknown'}
-                      vehicleYear={vehicle.year || new Date().getFullYear()}
-                      autoOpenQuote={shouldAutoOpenQuote}
-                      onSelectionComplete={setIsShippingSelected}
-                    />
-                  ) : null;
-                })()}
-
-                {/* Price Request Button - show for Dubai vehicles without price */}
-                {(() => {
-                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
-                  return price == null && source === 'dubai' ? (
-                    <PriceRequestButton
-                      vehicleId={vehicle.id}
-                      vehicleMake={vehicle.make || 'Unknown'}
-                      vehicleModel={vehicle.model || 'Unknown'}
-                      vehicleYear={vehicle.year || new Date().getFullYear()}
-                      vehicleSource={source}
-                    />
-                  ) : null;
-                })()}
-
-                {/* Ask Question Button - only show after destination and shipping type are selected */}
-                {isShippingSelected && (
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={handleAskQuestion}
-                    leftIcon={<MessageCircle className="w-4 h-4" />}
-                  >
-                    Poser une question
-                  </Button>
-                )}
-
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => toggleFavorite(vehicle.id)}
-                    leftIcon={
-                      <Heart
-                        className={cn(
-                          'w-4 h-4',
-                          isFavorite(vehicle.id) && 'fill-mandarin text-mandarin'
-                        )}
-                      />
-                    }
-                  >
-                    {isFavorite(vehicle.id) ? 'Favori' : 'Ajouter'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handleShare}
-                    leftIcon={<Share2 className="w-4 h-4" />}
-                  >
-                    Partager
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
           </div>
         </div>
       </div>
