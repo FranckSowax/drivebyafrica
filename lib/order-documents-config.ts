@@ -109,6 +109,23 @@ export const ORDER_STATUS_DOCUMENTS: StatusDocumentConfig[] = [
     ],
   },
   {
+    status: 'vehicle_received',
+    label: 'Réception véhicule',
+    labelZh: '车辆已接收',
+    requiredDocuments: [
+      {
+        id: 'reception_photos',
+        label: 'Photos de réception',
+        labelZh: '接收照片',
+        type: 'image',
+        description: 'Photos du véhicule à la réception - Usage interne',
+        descriptionZh: '接收时的车辆照片 - 内部使用',
+        visibleToClient: false,
+        multiple: true,
+      },
+    ],
+  },
+  {
     status: 'export_customs',
     label: 'Douane export',
     labelZh: '出口清关',

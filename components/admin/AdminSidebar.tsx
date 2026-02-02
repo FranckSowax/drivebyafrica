@@ -39,8 +39,7 @@ interface AdminSidebarProps {
 
 const mainNavItems: NavItem[] = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard, exact: true },
-  { href: '/admin/vehicles', label: 'Véhicules', icon: Car },
-  { href: '/admin/shipping', label: 'Transport', icon: Ship },
+  { href: '/admin/orders', label: 'Commandes', icon: CreditCard },
   {
     href: '/admin/quotes',
     label: 'Devis',
@@ -49,7 +48,8 @@ const mainNavItems: NavItem[] = [
       { href: '/admin/quotes/reassignments', label: 'Réassignations', icon: AlertTriangle },
     ]
   },
-  { href: '/admin/orders', label: 'Commandes', icon: CreditCard },
+  { href: '/admin/shipping', label: 'Transport', icon: Ship },
+  { href: '/admin/vehicles', label: 'Véhicules', icon: Car },
   { href: '/admin/vehicles?add=true', label: 'Ajouter véhicule', icon: PlusCircle, exact: true },
   { href: '/admin/batches', label: 'Lots de véhicules', icon: Package },
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },

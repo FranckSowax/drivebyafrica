@@ -30,6 +30,7 @@ import {
   FileText,
   Building,
   ExternalLink,
+  PackageCheck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -80,6 +81,7 @@ interface Order {
   last_modified_by_name?: string | null;
   last_modified_by_color?: string | null;
   last_modified_at?: string | null;
+  assigned_shipping_partner_id?: string | null;
 }
 
 interface TrackingStep {
@@ -146,13 +148,21 @@ const statusConfig = {
     icon: ShoppingCart,
     step: 5,
   },
+  vehicle_received: {
+    label: 'Réception véhicule',
+    color: 'text-lime-500',
+    bg: 'bg-lime-500/10',
+    border: 'border-lime-500/30',
+    icon: PackageCheck,
+    step: 6,
+  },
   export_customs: {
     label: 'Douane export',
     color: 'text-amber-500',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/30',
     icon: Building,
-    step: 6,
+    step: 7,
   },
   in_transit: {
     label: 'En transit',
@@ -160,7 +170,7 @@ const statusConfig = {
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/30',
     icon: Truck,
-    step: 7,
+    step: 8,
   },
   at_port: {
     label: 'Au port',
@@ -168,7 +178,7 @@ const statusConfig = {
     bg: 'bg-sky-500/10',
     border: 'border-sky-500/30',
     icon: Anchor,
-    step: 8,
+    step: 9,
   },
   shipping: {
     label: 'En mer',
@@ -176,7 +186,7 @@ const statusConfig = {
     bg: 'bg-indigo-500/10',
     border: 'border-indigo-500/30',
     icon: Ship,
-    step: 9,
+    step: 10,
   },
   documents_ready: {
     label: 'Remise documentation',
@@ -184,7 +194,7 @@ const statusConfig = {
     bg: 'bg-violet-500/10',
     border: 'border-violet-500/30',
     icon: FileText,
-    step: 10,
+    step: 11,
   },
   customs: {
     label: 'En douane',
@@ -192,7 +202,7 @@ const statusConfig = {
     bg: 'bg-orange-500/10',
     border: 'border-orange-500/30',
     icon: FileCheck,
-    step: 11,
+    step: 12,
   },
   ready_pickup: {
     label: 'Prêt pour retrait',
@@ -200,7 +210,7 @@ const statusConfig = {
     bg: 'bg-teal-500/10',
     border: 'border-teal-500/30',
     icon: MapPin,
-    step: 12,
+    step: 13,
   },
   delivered: {
     label: 'Livré',
@@ -208,7 +218,7 @@ const statusConfig = {
     bg: 'bg-jewel/10',
     border: 'border-jewel/30',
     icon: Home,
-    step: 13,
+    step: 14,
   },
 };
 
@@ -269,6 +279,9 @@ export default function AdminOrdersPage() {
   const [newStatus, setNewStatus] = useState<string>('');
   const [statusNote, setStatusNote] = useState('');
   const [newEta, setNewEta] = useState('');
+  const [selectedShippingPartnerId, setSelectedShippingPartnerId] = useState<string>('');
+  const [shippingPartners, setShippingPartners] = useState<Array<{ id: string; company_name: string; covered_countries: string[]; is_active: boolean }>>([]);
+  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -304,6 +317,22 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Fetch shipping partners when needed
+  useEffect(() => {
+    if (newStatus === 'vehicle_received' && shippingPartners.length === 0 && !isLoadingPartners) {
+      setIsLoadingPartners(true);
+      authFetch('/api/admin/shipping/partners')
+        .then(res => res.json())
+        .then(data => {
+          if (data.partners) {
+            setShippingPartners(data.partners);
+          }
+        })
+        .catch(err => console.error('Error fetching shipping partners:', err))
+        .finally(() => setIsLoadingPartners(false));
+    }
+  }, [newStatus, shippingPartners.length, isLoadingPartners]);
 
   // Real-time synchronization for orders
   useEffect(() => {
@@ -366,6 +395,10 @@ export default function AdminOrdersPage() {
 
   const updateOrderStatus = async () => {
     if (!selectedOrder || !newStatus) return;
+    if (newStatus === 'vehicle_received' && !selectedShippingPartnerId) {
+      alert('Veuillez sélectionner un partenaire de transport');
+      return;
+    }
 
     setUpdatingStatus(true);
     try {
@@ -377,12 +410,14 @@ export default function AdminOrdersPage() {
             orderStatus: newStatus,
             note: statusNote || undefined,
             eta: newEta || undefined,
+            ...(newStatus === 'vehicle_received' && selectedShippingPartnerId ? { shippingPartnerId: selectedShippingPartnerId } : {}),
           }
         : {
             orderId: selectedOrder.id,
             orderStatus: newStatus,
             note: statusNote || undefined,
             eta: newEta || undefined,
+            ...(newStatus === 'vehicle_received' && selectedShippingPartnerId ? { shippingPartnerId: selectedShippingPartnerId } : {}),
           };
 
       const response = await authFetch('/api/admin/orders', {
@@ -396,6 +431,7 @@ export default function AdminOrdersPage() {
         setNewStatus('');
         setStatusNote('');
         setNewEta('');
+        setSelectedShippingPartnerId('');
       } else {
         const data = await response.json();
         alert(`Erreur: ${data.error}`);
@@ -410,7 +446,7 @@ export default function AdminOrdersPage() {
 
   const getStatusProgress = (status: string) => {
     const config = statusConfig[status as keyof typeof statusConfig];
-    return config ? (config.step / 13) * 100 : 0;
+    return config ? (config.step / 14) * 100 : 0;
   };
 
   return (
@@ -842,13 +878,74 @@ export default function AdminOrdersPage() {
                 <div className="space-y-3">
                   <select
                     value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value)}
+                    onChange={(e) => {
+                      setNewStatus(e.target.value);
+                      if (e.target.value !== 'vehicle_received') {
+                        setSelectedShippingPartnerId('');
+                      }
+                    }}
                     className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
                   >
                     {Object.entries(statusConfig).map(([key, config]) => (
                       <option key={key} value={key}>{config.label}</option>
                     ))}
                   </select>
+                  {newStatus === 'vehicle_received' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+                        <Ship className="w-4 h-4 text-lime-500" />
+                        Partenaire de transport *
+                      </label>
+                      {isLoadingPartners ? (
+                        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Chargement des partenaires...
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            value={selectedShippingPartnerId}
+                            onChange={(e) => setSelectedShippingPartnerId(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
+                          >
+                            <option value="">Sélectionner un transitaire...</option>
+                            {(() => {
+                              const country = selectedOrder.destination_country;
+                              const filtered = shippingPartners.filter(
+                                p => p.is_active && p.covered_countries?.includes(country)
+                              );
+                              const others = shippingPartners.filter(
+                                p => p.is_active && !p.covered_countries?.includes(country)
+                              );
+                              return (
+                                <>
+                                  {filtered.length > 0 && (
+                                    <optgroup label={`Partenaires pour ${country}`}>
+                                      {filtered.map(p => (
+                                        <option key={p.id} value={p.id}>{p.company_name}</option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                  {others.length > 0 && (
+                                    <optgroup label="Autres partenaires">
+                                      {others.map(p => (
+                                        <option key={p.id} value={p.id}>{p.company_name}</option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </select>
+                          {shippingPartners.filter(p => p.is_active && p.covered_countries?.includes(selectedOrder.destination_country)).length === 0 && (
+                            <p className="text-xs text-yellow-500">
+                              Aucun partenaire ne couvre {selectedOrder.destination_country}. Vous pouvez sélectionner un autre partenaire.
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                   <input
                     type="text"
                     placeholder="Note (optionnel)"
@@ -933,6 +1030,30 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
               </div>
+
+              {/* Assigned Shipping Partner */}
+              {selectedOrder.assigned_shipping_partner_id && (
+                <div className="bg-[var(--surface)] rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Ship className="w-4 h-4 text-lime-500" />
+                    <h4 className="text-sm font-medium text-[var(--text-muted)]">Partenaire transport</h4>
+                  </div>
+                  <p className="font-medium text-[var(--text-primary)]">
+                    {(() => {
+                      const step = selectedOrder.tracking_steps?.find(s => s.status === 'vehicle_received');
+                      return (step as TrackingStep & { shipping_partner_name?: string })?.shipping_partner_name || 'Partenaire assigné';
+                    })()}
+                  </p>
+                  {(() => {
+                    const step = selectedOrder.tracking_steps?.find(s => s.status === 'vehicle_received');
+                    return step ? (
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        Attribué le {format(new Date(step.timestamp), 'dd/MM/yyyy', { locale: fr })}
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
+              )}
 
               {/* Financial Summary */}
               <div className="bg-[var(--surface)] rounded-xl p-4">

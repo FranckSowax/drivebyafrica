@@ -6,21 +6,22 @@ import { notifyCollaborators } from '@/lib/notifications/bidirectional-notificat
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
-// Order statuses for tracking (13-step workflow)
+// Order statuses for tracking (14-step workflow)
 const ORDER_STATUSES = [
   'deposit_paid',          // 1. Acompte payé
   'vehicle_locked',        // 2. Véhicule bloqué
   'inspection_sent',       // 3. Inspection envoyée
   'full_payment_received', // 4. Totalité du paiement reçu
   'vehicle_purchased',     // 5. Véhicule acheté
-  'export_customs',        // 6. Douane export
-  'in_transit',            // 7. En transit
-  'at_port',               // 8. Au port
-  'shipping',              // 9. En mer
-  'documents_ready',       // 10. Remise documentation
-  'customs',               // 11. En douane
-  'ready_pickup',          // 12. Prêt pour retrait
-  'delivered',             // 13. Livré
+  'vehicle_received',      // 6. Réception véhicule (admin/collab only)
+  'export_customs',        // 7. Douane export
+  'in_transit',            // 8. En transit
+  'at_port',               // 9. Au port
+  'shipping',              // 10. En mer
+  'documents_ready',       // 11. Remise documentation
+  'customs',               // 12. En douane
+  'ready_pickup',          // 13. Prêt pour retrait
+  'delivered',             // 14. Livré
   'processing',            // Legacy: processing = vehicle_locked
 ] as const;
 
@@ -374,7 +375,7 @@ export async function PUT(request: Request) {
     );
     const body = await request.json();
     // Support both 'status' and 'orderStatus' field names
-    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true } = body;
+    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true, shippingPartnerId } = body;
     const orderStatus = orderStatusField || statusField;
     const noteText = note || notes;
 
@@ -447,16 +448,36 @@ export async function PUT(request: Request) {
         vehicle = vehicleData;
       }
 
+      // If vehicle_received, fetch shipping partner name for tracking
+      let shippingPartnerName: string | null = null;
+      if (orderStatus === 'vehicle_received' && shippingPartnerId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: partnerData } = await (supabase as any)
+          .from('shipping_partners')
+          .select('company_name')
+          .eq('id', shippingPartnerId)
+          .single();
+        shippingPartnerName = partnerData?.company_name || null;
+      }
+
       // Update order status in orders table (including last_modified_by tracking)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updatePayload: Record<string, any> = {
+        status: orderStatus,
+        estimated_arrival: eta || null,
+        updated_at: now,
+        last_modified_by: adminCheck.user.id,
+        last_modified_at: now,
+      };
+
+      // Assign shipping partner when receiving vehicle
+      if (orderStatus === 'vehicle_received' && shippingPartnerId) {
+        updatePayload.assigned_shipping_partner_id = shippingPartnerId;
+      }
+
       const { error: updateError } = await supabase
         .from('orders')
-        .update({
-          status: orderStatus,
-          estimated_arrival: eta || null,
-          updated_at: now,
-          last_modified_by: adminCheck.user.id,
-          last_modified_at: now,
-        })
+        .update(updatePayload)
         .eq('id', orderId);
 
       if (updateError) {
@@ -495,12 +516,19 @@ export async function PUT(request: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const existingTracking = existingTrackingData as { id: string; tracking_steps: any[] } | null;
 
-        const trackingStep = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const trackingStep: Record<string, any> = {
           status: orderStatus,
           timestamp: now,
           note: noteText || null,
           updated_by: 'admin',
         };
+
+        // Include shipping partner info in tracking step
+        if (orderStatus === 'vehicle_received' && shippingPartnerId) {
+          trackingStep.shipping_partner_id = shippingPartnerId;
+          trackingStep.shipping_partner_name = shippingPartnerName;
+        }
 
         if (existingTracking) {
           // Update existing tracking
@@ -533,8 +561,9 @@ export async function PUT(request: Request) {
       }
 
       // Enqueue WhatsApp notification (robust queue system with retries)
+      // Skip WhatsApp for vehicle_received (internal admin/collaborator step)
       let notificationResult: { success: boolean; queueId?: string; error?: string } = { success: false, error: 'Non envoyé' };
-      if (sendWhatsApp && order) {
+      if (sendWhatsApp && order && orderStatus !== 'vehicle_received') {
         const whatsappNumber = profile?.whatsapp_number || profile?.phone;
 
         if (whatsappNumber) {

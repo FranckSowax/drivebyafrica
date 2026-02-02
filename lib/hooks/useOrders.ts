@@ -292,12 +292,13 @@ export function useOrderTracking(orderId: string) {
   };
 }
 
-// Order status helpers - 13-step workflow:
+// Order status helpers - 14-step workflow:
 // 1. Acompte payé -> 2. Véhicule bloqué -> 3. Inspection envoyée -> 4. Totalité paiement reçu ->
-// 5. Véhicule acheté -> 6. Douane export -> 7. En transit -> 8. Au port -> 9. En mer ->
-// 10. Remise documentation -> 11. En douane -> 12. Prêt pour retrait -> 13. Livré
+// 5. Véhicule acheté -> 6. Réception véhicule (admin/collab only) -> 7. Douane export ->
+// 8. En transit -> 9. Au port -> 10. En mer -> 11. Remise documentation ->
+// 12. En douane -> 13. Prêt pour retrait -> 14. Livré
 export const ORDER_STATUSES = {
-  // Main workflow statuses (13 steps)
+  // Main workflow statuses (14 steps)
   deposit_paid: {
     label: 'Acompte payé',
     color: 'bg-yellow-500',
@@ -328,52 +329,59 @@ export const ORDER_STATUSES = {
     step: 5,
     description: 'Le véhicule a été acheté',
   },
+  vehicle_received: {
+    label: 'Réception véhicule',
+    color: 'bg-lime-500',
+    step: 6,
+    description: 'Le véhicule a été réceptionné et un transitaire assigné',
+    adminOnly: true,
+  },
   export_customs: {
     label: 'Douane export',
     color: 'bg-amber-500',
-    step: 6,
+    step: 7,
     description: 'Le véhicule passe la douane d\'exportation',
   },
   in_transit: {
     label: 'En transit',
     color: 'bg-purple-500',
-    step: 7,
+    step: 8,
     description: 'Le véhicule est en transit vers le port',
   },
   at_port: {
     label: 'Au port',
     color: 'bg-sky-500',
-    step: 8,
+    step: 9,
     description: 'Le véhicule est arrivé au port',
   },
   shipping: {
     label: 'En mer',
     color: 'bg-indigo-500',
-    step: 9,
+    step: 10,
     description: 'Le véhicule est en mer',
   },
   documents_ready: {
     label: 'Remise documentation',
     color: 'bg-violet-500',
-    step: 10,
+    step: 11,
     description: 'Les documents sont disponibles au téléchargement',
   },
   customs: {
     label: 'En douane',
     color: 'bg-orange-500',
-    step: 11,
+    step: 12,
     description: 'Le véhicule est en cours de dédouanement',
   },
   ready_pickup: {
     label: 'Prêt pour retrait',
     color: 'bg-teal-500',
-    step: 12,
+    step: 13,
     description: 'Le véhicule est prêt à être retiré',
   },
   delivered: {
     label: 'Livré',
     color: 'bg-green-600',
-    step: 13,
+    step: 14,
     description: 'Le véhicule a été livré',
   },
   // Special statuses
@@ -429,25 +437,25 @@ export const ORDER_STATUSES = {
   preparing_export: {
     label: 'Douane export',
     color: 'bg-amber-500',
-    step: 6,
+    step: 7,
     description: 'Préparation pour l\'export',
   },
   shipped: {
     label: 'En transit',
     color: 'bg-purple-500',
-    step: 7,
+    step: 8,
     description: 'Le véhicule est en route',
   },
   customs_clearance: {
     label: 'En douane',
     color: 'bg-orange-500',
-    step: 11,
+    step: 12,
     description: 'En cours de dédouanement',
   },
   completed: {
     label: 'Livré',
     color: 'bg-green-600',
-    step: 13,
+    step: 14,
     description: 'La commande est terminée',
   },
   pending_payment: {

@@ -42,6 +42,7 @@ import {
   Upload,
   ExternalLink,
   Image as ImageIcon,
+  PackageCheck,
 } from 'lucide-react';
 import { StatusDocumentsSection, MissingDocsBadge } from '@/components/shared/StatusDocumentsSection';
 import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge';
@@ -87,6 +88,7 @@ interface Order {
   last_modified_by_name?: string | null;
   last_modified_by_color?: string | null;
   last_modified_at?: string | null;
+  assigned_shipping_partner_id?: string | null;
 }
 
 interface TrackingStep {
@@ -157,13 +159,21 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     icon: ShoppingCart,
     step: 5,
   },
+  vehicle_received: {
+    label: 'Vehicle Received',
+    labelZh: '车辆已接收',
+    color: 'text-lime-500',
+    bg: 'bg-lime-500/10',
+    icon: PackageCheck,
+    step: 6,
+  },
   export_customs: {
     label: 'Export Customs',
     labelZh: '出口报关',
     color: 'text-amber-500',
     bg: 'bg-amber-500/10',
     icon: Building,
-    step: 6,
+    step: 7,
   },
   in_transit: {
     label: 'In Transit',
@@ -171,7 +181,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-purple-500',
     bg: 'bg-purple-500/10',
     icon: Truck,
-    step: 7,
+    step: 8,
   },
   at_port: {
     label: 'At Port',
@@ -179,7 +189,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-sky-500',
     bg: 'bg-sky-500/10',
     icon: Anchor,
-    step: 8,
+    step: 9,
   },
   shipping: {
     label: 'Shipping',
@@ -187,7 +197,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-indigo-500',
     bg: 'bg-indigo-500/10',
     icon: Ship,
-    step: 9,
+    step: 10,
   },
   documents_ready: {
     label: 'Documents Ready',
@@ -195,7 +205,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-violet-500',
     bg: 'bg-violet-500/10',
     icon: FileText,
-    step: 10,
+    step: 11,
   },
   customs: {
     label: 'In Customs',
@@ -203,7 +213,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-orange-500',
     bg: 'bg-orange-500/10',
     icon: FileCheck,
-    step: 11,
+    step: 12,
   },
   ready_pickup: {
     label: 'Ready for Pickup',
@@ -211,7 +221,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-teal-500',
     bg: 'bg-teal-500/10',
     icon: MapPin,
-    step: 12,
+    step: 13,
   },
   delivered: {
     label: 'Delivered',
@@ -219,7 +229,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
     color: 'text-jewel',
     bg: 'bg-jewel/10',
     icon: Home,
-    step: 13,
+    step: 14,
   },
 };
 
@@ -267,6 +277,9 @@ function CollaboratorOrdersContent() {
   const [statusNote, setStatusNote] = useState('');
   const [newEta, setNewEta] = useState('');
   const [actualPurchasePrice, setActualPurchasePrice] = useState('');
+  const [selectedShippingPartnerId, setSelectedShippingPartnerId] = useState<string>('');
+  const [shippingPartners, setShippingPartners] = useState<Array<{ id: string; company_name: string; covered_countries: string[]; is_active: boolean }>>([]);
+  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   const {
     notifications,
@@ -310,6 +323,22 @@ function CollaboratorOrdersContent() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Fetch shipping partners when needed
+  useEffect(() => {
+    if (newStatus === 'vehicle_received' && shippingPartners.length === 0 && !isLoadingPartners) {
+      setIsLoadingPartners(true);
+      authFetch('/api/admin/shipping/partners')
+        .then(res => res.json())
+        .then(data => {
+          if (data.partners) {
+            setShippingPartners(data.partners);
+          }
+        })
+        .catch(err => console.error('Error fetching shipping partners:', err))
+        .finally(() => setIsLoadingPartners(false));
+    }
+  }, [newStatus, shippingPartners.length, isLoadingPartners]);
 
   // Real-time synchronization for orders
   useEffect(() => {
@@ -364,6 +393,12 @@ function CollaboratorOrdersContent() {
       return;
     }
 
+    // Validate shipping partner for 'vehicle_received' status
+    if (newStatus === 'vehicle_received' && !selectedShippingPartnerId) {
+      alert(locale === 'zh' ? '请选择运输合作伙伴' : 'Please select a shipping partner');
+      return;
+    }
+
     try {
       setIsUpdatingStatus(true);
 
@@ -375,6 +410,7 @@ function CollaboratorOrdersContent() {
           notes: statusNote || undefined,
           eta: newEta || undefined,
           actualPurchasePrice: actualPurchasePrice || undefined,
+          ...(newStatus === 'vehicle_received' && selectedShippingPartnerId ? { shippingPartnerId: selectedShippingPartnerId } : {}),
         }),
       });
 
@@ -386,6 +422,7 @@ function CollaboratorOrdersContent() {
       await fetchOrders();
       setStatusNote('');
       setActualPurchasePrice('');
+      setSelectedShippingPartnerId('');
 
       // Refresh selected order with new data
       const updatedOrder = orders.find(o => o.id === selectedOrder.id);
@@ -428,7 +465,7 @@ function CollaboratorOrdersContent() {
 
   const getStatusProgress = (status: string) => {
     const config = statusConfig[status];
-    return config ? (config.step / 13) * 100 : 0;
+    return config ? (config.step / 14) * 100 : 0;
   };
 
   const getStatusLabel = (status: string) => {
@@ -916,7 +953,12 @@ function CollaboratorOrdersContent() {
                 <div className="space-y-3">
                   <select
                     value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value)}
+                    onChange={(e) => {
+                      setNewStatus(e.target.value);
+                      if (e.target.value !== 'vehicle_received') {
+                        setSelectedShippingPartnerId('');
+                      }
+                    }}
                     className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
                   >
                     {Object.entries(statusConfig).map(([key, config]) => (
@@ -925,6 +967,65 @@ function CollaboratorOrdersContent() {
                       </option>
                     ))}
                   </select>
+                  {/* Shipping Partner Dropdown - Only for vehicle_received */}
+                  {newStatus === 'vehicle_received' && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+                        <Ship className="w-4 h-4 text-lime-500" />
+                        {locale === 'zh' ? '运输合作伙伴 *' : 'Shipping Partner *'}
+                      </label>
+                      {isLoadingPartners ? (
+                        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {locale === 'zh' ? '加载合作伙伴...' : 'Loading partners...'}
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            value={selectedShippingPartnerId}
+                            onChange={(e) => setSelectedShippingPartnerId(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
+                          >
+                            <option value="">{locale === 'zh' ? '选择物流公司...' : 'Select a shipping partner...'}</option>
+                            {(() => {
+                              const country = selectedOrder.destination_country;
+                              const filtered = shippingPartners.filter(
+                                p => p.is_active && p.covered_countries?.includes(country)
+                              );
+                              const others = shippingPartners.filter(
+                                p => p.is_active && !p.covered_countries?.includes(country)
+                              );
+                              return (
+                                <>
+                                  {filtered.length > 0 && (
+                                    <optgroup label={locale === 'zh' ? `${country} 的合作伙伴` : `Partners for ${country}`}>
+                                      {filtered.map(p => (
+                                        <option key={p.id} value={p.id}>{p.company_name}</option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                  {others.length > 0 && (
+                                    <optgroup label={locale === 'zh' ? '其他合作伙伴' : 'Other partners'}>
+                                      {others.map(p => (
+                                        <option key={p.id} value={p.id}>{p.company_name}</option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </select>
+                          {shippingPartners.filter(p => p.is_active && p.covered_countries?.includes(selectedOrder.destination_country)).length === 0 && (
+                            <p className="text-xs text-yellow-500">
+                              {locale === 'zh'
+                                ? `没有覆盖 ${selectedOrder.destination_country} 的合作伙伴。您可以选择其他合作伙伴。`
+                                : `No partner covers ${selectedOrder.destination_country}. You can select another partner.`}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                   <input
                     type="text"
                     placeholder={locale === 'zh' ? '备注（可选）' : 'Note (optional)'}
@@ -991,6 +1092,32 @@ function CollaboratorOrdersContent() {
 
               {/* Activity History - Shows who modified the order */}
               <OrderActivityHistory orderId={selectedOrder.id} locale={locale} />
+
+              {/* Assigned Shipping Partner */}
+              {selectedOrder.assigned_shipping_partner_id && (
+                <div className="bg-[var(--bg-secondary)] rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Ship className="w-4 h-4 text-lime-500" />
+                    <h4 className="text-sm font-medium text-[var(--text-muted)]">
+                      {locale === 'zh' ? '运输合作伙伴' : 'Shipping Partner'}
+                    </h4>
+                  </div>
+                  <p className="font-medium text-[var(--text-primary)]">
+                    {(() => {
+                      const step = selectedOrder.tracking_steps?.find(s => s.status === 'vehicle_received');
+                      return (step as TrackingStep & { shipping_partner_name?: string })?.shipping_partner_name || (locale === 'zh' ? '已分配合作伙伴' : 'Partner assigned');
+                    })()}
+                  </p>
+                  {(() => {
+                    const step = selectedOrder.tracking_steps?.find(s => s.status === 'vehicle_received');
+                    return step ? (
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        {locale === 'zh' ? '分配于' : 'Assigned on'} {format(new Date(step.timestamp), 'dd/MM/yyyy', { locale: dateLocale })}
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
+              )}
 
               {/* Customer Info */}
               <div className="grid grid-cols-2 gap-4">

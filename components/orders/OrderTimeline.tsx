@@ -46,18 +46,21 @@ interface OrderTimelineProps {
   documents?: Json;
 }
 
-// Main workflow steps matching 13-step ORDER_STATUSES
-// Showing 8 main steps for compact display
+// Main workflow steps matching 14-step ORDER_STATUSES
+// Showing 8 main steps for compact display (vehicle_received excluded - admin only)
 const TIMELINE_STEPS = [
   { status: 'deposit_paid', icon: CreditCard, label: 'Acompte', step: 1 },
   { status: 'vehicle_locked', icon: Lock, label: 'Bloqué', step: 2 },
   { status: 'inspection_sent', icon: ClipboardCheck, label: 'Inspection', step: 3 },
   { status: 'full_payment_received', icon: CreditCard, label: 'Paiement', step: 4 },
   { status: 'vehicle_purchased', icon: ShoppingCart, label: 'Acheté', step: 5 },
-  { status: 'shipping', icon: Ship, label: 'En mer', step: 9 },
-  { status: 'documents_ready', icon: FileText, label: 'Documents', step: 10 },
-  { status: 'delivered', icon: Home, label: 'Livré', step: 13 },
+  { status: 'shipping', icon: Ship, label: 'En mer', step: 10 },
+  { status: 'documents_ready', icon: FileText, label: 'Documents', step: 11 },
+  { status: 'delivered', icon: Home, label: 'Livré', step: 14 },
 ];
+
+// Statuses hidden from customer view
+const ADMIN_ONLY_STATUSES = ['vehicle_received'];
 
 export function OrderTimeline({
   tracking,
@@ -151,31 +154,34 @@ export function OrderTimeline({
       </div>
 
       {/* Detailed Tracking Events */}
-      {tracking.length > 0 && (
+      {tracking.filter(e => !ADMIN_ONLY_STATUSES.includes(e.status)).length > 0 && (
         <div className="mt-8 space-y-4">
           <h4 className="text-sm font-medium text-nobel uppercase tracking-wider">
             Historique
           </h4>
           <div className="space-y-3">
-            {tracking.map((event, index) => {
-              // Find documents uploaded around this event's time (within 24h before or after)
-              const eventDate = new Date(event.completed_at);
-              const relatedDocs = docList.filter(doc => {
-                const docDate = new Date(doc.uploaded_at);
-                const timeDiff = Math.abs(docDate.getTime() - eventDate.getTime());
-                const hoursDiff = timeDiff / (1000 * 60 * 60);
-                return hoursDiff <= 24;
-              });
+            {(() => {
+              const visibleTracking = tracking.filter(event => !ADMIN_ONLY_STATUSES.includes(event.status));
+              return visibleTracking.map((event, index) => {
+                // Find documents uploaded around this event's time (within 24h before or after)
+                const eventDate = new Date(event.completed_at);
+                const relatedDocs = docList.filter(doc => {
+                  const docDate = new Date(doc.uploaded_at);
+                  const timeDiff = Math.abs(docDate.getTime() - eventDate.getTime());
+                  const hoursDiff = timeDiff / (1000 * 60 * 60);
+                  return hoursDiff <= 24;
+                });
 
-              return (
-                <TrackingEvent
-                  key={event.id}
-                  event={event}
-                  isLatest={index === tracking.length - 1}
-                  documents={relatedDocs}
-                />
-              );
-            })}
+                return (
+                  <TrackingEvent
+                    key={event.id}
+                    event={event}
+                    isLatest={index === visibleTracking.length - 1}
+                    documents={relatedDocs}
+                  />
+                );
+              });
+            })()}
           </div>
         </div>
       )}

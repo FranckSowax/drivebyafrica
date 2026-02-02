@@ -5,21 +5,22 @@ import { notifyAdmins } from '@/lib/notifications/bidirectional-notifications';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
-// Order statuses for tracking (13-step workflow)
+// Order statuses for tracking (14-step workflow)
 const ORDER_STATUSES = [
   'deposit_paid',          // 1. Deposit paid / 定金已付
   'vehicle_locked',        // 2. Vehicle locked / 车辆已锁定
   'inspection_sent',       // 3. Inspection sent / 检测已发送
   'full_payment_received', // 4. Full payment received / 全款已收
   'vehicle_purchased',     // 5. Vehicle purchased / 车辆已购买
-  'export_customs',        // 6. Export customs / 出口清关
-  'in_transit',            // 7. In transit / 运输中
-  'at_port',               // 8. At port / 在港口
-  'shipping',              // 9. Shipping / 海运中
-  'documents_ready',       // 10. Documents ready / 文件就绪
-  'customs',               // 11. Import customs / 进口清关
-  'ready_pickup',          // 12. Ready for pickup / 待提车
-  'delivered',             // 13. Delivered / 已交付
+  'vehicle_received',      // 6. Vehicle received / 车辆已接收 (admin/collab only)
+  'export_customs',        // 7. Export customs / 出口清关
+  'in_transit',            // 8. In transit / 运输中
+  'at_port',               // 9. At port / 在港口
+  'shipping',              // 10. Shipping / 海运中
+  'documents_ready',       // 11. Documents ready / 文件就绪
+  'customs',               // 12. Import customs / 进口清关
+  'ready_pickup',          // 13. Ready for pickup / 待提车
+  'delivered',             // 14. Delivered / 已交付
   'processing',            // Legacy: processing = vehicle_locked
 ] as const;
 
@@ -401,7 +402,7 @@ export async function PUT(request: Request) {
     );
     const body = await request.json();
     // Support both 'status' and 'orderStatus' field names
-    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true, actualPurchasePrice } = body;
+    const { orderId, quoteId, orderStatus: orderStatusField, status: statusField, note, notes, eta, sendWhatsApp = true, actualPurchasePrice, shippingPartnerId } = body;
     const orderStatus = orderStatusField || statusField;
     const noteText = note || notes;
 
@@ -484,15 +485,21 @@ export async function PUT(request: Request) {
         vehicle = vehicleData;
       }
 
+      // If vehicle_received, fetch shipping partner name for tracking
+      let shippingPartnerName: string | null = null;
+      if (orderStatus === 'vehicle_received' && shippingPartnerId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: partnerData } = await (supabase as any)
+          .from('shipping_partners')
+          .select('company_name')
+          .eq('id', shippingPartnerId)
+          .single();
+        shippingPartnerName = partnerData?.company_name || null;
+      }
+
       // Update order status in orders table (including last_modified_by tracking)
-      const updateData: {
-        status: string;
-        estimated_arrival: string | null;
-        updated_at: string;
-        actual_purchase_price_usd?: number;
-        last_modified_by: string;
-        last_modified_at: string;
-      } = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updateData: Record<string, any> = {
         status: orderStatus,
         estimated_arrival: eta || null,
         updated_at: now,
@@ -503,6 +510,11 @@ export async function PUT(request: Request) {
       // Add actual purchase price if provided (for 'vehicle_purchased' status)
       if (actualPurchasePrice) {
         updateData.actual_purchase_price_usd = parseFloat(actualPurchasePrice);
+      }
+
+      // Assign shipping partner when receiving vehicle
+      if (orderStatus === 'vehicle_received' && shippingPartnerId) {
+        updateData.assigned_shipping_partner_id = shippingPartnerId;
       }
 
       const { error: updateError } = await supabase
@@ -532,13 +544,20 @@ export async function PUT(request: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const existingTracking = existingTrackingData as { id: string; tracking_steps: any[] } | null;
 
-        const trackingStep = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const trackingStep: Record<string, any> = {
           status: orderStatus,
           timestamp: now,
           note: noteText || null,
           updated_by: 'collaborator',
           collaborator_id: authCheck.user.id,
         };
+
+        // Include shipping partner info in tracking step
+        if (orderStatus === 'vehicle_received' && shippingPartnerId) {
+          trackingStep.shipping_partner_id = shippingPartnerId;
+          trackingStep.shipping_partner_name = shippingPartnerName;
+        }
 
         if (existingTracking) {
           // Update existing tracking
@@ -585,8 +604,9 @@ export async function PUT(request: Request) {
       );
 
       // Enqueue WhatsApp notification (robust queue system with retries)
+      // Skip WhatsApp for vehicle_received (internal admin/collaborator step)
       let notificationResult: { success: boolean; queueId?: string; error?: string } = { success: false, error: 'Not sent' };
-      if (sendWhatsApp && order) {
+      if (sendWhatsApp && order && orderStatus !== 'vehicle_received') {
         const whatsappNumber = profile?.whatsapp_number || profile?.phone;
 
         if (whatsappNumber) {
