@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Ship, Save, Plus, Trash2, Loader2, AlertCircle, Search, Clock } from 'lucide-react';
+import { Ship, Save, Plus, Trash2, Loader2, AlertCircle, Search, Clock, Users, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -217,20 +218,32 @@ export default function AdminShippingPage() {
               </div>
             )}
           </div>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={!hasChanges || isSaving}
-            leftIcon={
-              isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )
-            }
-          >
-            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/shipping/partners">
+              <Button variant="outline" leftIcon={<Users className="w-4 h-4" />}>
+                Partenaires
+              </Button>
+            </Link>
+            <Link href="/admin/shipping/comparison">
+              <Button variant="outline" leftIcon={<BarChart3 className="w-4 h-4" />}>
+                Comparer
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={!hasChanges || isSaving}
+              leftIcon={
+                isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )
+              }
+            >
+              {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+            </Button>
+          </div>
         </div>
 
         {/* Info Card */}
