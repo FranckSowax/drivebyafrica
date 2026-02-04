@@ -14,6 +14,7 @@ import {
   Menu,
   Car,
   Layers,
+  BookOpen,
 } from 'lucide-react';
 
 interface CollaboratorSidebarProps {
@@ -43,6 +44,11 @@ const navItems = [
     key: 'batches',
     href: '/collaborator/batches',
     icon: Layers,
+  },
+  {
+    key: 'guides',
+    href: '/collaborator/guides',
+    icon: BookOpen,
   },
 ];
 

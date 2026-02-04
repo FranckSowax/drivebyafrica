@@ -21,6 +21,7 @@ import {
   Bell,
   Package,
   PlusCircle,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +56,7 @@ const mainNavItems: NavItem[] = [
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
   { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+  { href: '/admin/guides', label: 'Guides', icon: BookOpen },
 ];
 
 const secondaryNavItems = [

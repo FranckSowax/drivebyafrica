@@ -245,6 +245,7 @@
     "copyright": "© {year} Driveby Africa. Tous droits réservés."
   },
   "collaborator": {
+    "guides": "Guides",
     "addVehicle": "Ajouter un véhicule",
     "vehicleForm": {
       "basicInfo": "Informations de base",
