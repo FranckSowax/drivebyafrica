@@ -223,22 +223,23 @@ async function handleStatusUpdate(status: WhapiStatusUpdate): Promise<void> {
   const { id: messageId, status: newStatus } = status;
 
   // Update notification_queue
-  type QueueStatus = 'pending' | 'sent' | 'delivered' | 'failed';
-  const statusMapping: Record<string, QueueStatus> = {
+  // DB status column only accepts: pending, processing, sent, failed, cancelled
+  // Map whapi statuses to valid DB statuses
+  const dbStatusMapping: Record<string, 'sent' | 'failed'> = {
     sent: 'sent',
-    delivered: 'delivered',
-    read: 'delivered',
+    delivered: 'sent',  // keep as 'sent' in queue status, track actual status in whatsapp_status
+    read: 'sent',
     failed: 'failed',
   };
 
-  const queueStatus = statusMapping[newStatus] as QueueStatus | undefined;
-  if (!queueStatus) return;
+  const dbStatus = dbStatusMapping[newStatus];
+  if (!dbStatus) return;
 
   const { data } = await supabaseAdmin
     .from('notification_queue')
     .update({
       whatsapp_status: newStatus,
-      status: queueStatus,
+      status: dbStatus,
       updated_at: new Date().toISOString(),
     })
     .eq('whatsapp_message_id', messageId)
@@ -249,7 +250,7 @@ async function handleStatusUpdate(status: WhapiStatusUpdate): Promise<void> {
     await supabaseAdmin.from('notification_log').insert({
       queue_id: data[0].id,
       event_type: eventType,
-      status_after: queueStatus,
+      status_after: dbStatus,
     });
   }
 
