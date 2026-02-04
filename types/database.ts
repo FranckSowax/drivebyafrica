@@ -1367,7 +1367,7 @@ export type Database = {
           priority: string;
           scheduled_for: string;
           sent_at: string | null;
-          status: 'pending' | 'sent' | 'failed';
+          status: 'pending' | 'sent' | 'delivered' | 'failed' | 'cancelled';
           error: string | null;
           retry_count: number;
           created_at: string;
@@ -1386,7 +1386,7 @@ export type Database = {
           priority?: string;
           scheduled_for?: string;
           sent_at?: string | null;
-          status?: 'pending' | 'sent' | 'failed';
+          status?: 'pending' | 'sent' | 'delivered' | 'failed' | 'cancelled';
           error?: string | null;
           retry_count?: number;
           created_at?: string;
@@ -1405,7 +1405,7 @@ export type Database = {
           priority?: string;
           scheduled_for?: string;
           sent_at?: string | null;
-          status?: 'pending' | 'sent' | 'failed';
+          status?: 'pending' | 'sent' | 'delivered' | 'failed' | 'cancelled';
           error?: string | null;
           retry_count?: number;
           created_at?: string;
@@ -1416,6 +1416,55 @@ export type Database = {
             foreignKeyName: "notification_queue_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      notification_log: {
+        Row: {
+          id: string;
+          queue_id: string | null;
+          event_type: string;
+          status_before: string | null;
+          status_after: string | null;
+          attempt_number: number | null;
+          api_response: Json | null;
+          error_message: string | null;
+          error_code: string | null;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          queue_id?: string | null;
+          event_type: string;
+          status_before?: string | null;
+          status_after?: string | null;
+          attempt_number?: number | null;
+          api_response?: Json | null;
+          error_message?: string | null;
+          error_code?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          queue_id?: string | null;
+          event_type?: string;
+          status_before?: string | null;
+          status_after?: string | null;
+          attempt_number?: number | null;
+          api_response?: Json | null;
+          error_message?: string | null;
+          error_code?: string | null;
+          duration_ms?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_queue_id_fkey";
+            columns: ["queue_id"];
+            referencedRelation: "notification_queue";
             referencedColumns: ["id"];
           }
         ];

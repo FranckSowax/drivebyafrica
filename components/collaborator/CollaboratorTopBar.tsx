@@ -113,7 +113,7 @@ export function CollaboratorTopBar({
             <div className="absolute right-0 top-full mt-2 w-80 bg-cod-gray border border-nobel/20 rounded-xl shadow-xl z-50 overflow-hidden">
               {/* Header */}
               <div className="p-4 border-b border-nobel/20 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">{t('notifications.title')}</h3>
+                <h3 className="font-semibold text-white">{t('notifications.title')}</h3>
                 {unreadCount > 0 && onMarkAllRead && (
                   <button
                     onClick={onMarkAllRead}
@@ -145,7 +145,7 @@ export function CollaboratorTopBar({
                         <div className="flex-1 min-w-0">
                           <p className={cn(
                             'text-sm font-medium truncate',
-                            notification.read ? 'text-gray-600' : 'text-gray-900'
+                            notification.read ? 'text-gray-400' : 'text-white'
                           )}>
                             {notification.title}
                           </p>

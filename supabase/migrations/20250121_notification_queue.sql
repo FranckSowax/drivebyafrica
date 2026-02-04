@@ -457,6 +457,7 @@ ALTER TABLE notification_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_status_log ENABLE ROW LEVEL SECURITY;
 
 -- Admins can see all
+DROP POLICY IF EXISTS "Admins can manage notification_queue" ON notification_queue;
 CREATE POLICY "Admins can manage notification_queue" ON notification_queue
   FOR ALL USING (
     EXISTS (
@@ -466,6 +467,7 @@ CREATE POLICY "Admins can manage notification_queue" ON notification_queue
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view notification_log" ON notification_log;
 CREATE POLICY "Admins can view notification_log" ON notification_log
   FOR SELECT USING (
     EXISTS (
@@ -475,6 +477,7 @@ CREATE POLICY "Admins can view notification_log" ON notification_log
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view order_status_log" ON order_status_log;
 CREATE POLICY "Admins can view order_status_log" ON order_status_log
   FOR SELECT USING (
     EXISTS (
@@ -485,18 +488,22 @@ CREATE POLICY "Admins can view order_status_log" ON order_status_log
   );
 
 -- Collaborators can see their own logs
+DROP POLICY IF EXISTS "Collaborators can view own status logs" ON order_status_log;
 CREATE POLICY "Collaborators can view own status logs" ON order_status_log
   FOR SELECT USING (
     changed_by = auth.uid()
   );
 
 -- System/Service role can do everything (for background workers)
+DROP POLICY IF EXISTS "Service role full access notification_queue" ON notification_queue;
 CREATE POLICY "Service role full access notification_queue" ON notification_queue
   FOR ALL USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access notification_log" ON notification_log;
 CREATE POLICY "Service role full access notification_log" ON notification_log
   FOR ALL USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role full access order_status_log" ON order_status_log;
 CREATE POLICY "Service role full access order_status_log" ON order_status_log
   FOR ALL USING (auth.role() = 'service_role');
 

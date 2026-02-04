@@ -24,7 +24,7 @@ import {
 import type { VehicleBatch } from '@/types/vehicle-batch';
 
 export default function CollaboratorBatchesPage() {
-  const { t } = useCollaboratorLocale();
+  const { t, locale } = useCollaboratorLocale();
 
   // Auth hook - handles authentication, provides user info and signOut
   const { isChecking, isAuthorized, userName, userEmail, signOut } = useCollaboratorAuth();
@@ -38,8 +38,6 @@ export default function CollaboratorBatchesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   // Filters
   const [filters, setFilters] = useState({
     status: 'all',
@@ -137,36 +135,33 @@ export default function CollaboratorBatchesPage() {
   if (isChecking || !isAuthorized) {
     return (
       <div className="min-h-screen bg-cod-gray flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-alto-orange animate-spin" />
+        <Loader2 className="h-8 w-8 text-mandarin animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-cod-gray">
-      <CollaboratorSidebar
-        collapsed={sidebarCollapsed}
-        onCollapse={setSidebarCollapsed}
-        onLogout={signOut}
-      />
+      <CollaboratorSidebar onLogout={signOut} />
 
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <div className="lg:pl-64">
         <CollaboratorTopBar
+          title={locale === 'zh' ? '批量车辆' : 'Vehicle Batches'}
           userName={userName}
           userEmail={userEmail}
           onLogout={signOut}
         />
 
-        <div className="p-6">
+        <main className="p-4 lg:p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Package className="w-7 h-7 text-alto-orange" />
-                Vehicle Batches
+                <Package className="w-7 h-7 text-mandarin" />
+                {locale === 'zh' ? '批量车辆' : 'Vehicle Batches'}
               </h1>
-              <p className="text-sm text-nobel mt-1">
-                Manage your wholesale vehicle batches
+              <p className="text-sm text-gray-400 mt-1">
+                {locale === 'zh' ? '管理您的批量车辆' : 'Manage your wholesale vehicle batches'}
               </p>
             </div>
             <Button
@@ -179,47 +174,77 @@ export default function CollaboratorBatchesPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-6 gap-4 mb-6">
-            <Card className="p-4 bg-white border-nobel/20">
-              <div className="text-sm text-gray-600">{t('stats.totalBatches')}</div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</div>
-            </Card>
-            <Card className="p-4 bg-white border-nobel/20">
-              <div className="text-sm text-yellow-600 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {t('stats.pending')}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <Card className="p-4 bg-cod-gray border-nobel/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-mandarin/10 rounded-lg">
+                  <Package className="w-5 h-5 text-mandarin" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('stats.totalBatches')}</p>
+                  <p className="text-xl font-bold text-white">{stats.total}</p>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.pending}</div>
             </Card>
-            <Card className="p-4 bg-white border-nobel/20">
-              <div className="text-sm text-green-600 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                {t('stats.approved')}
+            <Card className="p-4 bg-cod-gray border-nobel/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-500/10 rounded-lg">
+                  <Clock className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('stats.pending')}</p>
+                  <p className="text-xl font-bold text-white">{stats.pending}</p>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.approved}</div>
             </Card>
-            <Card className="p-4 bg-white border-nobel/20">
-              <div className="text-sm text-red-600 flex items-center gap-1">
-                <XCircle className="w-3 h-3" />
-                {t('stats.rejected')}
+            <Card className="p-4 bg-cod-gray border-nobel/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-jewel/10 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-jewel" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('stats.approved')}</p>
+                  <p className="text-xl font-bold text-white">{stats.approved}</p>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.rejected}</div>
             </Card>
-            <Card className="p-4 bg-white border-nobel/20">
-              <div className="text-sm text-gray-600">{t('stats.totalVehicles')}</div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.totalVehicles}</div>
-            </Card>
-            <Card className="p-4 bg-white border-nobel/20">
-              <div className="text-sm text-blue-600 flex items-center gap-1">
-                <ShoppingCart className="w-3 h-3" />
-                {t('stats.available')}
+            <Card className="p-4 bg-cod-gray border-nobel/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/10 rounded-lg">
+                  <XCircle className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('stats.rejected')}</p>
+                  <p className="text-xl font-bold text-white">{stats.rejected}</p>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mt-1">{stats.availableVehicles}</div>
+            </Card>
+            <Card className="p-4 bg-cod-gray border-nobel/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <Package className="w-5 h-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('stats.totalVehicles')}</p>
+                  <p className="text-xl font-bold text-white">{stats.totalVehicles}</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-cod-gray border-nobel/20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <ShoppingCart className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">{t('stats.available')}</p>
+                  <p className="text-xl font-bold text-white">{stats.availableVehicles}</p>
+                </div>
+              </div>
             </Card>
           </div>
 
           {/* Batch Table */}
-          <Card className="p-6 bg-surface border-nobel/20">
+          <Card className="p-6 bg-cod-gray border-nobel/20">
             <CollaboratorBatchTable
               batches={filteredBatches}
               total={total}
@@ -234,7 +259,7 @@ export default function CollaboratorBatchesPage() {
               onDelete={handleDeleteBatch}
             />
           </Card>
-        </div>
+        </main>
       </div>
 
       {/* Add Batch Modal */}

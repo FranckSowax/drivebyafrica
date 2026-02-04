@@ -530,7 +530,7 @@ function CollaboratorOrdersContent() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">{t('stats.purchased')}</p>
-                    <p className="text-xl font-bold text-gray-900">{stats.vehicle_purchased}</p>
+                    <p className="text-xl font-bold text-white">{stats.vehicle_purchased}</p>
                   </div>
                 </div>
               </Card>
@@ -541,7 +541,7 @@ function CollaboratorOrdersContent() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">{t('stats.inTransit')}</p>
-                    <p className="text-xl font-bold text-gray-900">{stats.in_transit}</p>
+                    <p className="text-xl font-bold text-white">{stats.in_transit}</p>
                   </div>
                 </div>
               </Card>
@@ -552,7 +552,7 @@ function CollaboratorOrdersContent() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">{t('stats.shipping')}</p>
-                    <p className="text-xl font-bold text-gray-900">{stats.shipping}</p>
+                    <p className="text-xl font-bold text-white">{stats.shipping}</p>
                   </div>
                 </div>
               </Card>
@@ -563,7 +563,7 @@ function CollaboratorOrdersContent() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">{t('stats.delivered')}</p>
-                    <p className="text-xl font-bold text-gray-900">{stats.delivered}</p>
+                    <p className="text-xl font-bold text-white">{stats.delivered}</p>
                   </div>
                 </div>
               </Card>
@@ -591,7 +591,7 @@ function CollaboratorOrdersContent() {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-3 bg-[var(--card-bg)] border border-nobel/20 rounded-xl text-gray-900 focus:border-mandarin focus:outline-none"
+              className="px-4 py-3 bg-[var(--card-bg)] border border-nobel/20 rounded-xl text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
             >
               <option value="all">{t('stats.allStatuses')}</option>
               {Object.entries(statusConfig).map(([key, config]) => (

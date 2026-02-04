@@ -72,6 +72,7 @@ const statusConfig: Record<string, { label: string; labelZh: string; color: stri
   inspection_sent: { label: 'Inspection Sent', labelZh: '检验已发送', color: 'text-cyan-500', icon: FileCheck },
   full_payment_received: { label: 'Full Payment', labelZh: '全款已收', color: 'text-green-500', icon: CheckCircle },
   vehicle_purchased: { label: 'Purchased', labelZh: '已购买', color: 'text-emerald-500', icon: ShoppingCart },
+  vehicle_received: { label: 'Vehicle Received', labelZh: '车辆已接收', color: 'text-lime-500', icon: Package },
   export_customs: { label: 'Export Customs', labelZh: '出口报关', color: 'text-amber-500', icon: FileCheck },
   in_transit: { label: 'In Transit', labelZh: '运输中', color: 'text-purple-500', icon: Truck },
   at_port: { label: 'At Port', labelZh: '已到港', color: 'text-sky-500', icon: Anchor },
@@ -167,7 +168,7 @@ export default function CollaboratorDashboardPage() {
 
         // Calculate status breakdown
         const inProgress = allOrders.filter(o =>
-          ['deposit_paid', 'vehicle_locked', 'inspection_sent', 'full_payment_received', 'vehicle_purchased', 'export_customs'].includes(o.order_status)
+          ['deposit_paid', 'vehicle_locked', 'inspection_sent', 'full_payment_received', 'vehicle_purchased', 'vehicle_received', 'export_customs'].includes(o.order_status)
         ).length;
         const inTransit = allOrders.filter(o =>
           ['in_transit', 'at_port'].includes(o.order_status)
@@ -277,7 +278,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-blue-400 mb-1">
                         {t('stats.todayNewOrders')}
                       </p>
-                      <p className="text-3xl font-bold text-gray-900">{dailyStats.newOrdersToday}</p>
+                      <p className="text-3xl font-bold text-white">{dailyStats.newOrdersToday}</p>
                       {dailyStats.newOrdersYesterday > 0 && (
                         <p className="text-xs text-gray-500 mt-1">
                           {t('stats.yesterday')}: {dailyStats.newOrdersYesterday}
@@ -297,7 +298,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-purple-400 mb-1">
                         {t('stats.processedToday')}
                       </p>
-                      <p className="text-3xl font-bold text-gray-900">{dailyStats.processedToday}</p>
+                      <p className="text-3xl font-bold text-white">{dailyStats.processedToday}</p>
                     </div>
                     <div className="p-3 bg-purple-500/20 rounded-xl">
                       <TrendingUp className="w-6 h-6 text-purple-400" />
@@ -312,7 +313,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-emerald-400 mb-1">
                         {t('stats.completedToday')}
                       </p>
-                      <p className="text-3xl font-bold text-gray-900">{dailyStats.completedToday}</p>
+                      <p className="text-3xl font-bold text-white">{dailyStats.completedToday}</p>
                     </div>
                     <div className="p-3 bg-jewel/20 rounded-xl">
                       <CheckCircle className="w-6 h-6 text-emerald-400" />
@@ -327,7 +328,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-amber-400 mb-1">
                         {t('stats.pendingAction')}
                       </p>
-                      <p className="text-3xl font-bold text-gray-900">{dailyStats.pendingAction}</p>
+                      <p className="text-3xl font-bold text-white">{dailyStats.pendingAction}</p>
                     </div>
                     <div className="p-3 bg-amber-500/20 rounded-xl">
                       <AlertCircle className="w-6 h-6 text-amber-400" />
@@ -345,7 +346,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.inProgress')}</p>
-                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.inProgress}</p>
+                      <p className="text-xl font-bold text-white">{statusBreakdown.inProgress}</p>
                     </div>
                   </div>
                 </Card>
@@ -356,7 +357,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.inTransit')}</p>
-                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.inTransit}</p>
+                      <p className="text-xl font-bold text-white">{statusBreakdown.inTransit}</p>
                     </div>
                   </div>
                 </Card>
@@ -367,7 +368,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.shipping')}</p>
-                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.shipping}</p>
+                      <p className="text-xl font-bold text-white">{statusBreakdown.shipping}</p>
                     </div>
                   </div>
                 </Card>
@@ -378,7 +379,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.completed')}</p>
-                      <p className="text-xl font-bold text-gray-900">{statusBreakdown.completed}</p>
+                      <p className="text-xl font-bold text-white">{statusBreakdown.completed}</p>
                     </div>
                   </div>
                 </Card>
@@ -393,7 +394,7 @@ export default function CollaboratorDashboardPage() {
                       <div className="p-2 bg-mandarin/10 rounded-lg">
                         <Package className="w-5 h-5 text-mandarin" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-white">
                         {locale === 'zh' ? '最近订单' : 'Recent Orders'}
                       </h3>
                     </div>
@@ -475,7 +476,7 @@ export default function CollaboratorDashboardPage() {
                       <div className="p-2 bg-blue-500/10 rounded-lg">
                         <Bell className="w-5 h-5 text-blue-500" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-white">
                         {locale === 'zh' ? '通知' : 'Notifications'}
                       </h3>
                       {unreadCount > 0 && (
@@ -521,7 +522,7 @@ export default function CollaboratorDashboardPage() {
                               notification.read ? 'bg-gray-500' : 'bg-mandarin'
                             )} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 font-medium truncate">
+                              <p className="text-sm text-white font-medium truncate">
                                 {notification.title}
                               </p>
                               {notification.message && (
