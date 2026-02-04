@@ -41,10 +41,12 @@ test.describe('Mobile Responsiveness', () => {
     });
     const page = await context.newPage();
     await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Click on vehicles in mobile nav
-    const vehiclesLink = page.locator('nav a[href="/cars"]').first();
-    await vehiclesLink.click();
+    // The bottom mobile nav is a <nav> element with fixed position at bottom
+    // Use the bottom nav link specifically (contains text "Véhicules")
+    const vehiclesLink = page.locator('nav a[href="/cars"]').filter({ hasText: /Véhicules/i });
+    await vehiclesLink.click({ force: true });
 
     await expect(page).toHaveURL(/.*\/cars/);
 
