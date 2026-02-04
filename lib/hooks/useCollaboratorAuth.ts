@@ -69,6 +69,16 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
 
   const signOut = useCallback(async () => {
     try {
+      // Log logout before signing out
+      fetch('/api/collaborator/log-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actionType: 'logout',
+          details: {},
+        }),
+      }).catch(() => {});
+
       if (isMounted.current) {
         setIsAuthorized(false);
         setUser(null);

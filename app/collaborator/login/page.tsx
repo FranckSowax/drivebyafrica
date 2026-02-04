@@ -47,6 +47,15 @@ export default function CollaboratorLoginPage() {
       });
 
       if (authError) {
+        // Log failed login attempt
+        fetch('/api/collaborator/log-activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actionType: 'login_failed',
+            details: { email, reason: 'invalid_credentials' },
+          }),
+        }).catch(() => {});
         setError(t('auth.invalidCredentials'));
         return;
       }
@@ -64,12 +73,30 @@ export default function CollaboratorLoginPage() {
         .single();
 
       if (profileError || !profile) {
+        // Log access denied - no profile
+        fetch('/api/collaborator/log-activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actionType: 'login_failed',
+            details: { email, reason: 'no_profile' },
+          }),
+        }).catch(() => {});
         await supabase.auth.signOut();
         setError(t('errors.accessDenied'));
         return;
       }
 
       if (profile.role !== 'collaborator' && profile.role !== 'admin' && profile.role !== 'super_admin') {
+        // Log access denied - wrong role
+        fetch('/api/collaborator/log-activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            actionType: 'login_failed',
+            details: { email, reason: 'unauthorized_role', role: profile.role },
+          }),
+        }).catch(() => {});
         await supabase.auth.signOut();
         setError(t('errors.accessDenied'));
         return;
@@ -80,6 +107,16 @@ export default function CollaboratorLoginPage() {
       const secureFlag = isSecure ? '; Secure' : '';
       const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
       document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
+
+      // Log successful login
+      fetch('/api/collaborator/log-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          actionType: 'login',
+          details: { email, role: profile.role },
+        }),
+      }).catch(() => {});
 
       // Successful login - use window.location for full page navigation
       window.location.href = redirectTo;
