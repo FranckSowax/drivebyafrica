@@ -223,14 +223,15 @@ async function handleStatusUpdate(status: WhapiStatusUpdate): Promise<void> {
   const { id: messageId, status: newStatus } = status;
 
   // Update notification_queue
-  const statusMapping: Record<string, string> = {
+  type QueueStatus = 'pending' | 'sent' | 'delivered' | 'failed';
+  const statusMapping: Record<string, QueueStatus> = {
     sent: 'sent',
     delivered: 'delivered',
     read: 'delivered',
     failed: 'failed',
   };
 
-  const queueStatus = statusMapping[newStatus];
+  const queueStatus = statusMapping[newStatus] as QueueStatus | undefined;
   if (!queueStatus) return;
 
   const { data } = await supabaseAdmin
