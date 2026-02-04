@@ -10,13 +10,16 @@ const AUTH_MARKER_COOKIE = 'dba-auth-marker';
 function setAuthMarkerCookie(isAuthenticated: boolean) {
   if (typeof document === 'undefined') return;
 
+  const isSecure = window.location.protocol === 'https:';
+  const secureFlag = isSecure ? '; Secure' : '';
+
   if (isAuthenticated) {
     // Set marker cookie (expires in 7 days, same as Supabase token)
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-    document.cookie = `${AUTH_MARKER_COOKIE}=1; path=/; expires=${expires}; SameSite=Lax`;
+    document.cookie = `${AUTH_MARKER_COOKIE}=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
   } else {
     // Remove marker cookie
-    document.cookie = `${AUTH_MARKER_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    document.cookie = `${AUTH_MARKER_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
   }
 }
 

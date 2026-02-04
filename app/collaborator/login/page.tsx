@@ -76,8 +76,10 @@ export default function CollaboratorLoginPage() {
       }
 
       // Set auth marker cookie immediately for middleware
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? '; Secure' : '';
       const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
 
       // Successful login - use window.location for full page navigation
       window.location.href = redirectTo;

@@ -58,8 +58,10 @@ export default function AdminLoginPage() {
       }
 
       // 3. Set auth marker cookie for middleware
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? '; Secure' : '';
       const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
+      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
 
       // 4. Success - redirect to admin dashboard
       // Use window.location for a hard navigation to ensure cookies are sent

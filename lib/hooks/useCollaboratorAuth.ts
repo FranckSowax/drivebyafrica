@@ -19,8 +19,15 @@ const ALLOWED_ROLES = ['collaborator', 'admin', 'super_admin'];
 // Cookie helper
 function clearAuthMarkerCookie() {
   if (typeof document !== 'undefined') {
-    document.cookie = 'dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    const isSecure = window.location.protocol === 'https:';
+    const secureFlag = isSecure ? '; Secure' : '';
+    document.cookie = `dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
   }
+}
+
+function hasAuthMarkerCookie(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.cookie.includes('dba-auth-marker=1');
 }
 
 function hardRedirectToLogin() {
@@ -45,6 +52,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
   const [userEmail, setUserEmail] = useState('');
 
   const isMounted = useRef(true);
+  const sessionChecked = useRef(false);
 
   // Use ref for supabase client to avoid creating during SSR render
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
@@ -109,6 +117,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         setUserEmail(session.user.email || '');
         setIsAuthorized(true);
         setIsChecking(false);
+        sessionChecked.current = true;
       } catch (error) {
         console.error('Auth validation error:', error);
         if (isMounted.current) {
@@ -121,8 +130,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
     };
 
     // Primary auth check: use getSession() which reads from localStorage directly
-    // This is more reliable than onAuthStateChange INITIAL_SESSION which can fire
-    // before the session is loaded from storage
+    // If no session immediately, wait for INITIAL_SESSION event before redirecting
     const checkAuth = async () => {
       try {
         console.log('Collaborator auth: checking session...');
@@ -131,15 +139,15 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         if (!isMounted.current || isRedirecting) return;
 
         if (error || !session?.user) {
-          console.log('Collaborator auth: no session found, redirecting to login');
-          setIsAuthorized(false);
-          setIsChecking(false);
-          isRedirecting = true;
-          hardRedirectToLogin();
+          // No session found immediately - this can happen if localStorage
+          // hasn't been read yet. Wait for INITIAL_SESSION event.
+          console.log('Collaborator auth: no session yet, waiting for INITIAL_SESSION...');
+          // Don't redirect immediately - let the timeout or INITIAL_SESSION handler do it
           return;
         }
 
         console.log('Collaborator auth: session found, validating role...');
+        sessionChecked.current = true;
         await validateAndAuthorize(session);
       } catch (error) {
         // Ignore AbortError from Supabase lock acquisition
@@ -161,10 +169,28 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
 
     // Listen for auth state changes AFTER initial check
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Skip INITIAL_SESSION - we handle it above via getSession()
-      if (event === 'INITIAL_SESSION') return;
+      console.log('Collaborator auth event:', event, 'hasSession:', !!session);
 
-      console.log('Collaborator auth event:', event);
+      if (event === 'INITIAL_SESSION') {
+        if (!isMounted.current || isRedirecting || sessionChecked.current) return;
+
+        if (session?.user) {
+          console.log('Collaborator auth: INITIAL_SESSION with user, validating...');
+          sessionChecked.current = true;
+          await validateAndAuthorize(session);
+        } else {
+          // No session in INITIAL_SESSION and no auth cookie - definitely not logged in
+          if (!hasAuthMarkerCookie()) {
+            console.log('Collaborator auth: no session and no cookie, redirecting');
+            setIsAuthorized(false);
+            setIsChecking(false);
+            isRedirecting = true;
+            hardRedirectToLogin();
+          }
+          // If cookie exists but no session, wait for recovery
+        }
+        return;
+      }
 
       if (event === 'SIGNED_OUT') {
         clearAuthMarkerCookie();
@@ -183,30 +209,31 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       }
 
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-        if (!isRedirecting && isMounted.current) {
+        if (!isRedirecting && isMounted.current && !sessionChecked.current) {
+          sessionChecked.current = true;
           await validateAndAuthorize(session);
         }
       }
     });
 
-    // Safety timeout
+    // Safety timeout - redirect if still checking after timeout
     const timeout = setTimeout(() => {
-      if (isMounted.current && isChecking) {
-        console.log('Collaborator auth: timeout - redirecting to login');
+      if (isMounted.current && isChecking && !sessionChecked.current) {
+        console.log('Collaborator auth: timeout - no session found');
         setIsChecking(false);
         if (!isRedirecting) {
           isRedirecting = true;
           hardRedirectToLogin();
         }
       }
-    }, 10000);
+    }, 5000); // Reduced from 10s to 5s for better UX
 
     return () => {
       isMounted.current = false;
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [getSupabase]);
+  }, [getSupabase, isChecking]);
 
   return { isChecking, isAuthorized, user, userName, userEmail, signOut };
 }
