@@ -70,7 +70,6 @@ export function CollaboratorLocaleProvider({
   forceLocale
 }: CollaboratorLocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(forceLocale || defaultLocale || 'en');
-  const [isInitialized, setIsInitialized] = useState(!!forceLocale);
 
   // Initialize locale from storage or browser detection (skip if forceLocale is set)
   useEffect(() => {
@@ -86,8 +85,6 @@ export function CollaboratorLocaleProvider({
       setLocaleState(detected);
       localStorage.setItem(LOCALE_STORAGE_KEY, detected);
     }
-
-    setIsInitialized(true);
   }, [forceLocale]);
 
   const setLocale = useCallback((newLocale: Locale) => {
@@ -113,11 +110,6 @@ export function CollaboratorLocaleProvider({
 
     return params ? interpolate(translation, params) : translation;
   }, [locale]);
-
-  // Prevent hydration mismatch by rendering children only after initialization
-  if (!isInitialized && typeof window !== 'undefined') {
-    return null;
-  }
 
   return (
     <LocaleContext.Provider value={{ locale, setLocale, t }}>
