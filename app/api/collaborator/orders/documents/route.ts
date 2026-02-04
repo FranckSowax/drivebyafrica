@@ -185,7 +185,7 @@ export async function POST(request: Request) {
     if (sendWhatsApp && whatsappNumber) {
       try {
         const documentNames = newDocuments.map(d => `- \${d.name}`).join('\\n');
-        const message = `🚗 *Driveby Africa*\\n\\nHello \${customerName},\\n\\nDocuments for your order are now available:\\n\\n\${documentNames}\\n\\n📥 Download them from your dashboard:\\nhttps://drivebyafrica.netlify.app/dashboard/orders/\${orderId}\\n\\nBest regards,\\nDriveby Africa Team`;
+        const message = `🚗 *Driveby Africa*\\n\\nHello \${customerName},\\n\\nDocuments for your order are now available:\\n\\n\${documentNames}\\n\\n📥 Download them from your dashboard:\\nhttps://driveby-africa.com/dashboard/orders/\${orderId}\\n\\nBest regards,\\nDriveby Africa Team`;
 
         const whatsappApiUrl = process.env.WHATSAPP_API_URL;
         const whatsappApiKey = process.env.WHATSAPP_API_KEY;

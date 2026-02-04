@@ -11,7 +11,7 @@
 import { getStatusMessage, getStatusMessageConfig, type MessageParams } from './status-messages';
 
 const WHAPI_BASE_URL = 'https://gate.whapi.cloud';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://drivebyafrica.netlify.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://driveby-africa.com';
 
 interface WhapiResponse {
   sent: boolean;

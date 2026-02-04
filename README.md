@@ -87,7 +87,7 @@ Dans **Netlify Dashboard > Site Settings > Environment Variables**, ajoutez :
 | `NEXT_PUBLIC_SUPABASE_URL` | URL de votre projet Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé anonyme Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé service role Supabase |
-| `NEXT_PUBLIC_APP_URL` | URL de votre site (ex: https://drivebyafrica.netlify.app) |
+| `NEXT_PUBLIC_APP_URL` | URL de votre site (ex: https://driveby-africa.com) |
 
 ## Structure du projet
 

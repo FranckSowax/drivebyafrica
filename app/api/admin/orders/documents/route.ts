@@ -161,7 +161,7 @@ export async function POST(request: Request) {
       try {
         // Format the message
         const documentNames = newDocuments.map(d => `- ${d.name}`).join('\n');
-        const message = `🚗 *Driveby Africa*\n\nBonjour ${customerName},\n\nLes documents de votre commande sont maintenant disponibles :\n\n${documentNames}\n\n📥 Téléchargez-les depuis votre espace client :\nhttps://drivebyafrica.netlify.app/dashboard/orders/${orderId}\n\nCordialement,\nL'équipe Driveby Africa`;
+        const message = `🚗 *Driveby Africa*\n\nBonjour ${customerName},\n\nLes documents de votre commande sont maintenant disponibles :\n\n${documentNames}\n\n📥 Téléchargez-les depuis votre espace client :\nhttps://driveby-africa.com/dashboard/orders/${orderId}\n\nCordialement,\nL'équipe Driveby Africa`;
 
         // Send via WhatsApp API (if configured)
         const whatsappApiUrl = process.env.WHATSAPP_API_URL;
