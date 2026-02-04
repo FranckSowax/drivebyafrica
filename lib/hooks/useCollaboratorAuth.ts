@@ -32,7 +32,8 @@ function hardRedirectToLogin() {
 
 /**
  * Hook to protect collaborator pages
- * - Uses onAuthStateChange as the primary auth detection mechanism
+ * - Uses getSession() as primary check (reads from localStorage)
+ * - Listens for auth state changes (sign out, token refresh)
  * - Validates user role via profile query
  * - Redirects to /collaborator/login if not authenticated or not authorized
  */
@@ -81,22 +82,8 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
     let isRedirecting = false;
 
     // Validate session and check role
-    const validateSession = async (session: Session | null) => {
-      if (isRedirecting) return;
-
-      if (!session?.user) {
-        // No session - redirect to login
-        if (isMounted.current) {
-          setIsAuthorized(false);
-          setIsChecking(false);
-        }
-        isRedirecting = true;
-        hardRedirectToLogin();
-        return;
-      }
-
+    const validateAndAuthorize = async (session: Session) => {
       try {
-        // Check if user has allowed role
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, full_name')
@@ -133,9 +120,50 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       }
     };
 
-    // Listen for auth state changes - this is the primary mechanism
-    // INITIAL_SESSION fires when Supabase loads the session from localStorage
+    // Primary auth check: use getSession() which reads from localStorage directly
+    // This is more reliable than onAuthStateChange INITIAL_SESSION which can fire
+    // before the session is loaded from storage
+    const checkAuth = async () => {
+      try {
+        console.log('Collaborator auth: checking session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (!isMounted.current || isRedirecting) return;
+
+        if (error || !session?.user) {
+          console.log('Collaborator auth: no session found, redirecting to login');
+          setIsAuthorized(false);
+          setIsChecking(false);
+          isRedirecting = true;
+          hardRedirectToLogin();
+          return;
+        }
+
+        console.log('Collaborator auth: session found, validating role...');
+        await validateAndAuthorize(session);
+      } catch (error) {
+        // Ignore AbortError from Supabase lock acquisition
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.debug('Collaborator auth: AbortError ignored');
+          return;
+        }
+        console.error('Collaborator auth check error:', error);
+        if (isMounted.current) {
+          setIsAuthorized(false);
+          setIsChecking(false);
+        }
+        isRedirecting = true;
+        hardRedirectToLogin();
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth state changes AFTER initial check
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip INITIAL_SESSION - we handle it above via getSession()
+      if (event === 'INITIAL_SESSION') return;
+
       console.log('Collaborator auth event:', event);
 
       if (event === 'SIGNED_OUT') {
@@ -154,22 +182,17 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         return;
       }
 
-      if (event === 'INITIAL_SESSION') {
-        // This fires once when the client loads the session from localStorage
-        await validateSession(session);
-        return;
-      }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await validateSession(session);
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        if (!isRedirecting && isMounted.current) {
+          await validateAndAuthorize(session);
+        }
       }
     });
 
-    // Safety timeout - if onAuthStateChange never fires INITIAL_SESSION
-    // (e.g., client init fails), don't leave the spinner forever
+    // Safety timeout
     const timeout = setTimeout(() => {
       if (isMounted.current && isChecking) {
-        console.log('Auth check timeout - redirecting to login');
+        console.log('Collaborator auth: timeout - redirecting to login');
         setIsChecking(false);
         if (!isRedirecting) {
           isRedirecting = true;
