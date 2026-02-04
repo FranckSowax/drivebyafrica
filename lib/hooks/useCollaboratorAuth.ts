@@ -51,9 +51,15 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
   }, []);
 
   const redirectToLogin = useCallback(() => {
-    router.push('/collaborator/login');
-    router.refresh();
-  }, [router]);
+    // Clear the auth marker cookie so middleware doesn't redirect back
+    if (typeof document !== 'undefined') {
+      document.cookie = 'dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    }
+    // Use hard navigation to ensure middleware processes the cleared cookie
+    if (typeof window !== 'undefined') {
+      window.location.href = '/collaborator/login';
+    }
+  }, []);
 
   const signOut = useCallback(async () => {
     try {
@@ -63,6 +69,11 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         setUser(null);
         setUserName('');
         setUserEmail('');
+      }
+
+      // Clear auth marker cookie
+      if (typeof document !== 'undefined') {
+        document.cookie = 'dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       }
 
       // Then sign out from Supabase
@@ -147,7 +158,10 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         console.log('Collaborator auth state changed:', event);
 
         if (event === 'SIGNED_OUT' || !session?.user) {
-          // User signed out or session expired
+          // User signed out or session expired - clear auth marker cookie
+          if (typeof document !== 'undefined') {
+            document.cookie = 'dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+          }
           if (isMounted.current) {
             setUser(null);
             setUserName('');
