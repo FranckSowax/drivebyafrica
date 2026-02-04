@@ -220,9 +220,9 @@ export function CollaboratorBatchTable({
         )}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-nobel/20">
-        <table className="w-full text-sm">
+      {/* Table - with mobile horizontal scroll */}
+      <div className="overflow-x-auto rounded-xl border border-nobel/20 touch-pan-x">
+        <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-surface">
             <tr>
               <th className="p-3 text-left text-gray-900 font-medium">{t('table.image')}</th>

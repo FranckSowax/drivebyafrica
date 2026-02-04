@@ -269,8 +269,8 @@ export default function CollaboratorDashboardPage() {
             </div>
           ) : (
             <>
-              {/* Daily Stats Row */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {/* Daily Stats Row - Improved mobile responsiveness */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {/* New Orders Today */}
                 <Card className="p-5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
                   <div className="flex items-start justify-between">
@@ -337,8 +337,8 @@ export default function CollaboratorDashboardPage() {
                 </Card>
               </div>
 
-              {/* Status Breakdown */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {/* Status Breakdown - Improved mobile */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <Card className="p-4 bg-cod-gray border-nobel/20">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -385,8 +385,8 @@ export default function CollaboratorDashboardPage() {
                 </Card>
               </div>
 
-              {/* Main Content Grid */}
-              <div className="grid lg:grid-cols-3 gap-6">
+              {/* Main Content Grid - Stack on mobile */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {/* Recent Orders - Takes 2 columns */}
                 <Card className="lg:col-span-2 bg-cod-gray border-nobel/20">
                   <div className="p-4 border-b border-nobel/20 flex items-center justify-between">
@@ -469,8 +469,8 @@ export default function CollaboratorDashboardPage() {
                   )}
                 </Card>
 
-                {/* Notifications Panel */}
-                <Card className="bg-cod-gray border-nobel/20">
+                {/* Notifications Panel - Full width on mobile */}
+                <Card className="lg:col-span-1 bg-cod-gray border-nobel/20 order-first lg:order-last">
                   <div className="p-4 border-b border-nobel/20 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-500/10 rounded-lg">

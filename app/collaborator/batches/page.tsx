@@ -154,10 +154,10 @@ export default function CollaboratorBatchesPage() {
 
         <main className="p-4 lg:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Package className="w-7 h-7 text-mandarin" />
+              <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                <Package className="w-6 h-6 sm:w-7 sm:h-7 text-mandarin" />
                 {locale === 'zh' ? '批量车辆' : 'Vehicle Batches'}
               </h1>
               <p className="text-sm text-gray-400 mt-1">
@@ -166,7 +166,7 @@ export default function CollaboratorBatchesPage() {
             </div>
             <Button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto justify-center"
             >
               <Plus className="w-4 h-4" />
               Add Batch

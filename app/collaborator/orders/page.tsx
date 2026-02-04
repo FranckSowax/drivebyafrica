@@ -617,8 +617,8 @@ function CollaboratorOrdersContent() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto touch-pan-x">
+                <table className="w-full min-w-[1000px]">
                   <thead>
                     <tr className="border-b border-nobel/20">
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">

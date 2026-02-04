@@ -78,16 +78,18 @@ export function CollaboratorTopBar({
   };
 
   return (
-    <header className="h-16 bg-cod-gray border-b border-nobel/20 flex items-center justify-between px-4 lg:px-6">
+    <header className="h-14 lg:h-16 bg-cod-gray border-b border-nobel/20 flex items-center justify-between px-3 lg:px-6">
       {/* Title - with left margin on mobile for menu button */}
-      <h1 className="text-lg lg:text-xl font-semibold text-white ml-12 lg:ml-0">
+      <h1 className="text-base lg:text-xl font-semibold text-white ml-12 lg:ml-0 truncate">
         {title}
       </h1>
 
       {/* Right section */}
-      <div className="flex items-center gap-3 lg:gap-4">
-        {/* Language switcher */}
-        <CollaboratorLanguageSwitcher variant="compact" />
+      <div className="flex items-center gap-2 lg:gap-4">
+        {/* Language switcher - hidden on smallest screens */}
+        <div className="hidden sm:block">
+          <CollaboratorLanguageSwitcher variant="compact" />
+        </div>
 
         {/* Notifications */}
         <div className="relative" ref={notificationRef}>
@@ -188,20 +190,20 @@ export function CollaboratorTopBar({
         </div>
 
         {/* User Menu */}
-        <div className="relative pl-3 border-l border-nobel/20" ref={userMenuRef}>
+        <div className="relative pl-2 lg:pl-3 border-l border-nobel/20" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className={cn(
-              'flex items-center gap-2 p-1.5 rounded-lg transition-colors',
+              'flex items-center gap-1.5 lg:gap-2 p-1.5 rounded-lg transition-colors',
               'hover:bg-nobel/20',
               showUserMenu && 'bg-nobel/20'
             )}
           >
-            <div className="h-8 w-8 rounded-full bg-mandarin/20 flex items-center justify-center">
-              <User className="h-4 w-4 text-mandarin" />
+            <div className="h-7 w-7 lg:h-8 lg:w-8 rounded-full bg-mandarin/20 flex items-center justify-center">
+              <User className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-mandarin" />
             </div>
             {userName && (
-              <span className="text-sm text-gray-300 hidden sm:inline max-w-[120px] truncate">
+              <span className="text-xs lg:text-sm text-gray-300 hidden sm:inline max-w-[100px] lg:max-w-[120px] truncate">
                 {userName}
               </span>
             )}

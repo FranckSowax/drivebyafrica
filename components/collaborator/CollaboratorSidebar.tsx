@@ -130,19 +130,19 @@ export function CollaboratorSidebar({ className, onLogout, collapsed, onCollapse
 
   return (
     <>
-      {/* Mobile menu button */}
+      {/* Mobile menu button - positioned better */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 rounded-lg bg-nobel/20 text-white"
+        className="lg:hidden fixed top-3 left-3 z-50 p-2.5 rounded-xl bg-mandarin/90 text-white shadow-lg shadow-mandarin/20 backdrop-blur-sm"
         aria-label="Open menu"
       >
-        <Menu className="h-6 w-6" />
+        <Menu className="h-5 w-5" />
       </button>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay with blur */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 z-40"
+          className="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -150,8 +150,8 @@ export function CollaboratorSidebar({ className, onLogout, collapsed, onCollapse
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          'lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-gray-800 border-r border-gray-700',
-          'flex flex-col transform transition-transform duration-300',
+          'lg:hidden fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-gray-800 border-r border-gray-700',
+          'flex flex-col transform transition-transform duration-300 ease-out',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
