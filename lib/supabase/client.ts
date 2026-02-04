@@ -24,7 +24,6 @@ export function createClient() {
         storageKey: 'driveby-africa-auth',
         storage: isBrowser ? window.localStorage : undefined,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
       },
       realtime: {
         params: {

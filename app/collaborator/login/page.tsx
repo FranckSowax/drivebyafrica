@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorLanguageSwitcher } from '@/components/collaborator/CollaboratorLanguageSwitcher';
@@ -10,18 +10,30 @@ import { Button } from '@/components/ui/Button';
 import { Loader2, Lock, Mail, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 
-function CollaboratorLoginContent() {
+export default function CollaboratorLoginPage() {
   const { t } = useCollaboratorLocale();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/collaborator';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [redirectTo, setRedirectTo] = useState('/collaborator');
+  const [isClient, setIsClient] = useState(false);
 
   const supabase = createClient();
+
+  // Safely get search params on client side only
+  useEffect(() => {
+    setIsClient(true);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect) {
+        setRedirectTo(redirect);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +88,17 @@ function CollaboratorLoginContent() {
     }
   };
 
+  // Show loading state while determining client-side params
+  if (!isClient) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cod-gray">
+        <Loader2 className="h-8 w-8 text-mandarin animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-cod-gray">
       {/* Language switcher */}
       <div className="absolute top-4 right-4">
         <CollaboratorLanguageSwitcher />
@@ -179,25 +200,9 @@ function CollaboratorLoginContent() {
 
         {/* Footer */}
         <p className="text-center text-gray-500 text-sm mt-8">
-          {t('collaborator.portal')} &copy; {new Date().getFullYear()} Driveby Africa
+          {t('collaborator.portal')} © {new Date().getFullYear()} Driveby Africa
         </p>
       </div>
     </div>
-  );
-}
-
-function LoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="h-8 w-8 text-mandarin animate-spin" />
-    </div>
-  );
-}
-
-export default function CollaboratorLoginPage() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <CollaboratorLoginContent />
-    </Suspense>
   );
 }
