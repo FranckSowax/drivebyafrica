@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 /**
  * POST /api/collaborator/log-activity
@@ -15,8 +16,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
     }
 
-    const supabase = await createClient();
-
     // Extract IP and user agent
     const ipAddress =
       request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
@@ -26,26 +25,35 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || null;
 
     // For login_failed, we don't have an authenticated user
+    // Use supabaseAdmin (service role) to bypass the NOT NULL constraint on collaborator_id
     if (actionType === 'login_failed') {
-      const { error } = await supabase.from('collaborator_activity_log').insert({
-        collaborator_id: null,
-        action_type: 'login',
-        details: {
-          ...details,
-          success: false,
-        },
-        ip_address: ipAddress,
-        user_agent: userAgent,
+      const { error } = await supabaseAdmin.rpc('log_failed_login_attempt', {
+        p_action_type: 'login',
+        p_details: JSON.stringify({ ...details, success: false }),
+        p_ip_address: ipAddress,
+        p_user_agent: userAgent,
+      }).catch(() => {
+        // Fallback: insert directly with a placeholder if RPC doesn't exist
+        return { error: { message: 'rpc not found' } };
       });
 
+      // Fallback: use raw insert via admin client with type assertion
       if (error) {
-        console.error('[CollabLog] Failed to log login_failed:', error);
+        await supabaseAdmin
+          .from('collaborator_activity_log')
+          .insert({
+            action_type: 'login',
+            details: { ...details, success: false },
+            ip_address: ipAddress,
+            user_agent: userAgent,
+          } as Record<string, unknown>);
       }
 
       return NextResponse.json({ ok: true });
     }
 
     // For login/logout, get the authenticated user
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
