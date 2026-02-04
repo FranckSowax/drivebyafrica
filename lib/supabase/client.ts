@@ -2,14 +2,19 @@ import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/
 import type { Database } from '@/types/database';
 
 // Singleton instance to prevent multiple clients in React Strict Mode
+// Only cached on the client side to avoid SSR storage issues
 let supabaseInstance: SupabaseClient<Database> | null = null;
 
 export function createClient() {
-  if (supabaseInstance) {
+  const isBrowser = typeof window !== 'undefined';
+
+  // On the server, always create a fresh instance (no caching)
+  // On the client, use singleton to prevent duplicates
+  if (isBrowser && supabaseInstance) {
     return supabaseInstance;
   }
 
-  supabaseInstance = createSupabaseClient<Database>(
+  const client = createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -17,7 +22,7 @@ export function createClient() {
         // Use localStorage instead of cookies
         persistSession: true,
         storageKey: 'driveby-africa-auth',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storage: isBrowser ? window.localStorage : undefined,
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
@@ -34,5 +39,10 @@ export function createClient() {
     }
   );
 
-  return supabaseInstance;
+  // Only cache on client side
+  if (isBrowser) {
+    supabaseInstance = client;
+  }
+
+  return client;
 }

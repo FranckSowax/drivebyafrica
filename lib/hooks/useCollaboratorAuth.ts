@@ -37,7 +37,18 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
 
-  const supabase = createClient();
+  // Use ref for supabase client to avoid creating during SSR render
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  if (typeof window !== 'undefined' && !supabaseRef.current) {
+    supabaseRef.current = createClient();
+  }
+
+  const getSupabase = useCallback(() => {
+    if (!supabaseRef.current) {
+      supabaseRef.current = createClient();
+    }
+    return supabaseRef.current;
+  }, []);
 
   const redirectToLogin = useCallback(() => {
     router.push('/collaborator/login');
@@ -55,7 +66,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       }
 
       // Then sign out from Supabase
-      await supabase.auth.signOut();
+      await getSupabase().auth.signOut();
 
       // Force redirect
       redirectToLogin();
@@ -64,10 +75,11 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       // Still redirect even if signOut fails
       redirectToLogin();
     }
-  }, [supabase, redirectToLogin]);
+  }, [getSupabase, redirectToLogin]);
 
   useEffect(() => {
     isMounted.current = true;
+    const supabase = getSupabase();
 
     const checkAuth = async () => {
       try {
@@ -174,6 +186,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
 
       // Cleanup subscription on unmount
       return () => {
+        isMounted.current = false;
         subscription.unsubscribe();
         authListenerSetup.current = false;
       };
@@ -182,7 +195,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
     return () => {
       isMounted.current = false;
     };
-  }, [supabase, redirectToLogin]);
+  }, [getSupabase, redirectToLogin]);
 
   return { isChecking, isAuthorized, user, userName, userEmail, signOut };
 }
