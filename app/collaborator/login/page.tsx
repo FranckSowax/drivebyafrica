@@ -81,7 +81,12 @@ export default function CollaboratorLoginPage() {
 
       // Successful login - use window.location for full page navigation
       window.location.href = redirectTo;
-    } catch {
+    } catch (err) {
+      // Ignore AbortError from Supabase client lock acquisition
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.debug('Login: AbortError ignored (Supabase lock)');
+        return;
+      }
       setError(t('errors.serverError'));
     } finally {
       setIsLoading(false);
