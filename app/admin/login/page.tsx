@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Loader2, Lock, Mail, AlertCircle, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -14,6 +15,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
+  const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,14 +59,27 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // 3. Set auth marker cookie for middleware
-      const isSecure = window.location.protocol === 'https:';
-      const secureFlag = isSecure ? '; Secure' : '';
-      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
+      // 3. Fetch profile, update central auth store (this will persist the
+      // lightweight `dba-collaborator` localStorage entry and set cookie)
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
 
-      // 4. Success - redirect to admin dashboard
-      // Use window.location for a hard navigation to ensure cookies are sent
+        if (profile) {
+          setAuthenticated(data.user, profile);
+        } else {
+          // Fallback: still set minimal authenticated state
+          setAuthenticated(data.user, null);
+        }
+      } catch (e) {
+        // If profile fetch fails, still set minimal authenticated state
+        setAuthenticated(data.user, null);
+      }
+
+      // 4. Success - redirect to admin dashboard (hard navigation so cookies are sent)
       window.location.href = '/admin';
     } catch (err) {
       console.error('Login error:', err);

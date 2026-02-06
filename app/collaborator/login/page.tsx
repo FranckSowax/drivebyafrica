@@ -108,6 +108,14 @@ export default function CollaboratorLoginPage() {
       const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
       document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
 
+      // Also persist lightweight collaborator info in localStorage for fast client-side checks
+      try {
+        const collabInfo = { id: data.user.id, email: data.user.email, role: profile.role, full_name: profile.full_name };
+        localStorage.setItem('dba-collaborator', JSON.stringify(collabInfo));
+      } catch (e) {
+        // ignore localStorage errors (e.g. private mode)
+      }
+
       // Log successful login
       fetch('/api/collaborator/log-activity', {
         method: 'POST',

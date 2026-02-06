@@ -23,6 +23,20 @@ function setAuthMarkerCookie(isAuthenticated: boolean) {
   }
 }
 
+// Lightweight localStorage helper for collaborator quick-checks
+function setCollaboratorLocal(info: { id: string; email?: string | null; role?: string | null; full_name?: string | null } | null) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    if (info) {
+      localStorage.setItem('dba-collaborator', JSON.stringify(info));
+    } else {
+      localStorage.removeItem('dba-collaborator');
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 interface AuthState {
   user: User | null;
   profile: Profile | null;
@@ -91,6 +105,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   setAuthenticated: (user, profile = null) => {
     console.log('Auth store: setAuthenticated called for user:', user.id);
     setAuthMarkerCookie(true);
+    // Persist minimal collaborator info for quick client-side checks
+    setCollaboratorLocal({ id: user.id, email: user.email || null, role: profile?.role || null, full_name: profile?.full_name || null });
     set({
       user,
       profile,
@@ -126,6 +142,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           console.log('Auth initialize: Using cached session (not expired)');
           set({ user: cachedSession.user });
           setAuthMarkerCookie(true);
+          // Persist minimal collaborator info immediately for fast UI hydration
+          setCollaboratorLocal({ id: cachedSession.user.id, email: cachedSession.user.email || null, role: null, full_name: null });
 
           // Fetch profile in background (don't await)
           (async () => {
@@ -136,6 +154,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
                 .eq('id', cachedSession.user.id)
                 .single();
               if (profile) set({ profile });
+              if (profile) setCollaboratorLocal({ id: cachedSession.user.id, email: cachedSession.user.email || null, role: profile.role || null, full_name: profile.full_name || null });
             } catch {
               // Ignore profile fetch errors
             }
@@ -161,6 +180,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         // Session is valid
         set({ user });
         setAuthMarkerCookie(true); // Set marker for middleware
+        // Persist minimal collaborator info immediately for fast UI hydration
+        setCollaboratorLocal({ id: user.id, email: user.email || null, role: null, full_name: null });
 
         // Fetch profile
         const { data: profile } = await supabase
@@ -170,6 +191,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           .single();
 
         set({ profile });
+        if (profile) setCollaboratorLocal({ id: user.id, email: user.email || null, role: profile.role || null, full_name: profile.full_name || null });
       } else if (userError) {
         // Distinguish between session errors and network errors
         const errorMessage = userError.message?.toLowerCase() || '';
@@ -243,6 +265,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     await supabase.auth.signOut();
     set({ user: null, profile: null });
     setAuthMarkerCookie(false); // Remove marker
+    // Remove local collaborator entry
+    setCollaboratorLocal(null);
   },
 
   refreshProfile: async () => {

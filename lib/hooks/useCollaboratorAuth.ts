@@ -51,6 +51,29 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
+  // Try to hydrate quick state from localStorage for snappy UX
+  useEffect(() => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('dba-collaborator');
+        if (raw) {
+          const parsed = JSON.parse(raw) as { id: string; email?: string | null; role?: string | null; full_name?: string | null };
+          if (parsed?.id) {
+            // Populate lightweight client state while we validate the session
+            setUserName(parsed.full_name || parsed.email || '');
+            setUserEmail(parsed.email || '');
+            // NOTE: we can't set `user` object shape (supabase User) reliably here,
+            // but presence of this local entry is a quick indicator for the UI.
+            setIsAuthorized(!!parsed.role && ALLOWED_ROLES.includes(parsed.role));
+            // Keep isChecking true - we'll still validate with Supabase
+          }
+        }
+      }
+    } catch (e) {
+      // ignore parse/localStorage errors
+    }
+  }, []);
+
   const isMounted = useRef(true);
   const sessionChecked = useRef(false);
 
@@ -86,6 +109,9 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         setUserEmail('');
       }
       clearAuthMarkerCookie();
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem('dba-collaborator');
+      } catch {}
       await getSupabase().auth.signOut();
       hardRedirectToLogin();
     } catch (error) {

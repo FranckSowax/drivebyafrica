@@ -22,12 +22,25 @@ export const metadata: Metadata = {
     'Dubaï',
   ],
   authors: [{ name: 'Driveby Africa' }],
+  icons: {
+    icon: '/Favcon -driveby-africa-dark.png',
+    shortcut: '/Favcon -driveby-africa-dark.png',
+    apple: '/Favcon -driveby-africa-dark.png',
+  },
   openGraph: {
     title: 'Driveby Africa - Importation de véhicules',
     description:
       "Votre partenaire de confiance pour l'importation de véhicules vers l'Afrique",
     type: 'website',
     locale: 'fr_FR',
+    images: [
+      {
+        url: '/Favcon -driveby-africa-dark.png',
+        width: 512,
+        height: 512,
+        alt: 'Driveby Africa',
+      },
+    ],
   },
 };
 

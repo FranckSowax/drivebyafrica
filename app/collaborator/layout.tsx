@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'Collaborator Portal | Driveby Africa',
   description: 'Manage vehicle orders and tracking',
   robots: 'noindex, nofollow',
+  icons: {
+    icon: '/Favcon -driveby-africa-dark.png',
+    shortcut: '/Favcon -driveby-africa-dark.png',
+    apple: '/Favcon -driveby-africa-dark.png',
+  },
 };
 
 export default function CollaboratorLayout({

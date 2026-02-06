@@ -1,0 +1,506 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "Driveby Africa" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "Driveby Africa"
+        - generic [ref=e7]:
+          - button "Change language and currency" [ref=e9]:
+            - img
+            - generic: FCFA
+            - img
+          - button "Activer le mode sombre" [ref=e10]:
+            - img [ref=e12]
+          - button "Menu de connexion" [ref=e19]:
+            - img [ref=e20]
+    - main [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - img "Driveby Africa" [ref=e28]
+          - generic [ref=e32]:
+            - generic [ref=e34]: "Nouveau: Importation directe depuis la Corée du Sud"
+            - heading "Importez votre véhicule depuis la Chine, la Corée et Dubaï" [level=1] [ref=e35]
+            - paragraph [ref=e36]: Accédez à des milliers de véhicules depuis la Corée du Sud, la Chine et Dubaï. Estimation gratuite et livraison jusqu'à votre port en Afrique.
+            - generic [ref=e37]:
+              - link "Explorer les véhicules" [ref=e38] [cursor=pointer]:
+                - /url: /cars
+                - button "Explorer les véhicules" [ref=e39]:
+                  - text: Explorer les véhicules
+                  - img [ref=e40]
+              - link "Voir les lots" [ref=e42] [cursor=pointer]:
+                - /url: /batches
+                - button "Voir les lots" [ref=e43]:
+                  - text: Voir les lots
+                  - img [ref=e44]
+            - generic [ref=e48]:
+              - paragraph [ref=e49]: "Sources:"
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e52]: 🇰🇷
+                  - generic [ref=e53]: Korea
+                - generic [ref=e54]:
+                  - generic [ref=e55]: 🇨🇳
+                  - generic [ref=e56]: China
+                - generic [ref=e57]:
+                  - generic [ref=e58]: 🇦🇪
+                  - generic [ref=e59]: Dubai
+        - generic [ref=e63]:
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - img [ref=e68]
+              - generic [ref=e71]:
+                - heading "Recherche rapide" [level=3] [ref=e72]
+                - paragraph [ref=e73]: Chargement...
+            - button "Réinitialiser" [ref=e74]:
+              - img [ref=e75]
+              - text: Réinitialiser
+          - generic [ref=e79]:
+            - button "Marque Toutes" [ref=e81]:
+              - generic [ref=e82]:
+                - paragraph [ref=e83]: Marque
+                - paragraph [ref=e84]: Toutes
+              - img [ref=e85]
+            - button "Budget max Tous" [ref=e88]:
+              - generic [ref=e89]:
+                - paragraph [ref=e90]: Budget max
+                - paragraph [ref=e91]: Tous
+              - img [ref=e92]
+            - button "Année min Toutes" [ref=e95]:
+              - generic [ref=e96]:
+                - paragraph [ref=e97]: Année min
+                - paragraph [ref=e98]: Toutes
+              - img [ref=e99]
+            - button "Km max Tous" [ref=e102]:
+              - generic [ref=e103]:
+                - paragraph [ref=e104]: Km max
+                - paragraph [ref=e105]: Tous
+              - img [ref=e106]
+            - button "Boîte Toutes" [ref=e109]:
+              - generic [ref=e110]:
+                - paragraph [ref=e111]: Boîte
+                - paragraph [ref=e112]: Toutes
+              - img [ref=e113]
+            - button "Origine Tous" [ref=e116]:
+              - generic [ref=e117]:
+                - paragraph [ref=e118]: Origine
+                - paragraph [ref=e119]: Tous
+              - img [ref=e120]
+          - generic [ref=e122]:
+            - button "Voir tous les véhicules" [ref=e123]:
+              - img [ref=e124]
+              - generic [ref=e128]: Voir tous les véhicules
+              - img [ref=e129]
+            - generic [ref=e131]:
+              - button "Plus de filtres" [ref=e132]:
+                - img [ref=e133]
+                - text: Plus de filtres
+              - button [ref=e134]:
+                - img [ref=e135]
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - paragraph [ref=e141]: 15,000+
+            - paragraph [ref=e142]: Véhicules disponibles
+          - generic [ref=e143]:
+            - paragraph [ref=e144]: 2,500+
+            - paragraph [ref=e145]: Clients satisfaits
+          - generic [ref=e146]:
+            - paragraph [ref=e147]: "12"
+            - paragraph [ref=e148]: Pays desservis
+          - generic [ref=e149]:
+            - paragraph [ref=e150]: 98%
+            - paragraph [ref=e151]: Taux de satisfaction
+        - generic [ref=e153]:
+          - generic [ref=e154]:
+            - generic [ref=e155]:
+              - heading "Véhicules populaires" [level=2] [ref=e156]
+              - paragraph [ref=e157]: Les véhicules les plus recherchés par nos clients
+            - link "Voir tout" [ref=e158] [cursor=pointer]:
+              - /url: /cars
+              - button "Voir tout" [ref=e159]:
+                - text: Voir tout
+                - img [ref=e160]
+          - generic [ref=e162]:
+            - link "Changan Eado Disponible 🇨🇳 0 Changan Eado 2013 • automatic • 1600cc 130 000 km Chine Prix FOB 1 052 100 FCFA Estimation transport gratuite Voir le détail →" [ref=e163] [cursor=pointer]:
+              - /url: /cars/1f7177b8-453b-44c4-ae7d-29ca1b634eec
+              - generic [ref=e164]:
+                - generic [ref=e165]:
+                  - img "Changan Eado" [ref=e166]
+                  - generic [ref=e168]: Disponible
+                  - generic [ref=e169]: 🇨🇳
+                  - button [ref=e170]:
+                    - img [ref=e171]
+                  - generic [ref=e173]:
+                    - img [ref=e174]
+                    - generic [ref=e177]: "0"
+                - generic [ref=e178]:
+                  - heading "Changan Eado" [level=3] [ref=e179]
+                  - generic [ref=e180]:
+                    - generic [ref=e181]: "2013"
+                    - generic [ref=e182]: •
+                    - generic [ref=e183]: automatic
+                    - generic [ref=e184]: •
+                    - generic [ref=e185]: 1600cc
+                  - generic [ref=e186]:
+                    - generic [ref=e187]:
+                      - img [ref=e188]
+                      - generic [ref=e191]: 130 000 km
+                    - generic [ref=e192]:
+                      - img [ref=e193]
+                      - generic [ref=e196]: Chine
+                  - generic [ref=e197]:
+                    - paragraph [ref=e198]: Prix FOB
+                    - paragraph [ref=e199]: 1 052 100 FCFA
+                  - generic [ref=e201]:
+                    - generic [ref=e202]: Estimation transport gratuite
+                    - generic [ref=e203]: Voir le détail →
+            - link "Haval Xiaolong MAX Disponible 🇨🇳 0 Haval Xiaolong MAX 2023 • automatic • 1500cc 14 300 km Chine Prix FOB 10 076 220 FCFA Estimation transport gratuite Voir le détail →" [ref=e204] [cursor=pointer]:
+              - /url: /cars/9822a945-8acf-4419-a7bc-d0cf88b57710
+              - generic [ref=e205]:
+                - generic [ref=e206]:
+                  - img "Haval Xiaolong MAX" [ref=e207]
+                  - generic [ref=e209]: Disponible
+                  - generic [ref=e210]: 🇨🇳
+                  - button [ref=e211]:
+                    - img [ref=e212]
+                  - generic [ref=e214]:
+                    - img [ref=e215]
+                    - generic [ref=e218]: "0"
+                - generic [ref=e219]:
+                  - heading "Haval Xiaolong MAX" [level=3] [ref=e220]
+                  - generic [ref=e221]:
+                    - generic [ref=e222]: "2023"
+                    - generic [ref=e223]: •
+                    - generic [ref=e224]: automatic
+                    - generic [ref=e225]: •
+                    - generic [ref=e226]: 1500cc
+                  - generic [ref=e227]:
+                    - generic [ref=e228]:
+                      - img [ref=e229]
+                      - generic [ref=e232]: 14 300 km
+                    - generic [ref=e233]:
+                      - img [ref=e234]
+                      - generic [ref=e237]: Chine
+                  - generic [ref=e238]:
+                    - paragraph [ref=e239]: Prix FOB
+                    - paragraph [ref=e240]: 10 076 220 FCFA
+                  - generic [ref=e242]:
+                    - generic [ref=e243]: Estimation transport gratuite
+                    - generic [ref=e244]: Voir le détail →
+            - link "Geely Xingyue L Disponible 🇨🇳 0 Geely Xingyue L 2022 • automatic • 2000cc 113 000 km Chine Prix FOB 9 224 460 FCFA Estimation transport gratuite Voir le détail →" [ref=e245] [cursor=pointer]:
+              - /url: /cars/75666bb0-9b09-438d-92a9-c07186fee27b
+              - generic [ref=e246]:
+                - generic [ref=e247]:
+                  - img "Geely Xingyue L" [ref=e248]
+                  - generic [ref=e250]: Disponible
+                  - generic [ref=e251]: 🇨🇳
+                  - button [ref=e252]:
+                    - img [ref=e253]
+                  - generic [ref=e255]:
+                    - img [ref=e256]
+                    - generic [ref=e259]: "0"
+                - generic [ref=e260]:
+                  - heading "Geely Xingyue L" [level=3] [ref=e261]
+                  - generic [ref=e262]:
+                    - generic [ref=e263]: "2022"
+                    - generic [ref=e264]: •
+                    - generic [ref=e265]: automatic
+                    - generic [ref=e266]: •
+                    - generic [ref=e267]: 2000cc
+                  - generic [ref=e268]:
+                    - generic [ref=e269]:
+                      - img [ref=e270]
+                      - generic [ref=e273]: 113 000 km
+                    - generic [ref=e274]:
+                      - img [ref=e275]
+                      - generic [ref=e278]: Chine
+                  - generic [ref=e279]:
+                    - paragraph [ref=e280]: Prix FOB
+                    - paragraph [ref=e281]: 9 224 460 FCFA
+                  - generic [ref=e283]:
+                    - generic [ref=e284]: Estimation transport gratuite
+                    - generic [ref=e285]: Voir le détail →
+            - link "BYD Seal Disponible 🇨🇳 0 BYD Seal 2024 • automatic • 1500cc 6 000 km Chine Prix FOB 10 006 920 FCFA Estimation transport gratuite Voir le détail →" [ref=e286] [cursor=pointer]:
+              - /url: /cars/462d104e-2fa2-4237-aced-98cc0f2611b1
+              - generic [ref=e287]:
+                - generic [ref=e288]:
+                  - img "BYD Seal" [ref=e289]
+                  - generic [ref=e291]: Disponible
+                  - generic [ref=e292]: 🇨🇳
+                  - button [ref=e293]:
+                    - img [ref=e294]
+                  - generic [ref=e296]:
+                    - img [ref=e297]
+                    - generic [ref=e300]: "0"
+                - generic [ref=e301]:
+                  - heading "BYD Seal" [level=3] [ref=e302]
+                  - generic [ref=e303]:
+                    - generic [ref=e304]: "2024"
+                    - generic [ref=e305]: •
+                    - generic [ref=e306]: automatic
+                    - generic [ref=e307]: •
+                    - generic [ref=e308]: 1500cc
+                  - generic [ref=e309]:
+                    - generic [ref=e310]:
+                      - img [ref=e311]
+                      - generic [ref=e314]: 6 000 km
+                    - generic [ref=e315]:
+                      - img [ref=e316]
+                      - generic [ref=e319]: Chine
+                  - generic [ref=e320]:
+                    - paragraph [ref=e321]: Prix FOB
+                    - paragraph [ref=e322]: 10 006 920 FCFA
+                  - generic [ref=e324]:
+                    - generic [ref=e325]: Estimation transport gratuite
+                    - generic [ref=e326]: Voir le détail →
+            - link "BYD Frigate 07 Disponible 🇨🇳 0 BYD Frigate 07 2023 • automatic • 1500cc 37 000 km Chine Prix FOB 10 441 620 FCFA Estimation transport gratuite Voir le détail →" [ref=e327] [cursor=pointer]:
+              - /url: /cars/4d8938de-e3ee-488b-ad42-0d81812ac5f5
+              - generic [ref=e328]:
+                - generic [ref=e329]:
+                  - img "BYD Frigate 07" [ref=e330]
+                  - generic [ref=e332]: Disponible
+                  - generic [ref=e333]: 🇨🇳
+                  - button [ref=e334]:
+                    - img [ref=e335]
+                  - generic [ref=e337]:
+                    - img [ref=e338]
+                    - generic [ref=e341]: "0"
+                - generic [ref=e342]:
+                  - heading "BYD Frigate 07" [level=3] [ref=e343]
+                  - generic [ref=e344]:
+                    - generic [ref=e345]: "2023"
+                    - generic [ref=e346]: •
+                    - generic [ref=e347]: automatic
+                    - generic [ref=e348]: •
+                    - generic [ref=e349]: 1500cc
+                  - generic [ref=e350]:
+                    - generic [ref=e351]:
+                      - img [ref=e352]
+                      - generic [ref=e355]: 37 000 km
+                    - generic [ref=e356]:
+                      - img [ref=e357]
+                      - generic [ref=e360]: Chine
+                  - generic [ref=e361]:
+                    - paragraph [ref=e362]: Prix FOB
+                    - paragraph [ref=e363]: 10 441 620 FCFA
+                  - generic [ref=e365]:
+                    - generic [ref=e366]: Estimation transport gratuite
+                    - generic [ref=e367]: Voir le détail →
+            - link "Haval H9 Disponible 🇨🇳 0 Haval H9 2021 • automatic • 2000cc 70 000 km Chine Prix FOB 10 076 220 FCFA Estimation transport gratuite Voir le détail →" [ref=e368] [cursor=pointer]:
+              - /url: /cars/8ffcd6e0-c50c-4b66-af59-83865879151c
+              - generic [ref=e369]:
+                - generic [ref=e370]:
+                  - img "Haval H9" [ref=e371]
+                  - generic [ref=e373]: Disponible
+                  - generic [ref=e374]: 🇨🇳
+                  - button [ref=e375]:
+                    - img [ref=e376]
+                  - generic [ref=e378]:
+                    - img [ref=e379]
+                    - generic [ref=e382]: "0"
+                - generic [ref=e383]:
+                  - heading "Haval H9" [level=3] [ref=e384]
+                  - generic [ref=e385]:
+                    - generic [ref=e386]: "2021"
+                    - generic [ref=e387]: •
+                    - generic [ref=e388]: automatic
+                    - generic [ref=e389]: •
+                    - generic [ref=e390]: 2000cc
+                  - generic [ref=e391]:
+                    - generic [ref=e392]:
+                      - img [ref=e393]
+                      - generic [ref=e396]: 70 000 km
+                    - generic [ref=e397]:
+                      - img [ref=e398]
+                      - generic [ref=e401]: Chine
+                  - generic [ref=e402]:
+                    - paragraph [ref=e403]: Prix FOB
+                    - paragraph [ref=e404]: 10 076 220 FCFA
+                  - generic [ref=e406]:
+                    - generic [ref=e407]: Estimation transport gratuite
+                    - generic [ref=e408]: Voir le détail →
+        - generic [ref=e410]:
+          - generic [ref=e411]:
+            - heading "Comment ça fonctionne" [level=2] [ref=e412]
+            - paragraph [ref=e413]: Un processus simple et transparent pour importer votre véhicule
+          - generic [ref=e414]:
+            - generic [ref=e416]:
+              - text: "01"
+              - heading "Choisissez" [level=3] [ref=e417]
+              - paragraph [ref=e418]: Parcourez notre catalogue et trouvez le véhicule idéal parmi des milliers d'options.
+            - generic [ref=e420]:
+              - text: "02"
+              - heading "Estimez" [level=3] [ref=e421]
+              - paragraph [ref=e422]: Calculez les frais de transport jusqu'à votre port et obtenez un devis personnalisé.
+            - generic [ref=e424]:
+              - text: "03"
+              - heading "Réservez" [level=3] [ref=e425]
+              - paragraph [ref=e426]: Versez un acompte pour bloquer le véhicule et lancer la procédure d'importation.
+            - generic [ref=e428]:
+              - text: "04"
+              - heading "Recevez" [level=3] [ref=e429]
+              - paragraph [ref=e430]: Suivez votre véhicule en temps réel jusqu'à sa livraison au port de votre choix.
+        - generic [ref=e432]:
+          - generic [ref=e433]:
+            - heading "Pourquoi Driveby Africa" [level=2] [ref=e434]
+            - paragraph [ref=e435]: Une plateforme conçue pour simplifier l'importation de véhicules vers l'Afrique
+          - generic [ref=e436]:
+            - generic [ref=e437]:
+              - img [ref=e439]
+              - generic [ref=e443]:
+                - heading "Véhicules vérifiés" [level=3] [ref=e444]
+                - paragraph [ref=e445]: Chaque véhicule est inspecté avec une fiche technique détaillée et un historique complet.
+            - generic [ref=e446]:
+              - img [ref=e448]
+              - generic [ref=e450]:
+                - heading "Transactions sécurisées" [level=3] [ref=e451]
+                - paragraph [ref=e452]: Paiements sécurisés via Stripe et Mobile Money. Votre acompte est protégé jusqu'à la livraison.
+            - generic [ref=e453]:
+              - img [ref=e455]
+              - generic [ref=e460]:
+                - heading "Livraison complète" [level=3] [ref=e461]
+                - paragraph [ref=e462]: De la réservation au port africain. Suivi en temps réel et assistance douanière incluse.
+            - generic [ref=e463]:
+              - img [ref=e465]
+              - generic [ref=e467]:
+                - heading "Support 24/7" [level=3] [ref=e468]
+                - paragraph [ref=e469]: Équipe dédiée disponible par WhatsApp. Assistance en français tout au long du processus.
+        - generic [ref=e474]:
+          - heading "Prêt à importer votre prochain véhicule?" [level=2] [ref=e475]
+          - paragraph [ref=e476]: Créez votre compte gratuitement, explorez notre catalogue et obtenez un devis personnalisé pour votre importation.
+          - generic [ref=e477]:
+            - link "Créer un compte gratuit" [ref=e478] [cursor=pointer]:
+              - /url: /register
+              - button "Créer un compte gratuit" [ref=e479]
+            - link "Explorer les véhicules" [ref=e480] [cursor=pointer]:
+              - /url: /cars
+              - button "Explorer les véhicules" [ref=e481]
+    - contentinfo [ref=e484]:
+      - generic [ref=e485]:
+        - generic [ref=e486]:
+          - generic [ref=e487]:
+            - link "Driveby Africa" [ref=e488] [cursor=pointer]:
+              - /url: /
+              - img "Driveby Africa" [ref=e489]
+            - paragraph [ref=e490]: Votre partenaire de confiance pour l'importation de véhicules depuis la Corée du Sud, la Chine et Dubaï vers l'Afrique.
+            - generic [ref=e491]:
+              - link "contact@driveby-africa.com" [ref=e492] [cursor=pointer]:
+                - /url: mailto:contact@driveby-africa.com
+                - img [ref=e493]
+                - text: contact@driveby-africa.com
+              - link "+241 77 00 00 00" [ref=e496] [cursor=pointer]:
+                - /url: tel:+24177000000
+                - img [ref=e497]
+                - text: +241 77 00 00 00
+              - paragraph [ref=e499]:
+                - img [ref=e500]
+                - text: Hong Kong
+          - generic [ref=e503]:
+            - heading "Entreprise" [level=4] [ref=e504]
+            - list [ref=e505]:
+              - listitem [ref=e506]:
+                - link "À propos" [ref=e507] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=e508]:
+                - link "Comment ça marche" [ref=e509] [cursor=pointer]:
+                  - /url: /how-it-works
+              - listitem [ref=e510]:
+                - link "Contact" [ref=e511] [cursor=pointer]:
+                  - /url: /contact
+              - listitem [ref=e512]:
+                - link "Carrières" [ref=e513] [cursor=pointer]:
+                  - /url: /careers
+          - generic [ref=e514]:
+            - heading "Services" [level=4] [ref=e515]
+            - list [ref=e516]:
+              - listitem [ref=e517]:
+                - link "Véhicules" [ref=e518] [cursor=pointer]:
+                  - /url: /cars
+              - listitem [ref=e519]:
+                - link "Estimation des frais" [ref=e520] [cursor=pointer]:
+                  - /url: /calculator
+              - listitem [ref=e521]:
+                - link "Suivi de commande" [ref=e522] [cursor=pointer]:
+                  - /url: /dashboard/orders
+              - listitem [ref=e523]:
+                - link "Demander un devis" [ref=e524] [cursor=pointer]:
+                  - /url: /cars
+          - generic [ref=e525]:
+            - heading "Support" [level=4] [ref=e526]
+            - list [ref=e527]:
+              - listitem [ref=e528]:
+                - link "FAQ" [ref=e529] [cursor=pointer]:
+                  - /url: /faq
+              - listitem [ref=e530]:
+                - link "Guides" [ref=e531] [cursor=pointer]:
+                  - /url: /guides
+              - listitem [ref=e532]:
+                - link "Conditions générales" [ref=e533] [cursor=pointer]:
+                  - /url: /terms
+              - listitem [ref=e534]:
+                - link "Politique de confidentialité" [ref=e535] [cursor=pointer]:
+                  - /url: /privacy
+        - generic [ref=e536]:
+          - heading "Destinations de livraison" [level=4] [ref=e537]
+          - generic [ref=e538]:
+            - generic [ref=e539]: Gabon
+            - generic [ref=e540]: Cameroun
+            - generic [ref=e541]: Congo
+            - generic [ref=e542]: Côte d'Ivoire
+            - generic [ref=e543]: Sénégal
+        - generic [ref=e544]:
+          - paragraph [ref=e545]: © 2026 Driveby Africa. Tous droits réservés.
+          - generic [ref=e546]:
+            - link [ref=e547] [cursor=pointer]:
+              - /url: https://facebook.com
+              - img [ref=e548]
+            - link [ref=e550] [cursor=pointer]:
+              - /url: https://instagram.com
+              - img [ref=e551]
+            - link [ref=e554] [cursor=pointer]:
+              - /url: https://twitter.com
+              - img [ref=e555]
+    - navigation [ref=e557]:
+      - generic [ref=e558]:
+        - link "Accueil" [ref=e559] [cursor=pointer]:
+          - /url: /
+          - img [ref=e560]
+          - generic [ref=e563]: Accueil
+        - link "Véhicules" [ref=e564] [cursor=pointer]:
+          - /url: /cars
+          - img [ref=e565]
+          - generic [ref=e569]: Véhicules
+        - link "Estimer" [ref=e570] [cursor=pointer]:
+          - /url: /calculator
+          - img [ref=e571]
+          - generic [ref=e573]: Estimer
+        - link "Favoris" [ref=e574] [cursor=pointer]:
+          - /url: /dashboard/favorites
+          - img [ref=e575]
+          - generic [ref=e577]: Favoris
+        - link "Compte" [ref=e578] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e579]
+          - generic [ref=e582]: Compte
+  - generic [ref=e583]:
+    - img [ref=e585]
+    - button "Open Tanstack query devtools" [ref=e633] [cursor=pointer]:
+      - img [ref=e634]
+  - generic [ref=e686] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e687]:
+      - img [ref=e688]
+    - generic [ref=e691]:
+      - button "Open issues overlay" [ref=e692]:
+        - generic [ref=e693]:
+          - generic [ref=e694]: "1"
+          - generic [ref=e695]: "2"
+        - generic [ref=e696]:
+          - text: Issue
+          - generic [ref=e697]: s
+      - button "Collapse issues badge" [ref=e698]:
+        - img [ref=e699]
+  - alert [ref=e701]
+```
