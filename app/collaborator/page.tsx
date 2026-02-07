@@ -195,8 +195,10 @@ export default function CollaboratorDashboardPage() {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    if (isAuthorized) {
+      fetchDashboardData();
+    }
+  }, [isAuthorized]);
 
   const getStatusLabel = (status: string) => {
     const config = statusConfig[status];

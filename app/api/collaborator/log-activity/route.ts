@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // For login_failed, we don't have an authenticated user
     // Use supabaseAdmin (service role) to bypass the NOT NULL constraint on collaborator_id
     if (actionType === 'login_failed') {
-      const { error } = await supabaseAdmin.rpc('log_failed_login_attempt', {
+      const { error } = await (supabaseAdmin.rpc as Function)('log_failed_login_attempt', {
         p_action_type: 'login',
         p_details: JSON.stringify({ ...details, success: false }),
         p_ip_address: ipAddress,
@@ -39,14 +39,14 @@ export async function POST(request: NextRequest) {
 
       // Fallback: use raw insert via admin client with type assertion
       if (error) {
-        await supabaseAdmin
-          .from('collaborator_activity_log')
+        await (supabaseAdmin
+          .from('collaborator_activity_log') as any)
           .insert({
             action_type: 'login',
             details: { ...details, success: false },
             ip_address: ipAddress,
             user_agent: userAgent,
-          } as Record<string, unknown>);
+          });
       }
 
       return NextResponse.json({ ok: true });

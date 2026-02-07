@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { CollaboratorLanguageSwitcher } from '@/components/collaborator/CollaboratorLanguageSwitcher';
@@ -12,7 +11,6 @@ import Image from 'next/image';
 
 export default function CollaboratorLoginPage() {
   const { t } = useCollaboratorLocale();
-  const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +66,7 @@ export default function CollaboratorLoginPage() {
       // Check if user is a collaborator
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, full_name')
         .eq('id', data.user.id)
         .single();
 

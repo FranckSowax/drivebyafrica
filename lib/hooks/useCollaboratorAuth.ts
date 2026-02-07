@@ -128,6 +128,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
     // Validate session and check role
     const validateAndAuthorize = async (session: Session) => {
       try {
+        console.log('Collaborator auth: validating role for user', session.user.id);
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, full_name')
@@ -135,6 +136,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
           .single();
 
         if (!isMounted.current) return;
+        console.log('Collaborator auth: profile result -', profileError ? `error: ${profileError.message}` : `role: ${profile?.role}`);
 
         if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
           console.log('Auth check: user not authorized for collaborator portal');
@@ -269,7 +271,7 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, [getSupabase, isChecking]);
+  }, [getSupabase]);
 
   return { isChecking, isAuthorized, user, userName, userEmail, signOut };
 }
