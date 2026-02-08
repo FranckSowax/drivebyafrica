@@ -280,7 +280,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-blue-400 mb-1">
                         {t('stats.todayNewOrders')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.newOrdersToday}</p>
+                      <p className="text-3xl font-bold text-black">{dailyStats.newOrdersToday}</p>
                       {dailyStats.newOrdersYesterday > 0 && (
                         <p className="text-xs text-gray-500 mt-1">
                           {t('stats.yesterday')}: {dailyStats.newOrdersYesterday}
@@ -300,7 +300,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-purple-400 mb-1">
                         {t('stats.processedToday')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.processedToday}</p>
+                      <p className="text-3xl font-bold text-black">{dailyStats.processedToday}</p>
                     </div>
                     <div className="p-3 bg-purple-500/20 rounded-xl">
                       <TrendingUp className="w-6 h-6 text-purple-400" />
@@ -315,7 +315,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-emerald-400 mb-1">
                         {t('stats.completedToday')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.completedToday}</p>
+                      <p className="text-3xl font-bold text-black">{dailyStats.completedToday}</p>
                     </div>
                     <div className="p-3 bg-jewel/20 rounded-xl">
                       <CheckCircle className="w-6 h-6 text-emerald-400" />
@@ -330,7 +330,7 @@ export default function CollaboratorDashboardPage() {
                       <p className="text-sm text-amber-400 mb-1">
                         {t('stats.pendingAction')}
                       </p>
-                      <p className="text-3xl font-bold text-white">{dailyStats.pendingAction}</p>
+                      <p className="text-3xl font-bold text-black">{dailyStats.pendingAction}</p>
                     </div>
                     <div className="p-3 bg-amber-500/20 rounded-xl">
                       <AlertCircle className="w-6 h-6 text-amber-400" />

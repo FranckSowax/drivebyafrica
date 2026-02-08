@@ -195,7 +195,7 @@ export default function CollaboratorVehiclesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.total')}</p>
-                  <p className="text-xl font-bold text-white">{stats.total}</p>
+                  <p className="text-xl font-bold text-black">{stats.total}</p>
                 </div>
               </div>
             </Card>
@@ -206,7 +206,7 @@ export default function CollaboratorVehiclesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.pending')}</p>
-                  <p className="text-xl font-bold text-white">{stats.pending}</p>
+                  <p className="text-xl font-bold text-black">{stats.pending}</p>
                 </div>
               </div>
             </Card>
@@ -217,7 +217,7 @@ export default function CollaboratorVehiclesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.published')}</p>
-                  <p className="text-xl font-bold text-white">{stats.approved}</p>
+                  <p className="text-xl font-bold text-black">{stats.approved}</p>
                 </div>
               </div>
             </Card>
@@ -228,7 +228,7 @@ export default function CollaboratorVehiclesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.rejected')}</p>
-                  <p className="text-xl font-bold text-white">{stats.rejected}</p>
+                  <p className="text-xl font-bold text-black">{stats.rejected}</p>
                 </div>
               </div>
             </Card>
