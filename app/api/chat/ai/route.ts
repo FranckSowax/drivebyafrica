@@ -346,6 +346,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (typeof userMessage === 'string' && userMessage.length > 5000) {
+      return NextResponse.json(
+        { error: 'Message trop long (max 5000 caractères)' },
+        { status: 400 }
+      );
+    }
+
     // Fetch user profile
     const { data: profile } = await supabase
       .from('profiles')

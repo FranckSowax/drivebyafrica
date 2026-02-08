@@ -5,13 +5,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Verify cron secret to prevent unauthorized calls
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function GET(request: NextRequest) {
-  // Verify authorization - CRON_SECRET must be set in production
+  // CRON_SECRET must be configured — reject if missing
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 403 });
+  }
+
   const authHeader = request.headers.get('authorization');
-  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

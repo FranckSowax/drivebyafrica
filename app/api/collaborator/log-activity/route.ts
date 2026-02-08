@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
+// Simple in-memory rate limiter for login_failed (max 10 per IP per 5 minutes)
+const failedLoginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_FAILED_PER_IP = 10;
+const WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * POST /api/collaborator/log-activity
  * Logs collaborator actions (login, logout, login_failed) to collaborator_activity_log
@@ -27,13 +32,29 @@ export async function POST(request: NextRequest) {
     // For login_failed, we don't have an authenticated user
     // Use supabaseAdmin (service role) to insert directly
     if (actionType === 'login_failed') {
+      // Rate limit login_failed by IP to prevent spam
+      const ip = ipAddress || 'unknown';
+      const now = Date.now();
+      const entry = failedLoginAttempts.get(ip);
+      if (entry && now < entry.resetAt) {
+        if (entry.count >= MAX_FAILED_PER_IP) {
+          return NextResponse.json({ ok: true }); // Silent drop — don't reveal rate limiting
+        }
+        entry.count++;
+      } else {
+        failedLoginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+      }
+
+      // Validate details.email if provided
+      const email = typeof details?.email === 'string' ? details.email.slice(0, 255) : undefined;
+
       await (supabaseAdmin
         .from('collaborator_activity_log') as any)
         .insert({
           action_type: 'login',
-          details: { ...details, success: false },
+          details: { email, success: false },
           ip_address: ipAddress,
-          user_agent: userAgent,
+          user_agent: userAgent?.slice(0, 500) || null,
         });
 
       return NextResponse.json({ ok: true });
