@@ -348,7 +348,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.inProgress')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.inProgress}</p>
+                      <p className="text-xl font-bold text-black">{statusBreakdown.inProgress}</p>
                     </div>
                   </div>
                 </Card>
@@ -359,7 +359,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.inTransit')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.inTransit}</p>
+                      <p className="text-xl font-bold text-black">{statusBreakdown.inTransit}</p>
                     </div>
                   </div>
                 </Card>
@@ -370,7 +370,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.shipping')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.shipping}</p>
+                      <p className="text-xl font-bold text-black">{statusBreakdown.shipping}</p>
                     </div>
                   </div>
                 </Card>
@@ -381,7 +381,7 @@ export default function CollaboratorDashboardPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">{t('stats.completed')}</p>
-                      <p className="text-xl font-bold text-white">{statusBreakdown.completed}</p>
+                      <p className="text-xl font-bold text-black">{statusBreakdown.completed}</p>
                     </div>
                   </div>
                 </Card>
