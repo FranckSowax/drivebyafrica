@@ -1,8 +1,11 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { OrderDocuments } from '@/components/orders/OrderDocuments';
@@ -20,145 +23,143 @@ import {
   MessageCircle,
   ExternalLink,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import type { Order, OrderTracking, QuoteReassignment, Quote } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
 
-// XAF to USD conversion rate (approximate)
 const XAF_TO_USD_RATE = 615;
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
+export default function OrderDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
+  const { user, isInitialized } = useAuthStore();
+  const supabase = useMemo(() => createClient(), []);
 
-export default async function OrderDetailPage({ params }: PageProps) {
-  console.log('[OrderDetailPage] Starting page load');
+  const [orderData, setOrderData] = useState<Order | null>(null);
+  const [vehicleData, setVehicleData] = useState<Vehicle | null>(null);
+  const [trackingData, setTrackingData] = useState<OrderTracking[]>([]);
+  const [quoteData, setQuoteData] = useState<Quote | null>(null);
+  const [reassignmentData, setReassignmentData] = useState<QuoteReassignment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  try {
-    const { id } = await params;
-    console.log('[OrderDetailPage] Order ID:', id);
-
-    const supabase = await createClient();
-    console.log('[OrderDetailPage] Supabase client created');
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log('[OrderDetailPage] User fetch result:', { userId: user?.id, error: userError?.message });
-
-    if (!user) {
-      console.log('[OrderDetailPage] No user found, returning notFound');
-      notFound();
+  useEffect(() => {
+    if (isInitialized && !user) {
+      router.push('/login?redirect=/dashboard/orders');
     }
+  }, [isInitialized, user, router]);
 
-    // Fetch order
-    console.log('[OrderDetailPage] Fetching order...');
-    const { data: order, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .single();
+  useEffect(() => {
+    if (!user || !id) return;
 
-    console.log('[OrderDetailPage] Order fetch result:', {
-      orderId: order?.id,
-      orderStatus: order?.status,
-      vehicleId: order?.vehicle_id,
-      error: error?.message
-    });
+    const fetchData = async () => {
+      setIsLoading(true);
 
-    if (error || !order) {
-      console.log('[OrderDetailPage] Order not found or error, returning notFound');
-      notFound();
-    }
-
-    const orderData = order as Order;
-
-    // Fetch vehicle, tracking, quote, and check for existing reassignment
-    console.log('[OrderDetailPage] Fetching related data...');
-    const [vehicleResult, trackingResult, quoteResult, reassignmentResult] = await Promise.all([
-      supabase.from('vehicles').select('*').eq('id', orderData.vehicle_id).maybeSingle(),
-      supabase
-        .from('order_tracking')
+      // Fetch order
+      const { data: order, error } = await supabase
+        .from('orders')
         .select('*')
-        .eq('order_id', id)
-        .order('completed_at', { ascending: true }),
-      // Fetch the original quote to get shipping and insurance costs
-      orderData.quote_id
-        ? supabase
-            .from('quotes')
-            .select('*')
-            .eq('id', orderData.quote_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-      // Check if a reassignment already exists for this order's quote
-      orderData.quote_id
-        ? supabase
-            .from('quote_reassignments')
-            .select('*')
-            .eq('original_quote_id', orderData.quote_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null }),
-    ]);
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
 
-    console.log('[OrderDetailPage] Vehicle result:', {
-      found: !!vehicleResult.data,
-      error: vehicleResult.error?.message
-    });
-    console.log('[OrderDetailPage] Tracking result:', {
-      count: trackingResult.data?.length,
-      error: trackingResult.error?.message
-    });
-    console.log('[OrderDetailPage] Quote result:', {
-      found: !!quoteResult.data,
-      shippingCostXaf: (quoteResult.data as Quote | null)?.shipping_cost_xaf,
-      insuranceCostXaf: (quoteResult.data as Quote | null)?.insurance_cost_xaf,
-      error: (quoteResult as { error?: { message: string } }).error?.message
-    });
-    console.log('[OrderDetailPage] Reassignment result:', {
-      found: !!reassignmentResult.data,
-      error: (reassignmentResult as { error?: { message: string } }).error?.message
-    });
-
-    const vehicleData = vehicleResult.data as Vehicle | null;
-    const trackingData = (trackingResult.data || []) as OrderTracking[];
-    const quoteData = quoteResult.data as Quote | null;
-    const reassignmentData = reassignmentResult.data as QuoteReassignment | null;
-
-    // Get shipping and insurance from quote (convert XAF to USD) or fallback to order data
-    const shippingPriceUsd = orderData.shipping_price_usd ||
-      (quoteData?.shipping_cost_xaf ? Math.round(quoteData.shipping_cost_xaf / XAF_TO_USD_RATE) : null);
-    const insurancePriceUsd = orderData.insurance_price_usd ||
-      (quoteData?.insurance_cost_xaf ? Math.round(quoteData.insurance_cost_xaf / XAF_TO_USD_RATE) : null);
-    console.log('[OrderDetailPage] Order status value:', orderData.status);
-    const orderStatus = orderData.status as OrderStatus;
-    const status = orderStatus && ORDER_STATUSES[orderStatus]
-      ? ORDER_STATUSES[orderStatus]
-      : { label: orderData.status || 'Inconnu', color: 'bg-gray-500', step: 0 };
-    console.log('[OrderDetailPage] Resolved status:', JSON.stringify(status));
-
-    // Note: Auto-reassignment is disabled to avoid RLS issues
-    // The reassignment should be created via the admin panel instead
-    // If vehicle is not available, just show the warning message
-
-    let createdAt = '-';
-    try {
-      if (orderData.created_at) {
-        createdAt = format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr });
+      if (error || !order) {
+        setNotFound(true);
+        setIsLoading(false);
+        return;
       }
-    } catch (dateError) {
-      console.error('[OrderDetailPage] Date format error:', dateError);
-    }
 
-    console.log('[OrderDetailPage] Order data summary:', {
-      vehiclePriceUsd: orderData.vehicle_price_usd,
-      shippingPriceUsd: orderData.shipping_price_usd,
-      insurancePriceUsd: orderData.insurance_price_usd,
-      customsEstimateUsd: orderData.customs_estimate_usd,
-      totalPriceUsd: orderData.total_price_usd,
-      destinationCountry: orderData.destination_country,
-      destinationCity: orderData.destination_city,
-      destinationPort: orderData.destination_port,
-    });
-    console.log('[OrderDetailPage] Rendering page...');
+      const o = order as Order;
+      setOrderData(o);
+
+      // Fetch related data in parallel
+      const [vehicleResult, trackingResult, quoteResult, reassignmentResult] = await Promise.all([
+        supabase.from('vehicles').select('*').eq('id', o.vehicle_id).maybeSingle(),
+        supabase
+          .from('order_tracking')
+          .select('*')
+          .eq('order_id', id)
+          .order('completed_at', { ascending: true }),
+        o.quote_id
+          ? supabase.from('quotes').select('*').eq('id', o.quote_id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        o.quote_id
+          ? supabase.from('quote_reassignments').select('*').eq('original_quote_id', o.quote_id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      setVehicleData(vehicleResult.data as Vehicle | null);
+      setTrackingData((trackingResult.data || []) as OrderTracking[]);
+      setQuoteData(quoteResult.data as Quote | null);
+      setReassignmentData(reassignmentResult.data as QuoteReassignment | null);
+      setIsLoading(false);
+    };
+
+    fetchData();
+
+    // Real-time subscription for tracking updates
+    const channel = supabase
+      .channel(`order-detail-${id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'order_tracking',
+        filter: `order_id=eq.${id}`,
+      }, () => { fetchData(); })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${id}`,
+      }, () => { fetchData(); })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, user, id]);
+
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-mandarin" />
+      </div>
+    );
+  }
+
+  if (notFound || !orderData) {
+    return (
+      <div className="text-center py-20">
+        <Package className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Commande introuvable</h2>
+        <p className="text-[var(--text-muted)] mb-6">Cette commande n&apos;existe pas ou vous n&apos;y avez pas accès.</p>
+        <Link href="/dashboard/orders" className="text-mandarin hover:underline">
+          Retour aux commandes
+        </Link>
+      </div>
+    );
+  }
+
+  const shippingPriceUsd = orderData.shipping_price_usd ||
+    (quoteData?.shipping_cost_xaf ? Math.round(quoteData.shipping_cost_xaf / XAF_TO_USD_RATE) : null);
+  const insurancePriceUsd = orderData.insurance_price_usd ||
+    (quoteData?.insurance_cost_xaf ? Math.round(quoteData.insurance_cost_xaf / XAF_TO_USD_RATE) : null);
+
+  const orderStatus = orderData.status as OrderStatus;
+  const status = orderStatus && ORDER_STATUSES[orderStatus]
+    ? ORDER_STATUSES[orderStatus]
+    : { label: orderData.status || 'Inconnu', color: 'bg-gray-500', step: 0 };
+
+  let createdAt = '-';
+  try {
+    if (orderData.created_at) {
+      createdAt = format(new Date(orderData.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr });
+    }
+  } catch {
+    // ignore date format errors
+  }
 
   return (
     <div className="space-y-6">
@@ -330,24 +331,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
           <Card>
             <h2 className="font-bold text-[var(--text-primary)] mb-4">Récapitulatif</h2>
             <div className="space-y-3">
-              <PriceRow
-                label="Prix du véhicule"
-                value={orderData.vehicle_price_usd}
-              />
-              <PriceRow
-                label="Transport maritime"
-                value={shippingPriceUsd}
-                showDash
-              />
-              <PriceRow
-                label="Assurance tous risques"
-                value={insurancePriceUsd}
-                showDash
-              />
-              <PriceRow
-                label="Documentation"
-                value={orderData.documentation_fee_usd || 150}
-              />
+              <PriceRow label="Prix du véhicule" value={orderData.vehicle_price_usd} />
+              <PriceRow label="Transport maritime" value={shippingPriceUsd} showDash />
+              <PriceRow label="Assurance tous risques" value={insurancePriceUsd} showDash />
+              <PriceRow label="Documentation" value={orderData.documentation_fee_usd || 150} />
               <div className="pt-3 border-t border-nobel/20">
                 <div className="flex justify-between items-center">
                   <span className="text-[var(--text-primary)] font-bold">Total</span>
@@ -394,11 +381,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
       </div>
     </div>
   );
-  } catch (error) {
-    console.error('[OrderDetailPage] FATAL ERROR:', error);
-    console.error('[OrderDetailPage] Error stack:', error instanceof Error ? error.stack : 'No stack');
-    throw error; // Re-throw to show error page
-  }
 }
 
 function PriceRow({
@@ -410,7 +392,6 @@ function PriceRow({
   value: number | null | undefined;
   showDash?: boolean;
 }) {
-  // Always show this row, display value or dash
   const displayValue = value && value > 0
     ? formatUsdToLocal(value)
     : showDash ? '-' : formatUsdToLocal(0);

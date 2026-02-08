@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { createClient } from '@/lib/supabase/client';
+import { authFetch } from '@/lib/supabase/auth-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface QuoteValidationModalProps {
@@ -42,7 +42,6 @@ interface QuoteValidationModalProps {
 export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidationModalProps) {
   const router = useRouter();
   const toast = useToast();
-  const supabase = createClient();
   const { user } = useAuthStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -70,7 +69,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
     );
   };
 
-  // Demo button - simulates deposit payment and creates order
+  // Demo button - simulates deposit payment and creates order via API
   const handleDemoPayment = async () => {
     if (!quote || !user) {
       toast.error('Erreur', 'Vous devez être connecté');
@@ -81,66 +80,26 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
     toast.info('Mode Demo', 'Simulation du paiement en cours...');
 
     try {
-      // 1. Update quote status to 'accepted'
-      const { error: quoteError } = await supabase
-        .from('quotes')
-        .update({
-          status: 'accepted',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', quote.id);
-
-      if (quoteError) throw quoteError;
-
-      // 2. Create order with 'processing' status (simulating paid deposit)
-      // Generate order_number from quote_number (DBA-XXXX -> ORD-XXXX)
-      const orderNumber = quote.quote_number
-        ? `ORD-${quote.quote_number.replace(/^(DBA-|QT-)/i, '')}`
-        : `ORD-${Date.now().toString(36).toUpperCase()}`;
-
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          vehicle_id: quote.vehicle_id,
-          quote_id: quote.id,
-          order_number: orderNumber,
-          vehicle_price_usd: quote.vehicle_price_usd,
-          destination_country: quote.destination_country,
-          destination_port: quote.destination_name || null,
-          shipping_method: 'container_20ft',
-          container_type: 'shared',
-          status: 'vehicle_locked', // Step 2: Deposit paid completes step 1, vehicle locked is current
-          documents: {},
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // 3. Create order_tracking record with initial status
-      await supabase.from('order_tracking').insert({
-        order_id: order.id,
-        status: 'vehicle_locked',
-        title: 'Véhicule bloqué',
-        description: 'Le véhicule est maintenant réservé. Acompte de $1,000 reçu.',
+      const response = await authFetch('/api/orders/from-quote', {
+        method: 'POST',
+        body: JSON.stringify({ quoteId: quote.id }),
       });
 
-      // 4. Mark vehicle as reserved
-      await supabase
-        .from('vehicles')
-        .update({ status: 'reserved' })
-        .eq('id', quote.vehicle_id);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la création de la commande');
+      }
 
       toast.success('Paiement simulé!', 'Redirection vers votre commande...');
 
       // Close modal and redirect to order page
       onClose();
-      router.push(`/dashboard/orders/${order.id}`);
+      router.push(`/dashboard/orders/${data.order.id}`);
 
     } catch (error) {
       console.error('Demo payment error:', error);
-      toast.error('Erreur', 'Une erreur est survenue lors de la simulation');
+      toast.error('Erreur', error instanceof Error ? error.message : 'Une erreur est survenue');
     } finally {
       setIsProcessing(false);
     }
