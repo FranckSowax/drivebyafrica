@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireCollaborator } from '@/lib/auth/collaborator-check';
 import { notifyAdmins } from '@/lib/notifications/bidirectional-notifications';
 import { getStatusDocumentConfig } from '@/lib/order-documents-config';
+import { sendDocumentNotification } from '@/lib/whatsapp/send-status-notification';
 import type { Database } from '@/types/database';
 
 // Document type interface
@@ -184,33 +185,22 @@ export async function POST(request: Request) {
     let whatsappSent = false;
     if (sendWhatsApp && whatsappNumber) {
       try {
-        const documentNames = newDocuments.map(d => `- \${d.name}`).join('\\n');
-        const message = `🚗 *Driveby Africa*\\n\\nHello \${customerName},\\n\\nDocuments for your order are now available:\\n\\n\${documentNames}\\n\\n📥 Download them from your dashboard:\\nhttps://driveby-africa.com/dashboard/orders/\${orderId}\\n\\nBest regards,\\nDriveby Africa Team`;
-
-        const whatsappApiUrl = process.env.WHATSAPP_API_URL;
-        const whatsappApiKey = process.env.WHATSAPP_API_KEY;
-
-        if (whatsappApiUrl && whatsappApiKey) {
-          const response = await fetch(whatsappApiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer \${whatsappApiKey}`,
-            },
-            body: JSON.stringify({
-              phone: whatsappNumber.replace(/[^0-9+]/g, ''),
-              message,
-            }),
+        const visibleNewDocs = newDocuments.filter((d: UploadedDocument) => d.visible_to_client !== false);
+        if (visibleNewDocs.length > 0) {
+          const result = await sendDocumentNotification({
+            phone: whatsappNumber,
+            customerName,
+            orderNumber: order.order_number || orderId.slice(0, 8),
+            orderId,
+            documents: visibleNewDocs.map((d: UploadedDocument) => ({
+              name: d.name,
+              url: d.url,
+              type: d.type,
+              visible_to_client: d.visible_to_client,
+            })),
+            language: 'fr',
           });
-
-          if (response.ok) {
-            whatsappSent = true;
-          }
-        } else {
-          console.log('WhatsApp message to send:', {
-            to: whatsappNumber,
-            message,
-          });
+          whatsappSent = result.success;
         }
       } catch (whatsappError) {
         console.error('Failed to send WhatsApp:', whatsappError);

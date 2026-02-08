@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getStatusDocumentConfig } from '@/lib/order-documents-config';
+import { sendDocumentNotification } from '@/lib/whatsapp/send-status-notification';
 
 // Document type interface - Enhanced with status document support
 interface UploadedDocument {
@@ -155,44 +156,29 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send WhatsApp notification
+    // Send WhatsApp notification via Whapi
     let whatsappSent = false;
     if (sendWhatsApp && whatsappNumber) {
       try {
-        // Format the message
-        const documentNames = newDocuments.map(d => `- ${d.name}`).join('\n');
-        const message = `🚗 *Driveby Africa*\n\nBonjour ${customerName},\n\nLes documents de votre commande sont maintenant disponibles :\n\n${documentNames}\n\n📥 Téléchargez-les depuis votre espace client :\nhttps://driveby-africa.com/dashboard/orders/${orderId}\n\nCordialement,\nL'équipe Driveby Africa`;
-
-        // Send via WhatsApp API (if configured)
-        const whatsappApiUrl = process.env.WHATSAPP_API_URL;
-        const whatsappApiKey = process.env.WHATSAPP_API_KEY;
-
-        if (whatsappApiUrl && whatsappApiKey) {
-          const response = await fetch(whatsappApiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${whatsappApiKey}`,
-            },
-            body: JSON.stringify({
-              phone: whatsappNumber.replace(/[^0-9+]/g, ''),
-              message,
-            }),
+        const visibleNewDocs = newDocuments.filter((d: UploadedDocument) => d.visible_to_client !== false);
+        if (visibleNewDocs.length > 0) {
+          const result = await sendDocumentNotification({
+            phone: whatsappNumber,
+            customerName,
+            orderNumber: order.order_number || orderId.slice(0, 8),
+            orderId,
+            documents: visibleNewDocs.map((d: UploadedDocument) => ({
+              name: d.name,
+              url: d.url,
+              type: d.type,
+              visible_to_client: d.visible_to_client,
+            })),
+            language: 'fr',
           });
-
-          if (response.ok) {
-            whatsappSent = true;
-          }
-        } else {
-          // Log for manual sending if API not configured
-          console.log('WhatsApp message to send:', {
-            to: whatsappNumber,
-            message,
-          });
+          whatsappSent = result.success;
         }
       } catch (whatsappError) {
         console.error('Failed to send WhatsApp:', whatsappError);
-        // Continue even if WhatsApp fails
       }
     }
 

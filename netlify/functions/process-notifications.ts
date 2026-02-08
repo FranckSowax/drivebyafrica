@@ -137,34 +137,72 @@ async function sendWhatsAppNotification(
       message += `\n📝 *Note:* ${payload.note}\n`;
     }
 
-    if (payload.dashboardUrl) {
-      message += `\n🔗 Suivez votre commande: ${payload.dashboardUrl}`;
-    }
   }
 
+  const formattedPhone = formatPhoneForWhapi(notification.recipient_phone);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://driveby-africa.com';
+  const dashboardUrl = notification.order_id
+    ? `${siteUrl}/dashboard/orders/${notification.order_id}`
+    : payload.dashboardUrl || `${siteUrl}/dashboard/orders`;
+
   try {
-    const response = await fetch('https://gate.whapi.cloud/messages/text', {
+    // Try interactive button format first
+    const interactiveResponse = await fetch('https://gate.whapi.cloud/messages/interactive', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${whapiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        to: formatPhoneForWhapi(notification.recipient_phone),
-        body: message,
+        to: formattedPhone,
+        type: 'button',
+        body: { text: message },
+        footer: { text: 'Driveby Africa - Import vehicules' },
+        action: {
+          buttons: [
+            {
+              type: 'url',
+              title: 'Voir ma commande',
+              id: 'view_order',
+              url: dashboardUrl,
+            },
+          ],
+        },
       }),
       signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    if (interactiveResponse.ok) {
+      const data = await interactiveResponse.json();
+      if (data.sent) {
+        return { success: true, messageId: data.message?.id };
+      }
+    }
+
+    // Fallback to plain text if interactive fails
+    console.log('Interactive button failed, falling back to text');
+    const textResponse = await fetch('https://gate.whapi.cloud/messages/text', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${whapiToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: formattedPhone,
+        body: `${message}\n\n👉 ${dashboardUrl}`,
+      }),
+      signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT),
+    });
+
+    if (!textResponse.ok) {
+      const errorData = await textResponse.json().catch(() => ({}));
       return {
         success: false,
-        error: errorData.message || `HTTP ${response.status}`,
+        error: errorData.message || `HTTP ${textResponse.status}`,
       };
     }
 
-    const data = await response.json();
+    const data = await textResponse.json();
     return {
       success: true,
       messageId: data.message?.id,

@@ -174,34 +174,28 @@ async function sendInteractiveMessage(
   bodyText: string,
   buttonText: string,
   buttonUrl: string,
-  imageUrl?: string
 ): Promise<SendResult> {
   try {
     const payload: Record<string, unknown> = {
       to: phone,
-      type: 'cta_url',
+      type: 'button',
       body: {
         text: bodyText,
       },
       footer: {
-        text: '🚗 Driveby Africa - Import véhicules',
+        text: 'Driveby Africa - Import vehicules',
       },
       action: {
-        name: 'cta_url',
-        parameters: {
-          display_text: buttonText,
-          url: buttonUrl,
-        },
+        buttons: [
+          {
+            type: 'url',
+            title: buttonText.substring(0, 20),
+            id: 'view_order',
+            url: buttonUrl,
+          },
+        ],
       },
     };
-
-    // Add image header if provided
-    if (imageUrl) {
-      payload.header = {
-        type: 'image',
-        image: { link: imageUrl },
-      };
-    }
 
     const response = await fetch(`${WHAPI_BASE_URL}/messages/interactive`, {
       method: 'POST',
@@ -219,12 +213,8 @@ async function sendInteractiveMessage(
       return { success: true, messageId: result.message?.id };
     }
 
-    // Fallback: if interactive fails, send image + text separately
+    // Fallback: if interactive fails, send plain text with link
     console.log('Interactive message failed, using fallback');
-    if (imageUrl) {
-      return sendImageMessage(token, phone, imageUrl, `${bodyText}\n\n👉 ${buttonUrl}`);
-    }
-
     return sendTextMessage(token, phone, `${bodyText}\n\n👉 ${buttonUrl}`);
   } catch (error) {
     console.error('WhatsApp interactive send error:', error);
@@ -347,18 +337,21 @@ export async function sendStatusChangeNotification(params: {
     );
     messagesCount = 1;
   }
-  // Strategy 2: Single image - send interactive with image header and button
+  // Strategy 2: Single image - send image then interactive button
   else if (images.length === 1 && pdfs.length === 0) {
     const fullMessage = `${emoji} *${messageContent.title}*\n\n${message}`;
+    // Send image first
+    await sendImageMessage(whapiToken, formattedPhone, images[0].url, `📷 ${images[0].name}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    // Then send interactive button
     result = await sendInteractiveMessage(
       whapiToken,
       formattedPhone,
       fullMessage,
       buttonText,
-      dashboardUrl,
-      images[0].url
+      dashboardUrl
     );
-    messagesCount = 1;
+    messagesCount = 2;
   }
   // Strategy 3: Single PDF - send document with caption
   else if (pdfs.length === 1 && images.length === 0) {
@@ -455,13 +448,12 @@ export async function sendStatusChangeNotification(params: {
       formattedPhone,
       introMessage,
       buttonText,
-      dashboardUrl,
-      images[0]?.url // First image as header if available
+      dashboardUrl
     );
     messagesCount = 1;
 
-    // Send remaining images (skip first if used in header)
-    const remainingImages = images.slice(1, 4);
+    // Send all images separately
+    const remainingImages = images.slice(0, 4);
     for (const img of remainingImages) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const imgResult = await sendImageMessage(
@@ -556,15 +548,17 @@ export async function sendDocumentNotification(params: {
 
   // Single image: interactive with image
   if (images.length === 1 && pdfs.length === 0) {
+    // Send image first, then interactive button
+    await sendImageMessage(whapiToken, formattedPhone, images[0].url, `📷 ${images[0].name}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
     result = await sendInteractiveMessage(
       whapiToken,
       formattedPhone,
       message,
       buttonText,
-      dashboardUrl,
-      images[0].url
+      dashboardUrl
     );
-    messagesCount = 1;
+    messagesCount = 2;
   }
   // Single PDF: send as document
   else if (pdfs.length === 1 && images.length === 0) {
@@ -584,13 +578,12 @@ export async function sendDocumentNotification(params: {
       formattedPhone,
       message,
       buttonText,
-      dashboardUrl,
-      images[0]?.url
+      dashboardUrl
     );
     messagesCount = 1;
 
-    // Send remaining images
-    for (const img of images.slice(1, 4)) {
+    // Send all images separately
+    for (const img of images.slice(0, 4)) {
       await new Promise(resolve => setTimeout(resolve, 500));
       const imgResult = await sendImageMessage(
         whapiToken,

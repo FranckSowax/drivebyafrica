@@ -263,7 +263,24 @@ async function sendWhatsAppInteractiveMessage(
 🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}`;
 
   try {
-    // First try: Interactive message with image and URL button
+    // Send image first if available
+    if (imageUrl) {
+      await fetch('https://gate.whapi.cloud/messages/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${whapiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: formattedPhone,
+          image: { link: imageUrl },
+          caption: `📷 Option ${index + 1}: ${vehicle.make} ${vehicle.model}`,
+        }),
+      });
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Interactive message with URL button
     const response = await fetch('https://gate.whapi.cloud/messages/interactive', {
       method: 'POST',
       headers: {
@@ -272,21 +289,23 @@ async function sendWhatsAppInteractiveMessage(
       },
       body: JSON.stringify({
         to: formattedPhone,
-        type: 'cta_url',
+        type: 'button',
         body: {
           text: bodyText,
         },
         footer: {
-          text: 'Driveby Africa - Import de véhicules',
+          text: 'Driveby Africa - Import vehicules',
         },
         action: {
-          name: 'cta_url',
-          parameters: {
-            display_text: `Voir Option ${index + 1}`,
-            url: selectionUrl,
-          },
+          buttons: [
+            {
+              type: 'url',
+              title: `Option ${index + 1}`,
+              id: `option_${index + 1}`,
+              url: selectionUrl,
+            },
+          ],
         },
-        ...(imageUrl && { header: { type: 'image', image: { link: imageUrl } } }),
       }),
     });
 
