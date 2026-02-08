@@ -31,6 +31,7 @@ import {
   Building,
   ExternalLink,
   PackageCheck,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -39,6 +40,7 @@ import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge'
 import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
 import { authFetch } from '@/lib/supabase/auth-helpers';
+import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { UploadedStatusDocument } from '@/lib/order-documents-config';
@@ -57,6 +59,7 @@ interface Order {
   vehicle_price_usd: number;
   vehicle_source: string;
   vehicle_source_url?: string | null;
+  vehicle_image_url?: string | null;
   destination_id: string;
   destination_name: string;
   destination_country: string;
@@ -628,7 +631,23 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-10 rounded-lg overflow-hidden bg-nobel/20 flex-shrink-0">
+                            {order.vehicle_image_url ? (
+                              <img
+                                src={getProxiedImageUrl(order.vehicle_image_url)}
+                                alt={`${order.vehicle_make} ${order.vehicle_model}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center ${order.vehicle_image_url ? 'hidden' : ''}`}>
+                              <ImageIcon className="w-5 h-5 text-gray-500" />
+                            </div>
+                          </div>
                           <div>
                             <p className="text-sm font-medium text-[var(--text-primary)]">
                               {order.vehicle_make} {order.vehicle_model}
