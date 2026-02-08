@@ -182,7 +182,7 @@ export default function CollaboratorBatchesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.totalBatches')}</p>
-                  <p className="text-xl font-bold text-white">{stats.total}</p>
+                  <p className="text-xl font-bold text-black">{stats.total}</p>
                 </div>
               </div>
             </Card>
@@ -193,7 +193,7 @@ export default function CollaboratorBatchesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.pending')}</p>
-                  <p className="text-xl font-bold text-white">{stats.pending}</p>
+                  <p className="text-xl font-bold text-black">{stats.pending}</p>
                 </div>
               </div>
             </Card>
@@ -204,7 +204,7 @@ export default function CollaboratorBatchesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.approved')}</p>
-                  <p className="text-xl font-bold text-white">{stats.approved}</p>
+                  <p className="text-xl font-bold text-black">{stats.approved}</p>
                 </div>
               </div>
             </Card>
@@ -215,7 +215,7 @@ export default function CollaboratorBatchesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.rejected')}</p>
-                  <p className="text-xl font-bold text-white">{stats.rejected}</p>
+                  <p className="text-xl font-bold text-black">{stats.rejected}</p>
                 </div>
               </div>
             </Card>
@@ -226,7 +226,7 @@ export default function CollaboratorBatchesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.totalVehicles')}</p>
-                  <p className="text-xl font-bold text-white">{stats.totalVehicles}</p>
+                  <p className="text-xl font-bold text-black">{stats.totalVehicles}</p>
                 </div>
               </div>
             </Card>
@@ -237,7 +237,7 @@ export default function CollaboratorBatchesPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">{t('stats.available')}</p>
-                  <p className="text-xl font-bold text-white">{stats.availableVehicles}</p>
+                  <p className="text-xl font-bold text-black">{stats.availableVehicles}</p>
                 </div>
               </div>
             </Card>
