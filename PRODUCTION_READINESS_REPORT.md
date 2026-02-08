@@ -38,8 +38,8 @@ Le projet est fonctionnellement complet avec ~85 API routes, 30+ pages, 49 migra
 | Policies RLS | 186 |
 | Variables d'env | 24 |
 | Problèmes critiques | ~~3~~ → **0 (tous corrigés)** |
-| Problèmes élevés | ~~8~~ → **3 restants** |
-| Problèmes moyens | ~~12~~ → **8 restants** |
+| Problèmes élevés | ~~8~~ → **2 restants** |
+| Problèmes moyens | ~~12~~ → **6 restants** |
 
 ---
 
@@ -100,7 +100,7 @@ Le endpoint retourne maintenant 403 si `CRON_SECRET` n'est pas configuré, et 40
 | # | Problème | Fichier | Status |
 |---|---|---|---|
 | ~~H1~~ | ~~Endpoint `login_failed` sans auth (spam vector)~~ | `api/collaborator/log-activity/route.ts` | **CORRIGÉ** - Rate limit 10/IP/5min + sanitization |
-| H2 | Pas de rate limiting sur formulaire contact | `app/(main)/contact/page.tsx` | Ouvert |
+| ~~H2~~ | ~~Pas de rate limiting sur formulaire contact~~ | `app/(main)/contact/page.tsx` | **CORRIGÉ** - Cooldown 30s client-side |
 | ~~H3~~ | ~~Pas de validation longueur messages chat~~ | `api/chat/route.ts` + `api/chat/ai/route.ts` | **CORRIGÉ** - Max 5000 chars |
 | H4 | CSP permet `unsafe-inline` et `unsafe-eval` | `netlify.toml` | Ouvert |
 | H5 | Pas de validation email en production (signup) | `app/(auth)/register/page.tsx` | Ouvert |
@@ -426,7 +426,7 @@ NPM_FLAGS = "--legacy-peer-deps"
 
 ### Élevés (fortement recommandés)
 
-- [ ] Ajouter rate limiting sur le formulaire de contact
+- [x] Ajouter rate limiting sur le formulaire de contact *(cooldown 30s client-side)*
 - [x] Ajouter rate limiting sur `login_failed` collaborateur *(commit bd0d52f — 10/IP/5min + sanitization)*
 - [x] Ajouter validation longueur max sur messages chat *(commit bd0d52f — max 5000 chars)*
 - [x] Créer un fichier `.env.example` documentant toutes les variables *(commit bd0d52f)*
@@ -443,8 +443,8 @@ NPM_FLAGS = "--legacy-peer-deps"
 - [ ] Remplacer les numéros de téléphone placeholder sur la page contact
 - [ ] Ajouter des images d'équipe réelles sur la page À propos
 - [ ] Ajouter un fallback UI sur la page détail véhicule (`/cars/[id]`)
-- [ ] Ajouter `Cache-Control` sur l'endpoint `/api/currencies`
-- [ ] Ajouter monitoring/alertes (Sentry ou équivalent)
+- [x] Ajouter `Cache-Control` sur l'endpoint `/api/currencies` *(5min cache public, stale-while-revalidate)*
+- [x] Ajouter monitoring/alertes (Sentry) *(`@sentry/nextjs` configuré, activer avec `NEXT_PUBLIC_SENTRY_DSN`)*
 - [ ] Configurer Upstash Redis pour le rate limiting en production
 
 ### Post-lancement
@@ -474,11 +474,13 @@ NPM_FLAGS = "--legacy-peer-deps"
 - Enforcement : upload de documents requis avant changement de statut (collaborateur + admin)
 - Fix spinner infini sur upload de documents (authFetch au lieu de fetch)
 
-### Performance
+### Performance & Monitoring
 - P1 : N+1 queries messages admin → requête batch `.in()` (1 query au lieu de N)
 - P5 : Pagination sur `GET /api/orders` (params `page`/`limit`, max 100)
 - P6 : Filtre status au niveau DB dans admin orders (`.eq('status', status)`)
 - P8 : Seed devises en batch (1 insert au lieu de 40+ séquentiels)
+- Cache-Control sur `/api/currencies` : `public, max-age=300, s-maxage=300, stale-while-revalidate=600`
+- Sentry (`@sentry/nextjs` v10) : client + server + edge configs, instrumentation.ts, `withSentryConfig` dans next.config.ts
 
 ### UI (commits d4537e0, 37e3dab, 0d8f215)
 - Vignettes véhicules ajoutées dans la table admin orders
@@ -494,6 +496,6 @@ Le projet est **fonctionnellement complet** et couvre l'intégralité du workflo
 1. Configurer `WHAPI_TOKEN` et `WHAPI_WEBHOOK_SECRET` en production
 2. Vérifier les API keys externes (Encar, Dongchedi, DubiCars, Che168)
 3. Remplacer les numéros de téléphone placeholder sur la page contact
-4. Optionnel : rate limiting formulaire contact, durcissement CSP
+4. Optionnel : durcissement CSP, validation email signup
 
 Les items moyens restants (analytics pagination, notifications filtering, valeurs hardcodées) sont des optimisations non-bloquantes à traiter post-lancement.

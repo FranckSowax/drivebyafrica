@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Force dynamic to prevent Next.js caching
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Revalidate every 5 minutes (currencies change infrequently)
+export const revalidate = 300;
 
 // Complete list of all African currencies (fallback if database not available)
 const DEFAULT_CURRENCIES = [
@@ -115,8 +114,7 @@ export async function GET() {
       source: mappedCurrencies.length > 0 ? 'database' : 'defaults',
     }, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
+        'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
       },
     });
   } catch (error) {
@@ -127,8 +125,7 @@ export async function GET() {
       error: 'Failed to fetch from database',
     }, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
       },
     });
   }

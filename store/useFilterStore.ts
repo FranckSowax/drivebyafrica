@@ -23,6 +23,7 @@ const defaultFilters: VehicleFilters = {
   priceTo: undefined,
   mileageMax: undefined,
   sortBy: 'newest',
+  newArrivals: false,
   notifyNewMatches: false,
   driveType: undefined,
   color: undefined,

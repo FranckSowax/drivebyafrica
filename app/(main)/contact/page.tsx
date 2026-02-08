@@ -63,9 +63,17 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [lastSubmitTime, setLastSubmitTime] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Rate limit: 1 submission per 30 seconds
+    const now = Date.now();
+    if (now - lastSubmitTime < 30_000) {
+      return;
+    }
+    setLastSubmitTime(now);
     setIsSubmitting(true);
 
     try {

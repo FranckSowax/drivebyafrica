@@ -131,6 +131,12 @@ function buildQueryString(
     params.append('status', `eq.${filters.status}`);
   }
 
+  // New arrivals: vehicles added in the last 48 hours
+  if (filters?.newArrivals) {
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    params.append('created_at', `gte.${since}`);
+  }
+
   // Apply search (searches make and model)
   // Require minimum 3 characters to avoid expensive queries on short terms
   if (filters?.search && filters.search.trim().length >= 3) {
@@ -193,6 +199,7 @@ function hasActiveFilters(filters: VehicleFilters | undefined): boolean {
     filters.color ||
     filters.bodyType ||
     filters.status ||
+    filters.newArrivals ||
     (filters.search && filters.search.trim().length >= 3)
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Sparkles } from 'lucide-react';
 import { VehicleGrid, VehicleFilters } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -186,14 +186,27 @@ export default function CarsPage() {
               </div>
             </div>
 
-            {/* Results Count */}
+            {/* New Arrivals Toggle + Results Count */}
             <div className="flex justify-between items-center mb-6">
-              <p className="text-[var(--text-muted)]">
-                <span className="text-[var(--text-primary)] font-bold">
-                  {totalCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                </span>{' '}
-                véhicules disponibles
-              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setFilters({ newArrivals: !filters.newArrivals })}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    filters.newArrivals
+                      ? 'bg-mandarin text-white'
+                      : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--card-border)]'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Nouveautés
+                </button>
+                <p className="text-[var(--text-muted)]">
+                  <span className="text-[var(--text-primary)] font-bold">
+                    {totalCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                  </span>{' '}
+                  véhicules {filters.newArrivals ? 'ajoutés récemment' : 'disponibles'}
+                </p>
+              </div>
             </div>
 
             {/* Vehicle Grid */}

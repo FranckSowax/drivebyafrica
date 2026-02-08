@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // Prevent double slash issues
@@ -49,4 +50,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Suppress source map upload warnings when SENTRY_AUTH_TOKEN is not set
+  silent: true,
+  // Disable source map upload until SENTRY_AUTH_TOKEN is configured
+  sourcemaps: {
+    disable: true,
+  },
+});
