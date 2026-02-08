@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 // GET: Fetch all currencies with history
 export async function GET(request: Request) {
@@ -116,9 +117,11 @@ export async function GET(request: Request) {
 // PUT: Update currency rate
 export async function PUT(request: Request) {
   try {
-    const supabase = await createClient();
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) return adminCheck.response;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabaseAny = supabase as any;
+    const supabaseAny = adminCheck.supabase as any;
 
     const body = await request.json();
     const { code, rateToUsd, note } = body;
@@ -203,9 +206,11 @@ export async function PUT(request: Request) {
 // POST: Add new currency
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) return adminCheck.response;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabaseAny = supabase as any;
+    const supabaseAny = adminCheck.supabase as any;
 
     const body = await request.json();
     const { code, name, symbol, rateToUsd, countries, isActive, displayOrder } = body;
@@ -269,9 +274,11 @@ export async function POST(request: Request) {
 // PATCH: Seed all African currencies
 export async function PATCH() {
   try {
-    const supabase = await createClient();
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) return adminCheck.response;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabaseAny = supabase as any;
+    const supabaseAny = adminCheck.supabase as any;
 
     // Complete list of all African currencies
     const ALL_AFRICAN_CURRENCIES = [
@@ -426,9 +433,11 @@ export async function PATCH() {
 // DELETE: Toggle currency active status
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createClient();
+    const adminCheck = await requireAdmin();
+    if (!adminCheck.isAdmin) return adminCheck.response;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabaseAny = supabase as any;
+    const supabaseAny = adminCheck.supabase as any;
 
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
