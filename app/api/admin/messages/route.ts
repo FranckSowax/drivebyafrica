@@ -107,18 +107,22 @@ export async function GET(request: Request) {
         });
       }
 
-      // Get last message for each conversation
-      for (const convId of conversationIds) {
-        const { data: lastMsg } = await supabaseAny
-          .from('chat_messages')
-          .select('content, sender_type, created_at')
-          .eq('conversation_id', convId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+      // Get last message for each conversation (single query instead of N+1)
+      const { data: allRecentMessages } = await supabaseAny
+        .from('chat_messages')
+        .select('conversation_id, content, sender_type, created_at')
+        .in('conversation_id', conversationIds)
+        .order('created_at', { ascending: false });
 
-        if (lastMsg) {
-          lastMessages[convId] = lastMsg;
+      if (allRecentMessages) {
+        for (const msg of allRecentMessages) {
+          if (!lastMessages[msg.conversation_id]) {
+            lastMessages[msg.conversation_id] = {
+              content: msg.content,
+              sender_type: msg.sender_type,
+              created_at: msg.created_at,
+            };
+          }
         }
       }
     }

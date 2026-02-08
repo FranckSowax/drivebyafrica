@@ -45,10 +45,17 @@ export async function GET(request: Request) {
     const offset = (page - 1) * limit;
 
     // First, get orders from the orders table (created when user validates quote)
-    const { data: ordersData, error: ordersError } = await supabase
+    let ordersQuery = supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
+
+    // Apply status filter at DB level when possible
+    if (status && status !== 'all') {
+      ordersQuery = ordersQuery.eq('status', status);
+    }
+
+    const { data: ordersData, error: ordersError } = await ordersQuery;
 
     if (ordersError && ordersError.code !== '42P01') {
       console.error('Error fetching orders:', ordersError);

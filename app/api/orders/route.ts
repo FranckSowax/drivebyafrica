@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -12,11 +12,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { data: orders, error } = await supabase
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const offset = (page - 1) * limit;
+
+    const { data: orders, error, count } = await supabase
       .from('orders')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Orders API Supabase error (GET):', error);
@@ -31,7 +37,10 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ orders });
+    return NextResponse.json({
+      orders,
+      pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
+    });
   } catch (error) {
     console.error('Orders API server error (GET):', error);
     return NextResponse.json(

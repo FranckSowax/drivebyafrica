@@ -363,51 +363,39 @@ export async function PATCH() {
       });
     }
 
-    // Insert missing currencies one by one to handle errors gracefully
-    const insertedCurrencies: string[] = [];
-    const failedCurrencies: { code: string; error: string }[] = [];
+    // Batch insert missing currencies (single query instead of N sequential inserts)
+    const rows = toInsert.map(c => ({
+      currency_code: c.code,
+      currency_name: c.name,
+      currency_symbol: c.symbol,
+      rate_to_usd: c.rateToUsd,
+      countries: c.countries,
+      is_active: true,
+      display_order: c.displayOrder,
+    }));
 
-    for (const c of toInsert) {
-      // Try with display_order first
-      let insertResult = await supabaseAny
+    let insertResult = await supabaseAny
+      .from('currency_rates')
+      .insert(rows);
+
+    // If display_order column doesn't exist, retry without it
+    if (insertResult.error && insertResult.error.message?.includes('display_order')) {
+      insertResult = await supabaseAny
         .from('currency_rates')
-        .insert({
-          currency_code: c.code,
-          currency_name: c.name,
-          currency_symbol: c.symbol,
-          rate_to_usd: c.rateToUsd,
-          countries: c.countries,
-          is_active: true,
-          display_order: c.displayOrder,
-        });
-
-      // If display_order column doesn't exist, try without it
-      if (insertResult.error && insertResult.error.message?.includes('display_order')) {
-        insertResult = await supabaseAny
-          .from('currency_rates')
-          .insert({
-            currency_code: c.code,
-            currency_name: c.name,
-            currency_symbol: c.symbol,
-            rate_to_usd: c.rateToUsd,
-            countries: c.countries,
-            is_active: true,
-          });
-      }
-
-      if (insertResult.error) {
-        console.error(`Error inserting ${c.code}:`, insertResult.error);
-        failedCurrencies.push({ code: c.code, error: insertResult.error.message });
-      } else {
-        insertedCurrencies.push(c.code);
-      }
+        .insert(rows.map(({ display_order, ...rest }) => rest));
     }
 
-    if (insertedCurrencies.length === 0 && failedCurrencies.length > 0) {
+    const insertedCurrencies = insertResult.error ? [] : toInsert.map(c => c.code);
+    const failedCurrencies: { code: string; error: string }[] = insertResult.error
+      ? [{ code: 'batch', error: insertResult.error.message }]
+      : [];
+
+    if (insertResult.error) {
+      console.error('Error batch inserting currencies:', insertResult.error);
       return NextResponse.json(
         {
           error: 'Erreur lors de l\'ajout des devises',
-          details: failedCurrencies[0]?.error,
+          details: insertResult.error.message,
           failed: failedCurrencies,
         },
         { status: 500 }

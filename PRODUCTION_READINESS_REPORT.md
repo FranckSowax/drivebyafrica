@@ -39,7 +39,7 @@ Le projet est fonctionnellement complet avec ~85 API routes, 30+ pages, 49 migra
 | Variables d'env | 24 |
 | Problèmes critiques | ~~3~~ → **0 (tous corrigés)** |
 | Problèmes élevés | ~~8~~ → **3 restants** |
-| Problèmes moyens | 12 |
+| Problèmes moyens | ~~12~~ → **8 restants** |
 
 ---
 
@@ -388,28 +388,29 @@ NPM_FLAGS = "--legacy-peer-deps"
 
 ### Problèmes identifiés
 
-| # | Type | Endpoint | Description |
-|---|---|---|---|
-| P1 | N+1 queries | `api/admin/analytics` | Loop sur conversations pour last message |
-| P2 | N+1 queries | `api/admin/messages` | Loop sur conversations |
-| P3 | N+1 queries | `api/admin/notifications/logs` | Loop sur log entries |
-| P4 | Pas de pagination | `api/admin/analytics` | Fetch tous les véhicules/profils |
-| P5 | Pas de pagination | `api/orders` | Retourne toutes les commandes |
-| P6 | Filtrage en mémoire | `api/admin/orders` | Filtre en JS après fetch complet |
-| P7 | Filtrage en mémoire | `api/admin/notifications` | Filtre en JS après fetch complet |
-| P8 | Bulk inefficace | `api/admin/currencies` PATCH | Seed 40+ devises en boucle |
+| # | Type | Endpoint | Description | Status |
+|---|---|---|---|---|
+| ~~P1~~ | ~~N+1 queries~~ | `api/admin/messages` | Loop sur conversations pour last message | **CORRIGÉ** — Requête batch `.in()` |
+| P2 | N+1 queries | `api/admin/analytics` | Pas de N+1 réel (queries statiques par source) | Non applicable |
+| P3 | N+1 queries | `api/admin/notifications/logs` | Déjà optimisé (utilise `.in()`) | Non applicable |
+| P4 | Pas de pagination | `api/admin/analytics` | Fetch véhicules/profils pour agrégation | Post-lancement |
+| ~~P5~~ | ~~Pas de pagination~~ | `api/orders` | Retournait toutes les commandes | **CORRIGÉ** — Pagination avec `page`/`limit` |
+| ~~P6~~ | ~~Filtrage en mémoire~~ | `api/admin/orders` | Filtrait en JS après fetch complet | **CORRIGÉ** — Filtre status au niveau DB |
+| P7 | Filtrage en mémoire | `api/admin/notifications` | Filtre dismissed/unread en mémoire (array contains) | Post-lancement |
+| ~~P8~~ | ~~Bulk inefficace~~ | `api/admin/currencies` PATCH | Seed 40+ devises en boucle | **CORRIGÉ** — Insert batch unique |
 
-### Valeurs hardcodées à externaliser
+### Valeurs hardcodées (documentées, non bloquantes)
 
-| Valeur | Localisation | Recommandation |
+| Valeur | Localisation | Type |
 |---|---|---|
-| `615 XAF = 1 USD` | Multiple fichiers | Lire depuis `currency_rates` |
-| `600 XAF = 1 USD` | `api/admin/analytics/profits` | Idem |
-| `$980 export tax` | `api/admin/analytics/profits` | Table config |
-| `$1000 deposit` | `api/admin/orders`, `api/orders/from-quote` | Table config |
-| `$150 documentation fee` | `orders/[id]/page.tsx` | Table config |
-| `+241 77 00 00 00` | `contact/page.tsx` | Variable d'env |
-| `+852 0000 0000` | `contact/page.tsx` | Variable d'env |
+| `615 XAF = 1 USD` | `lib/utils/currency.ts`, `lib/utils/realtime-exchange.ts`, `calculator/page.tsx` | Fallback (BDD consultée en priorité) |
+| `600 XAF = 1 USD` | `api/admin/analytics/profits` (`FIXED_XAF_TO_USD_RATE`) | Calcul interne profits |
+| `$980 export tax` | `lib/utils/pricing.ts`, `api/admin/analytics/profits` | Config business Chine |
+| `$1000 deposit` | `api/admin/orders`, `api/orders/from-quote`, `api/collaborator/orders`, `api/chat/ai`, migrations SQL | Config business (colonne `deposit_amount_usd` en BDD, default 1000) |
+| `$150 documentation fee` | `orders/[id]/page.tsx` | Config business (colonne `documentation_fee_usd` en BDD, default 150) |
+| `225000 FCFA inspection` | `lib/utils/pricing.ts` (`INSPECTION_FEE_XAF`) | Config business |
+| `+241 77 00 00 00` | `contact/page.tsx` | Placeholder — à remplacer par vrais numéros |
+| `+852 0000 0000` | `contact/page.tsx` | Placeholder — à remplacer par vrais numéros |
 
 ---
 
@@ -435,10 +436,10 @@ NPM_FLAGS = "--legacy-peer-deps"
 
 ### Moyens (recommandés)
 
-- [ ] Ajouter pagination sur `GET /api/orders` et `GET /api/admin/analytics`
-- [ ] Optimiser N+1 queries sur les endpoints admin (utiliser `select('*, relation(*)')`)
-- [ ] Externaliser les taux de change hardcodés (615/600) vers la BDD
-- [ ] Externaliser le montant de l'acompte ($1000) vers une table de configuration
+- [x] Ajouter pagination sur `GET /api/orders` *(page/limit params, max 100)*
+- [x] Optimiser N+1 queries sur messages admin *(batch `.in()` au lieu de loop)*
+- [x] Optimiser bulk seed devises *(insert batch au lieu de 40+ requêtes séquentielles)*
+- [x] Filtrer status au niveau DB dans `GET /api/admin/orders` *(`.eq('status', status)`)*
 - [ ] Remplacer les numéros de téléphone placeholder sur la page contact
 - [ ] Ajouter des images d'équipe réelles sur la page À propos
 - [ ] Ajouter un fallback UI sur la page détail véhicule (`/cars/[id]`)
@@ -473,6 +474,12 @@ NPM_FLAGS = "--legacy-peer-deps"
 - Enforcement : upload de documents requis avant changement de statut (collaborateur + admin)
 - Fix spinner infini sur upload de documents (authFetch au lieu de fetch)
 
+### Performance
+- P1 : N+1 queries messages admin → requête batch `.in()` (1 query au lieu de N)
+- P5 : Pagination sur `GET /api/orders` (params `page`/`limit`, max 100)
+- P6 : Filtre status au niveau DB dans admin orders (`.eq('status', status)`)
+- P8 : Seed devises en batch (1 insert au lieu de 40+ séquentiels)
+
 ### UI (commits d4537e0, 37e3dab, 0d8f215)
 - Vignettes véhicules ajoutées dans la table admin orders
 - Couleurs des stats collaborateur passées en noir (dashboard, batches, vehicles)
@@ -481,11 +488,12 @@ NPM_FLAGS = "--legacy-peer-deps"
 
 ## Conclusion
 
-Le projet est **fonctionnellement complet** et couvre l'intégralité du workflow d'importation de véhicules. **Les 3 problèmes critiques de sécurité ont été corrigés**, ainsi que 5 des 8 problèmes élevés.
+Le projet est **fonctionnellement complet** et couvre l'intégralité du workflow d'importation de véhicules. **Les 3 problèmes critiques de sécurité ont été corrigés**, ainsi que 5 des 8 problèmes élevés et 4 problèmes de performance.
 
 **Items restants avant production :**
 1. Configurer `WHAPI_TOKEN` et `WHAPI_WEBHOOK_SECRET` en production
 2. Vérifier les API keys externes (Encar, Dongchedi, DubiCars, Che168)
-3. Optionnel : rate limiting formulaire contact, durcissement CSP
+3. Remplacer les numéros de téléphone placeholder sur la page contact
+4. Optionnel : rate limiting formulaire contact, durcissement CSP
 
-Les items moyens (pagination, N+1 queries, valeurs hardcodées) sont des optimisations de performance à traiter de manière itérative post-lancement.
+Les items moyens restants (analytics pagination, notifications filtering, valeurs hardcodées) sont des optimisations non-bloquantes à traiter post-lancement.
