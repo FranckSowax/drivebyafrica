@@ -25,29 +25,16 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || null;
 
     // For login_failed, we don't have an authenticated user
-    // Use supabaseAdmin (service role) to bypass the NOT NULL constraint on collaborator_id
+    // Use supabaseAdmin (service role) to insert directly
     if (actionType === 'login_failed') {
-      const { error } = await (supabaseAdmin.rpc as Function)('log_failed_login_attempt', {
-        p_action_type: 'login',
-        p_details: JSON.stringify({ ...details, success: false }),
-        p_ip_address: ipAddress,
-        p_user_agent: userAgent,
-      }).catch(() => {
-        // Fallback: insert directly with a placeholder if RPC doesn't exist
-        return { error: { message: 'rpc not found' } };
-      });
-
-      // Fallback: use raw insert via admin client with type assertion
-      if (error) {
-        await (supabaseAdmin
-          .from('collaborator_activity_log') as any)
-          .insert({
-            action_type: 'login',
-            details: { ...details, success: false },
-            ip_address: ipAddress,
-            user_agent: userAgent,
-          });
-      }
+      await (supabaseAdmin
+        .from('collaborator_activity_log') as any)
+        .insert({
+          action_type: 'login',
+          details: { ...details, success: false },
+          ip_address: ipAddress,
+          user_agent: userAgent,
+        });
 
       return NextResponse.json({ ok: true });
     }

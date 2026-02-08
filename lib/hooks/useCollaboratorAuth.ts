@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
+import { useEffect, useState, useCallback } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
+import type { User } from '@supabase/supabase-js';
 
 interface CollaboratorAuthState {
   isChecking: boolean;
@@ -25,11 +25,6 @@ function clearAuthMarkerCookie() {
   }
 }
 
-function hasAuthMarkerCookie(): boolean {
-  if (typeof document === 'undefined') return false;
-  return document.cookie.includes('dba-auth-marker=1');
-}
-
 function hardRedirectToLogin() {
   clearAuthMarkerCookie();
   if (typeof window !== 'undefined') {
@@ -38,20 +33,22 @@ function hardRedirectToLogin() {
 }
 
 /**
- * Hook to protect collaborator pages
- * - Uses getSession() as primary check (reads from localStorage)
- * - Listens for auth state changes (sign out, token refresh)
- * - Validates user role via profile query
- * - Redirects to /collaborator/login if not authenticated or not authorized
+ * Hook to protect collaborator pages.
+ * Reads auth state from useAuthStore (initialized by AuthProvider)
+ * instead of running a separate auth flow to avoid race conditions.
  */
 export function useCollaboratorAuth(): CollaboratorAuthState {
+  // Subscribe to the global auth store (already initialized by AuthProvider)
+  const storeUser = useAuthStore((s) => s.user);
+  const storeProfile = useAuthStore((s) => s.profile);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
-  // Try to hydrate quick state from localStorage for snappy UX
+  // Quick hydration from localStorage for snappy UX while store initializes
   useEffect(() => {
     try {
       if (typeof localStorage !== 'undefined') {
@@ -59,36 +56,63 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         if (raw) {
           const parsed = JSON.parse(raw) as { id: string; email?: string | null; role?: string | null; full_name?: string | null };
           if (parsed?.id) {
-            // Populate lightweight client state while we validate the session
             setUserName(parsed.full_name || parsed.email || '');
             setUserEmail(parsed.email || '');
-            // NOTE: we can't set `user` object shape (supabase User) reliably here,
-            // but presence of this local entry is a quick indicator for the UI.
-            setIsAuthorized(!!parsed.role && ALLOWED_ROLES.includes(parsed.role));
-            // Keep isChecking true - we'll still validate with Supabase
           }
         }
       }
-    } catch (e) {
+    } catch {
       // ignore parse/localStorage errors
     }
   }, []);
 
-  const isMounted = useRef(true);
-  const sessionChecked = useRef(false);
+  // React to auth store changes
+  useEffect(() => {
+    // Wait for the global auth store to finish initializing
+    if (!isInitialized) return;
 
-  // Use ref for supabase client to avoid creating during SSR render
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-  if (typeof window !== 'undefined' && !supabaseRef.current) {
-    supabaseRef.current = createClient();
-  }
-
-  const getSupabase = useCallback(() => {
-    if (!supabaseRef.current) {
-      supabaseRef.current = createClient();
+    // No user → not authenticated → redirect to login
+    if (!storeUser) {
+      setIsAuthorized(false);
+      setIsChecking(false);
+      hardRedirectToLogin();
+      return;
     }
-    return supabaseRef.current;
-  }, []);
+
+    // User exists but profile not yet loaded (background fetch in progress)
+    if (!storeProfile) {
+      // Keep checking — profile will arrive shortly via useAuthStore
+      return;
+    }
+
+    // Profile loaded — check role
+    if (!ALLOWED_ROLES.includes(storeProfile.role)) {
+      setIsAuthorized(false);
+      setIsChecking(false);
+      clearAuthMarkerCookie();
+      useAuthStore.getState().signOut();
+      hardRedirectToLogin();
+      return;
+    }
+
+    // Authorized
+    setUserName(storeProfile.full_name || storeUser.email || '');
+    setUserEmail(storeUser.email || '');
+    setIsAuthorized(true);
+    setIsChecking(false);
+  }, [isInitialized, storeUser, storeProfile]);
+
+  // Safety timeout — if still checking after 8s, redirect to login
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isChecking) {
+        console.log('Collaborator auth: timeout waiting for auth store');
+        setIsChecking(false);
+        hardRedirectToLogin();
+      }
+    }, 8000);
+    return () => clearTimeout(timeout);
+  }, [isChecking]);
 
   const signOut = useCallback(async () => {
     try {
@@ -102,176 +126,20 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
         }),
       }).catch(() => {});
 
-      if (isMounted.current) {
-        setIsAuthorized(false);
-        setUser(null);
-        setUserName('');
-        setUserEmail('');
-      }
+      setIsAuthorized(false);
+      setUserName('');
+      setUserEmail('');
       clearAuthMarkerCookie();
       try {
         if (typeof localStorage !== 'undefined') localStorage.removeItem('dba-collaborator');
       } catch {}
-      await getSupabase().auth.signOut();
+      await useAuthStore.getState().signOut();
       hardRedirectToLogin();
     } catch (error) {
       console.error('Sign out error:', error);
       hardRedirectToLogin();
     }
-  }, [getSupabase]);
+  }, []);
 
-  useEffect(() => {
-    isMounted.current = true;
-    const supabase = getSupabase();
-    let isRedirecting = false;
-
-    // Validate session and check role
-    const validateAndAuthorize = async (session: Session) => {
-      try {
-        console.log('Collaborator auth: validating role for user', session.user.id);
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', session.user.id)
-          .single();
-
-        if (!isMounted.current) return;
-        console.log('Collaborator auth: profile result -', profileError ? `error: ${profileError.message}` : `role: ${profile?.role}`);
-
-        if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
-          console.log('Auth check: user not authorized for collaborator portal');
-          setIsAuthorized(false);
-          setIsChecking(false);
-          isRedirecting = true;
-          clearAuthMarkerCookie();
-          await supabase.auth.signOut();
-          hardRedirectToLogin();
-          return;
-        }
-
-        // User is authorized
-        setUser(session.user);
-        setUserName(profile.full_name || session.user.email || '');
-        setUserEmail(session.user.email || '');
-        setIsAuthorized(true);
-        setIsChecking(false);
-        sessionChecked.current = true;
-      } catch (error) {
-        console.error('Auth validation error:', error);
-        if (isMounted.current) {
-          setIsAuthorized(false);
-          setIsChecking(false);
-        }
-        isRedirecting = true;
-        hardRedirectToLogin();
-      }
-    };
-
-    // Primary auth check: use getSession() which reads from localStorage directly
-    // If no session immediately, wait for INITIAL_SESSION event before redirecting
-    const checkAuth = async () => {
-      try {
-        console.log('Collaborator auth: checking session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (!isMounted.current || isRedirecting) return;
-
-        if (error || !session?.user) {
-          // No session found immediately - this can happen if localStorage
-          // hasn't been read yet. Wait for INITIAL_SESSION event.
-          console.log('Collaborator auth: no session yet, waiting for INITIAL_SESSION...');
-          // Don't redirect immediately - let the timeout or INITIAL_SESSION handler do it
-          return;
-        }
-
-        console.log('Collaborator auth: session found, validating role...');
-        sessionChecked.current = true;
-        await validateAndAuthorize(session);
-      } catch (error) {
-        // Ignore AbortError from Supabase lock acquisition
-        if (error instanceof Error && error.name === 'AbortError') {
-          console.debug('Collaborator auth: AbortError ignored');
-          return;
-        }
-        console.error('Collaborator auth check error:', error);
-        if (isMounted.current) {
-          setIsAuthorized(false);
-          setIsChecking(false);
-        }
-        isRedirecting = true;
-        hardRedirectToLogin();
-      }
-    };
-
-    checkAuth();
-
-    // Listen for auth state changes AFTER initial check
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Collaborator auth event:', event, 'hasSession:', !!session);
-
-      if (event === 'INITIAL_SESSION') {
-        if (!isMounted.current || isRedirecting || sessionChecked.current) return;
-
-        if (session?.user) {
-          console.log('Collaborator auth: INITIAL_SESSION with user, validating...');
-          sessionChecked.current = true;
-          await validateAndAuthorize(session);
-        } else {
-          // No session in INITIAL_SESSION and no auth cookie - definitely not logged in
-          if (!hasAuthMarkerCookie()) {
-            console.log('Collaborator auth: no session and no cookie, redirecting');
-            setIsAuthorized(false);
-            setIsChecking(false);
-            isRedirecting = true;
-            hardRedirectToLogin();
-          }
-          // If cookie exists but no session, wait for recovery
-        }
-        return;
-      }
-
-      if (event === 'SIGNED_OUT') {
-        clearAuthMarkerCookie();
-        if (isMounted.current) {
-          setUser(null);
-          setUserName('');
-          setUserEmail('');
-          setIsAuthorized(false);
-          setIsChecking(false);
-        }
-        if (!isRedirecting) {
-          isRedirecting = true;
-          hardRedirectToLogin();
-        }
-        return;
-      }
-
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-        if (!isRedirecting && isMounted.current && !sessionChecked.current) {
-          sessionChecked.current = true;
-          await validateAndAuthorize(session);
-        }
-      }
-    });
-
-    // Safety timeout - redirect if still checking after timeout
-    const timeout = setTimeout(() => {
-      if (isMounted.current && isChecking && !sessionChecked.current) {
-        console.log('Collaborator auth: timeout - no session found');
-        setIsChecking(false);
-        if (!isRedirecting) {
-          isRedirecting = true;
-          hardRedirectToLogin();
-        }
-      }
-    }, 5000); // Reduced from 10s to 5s for better UX
-
-    return () => {
-      isMounted.current = false;
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
-  }, [getSupabase]);
-
-  return { isChecking, isAuthorized, user, userName, userEmail, signOut };
+  return { isChecking, isAuthorized, user: storeUser, userName, userEmail, signOut };
 }
