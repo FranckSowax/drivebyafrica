@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
+import { authFetch, getAuthToken } from '@/lib/supabase/auth-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface QuoteValidationModalProps {
@@ -53,12 +53,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
   }, []);
 
   const handleStripePayment = async () => {
-    setIsProcessing(true);
-    toast.info('Paiement par carte', 'Redirection vers Stripe...');
-    // TODO: Implement Stripe checkout
-    setTimeout(() => {
-      setIsProcessing(false);
-    }, 1500);
+    toast.info('Bientôt disponible', 'Le paiement par carte sera disponible prochainement. Utilisez Mobile Money ou le mode Demo.');
   };
 
   const handleMobileMoneyPayment = () => {
@@ -80,15 +75,38 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
     toast.info('Mode Demo', 'Simulation du paiement en cours...');
 
     try {
+      // Pre-check auth token (on mobile, session may expire after backgrounding)
+      const token = await getAuthToken();
+      if (!token) {
+        toast.error('Session expirée', 'Veuillez vous reconnecter');
+        onClose();
+        router.push('/login?redirect=/dashboard/quotes');
+        return;
+      }
+
       const response = await authFetch('/api/orders/from-quote', {
         method: 'POST',
         body: JSON.stringify({ quoteId: quote.id }),
       });
 
-      const data = await response.json();
+      // Handle auth errors (token expired between check and request)
+      if (response.status === 401) {
+        toast.error('Session expirée', 'Veuillez vous reconnecter');
+        onClose();
+        router.push('/login?redirect=/dashboard/quotes');
+        return;
+      }
+
+      // Parse JSON safely (server might return HTML on 500)
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error('Erreur de communication avec le serveur');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de la création de la commande');
+        throw new Error(data?.error || 'Erreur lors de la création de la commande');
       }
 
       toast.success('Paiement simulé!', 'Redirection vers votre commande...');
@@ -99,7 +117,12 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
 
     } catch (error) {
       console.error('Demo payment error:', error);
-      toast.error('Erreur', error instanceof Error ? error.message : 'Une erreur est survenue');
+      // Detect network errors (common on mobile)
+      if (error instanceof TypeError) {
+        toast.error('Erreur réseau', 'Vérifiez votre connexion internet et réessayez');
+      } else {
+        toast.error('Erreur', error instanceof Error ? error.message : 'Une erreur est survenue');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -154,6 +177,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
             transition={{ type: 'spring', duration: 0.4 }}
             className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -174,7 +198,7 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 overscroll-contain">
 
               {/* Alert / Info */}
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">

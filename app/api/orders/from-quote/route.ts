@@ -35,6 +35,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Devis introuvable' }, { status: 404 });
     }
 
+    if (quote.status === 'accepted') {
+      // Quote already accepted - check if an order already exists
+      const { data: existingOrder } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('quote_id', quoteId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingOrder) {
+        // Order already exists, return it (idempotent - handles double-tap on mobile)
+        return NextResponse.json({ order: existingOrder });
+      }
+      return NextResponse.json({ error: 'Ce devis a déjà été traité' }, { status: 400 });
+    }
+
     if (quote.status !== 'pending') {
       return NextResponse.json({ error: 'Ce devis a déjà été traité' }, { status: 400 });
     }
