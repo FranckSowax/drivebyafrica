@@ -405,16 +405,16 @@ export function ShippingEstimator({
   } : null;
 
   return (
-    <div className="bg-[var(--surface)] rounded-xl p-4 space-y-4">
+    <div className="bg-mandarin rounded-xl p-4 space-y-4">
       {/* Header */}
-      <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
-        <Ship className="w-5 h-5 text-mandarin" />
+      <h3 className="font-semibold text-white flex items-center gap-2">
+        <Ship className="w-5 h-5 text-white" />
         Estimer les frais de livraison
       </h3>
 
       {/* Destination Selector */}
       <div>
-        <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+        <label className="block text-sm font-medium text-white mb-2">
           <MapPin className="w-4 h-4 inline mr-1" />
           Sélectionnez votre destination
         </label>
@@ -544,7 +544,7 @@ export function ShippingEstimator({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+            <label className="block text-sm font-medium text-white mb-2">
               <Ship className="w-4 h-4 inline mr-1" />
               Type d'expédition
             </label>
@@ -629,7 +629,7 @@ export function ShippingEstimator({
 
             {/* Last Update Info - below shipping type selector */}
             {lastUpdatedAt && (
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-[var(--text-muted)]">
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-white/60">
                 <Clock className="w-3 h-3" />
                 <span>
                   Prix transport actualisés {formatDistanceToNow(new Date(lastUpdatedAt), { addSuffix: true, locale: fr })}
@@ -642,13 +642,13 @@ export function ShippingEstimator({
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-3 p-3 bg-royal-blue/10 border border-royal-blue/30 rounded-lg"
+                className="mt-3 p-3 bg-white/15 border border-white/20 rounded-lg"
               >
                 <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-royal-blue flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-[var(--text-primary)]">
-                    <p className="font-medium text-royal-blue">Groupage maritime</p>
-                    <p className="mt-1 text-[var(--text-muted)]">
+                  <Info className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-white">
+                    <p className="font-medium text-white">Groupage maritime</p>
+                    <p className="mt-1 text-white/70">
                       La date de départ sera soumise au chargement complet du container ou aux commandes groupées pour la même destination.
                     </p>
                   </div>
@@ -667,71 +667,71 @@ export function ShippingEstimator({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="space-y-3 pt-4 border-t border-[var(--card-border)]"
+            className="space-y-3 pt-4 border-t border-white/20"
           >
-            <h4 className="font-semibold text-[var(--text-primary)]">Estimation des coûts</h4>
+            <h4 className="font-semibold text-white">Estimation des coûts</h4>
 
             {/* Vehicle Price */}
             <div className="flex justify-between items-center py-2">
-              <span className="text-[var(--text-muted)]">Prix du véhicule (FOB)</span>
-              <span className="text-[var(--text-primary)] font-medium">
+              <span className="text-white/70">Prix du véhicule (FOB)</span>
+              <span className="text-white font-medium">
                 {formatCurrency(calculations.vehiclePrice)}
               </span>
             </div>
 
             {/* Shipping */}
-            <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
+            <div className="flex justify-between items-center py-2 border-t border-white/20">
               <div className="flex items-center gap-2">
-                <Ship className="w-4 h-4 text-royal-blue" />
+                <Ship className="w-4 h-4 text-white" />
                 <div>
-                  <span className="text-[var(--text-muted)] block">Transport maritime</span>
-                  <span className="text-xs text-royal-blue">
+                  <span className="text-white/70 block">Transport maritime</span>
+                  <span className="text-xs text-white/80">
                     {selectedShippingType === 'container' ? 'Container 20HQ' : 'Groupage'}
                   </span>
                 </div>
               </div>
-              <span className="text-[var(--text-primary)] font-medium">
+              <span className="text-white font-medium">
                 {formatCurrency(calculations.shippingCost)}
               </span>
             </div>
 
             {/* Insurance */}
-            <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
+            <div className="flex justify-between items-center py-2 border-t border-white/20">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-jewel" />
-                <span className="text-[var(--text-muted)]">Assurance cargo (2.5%)</span>
+                <Shield className="w-4 h-4 text-white" />
+                <span className="text-white/70">Assurance cargo (2.5%)</span>
               </div>
-              <span className="text-[var(--text-primary)] font-medium">
+              <span className="text-white font-medium">
                 {formatCurrency(calculations.insuranceCost)}
               </span>
             </div>
 
             {/* Inspection & Documents */}
-            <div className="flex justify-between items-center py-2 border-t border-[var(--card-border)]/50">
+            <div className="flex justify-between items-center py-2 border-t border-white/20">
               <div className="flex items-center gap-2">
-                <FileCheck className="w-4 h-4 text-mandarin" />
-                <span className="text-[var(--text-muted)]">Inspection & Documents</span>
+                <FileCheck className="w-4 h-4 text-white" />
+                <span className="text-white/70">Inspection & Documents</span>
               </div>
-              <span className="text-[var(--text-primary)] font-medium">
+              <span className="text-white font-medium">
                 {formatCurrency(calculations.inspectionFee)}
               </span>
             </div>
 
             {/* Total */}
-            <div className="flex justify-between items-center py-3 bg-mandarin/10 -mx-4 px-4 rounded-lg mt-2">
+            <div className="flex justify-between items-center py-3 bg-white/15 -mx-4 px-4 rounded-lg mt-2">
               <div>
-                <span className="font-bold text-[var(--text-primary)] block">Coût total estimé</span>
+                <span className="font-bold text-white block">Coût total estimé</span>
                 {calculations.hasExportTax && (
-                  <span className="text-xs text-[var(--text-muted)]">Inclut taxe et douane export</span>
+                  <span className="text-xs text-white/70">Inclut taxe et douane export</span>
                 )}
               </div>
-              <span className="text-xl font-bold text-mandarin">
+              <span className="text-xl font-bold text-white">
                 {formatCurrency(calculations.total)}
               </span>
             </div>
 
             {/* Note */}
-            <p className="text-xs text-[var(--text-muted)] mt-2">
+            <p className="text-xs text-white/60 mt-2">
               * Cette estimation n'inclut pas les frais de dédouanement qui varient selon la réglementation locale.
             </p>
 
