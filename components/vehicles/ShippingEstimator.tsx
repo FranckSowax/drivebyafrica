@@ -720,12 +720,12 @@ export function ShippingEstimator({
             {/* Total */}
             <div className="flex justify-between items-center py-3 bg-white/15 -mx-4 px-4 rounded-lg mt-2">
               <div>
-                <span className="font-bold text-white block">Coût total estimé</span>
+                <span className="font-bold text-black block">Coût total estimé</span>
                 {calculations.hasExportTax && (
-                  <span className="text-xs text-white/70">Inclut taxe et douane export</span>
+                  <span className="text-xs text-black/60">Inclut taxe et douane export</span>
                 )}
               </div>
-              <span className="text-xl font-bold text-white">
+              <span className="text-xl font-bold text-black">
                 {formatCurrency(calculations.total)}
               </span>
             </div>
