@@ -905,13 +905,13 @@ return createPortal(
             <div className="flex flex-col sm:flex-row gap-3">
               {!defaultQuoteNumber && (
                 <Button
-                  variant="outline"
+                  variant="primary"
                   onClick={handleSaveAndRedirect}
                   disabled={isGenerating}
                   leftIcon={<Save className="w-4 h-4" />}
-                  className="flex-1 sm:flex-none"
+                  className="w-full sm:w-auto py-3 text-sm font-semibold"
                 >
-                  {quoteSaved ? 'Voir mes devis' : 'Enregistrer'}
+                  {quoteSaved ? 'Voir mes devis' : 'Enregistrer le devis'}
                 </Button>
               )}
 
@@ -920,7 +920,7 @@ return createPortal(
                 onClick={handleShare}
                 disabled={isGenerating || !pdfBlob}
                 leftIcon={<Share2 className="w-4 h-4" />}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto py-3 text-sm font-semibold"
               >
                 Partager le PDF
               </Button>
