@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { OrderCard } from '@/components/orders/OrderCard';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   Package,
@@ -37,7 +36,7 @@ export default function OrdersPage() {
 
       try {
         // Fetch orders
-        const ordersResponse = await authFetch('/api/orders');
+        const ordersResponse = await fetch('/api/orders');
         if (!ordersResponse.ok) {
           throw new Error('Erreur de chargement');
         }
@@ -46,7 +45,7 @@ export default function OrdersPage() {
         // Fetch pending quotes
         let pendingQuotes: any[] = [];
         try {
-          const quotesResponse = await authFetch('/api/quotes?status=pending&limit=3');
+          const quotesResponse = await fetch('/api/quotes?status=pending&limit=3');
           if (quotesResponse.ok) {
             const quotesData = await quotesResponse.json();
             pendingQuotes = quotesData.quotes || [];

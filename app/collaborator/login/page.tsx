@@ -100,17 +100,11 @@ export default function CollaboratorLoginPage() {
         return;
       }
 
-      // Set auth marker cookie immediately for middleware
-      const isSecure = window.location.protocol === 'https:';
-      const secureFlag = isSecure ? '; Secure' : '';
-      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax${secureFlag}`;
-
-      // Also persist lightweight collaborator info in localStorage for fast client-side checks
+      // Persist lightweight collaborator info in localStorage for fast client-side checks
       try {
         const collabInfo = { id: data.user.id, email: data.user.email, role: profile.role, full_name: profile.full_name };
         localStorage.setItem('dba-collaborator', JSON.stringify(collabInfo));
-      } catch (e) {
+      } catch {
         // ignore localStorage errors (e.g. private mode)
       }
 

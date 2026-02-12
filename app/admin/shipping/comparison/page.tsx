@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -68,7 +67,7 @@ export default function AdminComparisonPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await authFetch('/api/admin/shipping/comparison');
+        const res = await fetch('/api/admin/shipping/comparison');
         const data = await res.json();
         setAdminRates(data.adminRates || []);
         setPartnerQuotes(data.partnerQuotes || []);
@@ -126,7 +125,7 @@ export default function AdminComparisonPage() {
         r.destination_id === destId ? { ...r, [field]: value } : r
       );
 
-      const res = await authFetch('/api/admin/shipping', {
+      const res = await fetch('/api/admin/shipping', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ routes: updatedRoutes }),

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface Notification {
   id: string;
@@ -39,17 +38,14 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createClient();
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
 
-      const response = await authFetch('/api/collaborator/notifications');
+      const response = await fetch('/api/collaborator/notifications');
 
       // Silently handle auth errors (user not logged in) or server errors (table doesn't exist)
       if (!response.ok) {
@@ -154,7 +150,7 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   // Mark as read
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const response = await authFetch('/api/collaborator/notifications', {
+      const response = await fetch('/api/collaborator/notifications', {
         method: 'PATCH',
         body: JSON.stringify({ notificationId: id }),
       });
@@ -175,7 +171,7 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   // Mark all as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await authFetch('/api/collaborator/notifications', {
+      const response = await fetch('/api/collaborator/notifications', {
         method: 'PATCH',
         body: JSON.stringify({ markAllRead: true }),
       });
@@ -196,7 +192,7 @@ export function useCollaboratorNotifications(): UseCollaboratorNotificationsResu
   // Dismiss notification
   const dismiss = useCallback(async (id: string) => {
     try {
-      const response = await authFetch('/api/collaborator/notifications', {
+      const response = await fetch('/api/collaborator/notifications', {
         method: 'DELETE',
         body: JSON.stringify({ notificationId: id }),
       });

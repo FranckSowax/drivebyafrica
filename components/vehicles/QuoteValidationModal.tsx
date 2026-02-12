@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch, getAuthToken } from '@/lib/supabase/auth-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface QuoteValidationModalProps {
@@ -75,16 +74,8 @@ export function QuoteValidationModal({ isOpen, onClose, quote }: QuoteValidation
     toast.info('Mode Demo', 'Simulation du paiement en cours...');
 
     try {
-      // Pre-check auth token (on mobile, session may expire after backgrounding)
-      const token = await getAuthToken();
-      if (!token) {
-        toast.error('Session expirée', 'Veuillez vous reconnecter');
-        onClose();
-        router.push('/login?redirect=/dashboard/quotes');
-        return;
-      }
 
-      const response = await authFetch('/api/orders/from-quote', {
+      const response = await fetch('/api/orders/from-quote', {
         method: 'POST',
         body: JSON.stringify({ quoteId: quote.id }),
       });

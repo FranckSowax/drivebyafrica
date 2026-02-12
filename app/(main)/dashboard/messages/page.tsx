@@ -17,7 +17,6 @@ import {
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -148,7 +147,7 @@ export default function MessagesPage() {
 
   const loadConversation = async () => {
     try {
-      const response = await authFetch('/api/chat');
+      const response = await fetch('/api/chat');
       if (response.ok) {
         const data = await response.json();
         const conversations = data.conversations || [];
@@ -194,7 +193,7 @@ export default function MessagesPage() {
 
     try {
       // Send user message
-      const response = await authFetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -223,7 +222,7 @@ export default function MessagesPage() {
       setIsTyping(true);
 
       // Get AI response with currency context
-      const aiResponse = await authFetch('/api/chat/ai', {
+      const aiResponse = await fetch('/api/chat/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -288,7 +287,7 @@ export default function MessagesPage() {
     }
 
     try {
-      const response = await authFetch('/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

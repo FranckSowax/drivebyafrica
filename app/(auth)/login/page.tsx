@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useCallback } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -25,7 +25,6 @@ type EmailFormData = z.infer<typeof emailSchema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Default to home page, not dashboard - user returns to where they were
   const redirect = searchParams.get('redirect') || '/';
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -38,35 +37,9 @@ function LoginForm() {
 
   const supabase = createClient();
 
-  // Check if Turnstile is configured
   const turnstileConfigured = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-  // Helper to set auth marker cookie
-  const setAuthMarkerCookie = useCallback((authenticated: boolean) => {
-    if (authenticated) {
-      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-      document.cookie = `dba-auth-marker=1; path=/; expires=${expires}; SameSite=Lax`;
-    } else {
-      document.cookie = 'dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    }
-  }, []);
-
-  // Verify session is properly persisted with retries
-  const verifySessionPersisted = useCallback(async (maxRetries = 3): Promise<boolean> => {
-    for (let i = 0; i < maxRetries; i++) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        console.log('Login: Session verified on attempt', i + 1);
-        return true;
-      }
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
-    }
-    return false;
-  }, [supabase]);
-
   const handleEmailLogin = async (data: EmailFormData) => {
-    // Only require Turnstile verification if it's configured
     if (turnstileConfigured && !turnstileToken) {
       toast.error('Vérification requise', 'Veuillez compléter la vérification de sécurité');
       return;
@@ -74,35 +47,18 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
-      console.log('Login: Starting signInWithPassword...');
       const { error, data: authData } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
-        console.error('Login: signInWithPassword error:', error.message);
         toast.error('Erreur de connexion', error.message);
         return;
       }
 
       if (!authData?.session || !authData?.user) {
-        console.error('Login: No session or user in response');
         toast.error('Erreur', 'Session non établie');
-        return;
-      }
-
-      console.log('Login: signInWithPassword successful, user:', authData.user.id);
-
-      // Set auth marker cookie immediately
-      setAuthMarkerCookie(true);
-
-      // Verify the session is persisted in localStorage
-      const sessionPersisted = await verifySessionPersisted();
-      if (!sessionPersisted) {
-        console.error('Login: Session not persisted after retries');
-        toast.error('Erreur', 'Session non persistée, veuillez réessayer');
-        setAuthMarkerCookie(false);
         return;
       }
 
@@ -115,22 +71,18 @@ function LoginForm() {
           .eq('id', authData.user.id)
           .single();
         profile = profileData;
-      } catch (profileError) {
-        console.warn('Login: Could not fetch profile:', profileError);
+      } catch {
         // Non-blocking - continue with login
       }
 
-      // Update auth store with full state
+      // Update auth store
       setAuthenticated(authData.user, profile);
 
       toast.success('Connexion réussie!');
 
-      // Use window.location for full page reload
-      // This ensures the auth state is properly initialized from localStorage on the new page
-      console.log('Login: Navigating to', redirect);
+      // Full page reload so cookies are sent on next request
       window.location.href = redirect;
-    } catch (err) {
-      console.error('Login: Unexpected error:', err);
+    } catch {
       toast.error('Erreur', 'Une erreur est survenue');
     } finally {
       setIsLoading(false);

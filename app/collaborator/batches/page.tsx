@@ -11,7 +11,6 @@ import { BatchDetailsModal } from '@/components/collaborator/BatchDetailsModal';
 import { useCollaboratorAuth } from '@/lib/hooks/useCollaboratorAuth';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import {
   Plus,
   Package,
@@ -60,7 +59,7 @@ export default function CollaboratorBatchesPage() {
         params.append('status', filters.status);
       }
 
-      const response = await authFetch(`/api/collaborator/batches?${params}`);
+      const response = await fetch(`/api/collaborator/batches?${params}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -96,7 +95,7 @@ export default function CollaboratorBatchesPage() {
     }
 
     try {
-      const response = await authFetch(`/api/collaborator/batches/${id}`, {
+      const response = await fetch(`/api/collaborator/batches/${id}`, {
         method: 'DELETE',
       });
 

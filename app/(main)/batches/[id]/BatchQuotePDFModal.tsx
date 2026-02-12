@@ -18,7 +18,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 // Types
 interface BatchQuoteData {
@@ -147,8 +146,8 @@ export function BatchQuotePDFModal({ isOpen, onClose, quoteData, user, profile }
     const calc = quoteData.calculations;
 
     try {
-      // Use authFetch to include Authorization header for localStorage-based auth
-      const response = await authFetch('/api/quotes', {
+      // Fetch with cookie-based auth
+      const response = await fetch('/api/quotes', {
         method: 'POST',
         body: JSON.stringify({
           quote_number: qNumber,

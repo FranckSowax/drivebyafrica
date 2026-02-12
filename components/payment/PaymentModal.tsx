@@ -12,7 +12,6 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 type Phase = 'init' | 'portal' | 'polling' | 'success' | 'error';
 
@@ -82,7 +81,7 @@ export function PaymentModal({
 
     const initPayment = async () => {
       try {
-        const res = await authFetch('/api/payment/init', {
+        const res = await fetch('/api/payment/init', {
           method: 'POST',
           body: JSON.stringify({ amount, description }),
         });
@@ -129,7 +128,7 @@ export function PaymentModal({
       setPollCount(attempts);
 
       try {
-        const res = await authFetch(`/api/payment/status?ref=${encodeURIComponent(externalRef)}`);
+        const res = await fetch(`/api/payment/status?ref=${encodeURIComponent(externalRef)}`);
         const data = await res.json();
 
         if (data.completed || data.status === 'completed') {

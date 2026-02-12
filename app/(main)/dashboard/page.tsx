@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   Package,
@@ -40,7 +39,7 @@ export default function DashboardPage() {
       if (!user) return;
 
       try {
-        const response = await authFetch('/api/dashboard');
+        const response = await fetch('/api/dashboard');
         if (!response.ok) {
           throw new Error('Erreur de chargement');
         }

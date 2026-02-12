@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import {
   Plus,
   Search,
@@ -182,7 +181,7 @@ export default function TransitairesPage() {
       if (filterCountry) params.append('country', filterCountry);
       if (filterActive !== null) params.append('active', String(filterActive));
 
-      const response = await authFetch(`/api/admin/transitaires?${params}`);
+      const response = await fetch(`/api/admin/transitaires?${params}`);
       const data = await response.json();
 
       if (data.transitaires) {
@@ -206,7 +205,7 @@ export default function TransitairesPage() {
         ? { id: editingTransitaire.id, ...formData }
         : formData;
 
-      const response = await authFetch(url, {
+      const response = await fetch(url, {
         method,
         body: JSON.stringify(body),
       });
@@ -231,7 +230,7 @@ export default function TransitairesPage() {
     if (!confirm('Voulez-vous désactiver ce transitaire ?')) return;
 
     try {
-      const response = await authFetch(`/api/admin/transitaires?id=${id}`, {
+      const response = await fetch(`/api/admin/transitaires?id=${id}`, {
         method: 'DELETE',
       });
 

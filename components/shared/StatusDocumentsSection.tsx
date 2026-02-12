@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { zhCN } from 'date-fns/locale';
@@ -216,7 +215,7 @@ function DocumentRequirementCard({
       }
 
       // Save to order
-      const response = await authFetch(apiEndpoint, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         body: JSON.stringify({
           orderId,
@@ -251,7 +250,7 @@ function DocumentRequirementCard({
     setError(null);
 
     try {
-      const response = await authFetch(apiEndpoint, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         body: JSON.stringify({
           orderId,
@@ -448,7 +447,7 @@ function DocumentRow({ document, orderId, onDelete, isAdmin, locale, compact = f
 
     setDeleting(true);
     try {
-      const response = await authFetch(
+      const response = await fetch(
         `${apiEndpoint}?orderId=${orderId}&documentId=${document.id}`,
         { method: 'DELETE' }
       );

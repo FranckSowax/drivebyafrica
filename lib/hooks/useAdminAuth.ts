@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import type { User, Session, SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
-import { authFetch } from '@/lib/supabase/auth-helpers';
+import type { User, Session } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 
 export type AdminRole = 'admin' | 'super_admin';
 
@@ -24,12 +22,8 @@ export interface UseAdminAuthReturn extends AdminAuthState {
   refreshSession: () => Promise<void>;
 }
 
-// Créer un client Supabase dédié pour l'admin auth
-function getSupabaseClient(): SupabaseClient<Database> {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+function getSupabaseClient() {
+  return createClient();
 }
 
 /**
@@ -40,8 +34,8 @@ async function checkAdminRoleViaAPI(): Promise<{ isAdmin: boolean; role: AdminRo
   try {
     console.log('[useAdminAuth] Checking role via API...');
 
-    // Use authFetch to include Authorization header with localStorage token
-    const response = await authFetch('/api/admin/check-role');
+    // Cookies are sent automatically with same-origin fetch
+    const response = await fetch('/api/admin/check-role');
 
     if (!response.ok) {
       console.error('[useAdminAuth] API check failed:', response.status);
@@ -75,7 +69,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
     error: null,
   });
 
-  const supabaseRef = useRef<SupabaseClient<Database> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const initializedRef = useRef(false);
 
   // Obtenir le client Supabase (créé une seule fois)

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import {
   Briefcase,
   Phone,
@@ -89,7 +88,7 @@ export function TransitairesSuggestion({
 
   const handleContactClick = async (transitaire: Transitaire, method: 'whatsapp' | 'phone' | 'email') => {
     try {
-      await authFetch('/api/transitaires/track', {
+      await fetch('/api/transitaires/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

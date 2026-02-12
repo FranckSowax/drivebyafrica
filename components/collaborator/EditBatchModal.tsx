@@ -5,7 +5,6 @@ import { Modal } from '@/components/ui/Modal';
 import { Upload, X, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import type { VehicleBatch } from '@/types/vehicle-batch';
 
 interface EditBatchModalProps {
@@ -140,7 +139,7 @@ export function EditBatchModal({ isOpen, onClose, onSuccess, batch, apiEndpoint 
     }
 
     try {
-      const response = await authFetch(apiEndpoint, {
+      const response = await fetch(apiEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

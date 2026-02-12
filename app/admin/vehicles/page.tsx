@@ -6,7 +6,6 @@ import { Car, RefreshCw, BarChart3, Plus } from 'lucide-react';
 import { AdminStats, SyncStatus, VehicleTable } from '@/components/admin';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { AddVehicleModal } from '@/components/collaborator/AddVehicleModal';
 import { CollaboratorLocaleProvider } from '@/components/collaborator/CollaboratorLocaleProvider';
 import type { Vehicle } from '@/types/vehicle';
@@ -101,7 +100,7 @@ export default function AdminVehiclesPage() {
   const fetchStats = async () => {
     try {
       setStatsLoading(true);
-      const response = await authFetch('/api/admin/vehicles/stats');
+      const response = await fetch('/api/admin/vehicles/stats');
       const data = await response.json();
 
       if (data.error) {
@@ -134,7 +133,7 @@ export default function AdminVehiclesPage() {
         ...(currentFilters.priceMax && { priceMax: currentFilters.priceMax }),
       });
 
-      const response = await authFetch(`/api/admin/vehicles?${params}`);
+      const response = await fetch(`/api/admin/vehicles?${params}`);
       const data = await response.json();
 
       if (data.error) {
@@ -172,7 +171,7 @@ export default function AdminVehiclesPage() {
     try {
       toast.info(`Synchronisation ${mode === 'full' ? 'complète' : 'incrémentale'} en cours...`);
 
-      const response = await authFetch('/api/admin/sync', {
+      const response = await fetch('/api/admin/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode }),
@@ -198,7 +197,7 @@ export default function AdminVehiclesPage() {
   // Handle vehicle update
   const handleUpdate = async (ids: string[], updates: Record<string, unknown>) => {
     try {
-      const response = await authFetch('/api/admin/vehicles', {
+      const response = await fetch('/api/admin/vehicles', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids, updates }),
@@ -222,7 +221,7 @@ export default function AdminVehiclesPage() {
   // Handle vehicle delete
   const handleDelete = async (ids: string[]) => {
     try {
-      const response = await authFetch('/api/admin/vehicles', {
+      const response = await fetch('/api/admin/vehicles', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids }),

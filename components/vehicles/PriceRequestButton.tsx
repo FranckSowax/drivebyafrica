@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface PriceRequestButtonProps {
   vehicleId: string;
@@ -83,7 +82,7 @@ export function PriceRequestButton({
     setLoading(true);
 
     try {
-      const response = await authFetch('/api/price-request', {
+      const response = await fetch('/api/price-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

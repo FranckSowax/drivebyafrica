@@ -7,7 +7,6 @@ import { EditBatchModal } from '@/components/collaborator/EditBatchModal';
 import { CollaboratorLocaleProvider } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { Modal } from '@/components/ui/Modal';
 import { Package } from 'lucide-react';
 import type { VehicleBatchWithCollaborator } from '@/types/vehicle-batch';
@@ -48,7 +47,7 @@ export default function AdminBatchesPage() {
         params.append('status', filters.status);
       }
 
-      const response = await authFetch(`/api/admin/batches?${params}`);
+      const response = await fetch(`/api/admin/batches?${params}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -97,7 +96,7 @@ export default function AdminBatchesPage() {
 
     setSubmitting(true);
     try {
-      const response = await authFetch('/api/admin/batches', {
+      const response = await fetch('/api/admin/batches', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatMileage } from '@/lib/utils/formatters';
@@ -91,7 +90,7 @@ export default function ReassignmentPage({ params }: { params: Promise<{ id: str
   const fetchReassignment = async () => {
     try {
       setIsLoading(true);
-      const response = await authFetch(`/api/reassignment/${resolvedParams.id}`);
+      const response = await fetch(`/api/reassignment/${resolvedParams.id}`);
 
       if (!response.ok) {
         const data = await response.json();
@@ -117,7 +116,7 @@ export default function ReassignmentPage({ params }: { params: Promise<{ id: str
 
     setIsSubmitting(true);
     try {
-      const response = await authFetch(`/api/reassignment/${resolvedParams.id}/select`, {
+      const response = await fetch(`/api/reassignment/${resolvedParams.id}/select`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -145,7 +144,7 @@ export default function ReassignmentPage({ params }: { params: Promise<{ id: str
 
     setIsSubmitting(true);
     try {
-      const response = await authFetch(`/api/reassignment/${resolvedParams.id}/decline`, {
+      const response = await fetch(`/api/reassignment/${resolvedParams.id}/decline`, {
         method: 'POST',
       });
 

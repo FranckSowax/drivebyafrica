@@ -13,32 +13,15 @@ interface CollaboratorAuthState {
   signOut: () => Promise<void>;
 }
 
-// Valid roles for collaborator portal access
 const ALLOWED_ROLES = ['collaborator', 'admin', 'super_admin'];
 
-// Cookie helper
-function clearAuthMarkerCookie() {
-  if (typeof document !== 'undefined') {
-    const isSecure = window.location.protocol === 'https:';
-    const secureFlag = isSecure ? '; Secure' : '';
-    document.cookie = `dba-auth-marker=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
-  }
-}
-
 function hardRedirectToLogin() {
-  clearAuthMarkerCookie();
   if (typeof window !== 'undefined') {
     window.location.href = '/collaborator/login';
   }
 }
 
-/**
- * Hook to protect collaborator pages.
- * Reads auth state from useAuthStore (initialized by AuthProvider)
- * instead of running a separate auth flow to avoid race conditions.
- */
 export function useCollaboratorAuth(): CollaboratorAuthState {
-  // Subscribe to the global auth store (already initialized by AuthProvider)
   const storeUser = useAuthStore((s) => s.user);
   const storeProfile = useAuthStore((s) => s.profile);
   const isInitialized = useAuthStore((s) => s.isInitialized);
@@ -66,12 +49,9 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
     }
   }, []);
 
-  // React to auth store changes
   useEffect(() => {
-    // Wait for the global auth store to finish initializing
     if (!isInitialized) return;
 
-    // No user → not authenticated → redirect to login
     if (!storeUser) {
       setIsAuthorized(false);
       setIsChecking(false);
@@ -79,34 +59,25 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       return;
     }
 
-    // User exists but profile not yet loaded (background fetch in progress)
-    if (!storeProfile) {
-      // Keep checking — profile will arrive shortly via useAuthStore
-      return;
-    }
+    if (!storeProfile) return;
 
-    // Profile loaded — check role
     if (!ALLOWED_ROLES.includes(storeProfile.role)) {
       setIsAuthorized(false);
       setIsChecking(false);
-      clearAuthMarkerCookie();
       useAuthStore.getState().signOut();
       hardRedirectToLogin();
       return;
     }
 
-    // Authorized
     setUserName(storeProfile.full_name || storeUser.email || '');
     setUserEmail(storeUser.email || '');
     setIsAuthorized(true);
     setIsChecking(false);
   }, [isInitialized, storeUser, storeProfile]);
 
-  // Safety timeout — if still checking after 8s, redirect to login
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (isChecking) {
-        console.log('Collaborator auth: timeout waiting for auth store');
         setIsChecking(false);
         hardRedirectToLogin();
       }
@@ -116,7 +87,6 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
 
   const signOut = useCallback(async () => {
     try {
-      // Log logout before signing out
       fetch('/api/collaborator/log-activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,7 +99,6 @@ export function useCollaboratorAuth(): CollaboratorAuthState {
       setIsAuthorized(false);
       setUserName('');
       setUserEmail('');
-      clearAuthMarkerCookie();
       try {
         if (typeof localStorage !== 'undefined') localStorage.removeItem('dba-collaborator');
       } catch {}

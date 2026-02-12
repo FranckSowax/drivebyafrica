@@ -39,7 +39,6 @@ import { StatusDocumentsSection, MissingDocsBadge } from '@/components/shared/St
 import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge';
 import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -302,7 +301,7 @@ export default function AdminOrdersPage() {
         params.set('search', searchQuery);
       }
 
-      const response = await authFetch(`/api/admin/orders?${params}`);
+      const response = await fetch(`/api/admin/orders?${params}`);
       const data = await response.json();
 
       if (data.orders) {
@@ -325,7 +324,7 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     if (newStatus === 'vehicle_received' && shippingPartners.length === 0 && !isLoadingPartners) {
       setIsLoadingPartners(true);
-      authFetch('/api/admin/shipping/partners')
+      fetch('/api/admin/shipping/partners')
         .then(res => res.json())
         .then(data => {
           if (data.partners) {
@@ -423,7 +422,7 @@ export default function AdminOrdersPage() {
             ...(newStatus === 'vehicle_received' && selectedShippingPartnerId ? { shippingPartnerId: selectedShippingPartnerId } : {}),
           };
 
-      const response = await authFetch('/api/admin/orders', {
+      const response = await fetch('/api/admin/orders', {
         method: 'PUT',
         body: JSON.stringify(requestBody),
       });

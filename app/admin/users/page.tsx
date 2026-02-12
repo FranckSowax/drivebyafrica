@@ -33,7 +33,6 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 type UserRole = 'user' | 'admin' | 'super_admin' | 'collaborator';
 
@@ -218,7 +217,7 @@ export default function AdminUsersPage() {
         params.set('search', searchQuery);
       }
 
-      const response = await authFetch(`/api/admin/users?${params}`, {
+      const response = await fetch(`/api/admin/users?${params}`, {
         signal: controller.signal,
       });
 
@@ -299,7 +298,7 @@ export default function AdminUsersPage() {
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     setIsUpdatingRole(true);
     try {
-      const response = await authFetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role: newRole }),
@@ -335,7 +334,7 @@ export default function AdminUsersPage() {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     try {
-      const response = await authFetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(createForm),
@@ -392,7 +391,7 @@ export default function AdminUsersPage() {
 
     setIsEditing(true);
     try {
-      const response = await authFetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -451,7 +450,7 @@ export default function AdminUsersPage() {
     const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
-      const response = await authFetch(`/api/admin/users?userId=${deletingUser.id}`, {
+      const response = await fetch(`/api/admin/users?userId=${deletingUser.id}`, {
         method: 'DELETE',
         signal: controller.signal,
       });

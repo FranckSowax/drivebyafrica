@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -211,7 +210,7 @@ export default function AdminDashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      const response = await authFetch('/api/admin/analytics');
+      const response = await fetch('/api/admin/analytics');
       if (!response.ok) throw new Error('Erreur lors du chargement');
       const result = await response.json();
       setData(result);
@@ -513,7 +512,7 @@ export default function AdminDashboardPage() {
               size="sm"
               onClick={async () => {
                 try {
-                  const res = await authFetch('/api/admin/vehicle-count', { method: 'POST' });
+                  const res = await fetch('/api/admin/vehicle-count', { method: 'POST' });
                   if (res.ok) {
                     fetchData();
                   }

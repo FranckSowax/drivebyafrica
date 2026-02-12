@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -149,7 +148,7 @@ export default function AdminPartnersPage() {
 
   const fetchPartners = async () => {
     try {
-      const res = await authFetch('/api/admin/shipping/partners');
+      const res = await fetch('/api/admin/shipping/partners');
       const data = await res.json();
       setPartners(data.partners || []);
     } catch (error) {
@@ -180,7 +179,7 @@ export default function AdminPartnersPage() {
     setSaving(true);
     try {
       if (modalMode === 'create') {
-        const res = await authFetch('/api/admin/shipping/partners', {
+        const res = await fetch('/api/admin/shipping/partners', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...form, covered_countries: coveredCountries }),
@@ -190,7 +189,7 @@ export default function AdminPartnersPage() {
         toast.success('Partenaire créé !');
         copyLink(data.partner.token);
       } else {
-        const res = await authFetch('/api/admin/shipping/partners', {
+        const res = await fetch('/api/admin/shipping/partners', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingPartnerId, ...form, covered_countries: coveredCountries }),
@@ -210,7 +209,7 @@ export default function AdminPartnersPage() {
 
   const toggleActive = async (partner: Partner) => {
     try {
-      await authFetch('/api/admin/shipping/partners', {
+      await fetch('/api/admin/shipping/partners', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: partner.id, is_active: !partner.is_active }),
@@ -228,7 +227,7 @@ export default function AdminPartnersPage() {
     if (!deleteConfirm) return;
     setDeleting(true);
     try {
-      await authFetch(`/api/admin/shipping/partners?id=${deleteConfirm.id}`, { method: 'DELETE' });
+      await fetch(`/api/admin/shipping/partners?id=${deleteConfirm.id}`, { method: 'DELETE' });
       setPartners((prev) => prev.filter((p) => p.id !== deleteConfirm.id));
       toast.success('Partenaire supprimé');
       setDeleteConfirm(null);

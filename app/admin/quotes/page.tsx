@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -190,7 +189,7 @@ export default function AdminQuotesPage() {
         params.set('search', searchQuery);
       }
 
-      const response = await authFetch(`/api/admin/quotes?${params}`);
+      const response = await fetch(`/api/admin/quotes?${params}`);
       const data = await response.json();
 
       if (data.quotes) {
@@ -213,7 +212,7 @@ export default function AdminQuotesPage() {
   useEffect(() => {
     const fetchCurrencies = async () => {
       try {
-        const response = await authFetch('/api/admin/currencies');
+        const response = await fetch('/api/admin/currencies');
         const data = await response.json();
         if (data.currencies) {
           setCurrencies(data.currencies);
@@ -250,7 +249,7 @@ export default function AdminQuotesPage() {
   const updateQuoteStatus = async (id: string, newStatus: string) => {
     setUpdatingId(id);
     try {
-      const response = await authFetch('/api/admin/quotes', {
+      const response = await fetch('/api/admin/quotes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
@@ -284,7 +283,7 @@ export default function AdminQuotesPage() {
     if (!reassignModalQuote) return;
     setIsReassigning(true);
     try {
-      const response = await authFetch('/api/admin/quotes/reassign', {
+      const response = await fetch('/api/admin/quotes/reassign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -322,7 +321,7 @@ export default function AdminQuotesPage() {
 
     setIsSettingPrice(true);
     try {
-      const response = await authFetch('/api/admin/quotes/set-price', {
+      const response = await fetch('/api/admin/quotes/set-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

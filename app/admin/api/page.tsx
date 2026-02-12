@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface SyncStats {
   added?: number;
@@ -133,7 +132,7 @@ export default function AdminApiPage() {
 
   const fetchVehicleStats = async () => {
     try {
-      const response = await authFetch('/api/admin/vehicles/stats');
+      const response = await fetch('/api/admin/vehicles/stats');
       if (response.ok) {
         const data = await response.json();
         setVehicleStats(data);
@@ -156,7 +155,7 @@ export default function AdminApiPage() {
         ? `/api/admin/sync/${apiId}`
         : `/api/${apiId}/sync`;
 
-      const response = await authFetch(endpoint, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'changes', sinceDays: 1, maxPages: 50 }),
@@ -196,7 +195,7 @@ export default function AdminApiPage() {
     setSyncResults((prev) => ({ ...prev, [`${apiId}-photos`]: { success: false } }));
 
     try {
-      const response = await authFetch(`/api/${apiId}/photos/sync`, {
+      const response = await fetch(`/api/${apiId}/photos/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ limit: 100 }),
@@ -229,7 +228,7 @@ export default function AdminApiPage() {
     setSyncResults((prev) => ({ ...prev, reset: { success: false } }));
 
     try {
-      const response = await authFetch('/api/admin/reset-sync', {
+      const response = await fetch('/api/admin/reset-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxPages: 100, clearTable: true }),

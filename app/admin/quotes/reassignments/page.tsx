@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -125,7 +124,7 @@ export default function ReassignmentsPage() {
         params.set('status', statusFilter);
       }
 
-      const response = await authFetch(`/api/admin/quotes/reassign?${params}`);
+      const response = await fetch(`/api/admin/quotes/reassign?${params}`);
       const data = await response.json();
 
       if (data.reassignments) {
@@ -147,7 +146,7 @@ export default function ReassignmentsPage() {
   const sendWhatsApp = async (id: string) => {
     setSendingWhatsApp(id);
     try {
-      const response = await authFetch('/api/admin/quotes/reassign', {
+      const response = await fetch('/api/admin/quotes/reassign', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action: 'send_whatsapp' }),
@@ -171,7 +170,7 @@ export default function ReassignmentsPage() {
   const refreshVehicles = async (id: string) => {
     setRefreshingVehicles(id);
     try {
-      const response = await authFetch('/api/admin/quotes/reassign', {
+      const response = await fetch('/api/admin/quotes/reassign', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
@@ -189,7 +188,7 @@ export default function ReassignmentsPage() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const response = await authFetch('/api/admin/quotes/reassign', {
+      const response = await fetch('/api/admin/quotes/reassign', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status }),

@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 
 interface AdminAuthGuardProps {
   children: React.ReactNode;
@@ -28,8 +27,8 @@ export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
 
     const checkAuth = async () => {
       try {
-        // Use authFetch to include Authorization header with localStorage token
-        const response = await authFetch('/api/admin/check-role');
+        // Verify admin auth via cookie-based session
+        const response = await fetch('/api/admin/check-role');
 
         if (!response.ok) {
           setError('Erreur de vérification');

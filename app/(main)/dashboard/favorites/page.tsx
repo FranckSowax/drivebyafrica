@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { formatUsdToLocal } from '@/lib/utils/currency';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   Heart,
@@ -38,7 +37,7 @@ export default function FavoritesPage() {
       if (!user) return;
 
       try {
-        const response = await authFetch('/api/favorites');
+        const response = await fetch('/api/favorites');
         if (!response.ok) {
           throw new Error('Erreur de chargement');
         }

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { CollaboratorBadge } from './CollaboratorBadge';
 import { Loader2, FileText, RefreshCw, History } from 'lucide-react';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format } from 'date-fns';
 import { fr, zhCN, enUS } from 'date-fns/locale';
 
@@ -126,7 +125,7 @@ export function OrderActivityHistory({ orderId, locale = 'fr' }: OrderActivityHi
     setLoading(true);
     setError(null);
     try {
-      const response = await authFetch(`/api/orders/${orderId}/activity`);
+      const response = await fetch(`/api/orders/${orderId}/activity`);
       if (!response.ok) {
         throw new Error('Failed to fetch');
       }

@@ -48,7 +48,6 @@ import { StatusDocumentsSection, MissingDocsBadge } from '@/components/shared/St
 import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge';
 import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import type { UploadedStatusDocument } from '@/lib/order-documents-config';
 
 // Order interface matching API response (flat structure)
@@ -306,7 +305,7 @@ function CollaboratorOrdersContent() {
         params.set('search', searchQuery);
       }
 
-      const response = await authFetch(`/api/collaborator/orders?${params}`);
+      const response = await fetch(`/api/collaborator/orders?${params}`);
       if (!response.ok) throw new Error('Failed to fetch orders');
 
       const data = await response.json();
@@ -328,7 +327,7 @@ function CollaboratorOrdersContent() {
   useEffect(() => {
     if (newStatus === 'vehicle_received' && shippingPartners.length === 0 && !isLoadingPartners) {
       setIsLoadingPartners(true);
-      authFetch('/api/admin/shipping/partners')
+      fetch('/api/admin/shipping/partners')
         .then(res => res.json())
         .then(data => {
           if (data.partners) {
@@ -402,7 +401,7 @@ function CollaboratorOrdersContent() {
     try {
       setIsUpdatingStatus(true);
 
-      const response = await authFetch('/api/collaborator/orders', {
+      const response = await fetch('/api/collaborator/orders', {
         method: 'PUT',
         body: JSON.stringify({
           orderId: selectedOrder.id,

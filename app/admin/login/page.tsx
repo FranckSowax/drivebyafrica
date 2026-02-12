@@ -41,13 +41,8 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // 2. Check if user is admin via API (pass token for localStorage-based auth)
-      const response = await fetch('/api/admin/check-role', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${data.session?.access_token}`,
-        },
-      });
+      // 2. Check if user is admin via API (cookies sent automatically)
+      const response = await fetch('/api/admin/check-role');
 
       const roleData = await response.json();
 

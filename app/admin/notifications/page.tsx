@@ -23,7 +23,6 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -96,7 +95,7 @@ export default function AdminNotificationsPage() {
       if (filterPriority) params.append('priority', filterPriority);
       if (showUnreadOnly) params.append('unread', 'true');
 
-      const response = await authFetch(`/api/admin/notifications?${params}`);
+      const response = await fetch(`/api/admin/notifications?${params}`);
       const data = await response.json();
 
       if (data.notifications) {
@@ -117,7 +116,7 @@ export default function AdminNotificationsPage() {
 
   const markAsRead = async (notificationIds: string[]) => {
     try {
-      const response = await authFetch('/api/admin/notifications', {
+      const response = await fetch('/api/admin/notifications', {
         method: 'PATCH',
         body: JSON.stringify({ notification_ids: notificationIds }),
       });
@@ -134,7 +133,7 @@ export default function AdminNotificationsPage() {
 
   const markAllAsRead = async () => {
     try {
-      const response = await authFetch('/api/admin/notifications', {
+      const response = await fetch('/api/admin/notifications', {
         method: 'PATCH',
         body: JSON.stringify({ mark_all: true }),
       });
@@ -151,7 +150,7 @@ export default function AdminNotificationsPage() {
 
   const dismissNotification = async (notificationId: string) => {
     try {
-      const response = await authFetch(`/api/admin/notifications?id=${notificationId}`, {
+      const response = await fetch(`/api/admin/notifications?id=${notificationId}`, {
         method: 'DELETE',
       });
 

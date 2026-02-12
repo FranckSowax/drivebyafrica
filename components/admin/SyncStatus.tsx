@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { authFetch } from '@/lib/supabase/auth-helpers';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -99,7 +98,7 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
   const fetchDongchediStats = async () => {
     setDongchediLoading(true);
     try {
-      const response = await authFetch('/api/admin/sync/dongchedi');
+      const response = await fetch('/api/admin/sync/dongchedi');
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       setDongchediStats(data);
@@ -114,7 +113,7 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
     setDubicarsLoading(true);
     try {
       // Get count from vehicles table
-      const response = await authFetch('/api/admin/vehicles/stats');
+      const response = await fetch('/api/admin/vehicles/stats');
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       setDubicarsStats({ totalVehicles: data.stats?.bySource?.dubai || 0 });
@@ -131,7 +130,7 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
     setDubicarsResult(null);
 
     try {
-      const response = await authFetch('/api/admin/sync/dubicars', {
+      const response = await fetch('/api/admin/sync/dubicars', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxPages: dubicarsMaxPages }),
@@ -167,7 +166,7 @@ export function SyncStatus({ syncConfig, syncLogs, onSync }: SyncStatusProps) {
     setDongchediResult(null);
 
     try {
-      const response = await authFetch('/api/admin/sync/dongchedi', {
+      const response = await fetch('/api/admin/sync/dongchedi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxPages }),
