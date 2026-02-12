@@ -1,0 +1,115 @@
+-- ============================================
+-- FIX: handle_new_user() trigger - ensure role is set to 'user'
+-- The trigger was not setting the role column, causing NULL values
+-- which breaks the is_admin() check and other role-based RLS policies
+-- ============================================
+
+-- Updated trigger function: ensure role defaults to 'user'
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  raw_country TEXT;
+  resolved_country TEXT;
+BEGIN
+  raw_country := NEW.raw_user_meta_data->>'country';
+
+  -- Map common ISO codes to display names
+  resolved_country := CASE raw_country
+    WHEN 'GA' THEN 'Gabon'
+    WHEN 'CM' THEN 'Cameroun'
+    WHEN 'CG' THEN 'Congo'
+    WHEN 'CD' THEN 'RD Congo'
+    WHEN 'CF' THEN 'Centrafrique'
+    WHEN 'TD' THEN 'Tchad'
+    WHEN 'GQ' THEN 'Guinée Équatoriale'
+    WHEN 'CI' THEN 'Côte d''Ivoire'
+    WHEN 'SN' THEN 'Sénégal'
+    WHEN 'BJ' THEN 'Bénin'
+    WHEN 'TG' THEN 'Togo'
+    WHEN 'ML' THEN 'Mali'
+    WHEN 'BF' THEN 'Burkina Faso'
+    WHEN 'GN' THEN 'Guinée'
+    WHEN 'NE' THEN 'Niger'
+    WHEN 'NG' THEN 'Nigeria'
+    WHEN 'GH' THEN 'Ghana'
+    WHEN 'KE' THEN 'Kenya'
+    WHEN 'TZ' THEN 'Tanzanie'
+    WHEN 'UG' THEN 'Ouganda'
+    WHEN 'RW' THEN 'Rwanda'
+    WHEN 'ET' THEN 'Éthiopie'
+    WHEN 'MA' THEN 'Maroc'
+    WHEN 'DZ' THEN 'Algérie'
+    WHEN 'TN' THEN 'Tunisie'
+    WHEN 'EG' THEN 'Égypte'
+    WHEN 'ZA' THEN 'Afrique du Sud'
+    WHEN 'AO' THEN 'Angola'
+    WHEN 'MZ' THEN 'Mozambique'
+    WHEN 'MG' THEN 'Madagascar'
+    WHEN 'FR' THEN 'France'
+    WHEN 'BE' THEN 'Belgique'
+    WHEN 'CH' THEN 'Suisse'
+    WHEN 'CA' THEN 'Canada'
+    WHEN 'OTHER' THEN 'Autre'
+    WHEN NULL THEN 'Gabon'
+    ELSE COALESCE(raw_country, 'Gabon')
+  END;
+
+  INSERT INTO public.profiles (id, full_name, whatsapp_number, country, role)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'whatsapp',
+    resolved_country,
+    'user'  -- Explicitly set role to 'user' for new registrations
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = COALESCE(NULLIF(profiles.full_name, ''), EXCLUDED.full_name),
+    whatsapp_number = COALESCE(profiles.whatsapp_number, EXCLUDED.whatsapp_number),
+    country = CASE
+      WHEN profiles.country IS NULL OR profiles.country = 'Gabon'
+      THEN EXCLUDED.country
+      ELSE profiles.country
+    END,
+    role = COALESCE(profiles.role, 'user');  -- Ensure role is never NULL
+
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Never block user creation — profile can be completed later by the app
+  RAISE WARNING 'handle_new_user failed for user %: %', NEW.id, SQLERRM;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
+-- FIX EXISTING NULL ROLES
+-- ============================================
+
+-- Update any existing profiles with NULL role to 'user'
+UPDATE public.profiles 
+SET role = 'user' 
+WHERE role IS NULL;
+
+-- ============================================
+-- ENSURE ROLE COLUMN HAS PROPER DEFAULT
+-- ============================================
+
+-- Set default value for role column if not already set
+ALTER TABLE public.profiles 
+ALTER COLUMN role SET DEFAULT 'user';
+
+-- ============================================
+-- VERIFY CONSTRAINT EXISTS
+-- ============================================
+
+DO $$
+BEGIN
+  -- Add check constraint for role values if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'profiles_role_check'
+  ) THEN
+    ALTER TABLE public.profiles 
+    ADD CONSTRAINT profiles_role_check 
+    CHECK (role IN ('user', 'admin', 'super_admin', 'collaborator'));
+  END IF;
+END $$;
