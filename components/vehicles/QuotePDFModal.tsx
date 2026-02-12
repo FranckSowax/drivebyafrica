@@ -11,6 +11,7 @@ import {
   Calendar,
   Clock,
   Save,
+  CreditCard,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 import { authFetch } from '@/lib/supabase/auth-helpers';
+import { PaymentModal } from '@/components/payment/PaymentModal';
 
 // Types
 interface QuoteData {
@@ -89,6 +91,9 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
   const [mounted, setMounted] = useState(false);
   const [quoteSaved, setQuoteSaved] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
 
   // 1. Lifecycle: Mounted check for SSR and Mobile detection
   useEffect(() => {
@@ -150,16 +155,16 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
   }, [quoteData?.calculations?.quoteCurrencyCode]);
 
   // 5. Action: Save to DB (always save in USD for consistency)
-  // Returns true on success, false on failure
-  const saveQuoteToDatabase = useCallback(async (qNumber: string): Promise<boolean> => {
+  // Returns quote ID on success, null on failure
+  const saveQuoteToDatabase = useCallback(async (qNumber: string): Promise<string | null> => {
     if (!quoteData || !user) {
       console.error('saveQuoteToDatabase: Missing quoteData or user');
-      return false;
+      return null;
     }
 
-    if (quoteSaved) {
+    if (quoteSaved && savedQuoteId) {
       console.log('saveQuoteToDatabase: Quote already saved');
-      return true;
+      return savedQuoteId;
     }
 
     // Use USD values if available, otherwise use the converted values
@@ -193,8 +198,11 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
       });
 
       if (response.ok) {
+        const result = await response.json();
+        const quoteId = result.quote?.id || null;
         setQuoteSaved(true);
-        return true;
+        if (quoteId) setSavedQuoteId(quoteId);
+        return quoteId;
       } else {
         // Handle specific error cases
         const errorData = await response.json().catch(() => ({}));
@@ -205,14 +213,14 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
         } else {
           toast.error('Erreur', errorData.error || 'Impossible d\'enregistrer le devis');
         }
-        return false;
+        return null;
       }
     } catch (error) {
       console.error('saveQuoteToDatabase: Network error', error);
       toast.error('Erreur réseau', 'Vérifiez votre connexion internet');
-      return false;
+      return null;
     }
-  }, [quoteData, user, quoteSaved, toast]);
+  }, [quoteData, user, quoteSaved, savedQuoteId, toast]);
 
   const isExpired = useCallback(() => {
     if (!quoteData) return false;
@@ -588,14 +596,66 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
     }
 
     setIsGenerating(true); // Show loading state
-    const success = await saveQuoteToDatabase(quoteNumber);
+    const quoteId = await saveQuoteToDatabase(quoteNumber);
     setIsGenerating(false);
 
-    if (success) {
+    if (quoteId) {
       toast.success('Devis enregistré avec succès');
       router.push('/dashboard/quotes');
     }
     // Error messages are shown by saveQuoteToDatabase
+  };
+
+  // Payment flow: save quote first, then open payment modal
+  const handlePayDeposit = async () => {
+    if (!quoteData || !user) return;
+
+    // Save quote first if not already saved
+    if (!quoteSaved || !savedQuoteId) {
+      setIsGenerating(true);
+      const quoteId = await saveQuoteToDatabase(quoteNumber);
+      setIsGenerating(false);
+      if (!quoteId) return;
+    }
+
+    setIsPaymentOpen(true);
+  };
+
+  const handlePaymentSuccess = async ({ externalReference, paymentMethod }: { externalReference: string; paymentMethod: string }) => {
+    setIsPaymentOpen(false);
+    setIsCreatingOrder(true);
+
+    try {
+      if (!savedQuoteId) {
+        toast.error('Erreur', 'Impossible de trouver le devis enregistré');
+        setIsCreatingOrder(false);
+        return;
+      }
+
+      // Create order with payment data
+      const orderRes = await authFetch('/api/orders/from-quote', {
+        method: 'POST',
+        body: JSON.stringify({
+          quoteId: savedQuoteId,
+          paymentMethod,
+          paymentReference: externalReference,
+        }),
+      });
+
+      const orderResult = await orderRes.json();
+
+      if (!orderRes.ok) {
+        toast.error('Erreur', orderResult.error || 'Erreur lors de la création de la commande');
+        setIsCreatingOrder(false);
+        return;
+      }
+
+      toast.success('Commande créée !', 'Votre véhicule est maintenant réservé.');
+      router.push('/dashboard/orders');
+    } catch {
+      toast.error('Erreur réseau', 'Vérifiez votre connexion internet');
+      setIsCreatingOrder(false);
+    }
   };
 
   const handleShare = async () => {
@@ -647,6 +707,7 @@ const handleClose = () => {
 if (!mounted) return null;
 
 return createPortal(
+  <>
   <AnimatePresence>
     {isOpen && (
       <motion.div
@@ -903,11 +964,24 @@ return createPortal(
             <div className="px-4 md:px-8 pb-6">
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
+              {/* Pay deposit button - primary CTA */}
               {!defaultQuoteNumber && (
                 <Button
                   variant="primary"
+                  onClick={handlePayDeposit}
+                  disabled={isGenerating || isCreatingOrder}
+                  leftIcon={isCreatingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                  className="w-full py-3 text-sm font-semibold"
+                >
+                  {isCreatingOrder ? 'Création de la commande...' : "Payer l'acompte — 1 000 USD"}
+                </Button>
+              )}
+
+              {!defaultQuoteNumber && (
+                <Button
+                  variant="outline"
                   onClick={handleSaveAndRedirect}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isCreatingOrder}
                   leftIcon={<Save className="w-4 h-4" />}
                   className="w-full sm:w-auto py-3 text-sm font-semibold"
                 >
@@ -918,7 +992,7 @@ return createPortal(
               <Button
                 variant="outline"
                 onClick={handleShare}
-                disabled={isGenerating || !pdfBlob}
+                disabled={isGenerating || !pdfBlob || isCreatingOrder}
                 leftIcon={<Share2 className="w-4 h-4" />}
                 className="w-full sm:w-auto py-3 text-sm font-semibold"
               >
@@ -930,7 +1004,18 @@ return createPortal(
         </motion.div>
       </motion.div>
     )}
-  </AnimatePresence>,
+  </AnimatePresence>
+
+  {/* Payment Modal */}
+  <PaymentModal
+    isOpen={isPaymentOpen}
+    onClose={() => setIsPaymentOpen(false)}
+    onSuccess={handlePaymentSuccess}
+    amount={1000}
+    description={`Acompte véhicule ${quoteData?.vehicleMake || ''} ${quoteData?.vehicleModel || ''}`}
+    quoteNumber={quoteNumber}
+  />
+  </>,
     document.body
   );
 }

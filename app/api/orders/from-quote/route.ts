@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { quoteId } = body;
+    const { quoteId, paymentMethod, paymentReference } = body;
 
     if (!quoteId) {
       return NextResponse.json({ error: 'quoteId requis' }, { status: 400 });
@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
         deposit_amount_usd: 1000,
         deposit_amount_xaf: 600000,
         deposit_paid_at: new Date().toISOString(),
-        deposit_payment_method: 'demo',
+        deposit_payment_method: paymentMethod || 'demo',
+        deposit_payment_reference: paymentReference || null,
         customer_name: user.user_metadata?.full_name || user.email,
         customer_email: user.email,
         status: 'vehicle_locked',
