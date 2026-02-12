@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
+import { resolveCountryName } from '@/lib/utils/countries';
 
 // Cookie name for auth marker (used by middleware for route protection)
 const AUTH_MARKER_COOKIE = 'dba-auth-marker';
@@ -51,6 +52,53 @@ interface AuthState {
   refreshProfile: () => Promise<void>;
 }
 
+/**
+ * Checks if a profile is missing fields that exist in user_metadata,
+ * and updates the profile in the background if needed.
+ * Fixes data loss from the original handle_new_user() trigger
+ * that only copied full_name.
+ */
+async function completeProfileIfNeeded(
+  supabase: ReturnType<typeof createClient>,
+  user: User,
+  profile: Profile | null
+) {
+  if (!profile || !user.user_metadata) return;
+
+  const meta = user.user_metadata;
+  const updates: Record<string, string> = {};
+
+  // WhatsApp: stored as 'whatsapp' in metadata, 'whatsapp_number' in profiles
+  if (!profile.whatsapp_number && meta.whatsapp) {
+    updates.whatsapp_number = meta.whatsapp;
+  }
+
+  // Country: stored as ISO code in metadata, full name in profiles
+  if ((!profile.country || profile.country === 'Gabon') && meta.country && meta.country !== 'GA') {
+    const resolved = resolveCountryName(meta.country);
+    if (resolved !== profile.country) {
+      updates.country = resolved;
+    }
+  }
+
+  // Full name: should already be set by trigger, but just in case
+  if (!profile.full_name && meta.full_name) {
+    updates.full_name = meta.full_name;
+  }
+
+  if (Object.keys(updates).length === 0) return;
+
+  console.log('Auth: Completing profile with missing fields:', Object.keys(updates));
+  try {
+    await supabase
+      .from('profiles')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+  } catch {
+    // Non-critical — profile will be updated on next settings save
+  }
+}
+
 // Track if we've already set up the auth listener to avoid duplicates
 let authListenerSetup = false;
 
@@ -82,6 +130,8 @@ function setupAuthListener(
         .eq('id', session.user.id)
         .single();
       set({ profile });
+      // Fill missing profile fields from user_metadata (background)
+      completeProfileIfNeeded(supabase, session.user, profile);
     } else if (event !== 'INITIAL_SESSION') {
       // Only clear state if it's not the initial session event
       set({ user: null, profile: null });
@@ -153,8 +203,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
                 .select('*')
                 .eq('id', cachedSession.user.id)
                 .single();
-              if (profile) set({ profile });
-              if (profile) setCollaboratorLocal({ id: cachedSession.user.id, email: cachedSession.user.email || null, role: profile.role || null, full_name: profile.full_name || null });
+              if (profile) {
+                set({ profile });
+                setCollaboratorLocal({ id: cachedSession.user.id, email: cachedSession.user.email || null, role: profile.role || null, full_name: profile.full_name || null });
+                completeProfileIfNeeded(supabase, cachedSession.user, profile);
+              }
             } catch {
               // Ignore profile fetch errors
             }
@@ -191,7 +244,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           .single();
 
         set({ profile });
-        if (profile) setCollaboratorLocal({ id: user.id, email: user.email || null, role: profile.role || null, full_name: profile.full_name || null });
+        if (profile) {
+          setCollaboratorLocal({ id: user.id, email: user.email || null, role: profile.role || null, full_name: profile.full_name || null });
+          completeProfileIfNeeded(supabase, user, profile);
+        }
       } else if (userError) {
         // Distinguish between session errors and network errors
         const errorMessage = userError.message?.toLowerCase() || '';
