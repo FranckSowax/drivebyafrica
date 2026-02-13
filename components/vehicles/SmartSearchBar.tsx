@@ -18,28 +18,45 @@ interface SmartSearchBarProps {
   className?: string;
 }
 
-/** Fetch vehicle suggestions from PostgREST */
-async function fetchSuggestions(query: string): Promise<Vehicle[]> {
+interface SuggestionsResult {
+  vehicles: Vehicle[];
+  totalCount: number;
+}
+
+/** Fetch vehicle suggestions from PostgREST with total count */
+async function fetchSuggestions(query: string): Promise<SuggestionsResult> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey || query.length < 2) return [];
+  if (!supabaseUrl || !supabaseKey || query.length < 2) return { vehicles: [], totalCount: 0 };
 
   const params = new URLSearchParams();
-  params.set('select', 'id,make,model,grade,year,current_price_usd,images,source');
+  params.set('select', 'id,make,model,grade,year,images,source');
   params.append('is_visible', 'eq.true');
   params.append('or', `(make.ilike.*${query}*,model.ilike.*${query}*,grade.ilike.*${query}*,source_id.ilike.*${query}*)`);
-  params.set('order', 'current_price_usd.asc.nullslast');
-  params.set('limit', '6');
+  params.set('order', 'id.desc');
+  params.set('limit', '3');
 
   const res = await fetch(`${supabaseUrl}/rest/v1/vehicles?${params}`, {
     headers: {
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
+      'Prefer': 'count=exact',
     },
   });
 
-  if (!res.ok) return [];
-  return res.json();
+  if (!res.ok) return { vehicles: [], totalCount: 0 };
+
+  const vehicles: Vehicle[] = await res.json();
+
+  // Parse total count from Content-Range header (format: "0-2/1234")
+  let totalCount = vehicles.length;
+  const contentRange = res.headers.get('Content-Range');
+  if (contentRange) {
+    const match = contentRange.match(/\/(\d+)/);
+    if (match) totalCount = parseInt(match[1], 10);
+  }
+
+  return { vehicles, totalCount };
 }
 
 export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSearchBarProps) {
@@ -69,7 +86,7 @@ export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSe
   }, [debouncedQuery, vehicleFilters.brands]);
 
   // Vehicle suggestions — lightweight PostgREST query
-  const { data: vehicleSuggestions = [], isFetching } = useQuery({
+  const { data: suggestionsData, isFetching } = useQuery({
     queryKey: ['search-suggestions', debouncedQuery],
     queryFn: () => fetchSuggestions(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
@@ -77,11 +94,15 @@ export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSe
     gcTime: 2 * 60 * 1000,
   });
 
+  const vehicleSuggestions = suggestionsData?.vehicles ?? [];
+  const totalMatchCount = suggestionsData?.totalCount ?? 0;
+
   const showDropdown = isFocused && debouncedQuery.length >= 1 &&
     (brandSuggestions.length > 0 || vehicleSuggestions.length > 0 || isFetching);
 
-  // Total items for keyboard nav
-  const totalItems = brandSuggestions.length + vehicleSuggestions.length;
+  // Total items for keyboard nav (+1 for "see all" button when there are more results)
+  const hasMoreResults = totalMatchCount > vehicleSuggestions.length;
+  const totalItems = brandSuggestions.length + vehicleSuggestions.length + (hasMoreResults ? 1 : 0);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -118,6 +139,13 @@ export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSe
     router.push(`/cars/${vehicle.id}`);
   }, [router]);
 
+  const handleViewAll = useCallback(() => {
+    setFilters({ search: debouncedQuery });
+    setIsFocused(false);
+    inputRef.current?.blur();
+    onSubmit?.();
+  }, [debouncedQuery, setFilters, onSubmit]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showDropdown) {
       if (e.key === 'Enter') onSubmit?.();
@@ -137,8 +165,10 @@ export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSe
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < brandSuggestions.length) {
           handleSelectBrand(brandSuggestions[selectedIndex]);
-        } else if (selectedIndex >= brandSuggestions.length) {
+        } else if (selectedIndex >= brandSuggestions.length && selectedIndex < brandSuggestions.length + vehicleSuggestions.length) {
           handleSelectVehicle(vehicleSuggestions[selectedIndex - brandSuggestions.length]);
+        } else if (hasMoreResults && selectedIndex === brandSuggestions.length + vehicleSuggestions.length) {
+          handleViewAll();
         } else {
           onSubmit?.();
           setIsFocused(false);
@@ -149,12 +179,6 @@ export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSe
         inputRef.current?.blur();
         break;
     }
-  };
-
-  const formatPrice = (price: number | null | undefined) => {
-    if (!price) return '';
-    if (price >= 1000) return `$${Math.round(price / 1000)}K`;
-    return `$${price}`;
   };
 
   const getFirstImage = (vehicle: Vehicle) => {
@@ -301,13 +325,30 @@ export function SmartSearchBar({ value, onChange, onSubmit, className }: SmartSe
                         )}
                       </p>
                       <p className="text-xs text-[var(--text-muted)]">
-                        {vehicle.year} {vehicle.current_price_usd ? `· ${formatPrice(vehicle.current_price_usd)}` : ''}
+                        {vehicle.year} {vehicle.source && `· ${vehicle.source}`}
                       </p>
                     </div>
                     <ArrowRight className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-[var(--text-muted)] flex-shrink-0" />
                   </button>
                 );
               })}
+
+              {/* View all results button */}
+              {hasMoreResults && (
+                <button
+                  type="button"
+                  onClick={handleViewAll}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2 px-4 py-3.5 sm:py-3 text-sm font-medium transition-colors border-t border-[var(--card-border)]',
+                    selectedIndex === brandSuggestions.length + vehicleSuggestions.length
+                      ? 'bg-mandarin/10 text-mandarin'
+                      : 'text-mandarin hover:bg-mandarin/5 active:bg-mandarin/10'
+                  )}
+                >
+                  <Search className="w-4 h-4" />
+                  Voir tous les résultats ({totalMatchCount.toLocaleString('fr-FR')})
+                </button>
+              )}
             </div>
           )}
 
