@@ -456,7 +456,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                           vehicleMake: vehicle.make || 'Unknown',
                           vehicleModel: vehicle.model || 'Unknown',
                           vehicleYear: vehicle.year || new Date().getFullYear(),
-                          vehiclePriceUSD: price,
+                          vehiclePriceUSD: price + getExportTax(source), // FOB price (includes export tax)
                           imageUrl: images[0] !== '/images/placeholder-car.svg' ? images[0] : null,
                         });
                         if (result.success) {
@@ -467,7 +467,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       }}
                       leftIcon={<ShoppingCart className="w-4 h-4" />}
                     >
-                      {isInCart ? 'Dans le panier' : 'Ajouter au panier (40 pieds)'}
+                      {isInCart ? 'Dans le panier' : 'Multi-Véhicules - Ajouter au panier'}
                     </Button>
                   );
                 })()}

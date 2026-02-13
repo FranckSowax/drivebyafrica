@@ -9,15 +9,13 @@ import { Card } from '@/components/ui/Card';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { useToast } from '@/components/ui/Toast';
 import { useCartStore } from '@/store/useCartStore';
-import { useShippingDestinations, type ShippingDestination } from '@/lib/hooks/useShippingDestinations';
+import { useShippingDestinations } from '@/lib/hooks/useShippingDestinations';
 import { useCurrency } from '@/components/providers/LocaleProvider';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   calculateMultiVehicleImportCosts,
   DEPOSIT_PER_VEHICLE_USD,
-  DEPOSIT_PER_VEHICLE_XAF,
   INSPECTION_FEE_USD,
-  INSURANCE_RATE,
 } from '@/lib/utils/pricing';
 import { SOURCE_NAMES, type VehicleSource } from '@/types/vehicle';
 import { MultiVehicleQuotePDFModal } from '@/components/vehicles/MultiVehicleQuotePDFModal';
@@ -27,7 +25,7 @@ const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
 export default function CartPage() {
   const router = useRouter();
   const toast = useToast();
-  const { formatPrice, convertFromUsd, getQuoteCurrency } = useCurrency();
+  const { formatPrice, getQuoteCurrency } = useCurrency();
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
   const items = useCartStore((state) => state.items);
@@ -63,7 +61,6 @@ export default function CartPage() {
     return calculateMultiVehicleImportCosts({
       vehicles: items.map((i) => ({
         vehiclePriceUSD: i.vehiclePriceUSD,
-        vehicleSource: i.vehicleSource,
       })),
       shippingCost40ftUSD,
       xafRate: isXAF ? xafRate : 1,
@@ -223,13 +220,6 @@ export default function CartPage() {
                 <span>{formatCostLine(isXAF ? pv.vehiclePriceXAF : pv.vehiclePriceUSD)}</span>
               </div>
             ))}
-
-            {costs.exportTaxTotalUSD > 0 && (
-              <div className="flex justify-between">
-                <span className="text-[var(--text-muted)]">Taxe export ({costs.vehicleCount} véh.)</span>
-                <span>{formatCostLine(isXAF ? costs.exportTaxTotalXAF : costs.exportTaxTotalUSD)}</span>
-              </div>
-            )}
 
             <hr className="border-[var(--card-border)]" />
 
