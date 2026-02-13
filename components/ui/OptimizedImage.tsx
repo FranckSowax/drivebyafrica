@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const PLACEHOLDER_IMAGE = '/images/placeholder-car.svg';
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 1000; // 1 second
+const MAX_RETRIES = 1;
+const RETRY_DELAY = 2000; // 2 seconds
 
 // Chinese CDN domains that need proxy
 const CHINA_CDN_DOMAINS = [
@@ -156,8 +156,12 @@ export function OptimizedImage({
     // Don't retry expired signed URLs - they won't become valid again
     const expired = src ? isUrlExpired(src) : false;
 
-    // Try to retry before showing placeholder (only for non-expired transient errors)
-    if (!expired && retryCount < MAX_RETRIES && src && needsProxy(src)) {
+    // Don't retry proxy images (autoimg.cn) - they already have an 8s server-side timeout.
+    // If the Chinese server didn't respond in 8s, retrying will also timeout (504 cascade).
+    // Only retry non-proxy images (e.g. encar.com, dubicars.com) for transient network errors.
+    const isProxied = src ? src.includes('autoimg.cn') : false;
+
+    if (!expired && !isProxied && retryCount < MAX_RETRIES && src) {
       setTimeout(() => {
         setRetryCount(prev => prev + 1);
         setIsLoading(true);

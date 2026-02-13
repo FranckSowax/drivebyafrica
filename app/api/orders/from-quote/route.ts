@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { quoteId, paymentMethod, paymentReference } = body;
+    const { quoteId, paymentMethod, paymentReference, groupId } = body;
 
     if (!quoteId) {
       return NextResponse.json({ error: 'quoteId requis' }, { status: 400 });
@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Create order
+    const isGrouped = !!(quote.group_id || groupId);
+    const is40ft = quote.container_type === '40ft' || isGrouped;
+
     const orderNumber = quote.quote_number
       ? `ORD-${quote.quote_number.replace(/^(DBA-|QT-)/i, '')}`
       : `ORD-${Date.now().toString(36).toUpperCase()}`;
@@ -87,9 +90,9 @@ export async function POST(request: NextRequest) {
         destination_name: quote.destination_name,
         destination_id: quote.destination_id,
         destination_port: quote.destination_name || null,
-        shipping_method: 'container_20ft',
+        shipping_method: is40ft ? 'container_40ft' : 'container_20ft',
         shipping_type: quote.shipping_type || 'container',
-        container_type: 'shared',
+        container_type: is40ft ? '40ft' : 'shared',
         shipping_cost_xaf: quote.shipping_cost_xaf,
         insurance_cost_xaf: quote.insurance_cost_xaf,
         inspection_fee_xaf: quote.inspection_fee_xaf,
@@ -103,6 +106,8 @@ export async function POST(request: NextRequest) {
         customer_email: user.email,
         status: 'vehicle_locked',
         documents: {},
+        group_id: quote.group_id || groupId || null,
+        group_vehicle_count: quote.group_vehicle_count || 1,
       })
       .select()
       .single();
@@ -118,11 +123,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Create order_tracking record (use admin to bypass RLS)
+    const trackingDescription = isGrouped
+      ? `Le véhicule est maintenant réservé (Container 40ft - Groupe de ${quote.group_vehicle_count || 1} véhicules). Acompte de $1,000 reçu.`
+      : 'Le véhicule est maintenant réservé. Acompte de $1,000 reçu.';
     await (supabaseAdmin.from('order_tracking') as any).insert({
       order_id: order.id,
       status: 'vehicle_locked',
       title: 'Véhicule bloqué',
-      description: 'Le véhicule est maintenant réservé. Acompte de $1,000 reçu.',
+      description: trackingDescription,
     });
 
     // 4. Mark vehicle as reserved (use admin to bypass RLS)

@@ -32,6 +32,9 @@ export type Database = {
           valid_until: string;
           created_at: string;
           updated_at: string;
+          group_id: string | null;
+          group_vehicle_count: number;
+          container_type: string;
         };
         Insert: {
           id?: string;
@@ -55,6 +58,9 @@ export type Database = {
           valid_until: string;
           created_at?: string;
           updated_at?: string;
+          group_id?: string | null;
+          group_vehicle_count?: number;
+          container_type?: string;
         };
         Update: {
           id?: string;
@@ -78,6 +84,9 @@ export type Database = {
           valid_until?: string;
           created_at?: string;
           updated_at?: string;
+          group_id?: string | null;
+          group_vehicle_count?: number;
+          container_type?: string;
         };
         Relationships: [
           {
@@ -369,6 +378,8 @@ export type Database = {
           documents_sent_at: string | null;
           last_modified_by: string | null;
           last_modified_at: string | null;
+          group_id: string | null;
+          group_vehicle_count: number;
         };
         Insert: {
           id?: string;
@@ -429,6 +440,8 @@ export type Database = {
           documents_sent_at?: string | null;
           last_modified_by?: string | null;
           last_modified_at?: string | null;
+          group_id?: string | null;
+          group_vehicle_count?: number;
         };
         Update: {
           id?: string;
@@ -489,6 +502,8 @@ export type Database = {
           documents_sent_at?: string | null;
           last_modified_by?: string | null;
           last_modified_at?: string | null;
+          group_id?: string | null;
+          group_vehicle_count?: number;
         };
         Relationships: [
           {

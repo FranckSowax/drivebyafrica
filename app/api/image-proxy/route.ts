@@ -15,8 +15,9 @@ const ALLOWED_DOMAINS = [
   'autoimg.cn',  // CHE168 images
 ];
 
-// Timeout for fetching images (8 seconds - must be less than Netlify's 10s limit)
-const FETCH_TIMEOUT = 8000;
+// Timeout for fetching images (5 seconds - well within Netlify's 10s limit)
+// Chinese servers that don't respond in 5s rarely respond in 8s either
+const FETCH_TIMEOUT = 5000;
 
 /**
  * Calculate appropriate cache duration based on image URL expiry

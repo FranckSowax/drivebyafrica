@@ -53,6 +53,9 @@ interface Quote {
   vehicles?: {
     images?: string[];
   };
+  group_id?: string | null;
+  group_vehicle_count?: number;
+  container_type?: string;
 }
 
 const SOURCE_FLAGS: Record<string, string> = {
@@ -706,6 +709,11 @@ export default function QuotesPage() {
                       <span className="text-xs text-[var(--text-muted)] font-mono">
                         {quote.quote_number}
                       </span>
+                      {quote.container_type === '40ft' && (
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">
+                          40ft ({quote.group_vehicle_count || 1} véh.)
+                        </span>
+                      )}
                     </div>
 
                     {/* Vehicle title */}

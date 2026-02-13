@@ -84,7 +84,17 @@ interface Order {
   last_modified_by_color?: string | null;
   last_modified_at?: string | null;
   assigned_shipping_partner_id?: string | null;
+  group_id?: string | null;
+  group_vehicle_count?: number;
 }
+
+const GROUP_COLORS = [
+  'border-l-4 border-l-blue-500 bg-blue-50/30 dark:bg-blue-950/20',
+  'border-l-4 border-l-purple-500 bg-purple-50/30 dark:bg-purple-950/20',
+  'border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20',
+  'border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/20',
+  'border-l-4 border-l-rose-500 bg-rose-50/30 dark:bg-rose-950/20',
+];
 
 interface TrackingStep {
   status: string;
@@ -611,19 +621,40 @@ export default function AdminOrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => {
+                {(() => {
+                  // Build group color map for visual grouping
+                  const groupColorMap = new Map<string, number>();
+                  let colorIndex = 0;
+                  orders.forEach((o) => {
+                    if (o.group_id && !groupColorMap.has(o.group_id)) {
+                      groupColorMap.set(o.group_id, colorIndex % GROUP_COLORS.length);
+                      colorIndex++;
+                    }
+                  });
+                  // Track first occurrence of each group
+                  const groupFirstSeen = new Set<string>();
+
+                  return orders.map((order) => {
                   const status = statusConfig[order.order_status as keyof typeof statusConfig] || statusConfig.deposit_paid;
                   const flag = countryFlags[order.destination_country] || '🌍';
                   const progress = getStatusProgress(order.order_status);
+                  const groupClass = order.group_id ? GROUP_COLORS[groupColorMap.get(order.group_id) || 0] : '';
+                  const isFirstInGroup = order.group_id && !groupFirstSeen.has(order.group_id);
+                  if (order.group_id) groupFirstSeen.add(order.group_id);
 
                   return (
                     <tr
                       key={order.id}
-                      className="border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/50 transition-colors"
+                      className={`border-b border-[var(--card-border)]/50 hover:bg-[var(--surface)]/50 transition-colors ${groupClass}`}
                     >
                       <td className="py-4 px-4">
                         <div>
                           <span className="text-sm font-mono text-mandarin">{order.order_number}</span>
+                          {isFirstInGroup && order.group_vehicle_count && order.group_vehicle_count > 1 && (
+                            <span className="ml-1 text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">
+                              40ft ({order.group_vehicle_count} véh.)
+                            </span>
+                          )}
                           <p className="text-xs text-[var(--text-muted)]">
                             {formatDistanceToNow(new Date(order.updated_at), { addSuffix: true, locale: fr })}
                           </p>
@@ -757,7 +788,8 @@ export default function AdminOrdersPage() {
                       </td>
                     </tr>
                   );
-                })}
+                });
+                })()}
               </tbody>
             </table>
           </div>

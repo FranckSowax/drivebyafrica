@@ -256,6 +256,8 @@ export async function GET(request: Request) {
         last_modified_by_name: o.last_modified_by ? modifierProfiles[o.last_modified_by]?.full_name || null : null,
         last_modified_by_color: o.last_modified_by ? modifierProfiles[o.last_modified_by]?.badge_color || null : null,
         last_modified_at: o.last_modified_at || null,
+        group_id: o.group_id || null,
+        group_vehicle_count: o.group_vehicle_count || 1,
       };
     });
 

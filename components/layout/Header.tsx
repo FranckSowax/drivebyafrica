@@ -2,18 +2,20 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LocaleSwitcher } from '@/components/ui/LocaleSwitcher';
 import { NotificationBell } from '@/components/notifications';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useCartStore } from '@/store/useCartStore';
 import { AuthButtons } from './AuthButtons';
 import { UserMenu } from './UserMenu';
 
 export function Header() {
   const { user, isInitialized } = useAuthStore();
   const { theme, mounted } = useTheme();
+  const cartCount = useCartStore((state) => state.items.length);
 
   // Use dark logo as default during SSR to prevent flash
   // The inline script sets the correct theme before React hydrates
@@ -79,6 +81,20 @@ export function Header() {
 
           {/* Right Side - Responsive layout */}
           <div className="flex items-center gap-1.5 sm:gap-3">
+            {/* Cart Icon - visible when items in cart */}
+            {cartCount > 0 && (
+              <Link
+                href="/cart"
+                className="relative p-2 text-mandarin hover:text-mandarin/80 active:text-mandarin/60 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={`Panier (${cartCount} véhicule${cartCount > 1 ? 's' : ''})`}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                <span className="absolute -top-0.5 -right-0.5 bg-mandarin text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {cartCount}
+                </span>
+              </Link>
+            )}
+
             {/* Locale Switcher (Language & Currency) */}
             <LocaleSwitcher />
 

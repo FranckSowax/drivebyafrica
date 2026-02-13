@@ -25,6 +25,7 @@ import {
   Cog,
   ChevronDown,
   ChevronUp,
+  ShoppingCart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -47,6 +48,7 @@ import { formatMileage, formatEngineSize } from '@/lib/utils/formatters';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
+import { useCartStore } from '@/store/useCartStore';
 import type { Vehicle, VehicleSource, VehicleStatus } from '@/types/vehicle';
 
 // Admin emails that can see the vehicle ID
@@ -92,6 +94,9 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
   const toast = useToast();
   const { formatPrice } = useCurrency();
   const user = useAuthStore((state) => state.user);
+  const cartItems = useCartStore((state) => state.items);
+  const addToCart = useCartStore((state) => state.addItem);
+  const canAddToCart = useCartStore((state) => state.canAdd);
 
   // Check if current user is admin
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
@@ -424,6 +429,47 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                       vehicleSource={source}
                     />
                   ) : null;
+                })()}
+
+                {/* Add to Cart Button - for multi-vehicle 40ft container quotes */}
+                {(() => {
+                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                  if (price == null || vehicleStatus !== 'available') return null;
+                  const isInCart = cartItems.some((i) => i.vehicleId === vehicle.id);
+                  const check = canAddToCart(source);
+                  const disabled = isInCart || !check.allowed;
+                  const tooltip = isInCart
+                    ? 'Déjà dans le panier'
+                    : !check.allowed
+                    ? check.reason
+                    : undefined;
+                  return (
+                    <Button
+                      variant="outline"
+                      className="w-full border-mandarin text-mandarin hover:bg-mandarin/10"
+                      disabled={disabled}
+                      title={tooltip}
+                      onClick={() => {
+                        const result = addToCart({
+                          vehicleId: vehicle.id,
+                          vehicleSource: source,
+                          vehicleMake: vehicle.make || 'Unknown',
+                          vehicleModel: vehicle.model || 'Unknown',
+                          vehicleYear: vehicle.year || new Date().getFullYear(),
+                          vehiclePriceUSD: price,
+                          imageUrl: images[0] !== '/images/placeholder-car.svg' ? images[0] : null,
+                        });
+                        if (result.success) {
+                          toast.success('Véhicule ajouté au panier container 40 pieds');
+                        } else if (result.error) {
+                          toast.error(result.error);
+                        }
+                      }}
+                      leftIcon={<ShoppingCart className="w-4 h-4" />}
+                    >
+                      {isInCart ? 'Dans le panier' : 'Ajouter au panier (40 pieds)'}
+                    </Button>
+                  );
                 })()}
 
                 {/* Ask Question Button - only show after destination and shipping type are selected */}

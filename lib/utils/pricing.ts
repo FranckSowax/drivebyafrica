@@ -33,6 +33,10 @@ export function getEffectiveVehiclePrice(priceUSD: number, source: string): numb
   return priceUSD + getExportTax(source);
 }
 
+// Deposit amounts
+export const DEPOSIT_PER_VEHICLE_USD = 1000;
+export const DEPOSIT_PER_VEHICLE_XAF = 600000;
+
 /**
  * Calculate all import costs for a vehicle
  * @param params - Calculation parameters
@@ -90,5 +94,79 @@ export function calculateImportCosts(params: {
     insuranceCostXAF: Math.round(insuranceCostXAF),
     inspectionFeeXAF: Math.round(inspectionFeeXAF),
     totalXAF: Math.round(totalXAF),
+  };
+}
+
+/**
+ * Calculate import costs for multiple vehicles sharing a 40ft container
+ */
+export function calculateMultiVehicleImportCosts(params: {
+  vehicles: Array<{ vehiclePriceUSD: number; vehicleSource: string }>;
+  shippingCost40ftUSD: number;
+  xafRate: number;
+}): {
+  vehicleCount: number;
+  vehiclesTotalUSD: number;
+  vehiclesTotalXAF: number;
+  exportTaxTotalUSD: number;
+  exportTaxTotalXAF: number;
+  shippingCost40ftUSD: number;
+  shippingCost40ftXAF: number;
+  insuranceCostXAF: number;
+  inspectionFeeTotalXAF: number;
+  depositTotalUSD: number;
+  depositTotalXAF: number;
+  totalXAF: number;
+  perVehicle: Array<{
+    vehiclePriceUSD: number;
+    vehiclePriceXAF: number;
+    exportTaxUSD: number;
+    exportTaxXAF: number;
+    inspectionFeeXAF: number;
+  }>;
+} {
+  const { vehicles, shippingCost40ftUSD, xafRate } = params;
+  const count = vehicles.length;
+
+  // Per-vehicle calculations
+  const perVehicle = vehicles.map((v) => {
+    const exportTaxUSD = getExportTax(v.vehicleSource);
+    return {
+      vehiclePriceUSD: v.vehiclePriceUSD,
+      vehiclePriceXAF: Math.round(v.vehiclePriceUSD * xafRate),
+      exportTaxUSD,
+      exportTaxXAF: Math.round(exportTaxUSD * xafRate),
+      inspectionFeeXAF: INSPECTION_FEE_XAF,
+    };
+  });
+
+  // Totals
+  const vehiclesTotalUSD = vehicles.reduce((s, v) => s + v.vehiclePriceUSD, 0);
+  const vehiclesTotalXAF = Math.round(vehiclesTotalUSD * xafRate);
+  const exportTaxTotalUSD = perVehicle.reduce((s, v) => s + v.exportTaxUSD, 0);
+  const exportTaxTotalXAF = Math.round(exportTaxTotalUSD * xafRate);
+  const shippingCost40ftXAF = Math.round(shippingCost40ftUSD * xafRate);
+  const inspectionFeeTotalXAF = INSPECTION_FEE_XAF * count;
+
+  // Insurance: 2.5% of (vehicles + export taxes + shipping)
+  const insuranceBase = vehiclesTotalXAF + exportTaxTotalXAF + shippingCost40ftXAF;
+  const insuranceCostXAF = Math.round(insuranceBase * INSURANCE_RATE);
+
+  const totalXAF = vehiclesTotalXAF + exportTaxTotalXAF + shippingCost40ftXAF + insuranceCostXAF + inspectionFeeTotalXAF;
+
+  return {
+    vehicleCount: count,
+    vehiclesTotalUSD,
+    vehiclesTotalXAF,
+    exportTaxTotalUSD,
+    exportTaxTotalXAF,
+    shippingCost40ftUSD,
+    shippingCost40ftXAF,
+    insuranceCostXAF,
+    inspectionFeeTotalXAF,
+    depositTotalUSD: DEPOSIT_PER_VEHICLE_USD * count,
+    depositTotalXAF: DEPOSIT_PER_VEHICLE_XAF * count,
+    totalXAF,
+    perVehicle,
   };
 }
