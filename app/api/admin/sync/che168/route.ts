@@ -3,12 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { getChe168Client } from '@/lib/api/che168';
 import { mapChe168ToVehicle } from '@/lib/api/che168-sync';
 import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // POST - Trigger CHE168 sync
 export async function POST(request: NextRequest) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) return adminCheck.response;
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return NextResponse.json({ error: 'Missing Supabase credentials' }, { status: 500 });
   }
@@ -183,6 +187,9 @@ export async function POST(request: NextRequest) {
 
 // GET - Get CHE168 stats
 export async function GET() {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) return adminCheck.response;
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return NextResponse.json({ error: 'Missing Supabase credentials' }, { status: 500 });
   }

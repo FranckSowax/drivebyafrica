@@ -153,9 +153,8 @@ export function ShippingEstimator({
         if (data.lastUpdatedAt) {
           setLastUpdatedAt(data.lastUpdatedAt);
         }
-      } catch (error) {
-        console.error('Error fetching shipping destinations:', error);
-        // Garder les destinations de secours
+      } catch {
+        // Silently ignore - keep fallback destinations
       } finally {
         setIsLoadingDestinations(false);
       }
@@ -337,8 +336,6 @@ export function ShippingEstimator({
   };
 
   const handleRequestQuote = async () => {
-    console.log('ShippingEstimator: handleRequestQuote clicked, user:', !!user, 'dest:', !!selectedDestination);
-
     if (!selectedDestination) {
       toast.error('Veuillez sélectionner une destination');
       return;
@@ -366,18 +363,16 @@ export function ShippingEstimator({
           const data = await response.json();
           if (data.convertedAmount) {
             setRealTimePriceUSD(Math.round(data.convertedAmount));
-            console.log(`ShippingEstimator: Converted ${displayedPriceLocal} ${displayCurrency} to ${data.convertedAmount} USD (rate: ${data.rate})`);
           }
         }
-      } catch (error) {
-        console.warn('Failed to fetch real-time rate, using stored price:', error);
+      } catch {
+        // Silently ignore - fall back to stored price
       } finally {
         setIsLoadingRealTimePrice(false);
       }
     }
 
     // Open the quote modal
-    console.log('ShippingEstimator: Opening Quote Modal');
     setIsQuoteModalOpen(true);
   };
 

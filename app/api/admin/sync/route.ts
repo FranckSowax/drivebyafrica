@@ -10,9 +10,13 @@ import {
 } from '@/lib/api/encar-sync';
 import { getEncarClient } from '@/lib/api/encar';
 import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 // POST - Trigger sync
 export async function POST(request: NextRequest) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) return adminCheck.response;
+
   try {
     const body = await request.json();
     const { mode = 'changes', mark, maxPages } = body;
@@ -98,6 +102,9 @@ export async function POST(request: NextRequest) {
 
 // GET - Get sync status
 export async function GET() {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) return adminCheck.response;
+
   try {
     const changeId = await getLastSyncedChangeId();
 

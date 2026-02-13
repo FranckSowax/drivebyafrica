@@ -12,11 +12,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Only call initialize once per mount, and only if not already initialized
     if (!initCalled.current && !isInitialized) {
       initCalled.current = true;
-      console.log('AuthProvider: Calling initialize()');
-      initialize().then(() => {
-        console.log('AuthProvider: initialize() completed');
-      }).catch((err) => {
-        console.error('AuthProvider: initialize() error:', err);
+      initialize().catch(() => {
+        // Silently ignore initialization errors
       });
     }
   }, [initialize, isInitialized]);

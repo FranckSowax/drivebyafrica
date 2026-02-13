@@ -74,8 +74,7 @@ export default function OrdersPage() {
           pendingQuotes,
           vehicles,
         });
-      } catch (err) {
-        console.error('Orders fetch error:', err);
+      } catch {
         setError('Impossible de charger les commandes');
       } finally {
         setIsLoading(false);

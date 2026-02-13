@@ -87,8 +87,8 @@ export default function CollaboratorVehiclesPage() {
         setTotal(data.total || 0);
         setTotalPages(data.totalPages || 1);
       }
-    } catch (error) {
-      console.error('Error fetching vehicles:', error);
+    } catch {
+      // Silently ignore fetch errors
     } finally {
       setLoading(false);
     }
@@ -120,8 +120,7 @@ export default function CollaboratorVehiclesPage() {
       } else {
         alert('Failed to delete vehicle');
       }
-    } catch (error) {
-      console.error('Error deleting vehicle:', error);
+    } catch {
       alert('Error deleting vehicle');
     }
   };

@@ -214,9 +214,8 @@ export default function AdminDashboardPage() {
       if (!response.ok) throw new Error('Erreur lors du chargement');
       const result = await response.json();
       setData(result);
-    } catch (err) {
+    } catch {
       setError('Erreur lors du chargement des données');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -516,8 +515,8 @@ export default function AdminDashboardPage() {
                   if (res.ok) {
                     fetchData();
                   }
-                } catch (e) {
-                  console.error('Error recording count:', e);
+                } catch {
+                  // Silently ignore
                 }
               }}
               title="Enregistrer le comptage actuel"

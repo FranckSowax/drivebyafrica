@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         'CDN-Cache-Control': finalCacheControl,
         'Netlify-CDN-Cache-Control': finalCacheControl,
         'Netlify-Vary': 'query',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_SITE_URL || 'https://drivebyafrica.netlify.app',
       },
     });
   } catch (error) {

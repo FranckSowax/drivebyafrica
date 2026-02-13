@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { recordVehicleCountSnapshot } from '@/lib/vehicle-count-snapshot';
+import { requireAdmin } from '@/lib/auth/admin-check';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -129,6 +130,9 @@ async function fetchOffersPage(page: number): Promise<{ offers: ApiOffer[]; hasM
 
 // POST - Trigger Dongchedi sync
 export async function POST(request: NextRequest) {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) return adminCheck.response;
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return NextResponse.json({ error: 'Missing Supabase credentials' }, { status: 500 });
   }
@@ -262,6 +266,9 @@ export async function POST(request: NextRequest) {
 
 // GET - Get Dongchedi stats
 export async function GET() {
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.isAdmin) return adminCheck.response;
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return NextResponse.json({ error: 'Missing Supabase credentials' }, { status: 500 });
   }

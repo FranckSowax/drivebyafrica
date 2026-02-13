@@ -9,8 +9,8 @@ interface AdminAuthGuardProps {
 }
 
 /**
- * Garde d'authentification simplifiée pour les pages admin
- * Vérifie le rôle via l'API avec le token Authorization (localStorage-based auth)
+ * Garde d'authentification pour les pages admin.
+ * Vérifie le rôle via /api/admin/check-role (cookie-based auth via Supabase SSR).
  */
 export function AdminAuthGuard({ children }: AdminAuthGuardProps) {
   const pathname = usePathname();
