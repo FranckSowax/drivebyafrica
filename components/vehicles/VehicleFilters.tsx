@@ -316,9 +316,11 @@ function ActiveFilterBadge({ label, onClear }: { label: string; onClear: () => v
 interface VehicleFiltersProps {
   onApply?: () => void;
   className?: string;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
 }
 
-export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
+export function VehicleFilters({ onApply, className, hideHeader, hideFooter }: VehicleFiltersProps) {
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
   const { currencyInfo, formatPrice } = useCurrency();
@@ -540,39 +542,41 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   return (
     <div className={cn('bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl overflow-hidden', className)}>
       {/* Header */}
-      <div className="px-5 py-4 bg-gradient-to-r from-mandarin/5 to-transparent border-b border-[var(--card-border)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-mandarin/10 flex items-center justify-center">
-              <Filter className="w-5 h-5 text-mandarin" />
+      {!hideHeader && (
+        <div className="px-5 py-4 bg-gradient-to-r from-mandarin/5 to-transparent border-b border-[var(--card-border)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-mandarin/10 flex items-center justify-center">
+                <Filter className="w-5 h-5 text-mandarin" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
+                {activeFiltersCount > 0 && (
+                  <p className="text-xs text-mandarin">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
-              {activeFiltersCount > 0 && (
-                <p className="text-xs text-mandarin">{activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''} actif{activeFiltersCount > 1 ? 's' : ''}</p>
-              )}
-            </div>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-muted)] hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Réinitialiser
+              </button>
+            )}
           </div>
-          {activeFiltersCount > 0 && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-muted)] hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Réinitialiser
-            </button>
+
+          {/* Active Filter Badges */}
+          {activeBadges.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {activeBadges.map((badge, index) => (
+                <ActiveFilterBadge key={index} label={badge.label} onClear={badge.onClear} />
+              ))}
+            </div>
           )}
         </div>
-
-        {/* Active Filter Badges */}
-        {activeBadges.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4">
-            {activeBadges.map((badge, index) => (
-              <ActiveFilterBadge key={index} label={badge.label} onClear={badge.onClear} />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Filters Content */}
       <div className="p-5 space-y-4">
@@ -718,20 +722,22 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
       </div>
 
       {/* Footer Actions */}
-      <div className="px-5 py-4 bg-[var(--surface)] border-t border-[var(--card-border)]">
-        <Button
-          variant="primary"
-          className="w-full h-12 text-base font-semibold"
-          onClick={onApply}
-        >
-          Appliquer les filtres
-          {activeFiltersCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-              {activeFiltersCount}
-            </span>
-          )}
-        </Button>
-      </div>
+      {!hideFooter && (
+        <div className="px-5 py-4 bg-[var(--surface)] border-t border-[var(--card-border)]">
+          <Button
+            variant="primary"
+            className="w-full h-12 text-base font-semibold"
+            onClick={onApply}
+          >
+            Appliquer les filtres
+            {activeFiltersCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                {activeFiltersCount}
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

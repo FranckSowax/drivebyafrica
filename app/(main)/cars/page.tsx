@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { SlidersHorizontal, X, Sparkles, AlertTriangle } from 'lucide-react';
+import { SlidersHorizontal, X, Sparkles, AlertTriangle, RotateCcw } from 'lucide-react';
 import { VehicleGrid, VehicleFilters, SmartSearchBar } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -245,24 +245,53 @@ export default function CarsPage() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowMobileFilters(false)}
           />
-          <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-[var(--card-bg)] overflow-y-auto">
-            <div className="sticky top-0 flex items-center justify-between p-4 bg-[var(--card-bg)] border-b border-[var(--card-border)]">
+          <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-[var(--card-bg)] flex flex-col">
+            {/* Sticky header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[var(--card-bg)] border-b border-[var(--card-border)] flex-shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    useFilterStore.getState().resetFilters();
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-muted)] hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Réinitialiser
+                </button>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="p-4">
+
+            {/* Scrollable filter content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               <VehicleFilters
-                onApply={() => {
+                className="border-0 rounded-none"
+                hideHeader
+                hideFooter
+              />
+            </div>
+
+            {/* Sticky footer with apply button */}
+            <div
+              className="flex-shrink-0 px-4 pt-3 bg-[var(--card-bg)] border-t border-[var(--card-border)]"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+            >
+              <Button
+                variant="primary"
+                className="w-full h-12 text-base font-semibold"
+                onClick={() => {
                   refetch();
                   setShowMobileFilters(false);
                 }}
-                className="border-0"
-              />
+              >
+                Voir les résultats
+              </Button>
             </div>
           </div>
         </div>
