@@ -16,6 +16,7 @@ export interface VehicleFiltersData {
   bodyTypes: string[];
   colors: string[];
   years: { min: number; max: number };
+  totalCount: number;
   isLoading: boolean;
   error: string | null;
 }
@@ -255,6 +256,7 @@ interface FilterData {
   colors: string[];
   minYear: number;
   maxYear: number;
+  totalCount: number;
 }
 
 /**
@@ -283,6 +285,7 @@ async function fetchFilters(): Promise<FilterData> {
     colors: data.colors || [],
     minYear: data.minYear || 2000,
     maxYear: data.maxYear || new Date().getFullYear(),
+    totalCount: data.totalCount || 0,
   };
 }
 
@@ -313,6 +316,7 @@ export function useVehicleFilters(): VehicleFiltersData {
       min: data?.minYear || 2000,
       max: data?.maxYear || new Date().getFullYear(),
     },
+    totalCount: data?.totalCount || 0,
     isLoading,
     error: error instanceof Error ? error.message : error ? String(error) : null,
   }), [data, isLoading, error]);

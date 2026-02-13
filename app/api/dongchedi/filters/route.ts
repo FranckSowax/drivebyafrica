@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getFilters, DONGCHEDI_POPULAR_BRANDS } from '@/lib/api/dongchedi';
 
+// Cache for 1 hour — filter options rarely change
+export const revalidate = 3600;
+
 /**
  * GET /api/dongchedi/filters
  *
@@ -25,6 +28,10 @@ export async function GET() {
       driveTypes: filters.drive_type,
       // Full brand/model/complectation hierarchy
       hierarchy: filters.mark,
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
+      },
     });
   } catch (error) {
     console.error('Dongchedi filters error:', error);

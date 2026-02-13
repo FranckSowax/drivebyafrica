@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, startTransition } from 'react';
 import {
   X,
   ChevronDown,
@@ -323,6 +323,19 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
   const { currencyInfo, formatPrice } = useCurrency();
   const currentYear = new Date().getFullYear();
 
+  // Debounced setFilters for multi-select changes (makes, models)
+  // Prevents firing an API call for each individual selection
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setFiltersDebounced = useCallback((updates: Parameters<typeof setFilters>[0]) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      startTransition(() => {
+        setFilters(updates);
+      });
+    }, 500);
+  }, [setFilters]);
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
   // Price filter constants (in USD)
   const PRICE_MIN_USD = 0;
   const PRICE_MAX_USD = 200000;
@@ -556,7 +569,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
           onChange={() => {}}
           multiple
           selectedValues={filters.makes || []}
-          onMultiChange={(values) => setFilters({ makes: values, models: [] })}
+          onMultiChange={(values) => setFiltersDebounced({ makes: values, models: [] })}
           isLoading={vehicleFilters.isLoading}
           searchable
         />
@@ -571,7 +584,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
             onChange={() => {}}
             multiple
             selectedValues={filters.models || []}
-            onMultiChange={(values) => setFilters({ models: values })}
+            onMultiChange={(values) => setFiltersDebounced({ models: values })}
             searchable
           />
         )}

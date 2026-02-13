@@ -22,8 +22,35 @@ export async function GET() {
   const supabase = getSupabaseAdmin();
 
   try {
-    // Run all distinct queries in parallel for best performance
-    // Using raw SQL via rpc would be faster, but these queries are still efficient with proper indexes
+    // Try using the optimized SQL function (1 query instead of 8+)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_vehicle_filter_options');
+
+    if (!rpcError && rpcData) {
+      // RPC succeeded — also fetch total count for the search bar
+      const { count } = await supabase
+        .from('vehicles')
+        .select('*', { count: 'estimated', head: true })
+        .eq('is_visible', true);
+
+      return NextResponse.json({
+        makes: rpcData.makes || [],
+        transmissions: rpcData.transmissions || [],
+        fuelTypes: rpcData.fuel_types || [],
+        driveTypes: rpcData.drive_types || [],
+        bodyTypes: rpcData.body_types || [],
+        colors: rpcData.colors || [],
+        minYear: rpcData.min_year || 2000,
+        maxYear: rpcData.max_year || new Date().getFullYear(),
+        totalCount: count || 0,
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',
+        },
+      });
+    }
+
+    // Fallback: run parallel queries if RPC function doesn't exist yet
     const [
       makesResult,
       transmissionsResult,
@@ -32,9 +59,8 @@ export async function GET() {
       bodyTypesResult,
       colorsResult,
       yearsResult,
+      countResult,
     ] = await Promise.all([
-      // Get all distinct makes (sampling 50k from each source to ensure coverage)
-      // This approach works around the lack of DISTINCT in PostgREST
       Promise.all([
         supabase
           .from('vehicles')
@@ -94,20 +120,23 @@ export async function GET() {
         .eq('is_visible', true)
         .not('year', 'is', null)
         .limit(10000),
+      supabase
+        .from('vehicles')
+        .select('*', { count: 'estimated', head: true })
+        .eq('is_visible', true),
     ]);
 
-    // Merge makes from all sources
-    const allMakes: string[] = [];
+    // Merge makes from all sources using Set directly
+    const makesSet = new Set<string>();
     for (const result of makesResult) {
       if (result.data) {
         for (const row of result.data) {
-          if (row.make) allMakes.push(row.make);
+          if (row.make) makesSet.add(row.make);
         }
       }
     }
 
-    // Extract unique values
-    const makes = [...new Set(allMakes)].sort();
+    const makes = [...makesSet].sort();
     const transmissions = [...new Set(
       transmissionsResult.data?.map(r => r.transmission).filter((v): v is string => !!v) || []
     )].sort();
@@ -124,7 +153,6 @@ export async function GET() {
       colorsResult.data?.map(r => r.color).filter((v): v is string => !!v) || []
     )].sort();
 
-    // Get year range
     const years = yearsResult.data?.map(r => r.year).filter((y): y is number => y !== null) || [];
     const minYear = years.length > 0 ? Math.min(...years) : 2000;
     const maxYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
@@ -138,6 +166,7 @@ export async function GET() {
       colors,
       minYear,
       maxYear,
+      totalCount: countResult.count || 0,
     }, {
       headers: {
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600',

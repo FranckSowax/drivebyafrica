@@ -506,16 +506,22 @@ export function SearchFilterBar() {
   const vehicleFilters = useVehicleFilters();
   const { currency, currencyInfo } = useLocaleStore();
 
-  // Get total vehicle count (no filters)
-  const { totalCount: totalVehicles, isLoading: isTotalLoading } = useVehicles({
-    filters: EMPTY_FILTERS,
-    page: 1,
-    limit: 1
-  });
+  // Total count comes from the cached filter options (no extra API call)
+  const totalVehicles = vehicleFilters.totalCount;
+  const isTotalLoading = vehicleFilters.isLoading;
 
-  // Get filtered vehicle count
+  // Only fetch filtered count when user has active filters
+  const hasActiveFilters = !!(
+    (filters.makes && filters.makes.length > 0) ||
+    filters.priceTo !== undefined ||
+    filters.yearFrom !== undefined ||
+    filters.mileageMax !== undefined ||
+    filters.transmission ||
+    (filters.source && filters.source !== 'all')
+  );
+
   const { totalCount: filteredCount, isLoading: isFilteredLoading } = useVehicles({
-    filters,
+    filters: hasActiveFilters ? filters : EMPTY_FILTERS,
     page: 1,
     limit: 1
   });
@@ -566,16 +572,6 @@ export function SearchFilterBar() {
   const handleReset = () => {
     resetFilters();
   };
-
-  // Check if any filters are active
-  const hasActiveFilters = !!(
-    (filters.makes && filters.makes.length > 0) ||
-    filters.priceTo !== undefined ||
-    filters.yearFrom !== undefined ||
-    filters.mileageMax !== undefined ||
-    filters.transmission ||
-    (filters.source && filters.source !== 'all')
-  );
 
   // Format count for display - show exact number with space separator
   // Use manual formatting to avoid hydration mismatch between server/client locales
@@ -706,14 +702,14 @@ export function SearchFilterBar() {
               onClick={handleSearch}
               className="h-[50px] px-5 shadow-lg shadow-mandarin/25"
             >
-              {isFilteredLoading ? (
+              {isFilteredLoading && hasActiveFilters ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
                   <Search className="w-5 h-5" />
-                  {filteredCount > 0 && (
+                  {(hasActiveFilters ? filteredCount : totalVehicles) > 0 && (
                     <span className="ml-2 px-2.5 py-0.5 bg-white/20 rounded-full text-xs font-bold">
-                      {formatCount(filteredCount)}
+                      {formatCount(hasActiveFilters ? filteredCount : totalVehicles)}
                     </span>
                   )}
                 </>
