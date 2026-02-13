@@ -137,11 +137,11 @@ function buildQueryString(
     params.append('created_at', `gte.${since}`);
   }
 
-  // Apply search across make, model, grade, and source_id
-  // Minimum 2 characters to balance performance with usability
+  // Apply search across make and model only
+  // Avoid grade/source_id ILIKE — short terms like "i3" match too many rows and cause 500 timeouts
   if (filters?.search && filters.search.trim().length >= 2) {
     const searchTerm = filters.search.trim();
-    params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*,grade.ilike.*${searchTerm}*,source_id.ilike.*${searchTerm}*)`);
+    params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
   }
 
   // Apply sorting - use id as secondary sort for consistency
@@ -228,9 +228,11 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use exact count when filters narrow the result set (safe, accurate)
-      // Use estimated count for unfiltered queries (190k+ rows would timeout with exact)
-      'Prefer': hasActiveFilters(filters) ? 'count=exact' : 'count=estimated',
+      // Use estimated count for unfiltered queries (190k+ rows) and text search (ILIKE is slow)
+      // Use exact count only for non-search filters that narrow the set efficiently
+      'Prefer': hasActiveFilters(filters) && !(filters?.search && filters.search.trim().length >= 2)
+        ? 'count=exact'
+        : 'count=estimated',
     },
   });
 
