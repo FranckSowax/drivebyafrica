@@ -155,6 +155,7 @@ export default function CarsPage() {
                 value={searchQuery}
                 onChange={setSearchQuery}
                 onSubmit={handleSearch}
+                isLoading={isLoading && !!searchQuery}
                 className="flex-1"
               />
 
