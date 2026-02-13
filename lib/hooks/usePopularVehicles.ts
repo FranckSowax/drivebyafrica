@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 import type { Vehicle } from '@/types/vehicle';
 
-const FEATURED_BRANDS = ['jetour', 'changan', 'toyota', 'haval', 'zeekr', 'byd', 'geely'];
+// Use exact brand names (case-sensitive, matching DB values) for fast in() query
+// instead of ilike wildcards which cause timeouts on 190k+ rows
+const FEATURED_BRANDS = ['Jetour', 'Changan', 'Toyota', 'Haval', 'Zeekr', 'BYD', 'Geely', 'JETOUR', 'CHANGAN', 'HAVAL', 'ZEEKR'];
 
 /**
  * Check if the first image URL of a vehicle has a valid (non-expired) signed URL
@@ -41,7 +43,8 @@ async function fetchPopularVehicles(): Promise<Vehicle[]> {
 
   params.append('status', 'eq.available');
   params.append('is_visible', 'eq.true');
-  params.append('or', `(${FEATURED_BRANDS.map(b => `make.ilike.*${b}*`).join(',')})`);
+  // Use in() for exact match — much faster than 7 ilike wildcards on 190k+ rows
+  params.append('make', `in.(${FEATURED_BRANDS.join(',')})`);
   params.set('order', 'favorites_count.desc.nullslast,views_count.desc.nullslast');
   params.set('limit', '12');
 
