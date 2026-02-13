@@ -431,47 +431,6 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   ) : null;
                 })()}
 
-                {/* Add to Cart Button - for multi-vehicle 40ft container quotes */}
-                {(() => {
-                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
-                  if (price == null || vehicleStatus !== 'available') return null;
-                  const isInCart = cartItems.some((i) => i.vehicleId === vehicle.id);
-                  const check = canAddToCart(source);
-                  const disabled = isInCart || !check.allowed;
-                  const tooltip = isInCart
-                    ? 'Déjà dans le panier'
-                    : !check.allowed
-                    ? check.reason
-                    : undefined;
-                  return (
-                    <Button
-                      variant="outline"
-                      className="w-full border-mandarin text-mandarin hover:bg-mandarin/10"
-                      disabled={disabled}
-                      title={tooltip}
-                      onClick={() => {
-                        const result = addToCart({
-                          vehicleId: vehicle.id,
-                          vehicleSource: source,
-                          vehicleMake: vehicle.make || 'Unknown',
-                          vehicleModel: vehicle.model || 'Unknown',
-                          vehicleYear: vehicle.year || new Date().getFullYear(),
-                          vehiclePriceUSD: price + getExportTax(source), // FOB price (includes export tax)
-                          imageUrl: images[0] !== '/images/placeholder-car.svg' ? images[0] : null,
-                        });
-                        if (result.success) {
-                          toast.success('Véhicule ajouté au panier container 40 pieds');
-                        } else if (result.error) {
-                          toast.error(result.error);
-                        }
-                      }}
-                      leftIcon={<ShoppingCart className="w-4 h-4" />}
-                    >
-                      {isInCart ? 'Dans le panier' : 'Multi-Véhicules - Ajouter au panier'}
-                    </Button>
-                  );
-                })()}
-
                 {/* Ask Question Button - only show after destination and shipping type are selected */}
                 {isShippingSelected && (
                   <Button
@@ -483,6 +442,52 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     Poser une question
                   </Button>
                 )}
+
+                {/* Add to Cart Button - visible only after destination selected */}
+                {isShippingSelected && (() => {
+                  const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
+                  if (price == null || vehicleStatus !== 'available') return null;
+                  const isInCart = cartItems.some((i) => i.vehicleId === vehicle.id);
+                  const check = canAddToCart(source);
+                  const disabled = isInCart || !check.allowed;
+                  const tooltip = isInCart
+                    ? 'Déjà dans le panier'
+                    : !check.allowed
+                    ? check.reason
+                    : undefined;
+                  return (
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Pour acheter plusieurs véhicules et grouper le transport, cliquez sur le bouton ci-dessous.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full border-mandarin text-mandarin hover:bg-mandarin/10"
+                        disabled={disabled}
+                        title={tooltip}
+                        onClick={() => {
+                          const result = addToCart({
+                            vehicleId: vehicle.id,
+                            vehicleSource: source,
+                            vehicleMake: vehicle.make || 'Unknown',
+                            vehicleModel: vehicle.model || 'Unknown',
+                            vehicleYear: vehicle.year || new Date().getFullYear(),
+                            vehiclePriceUSD: price + getExportTax(source),
+                            imageUrl: images[0] !== '/images/placeholder-car.svg' ? images[0] : null,
+                          });
+                          if (result.success) {
+                            toast.success('Véhicule ajouté au panier container 40 pieds');
+                          } else if (result.error) {
+                            toast.error(result.error);
+                          }
+                        }}
+                        leftIcon={<ShoppingCart className="w-4 h-4" />}
+                      >
+                        {isInCart ? 'Dans le panier' : 'Multi-Véhicules - Ajouter au panier'}
+                      </Button>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex gap-3">
                   <Button
