@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, useCallback, startTransition } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   X,
   ChevronDown,
@@ -385,15 +386,30 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
     [vehicleFilters.brands]
   );
 
+  // Fetch models dynamically when makes are selected
+  const { data: modelsData, isLoading: modelsLoading } = useQuery({
+    queryKey: ['vehicleModels', filters.makes],
+    queryFn: async () => {
+      if (!filters.makes || filters.makes.length === 0) return {};
+      const response = await fetch(`/api/vehicles/models?makes=${filters.makes.join(',')}`);
+      if (!response.ok) return {};
+      const data = await response.json();
+      return data.models as Record<string, string[]>;
+    },
+    enabled: !!filters.makes && filters.makes.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
   const modelOptions = useMemo(() => {
-    if (!filters.makes || filters.makes.length === 0) return [];
+    if (!filters.makes || filters.makes.length === 0 || !modelsData) return [];
     const models: string[] = [];
     for (const make of filters.makes) {
-      const makeModels = vehicleFilters.models[make] || [];
+      const makeModels = modelsData[make] || [];
       models.push(...makeModels);
     }
     return [...new Set(models)].sort().map(model => ({ value: model, label: model }));
-  }, [filters.makes, vehicleFilters.models]);
+  }, [filters.makes, modelsData]);
 
   const transmissionOptions = useMemo(() =>
     vehicleFilters.transmissionTypes.map(t => ({
@@ -575,7 +591,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
         />
 
         {/* Models - Multi Select (only if makes are selected) */}
-        {filters.makes && filters.makes.length > 0 && modelOptions.length > 0 && (
+        {filters.makes && filters.makes.length > 0 && (modelsLoading || modelOptions.length > 0) && (
           <FilterDropdown
             label="Modèle"
             icon={<Car className="w-4 h-4" />}
@@ -585,6 +601,7 @@ export function VehicleFilters({ onApply, className }: VehicleFiltersProps) {
             multiple
             selectedValues={filters.models || []}
             onMultiChange={(values) => setFiltersDebounced({ models: values })}
+            isLoading={modelsLoading}
             searchable
           />
         )}

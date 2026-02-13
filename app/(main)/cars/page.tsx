@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { SlidersHorizontal, X, Sparkles } from 'lucide-react';
+import { SlidersHorizontal, X, Sparkles, AlertTriangle } from 'lucide-react';
 import { VehicleGrid, VehicleFilters, SmartSearchBar } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -51,7 +51,7 @@ export default function CarsPage() {
 
   // Use vehicles hook with current filters
   // Always pass filters to ensure data loads (defaultFilters are used before hydration)
-  const { vehicles, isLoading, totalCount, refetch } = useVehicles({
+  const { vehicles, isLoading, error, totalCount, refetch } = useVehicles({
     filters,
     page,
     limit: ITEMS_PER_PAGE,
@@ -204,6 +204,14 @@ export default function CarsPage() {
                 </p>
               </div>
             </div>
+
+            {/* Search Error Banner */}
+            {error && (
+              <div className="mb-6 flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{error.message}</span>
+              </div>
+            )}
 
             {/* Vehicle Grid */}
             <VehicleGrid

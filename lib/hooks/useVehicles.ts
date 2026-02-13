@@ -137,12 +137,8 @@ function buildQueryString(
     params.append('created_at', `gte.${since}`);
   }
 
-  // Apply search across make and model only
-  // Avoid grade/source_id ILIKE — short terms like "i3" match too many rows and cause 500 timeouts
-  if (filters?.search && filters.search.trim().length >= 2) {
-    const searchTerm = filters.search.trim();
-    params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
-  }
+  // Search is handled by /api/vehicles/search route (service_role, no timeout)
+  // No ILIKE here — buildQueryString is only used for non-search queries
 
   // Apply sorting - use id as secondary sort for consistency
   let orderBy = 'id.desc';
@@ -199,15 +195,57 @@ function hasActiveFilters(filters: VehicleFilters | undefined): boolean {
     filters.color ||
     filters.bodyType ||
     filters.status ||
-    filters.newArrivals ||
-    (filters.search && filters.search.trim().length >= 2)
+    filters.newArrivals
   );
 }
 
 /**
- * Fetch vehicles directly via PostgREST API (bypasses Supabase client auth issues)
+ * Fetch vehicles via server-side API route when search is active.
+ * Uses service_role key (no statement timeout) to avoid ILIKE timeouts on 190k+ rows.
  */
-async function fetchVehicles(
+async function fetchVehiclesViaSearch(
+  filters: VehicleFilters,
+  page: number,
+  limit: number
+): Promise<{ vehicles: Vehicle[]; totalCount: number }> {
+  const params = new URLSearchParams();
+  params.set('q', filters.search!.trim());
+  params.set('limit', limit.toString());
+  params.set('offset', ((page - 1) * limit).toString());
+  if (filters.sortBy) params.set('sortBy', filters.sortBy);
+  if (filters.source && filters.source !== 'all') params.set('source', filters.source);
+  if (filters.makes?.length) params.set('makes', filters.makes.join(','));
+  if (filters.models?.length) params.set('models', filters.models.join(','));
+  if (filters.yearFrom) params.set('yearFrom', filters.yearFrom.toString());
+  if (filters.yearTo) params.set('yearTo', filters.yearTo.toString());
+  if (filters.priceFrom) params.set('priceFrom', filters.priceFrom.toString());
+  if (filters.priceTo) params.set('priceTo', filters.priceTo.toString());
+  if (filters.mileageMax) params.set('mileageMax', filters.mileageMax.toString());
+  if (filters.transmission) params.set('transmission', filters.transmission);
+  if (filters.fuelType) params.set('fuelType', filters.fuelType);
+  if (filters.driveType) params.set('driveType', filters.driveType);
+  if (filters.bodyType) params.set('bodyType', filters.bodyType);
+  if (filters.color) params.set('color', filters.color);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.newArrivals) params.set('newArrivals', 'true');
+
+  const response = await fetch(`/api/vehicles/search?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error('La recherche a échoué. Essayez un terme plus précis ou utilisez les filtres.');
+  }
+
+  const data = await response.json();
+  return {
+    vehicles: data.vehicles || [],
+    totalCount: data.totalCount || 0,
+  };
+}
+
+/**
+ * Fetch vehicles directly via PostgREST API (fast path for non-search queries)
+ */
+async function fetchVehiclesDirectly(
   filters: VehicleFilters | undefined,
   page: number,
   limit: number
@@ -228,11 +266,7 @@ async function fetchVehicles(
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
       'Content-Type': 'application/json',
-      // Use estimated count for unfiltered queries (190k+ rows) and text search (ILIKE is slow)
-      // Use exact count only for non-search filters that narrow the set efficiently
-      'Prefer': hasActiveFilters(filters) && !(filters?.search && filters.search.trim().length >= 2)
-        ? 'count=exact'
-        : 'count=estimated',
+      'Prefer': hasActiveFilters(filters) ? 'count=exact' : 'count=estimated',
     },
   });
 
@@ -245,27 +279,37 @@ async function fetchVehicles(
   const vehicles = (data as Vehicle[]) || [];
 
   // Get total count from Content-Range header
-  // With count=exact, this gives accurate total for pagination
   const contentRange = response.headers.get('Content-Range');
   let totalCount = 0;
   if (contentRange) {
-    // Format: "0-35/1234" or "*/0" if empty
     const match = contentRange.match(/\/(\d+)/);
     if (match) {
       totalCount = parseInt(match[1], 10);
     }
   }
 
-  // If no count available (filters applied), estimate based on results
-  // If we got a full page, there's likely more data
   if (totalCount === 0 && vehicles.length > 0) {
     totalCount = vehicles.length === limit ? vehicles.length * 100 : vehicles.length;
   }
 
-  return {
-    vehicles,
-    totalCount,
-  };
+  return { vehicles, totalCount };
+}
+
+/**
+ * Route to the appropriate fetch strategy based on whether search is active
+ */
+async function fetchVehicles(
+  filters: VehicleFilters | undefined,
+  page: number,
+  limit: number
+): Promise<{ vehicles: Vehicle[]; totalCount: number }> {
+  // Search queries go through server-side API route (service_role = no timeout limit)
+  if (filters?.search && filters.search.trim().length >= 2) {
+    return fetchVehiclesViaSearch(filters as VehicleFilters, page, limit);
+  }
+
+  // Non-search queries use direct PostgREST (faster, no extra hop)
+  return fetchVehiclesDirectly(filters, page, limit);
 }
 
 export function useVehicles({
@@ -304,8 +348,11 @@ export function useVehicles({
     staleTime: 2 * 60 * 1000,
     // Keep in cache for 10 minutes
     gcTime: 10 * 60 * 1000,
-    // Enable retry for transient errors
-    retry: 3,
+    // Retry transient errors but not search failures
+    retry: (failureCount, error) => {
+      if (error instanceof Error && error.message.includes('recherche')) return false;
+      return failureCount < 3;
+    },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
