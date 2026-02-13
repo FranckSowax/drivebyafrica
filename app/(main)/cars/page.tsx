@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, X, Sparkles } from 'lucide-react';
-import { VehicleGrid, VehicleFilters } from '@/components/vehicles';
+import { SlidersHorizontal, X, Sparkles } from 'lucide-react';
+import { VehicleGrid, VehicleFilters, SmartSearchBar } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Pagination } from '@/components/ui/Pagination';
 import { useVehicles } from '@/lib/hooks/useVehicles';
@@ -87,8 +86,7 @@ export default function CarsPage() {
     return () => clearTimeout(debounce);
   }, [searchQuery, _hasHydrated]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     if (_hasHydrated) {
       setFilters({ search: searchQuery || undefined });
     }
@@ -152,16 +150,13 @@ export default function CarsPage() {
           <main className="flex-1">
             {/* Search & Sort Bar */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              {/* Search */}
-              <form onSubmit={handleSearch} className="flex-1">
-                <Input
-                  type="search"
-                  placeholder="Rechercher par marque, modèle..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />}
-                />
-              </form>
+              {/* Smart Search */}
+              <SmartSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onSubmit={handleSearch}
+                className="flex-1"
+              />
 
               <div className="flex gap-3">
                 {/* Mobile Filter Button */}

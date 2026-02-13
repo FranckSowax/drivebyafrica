@@ -137,11 +137,11 @@ function buildQueryString(
     params.append('created_at', `gte.${since}`);
   }
 
-  // Apply search (searches make and model)
-  // Require minimum 3 characters to avoid expensive queries on short terms
-  if (filters?.search && filters.search.trim().length >= 3) {
+  // Apply search across make, model, grade, and source_id
+  // Minimum 2 characters to balance performance with usability
+  if (filters?.search && filters.search.trim().length >= 2) {
     const searchTerm = filters.search.trim();
-    params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*)`);
+    params.append('or', `(make.ilike.*${searchTerm}*,model.ilike.*${searchTerm}*,grade.ilike.*${searchTerm}*,source_id.ilike.*${searchTerm}*)`);
   }
 
   // Apply sorting - use id as secondary sort for consistency
@@ -200,7 +200,7 @@ function hasActiveFilters(filters: VehicleFilters | undefined): boolean {
     filters.bodyType ||
     filters.status ||
     filters.newArrivals ||
-    (filters.search && filters.search.trim().length >= 3)
+    (filters.search && filters.search.trim().length >= 2)
   );
 }
 
