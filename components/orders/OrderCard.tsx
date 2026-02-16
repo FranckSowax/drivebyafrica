@@ -57,15 +57,15 @@ export function OrderCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="font-bold text-white truncate">
+                <h3 className="font-bold text-[var(--text-primary)] truncate">
                   {vehicleTitle || `Commande #${order.id.slice(-6).toUpperCase()}`}
                 </h3>
-                <div className="flex items-center gap-2 mt-1 text-sm text-nobel">
+                <div className="flex items-center gap-2 mt-1 text-sm text-[var(--text-muted)]">
                   <Clock className="w-3 h-3" />
                   <span>{createdAt}</span>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-nobel group-hover:text-mandarin transition-colors flex-shrink-0" />
+              <ChevronRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-mandarin transition-colors flex-shrink-0" />
             </div>
 
             {/* Status Badge */}
@@ -79,7 +79,7 @@ export function OrderCard({
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                 {/* Destination */}
                 {order.destination_country && (
-                  <div className="flex items-center gap-1 text-nobel">
+                  <div className="flex items-center gap-1 text-[var(--text-muted)]">
                     <MapPin className="w-3 h-3" />
                     <span>
                       {order.destination_port || order.destination_city || order.destination_country}
@@ -98,8 +98,8 @@ export function OrderCard({
 
             {/* Tracking Number */}
             {order.tracking_number && (
-              <p className="mt-2 text-xs text-nobel">
-                Tracking: <span className="text-white">{order.tracking_number}</span>
+              <p className="mt-2 text-xs text-[var(--text-muted)]">
+                Tracking: <span className="text-[var(--text-primary)]">{order.tracking_number}</span>
               </p>
             )}
           </div>
@@ -128,10 +128,10 @@ export function OrderCardCompact({ order, vehicleTitle, className }: OrderCardCo
         )}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-white font-medium truncate">
+          <p className="text-sm text-[var(--text-primary)] font-medium truncate">
             {vehicleTitle || `#${order.id.slice(-6).toUpperCase()}`}
           </p>
-          <p className="text-xs text-nobel">{status.label}</p>
+          <p className="text-xs text-[var(--text-muted)]">{status.label}</p>
         </div>
         {order.total_price_usd && (
           <span className="text-sm text-mandarin font-medium ml-2">

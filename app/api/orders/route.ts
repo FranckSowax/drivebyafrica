@@ -37,8 +37,26 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    // Enrich orders with vehicle images from vehicles table
+    let enrichedOrders = orders || [];
+    const vehicleIds = [...new Set(enrichedOrders.map((o) => o.vehicle_id).filter(Boolean))];
+    if (vehicleIds.length > 0) {
+      const { data: vehicles } = await supabase
+        .from('vehicles')
+        .select('id, images')
+        .in('id', vehicleIds);
+
+      if (vehicles && vehicles.length > 0) {
+        const imageMap = new Map(vehicles.map((v) => [v.id, v.images]));
+        enrichedOrders = enrichedOrders.map((o) => ({
+          ...o,
+          vehicle_image: imageMap.get(o.vehicle_id)?.[0] || null,
+        }));
+      }
+    }
+
     return NextResponse.json({
-      orders,
+      orders: enrichedOrders,
       pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
     });
   } catch (error) {

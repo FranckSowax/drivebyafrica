@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,75 +14,58 @@ import {
   Clock,
   CheckCircle,
   Ship,
+  RefreshCw,
 } from 'lucide-react';
 import type { Order } from '@/types/database';
-import type { Vehicle } from '@/types/vehicle';
-
-interface OrdersData {
-  orders: Order[];
-  pendingQuotes: any[];
-  vehicles: Pick<Vehicle, 'id' | 'make' | 'model' | 'year' | 'images'>[];
-}
 
 export default function OrdersPage() {
-  const { user } = useAuthStore();
-  const [data, setData] = useState<OrdersData | null>(null);
+  const user = useAuthStore((state) => state.user);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const [orders, setOrders] = useState<(Order & { vehicle_image?: string | null })[]>([]);
+  const [pendingQuotes, setPendingQuotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchOrdersData() {
-      if (!user) return;
+  const fetchData = useCallback(async () => {
+    if (!user) return;
 
-      try {
-        // Fetch orders
-        const ordersResponse = await fetch('/api/orders');
-        if (!ordersResponse.ok) {
-          throw new Error('Erreur de chargement');
-        }
-        const { orders } = await ordersResponse.json();
+    setIsLoading(true);
+    setError(null);
 
-        // Fetch pending quotes
-        let pendingQuotes: any[] = [];
-        try {
-          const quotesResponse = await fetch('/api/quotes?status=pending&limit=3');
-          if (quotesResponse.ok) {
-            const quotesData = await quotesResponse.json();
-            pendingQuotes = quotesData.quotes || [];
-          }
-        } catch {
-          // Quotes may not exist
-        }
+    try {
+      // Fetch orders and quotes in parallel
+      const [ordersRes, quotesRes] = await Promise.allSettled([
+        fetch('/api/orders'),
+        fetch('/api/quotes?status=pending&limit=3'),
+      ]);
 
-        // Fetch vehicles for orders
-        const vehicleIds = (orders || []).map((o: Order) => o.vehicle_id);
-        let vehicles: any[] = [];
-        if (vehicleIds.length > 0) {
-          try {
-            const vehiclesResponse = await fetch(`/api/vehicles?ids=${vehicleIds.join(',')}`);
-            if (vehiclesResponse.ok) {
-              const vehiclesData = await vehiclesResponse.json();
-              vehicles = vehiclesData.vehicles || [];
-            }
-          } catch {
-            // Vehicles fetch optional
-          }
-        }
-
-        setData({
-          orders: orders || [],
-          pendingQuotes,
-          vehicles,
-        });
-      } catch {
-        setError('Impossible de charger les commandes');
-      } finally {
-        setIsLoading(false);
+      // Handle orders
+      if (ordersRes.status === 'fulfilled' && ordersRes.value.ok) {
+        const data = await ordersRes.value.json();
+        setOrders(data.orders || []);
+      } else {
+        throw new Error('Erreur de chargement des commandes');
       }
-    }
 
-    fetchOrdersData();
+      // Handle quotes (optional, don't fail the whole page)
+      if (quotesRes.status === 'fulfilled' && quotesRes.value.ok) {
+        const data = await quotesRes.value.json();
+        setPendingQuotes(data.quotes || []);
+      }
+    } catch {
+      setError('Impossible de charger les commandes');
+    } finally {
+      setIsLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (isInitialized && user) {
+      fetchData();
+    } else if (isInitialized && !user) {
+      setIsLoading(false);
+    }
+  }, [isInitialized, user, fetchData]);
 
   if (isLoading) {
     return (
@@ -95,30 +78,24 @@ export default function OrdersPage() {
   if (error) {
     return (
       <Card className="text-center py-12">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500 mb-4">{error}</p>
         <Button
           variant="primary"
-          className="mt-4"
-          onClick={() => window.location.reload()}
+          onClick={fetchData}
+          leftIcon={<RefreshCw className="w-4 h-4" />}
         >
-          Reessayer
+          Réessayer
         </Button>
       </Card>
     );
   }
 
-  const ordersData = data?.orders || [];
-  const pendingQuotes = data?.pendingQuotes || [];
-  const vehiclesMap = new Map(
-    (data?.vehicles || []).map((v) => [v.id, v])
-  );
-
   // Group orders by status
-  const activeOrders = ordersData.filter(
+  const activeOrders = orders.filter(
     (o) => !['delivered', 'cancelled'].includes(o.status)
   );
-  const completedOrders = ordersData.filter((o) => o.status === 'delivered');
-  const cancelledOrders = ordersData.filter((o) => o.status === 'cancelled');
+  const completedOrders = orders.filter((o) => o.status === 'delivered');
+  const cancelledOrders = orders.filter((o) => o.status === 'cancelled');
 
   return (
     <div className="space-y-8">
@@ -127,7 +104,7 @@ export default function OrdersPage() {
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Mes commandes</h1>
           <p className="text-[var(--text-muted)] mt-1">
-            Suivez le statut de vos commandes en temps reel
+            Suivez le statut de vos commandes en temps réel
           </p>
         </div>
         <Link href="/dashboard/quotes">
@@ -173,18 +150,18 @@ export default function OrdersPage() {
         <Card className="text-center p-4">
           <Ship className="w-6 h-6 text-royal-blue mx-auto mb-2" />
           <p className="text-2xl font-bold text-[var(--text-primary)]">
-            {ordersData.filter((o) => o.status === 'shipped' || o.status === 'in_transit').length}
+            {orders.filter((o) => o.status === 'shipped' || o.status === 'in_transit').length}
           </p>
           <p className="text-xs text-[var(--text-muted)]">En transit</p>
         </Card>
         <Card className="text-center p-4">
           <CheckCircle className="w-6 h-6 text-jewel mx-auto mb-2" />
           <p className="text-2xl font-bold text-[var(--text-primary)]">{completedOrders.length}</p>
-          <p className="text-xs text-[var(--text-muted)]">Livrees</p>
+          <p className="text-xs text-[var(--text-muted)]">Livrées</p>
         </Card>
         <Card className="text-center p-4">
           <Package className="w-6 h-6 text-[var(--text-muted)] mx-auto mb-2" />
-          <p className="text-2xl font-bold text-[var(--text-primary)]">{ordersData.length}</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)]">{orders.length}</p>
           <p className="text-xs text-[var(--text-muted)]">Total</p>
         </Card>
       </div>
@@ -194,19 +171,18 @@ export default function OrdersPage() {
         <section>
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes en cours</h2>
           <div className="space-y-4">
-            {activeOrders.map((order) => {
-              const vehicle = vehiclesMap.get(order.vehicle_id);
-              return (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  vehicleTitle={
-                    vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : undefined
-                  }
-                  vehicleImage={vehicle?.images?.[0]}
-                />
-              );
-            })}
+            {activeOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                vehicleTitle={
+                  order.vehicle_make
+                    ? `${order.vehicle_make} ${order.vehicle_model || ''} ${order.vehicle_year || ''}`.trim()
+                    : undefined
+                }
+                vehicleImage={order.vehicle_image}
+              />
+            ))}
           </div>
         </section>
       )}
@@ -214,21 +190,20 @@ export default function OrdersPage() {
       {/* Completed Orders */}
       {completedOrders.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes livrees</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes livrées</h2>
           <div className="space-y-4">
-            {completedOrders.map((order) => {
-              const vehicle = vehiclesMap.get(order.vehicle_id);
-              return (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  vehicleTitle={
-                    vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : undefined
-                  }
-                  vehicleImage={vehicle?.images?.[0]}
-                />
-              );
-            })}
+            {completedOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                vehicleTitle={
+                  order.vehicle_make
+                    ? `${order.vehicle_make} ${order.vehicle_model || ''} ${order.vehicle_year || ''}`.trim()
+                    : undefined
+                }
+                vehicleImage={order.vehicle_image}
+              />
+            ))}
           </div>
         </section>
       )}
@@ -236,40 +211,39 @@ export default function OrdersPage() {
       {/* Cancelled Orders */}
       {cancelledOrders.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes annulees</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Commandes annulées</h2>
           <div className="space-y-4">
-            {cancelledOrders.map((order) => {
-              const vehicle = vehiclesMap.get(order.vehicle_id);
-              return (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  vehicleTitle={
-                    vehicle ? `${vehicle.make} ${vehicle.model} ${vehicle.year}` : undefined
-                  }
-                  vehicleImage={vehicle?.images?.[0]}
-                />
-              );
-            })}
+            {cancelledOrders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                vehicleTitle={
+                  order.vehicle_make
+                    ? `${order.vehicle_make} ${order.vehicle_model || ''} ${order.vehicle_year || ''}`.trim()
+                    : undefined
+                }
+                vehicleImage={order.vehicle_image}
+              />
+            ))}
           </div>
         </section>
       )}
 
       {/* Empty State */}
-      {ordersData.length === 0 && (
+      {orders.length === 0 && (
         <Card className="text-center py-12">
           <Package className="w-16 h-16 text-[var(--text-muted)] mx-auto mb-4" />
           <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">
             Aucune commande
           </h3>
           <p className="text-[var(--text-muted)] mb-6 max-w-md mx-auto">
-            Vous n&apos;avez pas encore passe de commande.
-            Commencez par demander un devis pour un vehicule.
+            Vous n&apos;avez pas encore passé de commande.
+            Commencez par demander un devis pour un véhicule.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/cars">
               <Button variant="primary">
-                Explorer les vehicules
+                Explorer les véhicules
               </Button>
             </Link>
             <Link href="/dashboard/quotes">
@@ -293,7 +267,7 @@ export default function OrdersPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-primary)]">Devis obtenu</p>
-              <p className="text-xs text-[var(--text-muted)]">Estimation complete</p>
+              <p className="text-xs text-[var(--text-muted)]">Estimation complète</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -302,7 +276,7 @@ export default function OrdersPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-primary)]">Acompte 1000$</p>
-              <p className="text-xs text-[var(--text-muted)]">Blocage du vehicule</p>
+              <p className="text-xs text-[var(--text-muted)]">Blocage du véhicule</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -319,7 +293,7 @@ export default function OrdersPage() {
               <span className="text-sm font-bold text-mandarin">4</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">Paiement integral</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">Paiement intégral</p>
               <p className="text-xs text-[var(--text-muted)]">Solde de la commande</p>
             </div>
           </div>
@@ -329,7 +303,7 @@ export default function OrdersPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-primary)]">Livraison</p>
-              <p className="text-xs text-[var(--text-muted)]">Reception au port</p>
+              <p className="text-xs text-[var(--text-muted)]">Réception au port</p>
             </div>
           </div>
         </div>
