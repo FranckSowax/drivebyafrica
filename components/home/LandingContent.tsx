@@ -9,7 +9,11 @@ import { Card } from '@/components/ui/Card';
 import { VehicleCard } from '@/components/vehicles/VehicleCard';
 import { SearchFilterBar } from '@/components/home/SearchFilterBar';
 import { useTranslation } from '@/components/providers/LocaleProvider';
-import { usePopularVehicles } from '@/lib/hooks/usePopularVehicles';
+import type { Vehicle } from '@/types/vehicle';
+
+interface LandingContentProps {
+  initialVehicles?: Vehicle[];
+}
 
 const featureIcons = {
   verified: Car,
@@ -26,11 +30,11 @@ const stepNumbers = ['01', '02', '03', '04'];
 const statValues = ['15,000+', '2,500+', '12', '98%'];
 const statKeys = ['vehicles', 'clients', 'countries', 'satisfaction'] as const;
 
-export function LandingContent() {
+export function LandingContent({ initialVehicles = [] }: LandingContentProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
-  const { vehicles: featuredVehicles, isLoading: isLoadingPopular } = usePopularVehicles();
+  const featuredVehicles = initialVehicles;
 
   const toggleVideo = () => {
     const video = videoRef.current;
@@ -195,22 +199,9 @@ export function LandingContent() {
             </Link>
           </div>
 
-          {isLoadingPopular ? (
+          {featuredVehicles.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl overflow-hidden animate-pulse">
-                  <div className="aspect-[4/3] bg-[var(--surface)]" />
-                  <div className="p-4 space-y-3">
-                    <div className="h-4 bg-[var(--surface)] rounded w-3/4" />
-                    <div className="h-3 bg-[var(--surface)] rounded w-1/2" />
-                    <div className="h-5 bg-[var(--surface)] rounded w-1/3 mt-4" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : featuredVehicles.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredVehicles.map((vehicle) => (
+              {featuredVehicles.map((vehicle: Vehicle) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} />
               ))}
             </div>
