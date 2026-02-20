@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server';
 import { LandingContent } from '@/components/home/LandingContent';
 
 const FEATURED_BRANDS = [
@@ -6,7 +5,7 @@ const FEATURED_BRANDS = [
   'JETOUR', 'CHANGAN', 'HAVAL', 'ZEEKR',
 ];
 
-const VEHICLE_SELECT = [
+const VEHICLE_COLUMNS = [
   'id', 'source', 'source_id', 'source_url', 'make', 'model', 'grade',
   'year', 'mileage', 'start_price_usd', 'current_price_usd',
   'buy_now_price_usd', 'fuel_type', 'transmission', 'drive_type',
@@ -16,37 +15,54 @@ const VEHICLE_SELECT = [
 ].join(',');
 
 async function getPopularVehicles() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) return [];
+
   try {
-    const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabaseAny = supabase as any;
+    // Direct REST call — no cookies needed for public data
+    const params = new URLSearchParams();
+    params.set('select', VEHICLE_COLUMNS);
+    params.set('status', 'eq.available');
+    params.set('is_visible', 'eq.true');
+    params.set('make', `in.(${FEATURED_BRANDS.join(',')})`);
+    params.set('order', 'favorites_count.desc.nullslast,views_count.desc.nullslast');
+    params.set('limit', '6');
 
-    const { data, error } = await supabaseAny
-      .from('vehicles')
-      .select(VEHICLE_SELECT)
-      .eq('status', 'available')
-      .eq('is_visible', true)
-      .in('make', FEATURED_BRANDS)
-      .order('favorites_count', { ascending: false, nullsFirst: false })
-      .order('views_count', { ascending: false, nullsFirst: false })
-      .limit(6);
+    const res = await fetch(`${supabaseUrl}/rest/v1/vehicles?${params}`, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      next: { revalidate: 300 }, // ISR: revalidate every 5 minutes
+    });
 
-    if (error || !data || data.length === 0) {
-      // Fallback: any popular vehicles
-      const { data: fallback } = await supabaseAny
-        .from('vehicles')
-        .select(VEHICLE_SELECT)
-        .eq('status', 'available')
-        .eq('is_visible', true)
-        .order('favorites_count', { ascending: false, nullsFirst: false })
-        .order('views_count', { ascending: false, nullsFirst: false })
-        .limit(6);
+    if (!res.ok) throw new Error(`Supabase ${res.status}`);
+    const vehicles = await res.json();
 
-      return fallback || [];
-    }
+    if (vehicles && vehicles.length > 0) return vehicles;
 
-    return data;
-  } catch {
+    // Fallback: any popular vehicles (no brand filter)
+    const fallbackParams = new URLSearchParams();
+    fallbackParams.set('select', VEHICLE_COLUMNS);
+    fallbackParams.set('status', 'eq.available');
+    fallbackParams.set('is_visible', 'eq.true');
+    fallbackParams.set('order', 'favorites_count.desc.nullslast,views_count.desc.nullslast');
+    fallbackParams.set('limit', '6');
+
+    const fallbackRes = await fetch(`${supabaseUrl}/rest/v1/vehicles?${fallbackParams}`, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      next: { revalidate: 300 },
+    });
+
+    if (!fallbackRes.ok) return [];
+    return await fallbackRes.json();
+  } catch (e) {
+    console.error('Failed to fetch popular vehicles:', e);
     return [];
   }
 }
