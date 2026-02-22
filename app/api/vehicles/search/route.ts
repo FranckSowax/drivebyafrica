@@ -78,10 +78,10 @@ export async function GET(request: Request) {
     // Sorting
     switch (sortBy) {
       case 'price_asc':
-        query = query.order('start_price_usd', { ascending: true, nullsFirst: false });
+        query = query.order('fob_price_usd', { ascending: true, nullsFirst: false });
         break;
       case 'price_desc':
-        query = query.order('start_price_usd', { ascending: false, nullsFirst: true });
+        query = query.order('fob_price_usd', { ascending: false, nullsFirst: true });
         break;
       case 'year_desc':
         query = query.order('year', { ascending: false, nullsFirst: false });
@@ -96,11 +96,11 @@ export async function GET(request: Request) {
         query = query.order('mileage', { ascending: false, nullsFirst: true });
         break;
       default:
-        query = query.order('id', { ascending: false });
+        query = query.order('created_at', { ascending: false });
     }
 
     // Secondary sort for consistency
-    query = query.order('id', { ascending: false });
+    query = query.order('created_at', { ascending: false });
 
     // Pagination
     query = query.range(offset, offset + limit - 1);

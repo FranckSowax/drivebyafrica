@@ -140,29 +140,29 @@ function buildQueryString(
   // Search is handled by /api/vehicles/search route (service_role, no timeout)
   // No ILIKE here — buildQueryString is only used for non-search queries
 
-  // Apply sorting - use id as secondary sort for consistency
-  let orderBy = 'id.desc';
+  // Apply sorting - use created_at as secondary sort for consistency
+  let orderBy = 'created_at.desc';
   switch (filters?.sortBy) {
     case 'newest':
-      orderBy = 'id.desc';
+      orderBy = 'created_at.desc';
       break;
     case 'price_asc':
-      orderBy = 'start_price_usd.asc.nullslast,id.desc';
+      orderBy = 'fob_price_usd.asc.nullslast,created_at.desc';
       break;
     case 'price_desc':
-      orderBy = 'start_price_usd.desc.nullsfirst,id.desc';
+      orderBy = 'fob_price_usd.desc.nullsfirst,created_at.desc';
       break;
     case 'year_desc':
-      orderBy = 'year.desc.nullslast,id.desc';
+      orderBy = 'year.desc.nullslast,created_at.desc';
       break;
     case 'year_asc':
-      orderBy = 'year.asc.nullslast,id.desc';
+      orderBy = 'year.asc.nullslast,created_at.desc';
       break;
     case 'mileage_asc':
-      orderBy = 'mileage.asc.nullslast,id.desc';
+      orderBy = 'mileage.asc.nullslast,created_at.desc';
       break;
     case 'mileage_desc':
-      orderBy = 'mileage.desc.nullsfirst,id.desc';
+      orderBy = 'mileage.desc.nullsfirst,created_at.desc';
       break;
   }
   params.set('order', orderBy);

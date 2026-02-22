@@ -189,6 +189,7 @@ export type Database = {
           has_360_view: boolean;
           views_count: number;
           favorites_count: number;
+          fob_price_usd: number | null;
           added_by_collaborator_id: string | null;
           is_collaborator_listing: boolean;
           collaborator_approved: boolean;
@@ -229,6 +230,7 @@ export type Database = {
           has_360_view?: boolean;
           views_count?: number;
           favorites_count?: number;
+          fob_price_usd?: number | null;
           added_by_collaborator_id?: string | null;
           is_collaborator_listing?: boolean;
           collaborator_approved?: boolean;
@@ -269,6 +271,7 @@ export type Database = {
           has_360_view?: boolean;
           views_count?: number;
           favorites_count?: number;
+          fob_price_usd?: number | null;
           added_by_collaborator_id?: string | null;
           is_collaborator_listing?: boolean;
           collaborator_approved?: boolean;
