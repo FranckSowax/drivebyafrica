@@ -147,10 +147,10 @@ function buildQueryString(
       orderBy = 'created_at.desc';
       break;
     case 'price_asc':
-      orderBy = 'fob_price_usd.asc.nullslast,created_at.desc';
+      orderBy = 'start_price_usd.asc.nullslast,created_at.desc';
       break;
     case 'price_desc':
-      orderBy = 'fob_price_usd.desc.nullsfirst,created_at.desc';
+      orderBy = 'start_price_usd.desc.nullsfirst,created_at.desc';
       break;
     case 'year_desc':
       orderBy = 'year.desc.nullslast,created_at.desc';

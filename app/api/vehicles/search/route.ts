@@ -78,10 +78,10 @@ export async function GET(request: Request) {
     // Sorting
     switch (sortBy) {
       case 'price_asc':
-        query = query.order('fob_price_usd', { ascending: true, nullsFirst: false });
+        query = query.order('start_price_usd', { ascending: true, nullsFirst: false });
         break;
       case 'price_desc':
-        query = query.order('fob_price_usd', { ascending: false, nullsFirst: true });
+        query = query.order('start_price_usd', { ascending: false, nullsFirst: true });
         break;
       case 'year_desc':
         query = query.order('year', { ascending: false, nullsFirst: false });
