@@ -27,7 +27,7 @@ async function getPopularVehicles() {
     params.set('status', 'eq.available');
     params.set('is_visible', 'eq.true');
     params.set('make', `in.(${FEATURED_BRANDS.join(',')})`);
-    params.set('order', 'favorites_count.desc.nullslast,views_count.desc.nullslast');
+    params.set('order', 'created_at.desc');
     params.set('limit', '6');
 
     const res = await fetch(`${supabaseUrl}/rest/v1/vehicles?${params}`, {
@@ -48,7 +48,7 @@ async function getPopularVehicles() {
     fallbackParams.set('select', VEHICLE_COLUMNS);
     fallbackParams.set('status', 'eq.available');
     fallbackParams.set('is_visible', 'eq.true');
-    fallbackParams.set('order', 'favorites_count.desc.nullslast,views_count.desc.nullslast');
+    fallbackParams.set('order', 'created_at.desc');
     fallbackParams.set('limit', '6');
 
     const fallbackRes = await fetch(`${supabaseUrl}/rest/v1/vehicles?${fallbackParams}`, {
