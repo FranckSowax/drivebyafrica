@@ -9,7 +9,6 @@ import {
   Calendar,
   FileText,
   ChevronRight,
-  MessageCircle,
 } from 'lucide-react';
 
 interface OrderCardProps {
@@ -31,7 +30,6 @@ interface OrderCardProps {
     };
     user?: {
       full_name?: string;
-      phone?: string;
     };
     tracking?: {
       status: string;
@@ -39,7 +37,6 @@ interface OrderCardProps {
     documents?: unknown[];
   };
   onViewDetails: () => void;
-  onContactWhatsApp?: () => void;
 }
 
 const statusColors: Record<string, string> = {
@@ -74,7 +71,7 @@ const statusOrder = [
   'delivered',
 ];
 
-export function CollaboratorOrderCard({ order, onViewDetails, onContactWhatsApp }: OrderCardProps) {
+export function CollaboratorOrderCard({ order, onViewDetails }: OrderCardProps) {
   const { t } = useCollaboratorLocale();
 
   const statusIndex = statusOrder.indexOf(order.status);
@@ -200,19 +197,6 @@ export function CollaboratorOrderCard({ order, onViewDetails, onContactWhatsApp 
 
       {/* Actions */}
       <div className="p-4 pt-0 flex gap-2">
-        {order.user?.phone && onContactWhatsApp && (
-          <button
-            onClick={onContactWhatsApp}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg',
-              'text-sm font-medium bg-green-500/20 text-green-400 hover:bg-green-500/30',
-              'transition-colors'
-            )}
-          >
-            <MessageCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">WhatsApp</span>
-          </button>
-        )}
         <button
           onClick={onViewDetails}
           className={cn(

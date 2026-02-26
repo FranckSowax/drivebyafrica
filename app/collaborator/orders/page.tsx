@@ -18,7 +18,6 @@ import {
   Loader2,
   Package,
   X,
-  MessageCircle,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -447,22 +446,6 @@ function CollaboratorOrdersContent() {
   };
 
 
-  const handleContactWhatsApp = (order: Order) => {
-    const phone = order.customer_whatsapp || order.customer_phone;
-    if (phone) {
-      let formattedPhone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
-      if (!formattedPhone.startsWith('+')) {
-        formattedPhone = '+241' + formattedPhone.replace(/^0+/, '');
-      }
-      formattedPhone = formattedPhone.replace('+', '');
-
-      const message = encodeURIComponent(
-        `Hello ${order.customer_name},\n\nRegarding your order ${order.order_number} at Driveby Africa.\n\n`
-      );
-      window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
-    }
-  };
-
   const formatPrice = (price: number) => {
     if (isNaN(price) || price === null || price === undefined) return '$0';
     return new Intl.NumberFormat('en-US', {
@@ -736,15 +719,6 @@ function CollaboratorOrdersContent() {
                             <div className="flex items-center gap-2">
                               <div>
                                 <p className="text-sm font-medium text-[var(--text-primary)]">{order.customer_name}</p>
-                                {(order.customer_whatsapp || order.customer_phone) && (
-                                  <button
-                                    onClick={() => handleContactWhatsApp(order)}
-                                    className="flex items-center gap-1 text-xs text-green-500 hover:text-green-400 transition-colors"
-                                  >
-                                    <MessageCircle className="w-3 h-3" />
-                                    WhatsApp
-                                  </button>
-                                )}
                               </div>
                             </div>
                           </td>
@@ -802,17 +776,6 @@ function CollaboratorOrdersContent() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              {(order.customer_whatsapp || order.customer_phone) && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleContactWhatsApp(order)}
-                                  className="text-green-500 hover:text-green-400 hover:bg-green-500/10"
-                                  title="WhatsApp"
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                </Button>
-                              )}
                             </div>
                           </td>
                         </tr>
