@@ -112,7 +112,7 @@ function MobileNavFallback() {
 
 export function MobileNav() {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--header-bg)] backdrop-blur-md border-t border-[var(--card-border)] safe-area-inset-bottom pb-[env(safe-area-inset-bottom)]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#0a0f14] border-t border-[var(--card-border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <Suspense fallback={<MobileNavFallback />}>
         <MobileNavContent />
       </Suspense>
