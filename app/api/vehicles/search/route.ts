@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 const SEARCH_COLUMNS = [
   'id', 'source', 'source_id', 'source_url', 'make', 'model', 'grade',
   'year', 'mileage', 'start_price_usd', 'current_price_usd', 'buy_now_price_usd',
+  'fob_price_usd',
   'fuel_type', 'transmission', 'drive_type', 'body_type', 'color', 'engine_cc',
   'images', 'status', 'auction_status', 'auction_platform', 'auction_date',
   'is_visible', 'created_at', 'updated_at',
