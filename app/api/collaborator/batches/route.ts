@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       body_type,
       color,
       condition,
+      shipping_type,
       features,
       collaborator_notes,
     } = body;
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
         body_type,
         color,
         condition,
+        shipping_type: shipping_type || '20hq',
         features: features || [],
         collaborator_notes,
         status: 'approved',

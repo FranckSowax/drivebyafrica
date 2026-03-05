@@ -20,7 +20,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { VehicleBatchWithCollaborator } from '@/types/vehicle-batch';
+import type { VehicleBatchWithCollaborator, ShippingType } from '@/types/vehicle-batch';
+import { SHIPPING_TYPE_LABELS } from '@/types/vehicle-batch';
 
 interface AdminBatchTableProps {
   batches: VehicleBatchWithCollaborator[];
@@ -231,6 +232,7 @@ export function AdminBatchTable({
               <th className="p-3 text-left text-gray-900 font-medium">Batch</th>
               <th className="p-3 text-left text-gray-900 font-medium">Collaborator</th>
               <th className="p-3 text-left text-gray-900 font-medium">Source</th>
+              <th className="p-3 text-left text-gray-900 font-medium">Expédition</th>
               <th className="p-3 text-left text-gray-900 font-medium">Price/Unit</th>
               <th className="p-3 text-left text-gray-900 font-medium">Quantity</th>
               <th className="p-3 text-left text-gray-900 font-medium">Min. Order</th>
@@ -242,13 +244,13 @@ export function AdminBatchTable({
           <tbody className="divide-y divide-nobel/20">
             {isLoading ? (
               <tr>
-                <td colSpan={10} className="p-8 text-center text-nobel">
+                <td colSpan={11} className="p-8 text-center text-nobel">
                   Loading...
                 </td>
               </tr>
             ) : batches.length === 0 ? (
               <tr>
-                <td colSpan={10} className="p-8 text-center text-nobel">
+                <td colSpan={11} className="p-8 text-center text-nobel">
                   No batches found
                 </td>
               </tr>
@@ -291,6 +293,11 @@ export function AdminBatchTable({
                   </td>
                   <td className="p-3">
                     <span className="text-xl">{SOURCE_FLAGS[batch.source_country] || '🇨🇳'}</span>
+                  </td>
+                  <td className="p-3">
+                    <span className="inline-flex px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs font-medium">
+                      {SHIPPING_TYPE_LABELS[(batch.shipping_type as ShippingType) || '20hq']}
+                    </span>
                   </td>
                   <td className="p-3">
                     <p className="font-medium text-alto-orange">

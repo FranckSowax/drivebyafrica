@@ -39,6 +39,9 @@ export interface VehicleBatch {
   color?: string;
   condition?: string;
 
+  // Shipping
+  shipping_type?: '20hq' | '40hq';
+
   // Features
   features?: Record<string, unknown>[];
 
@@ -135,9 +138,17 @@ export interface CreateVehicleBatchInput {
   body_type?: string;
   color?: string;
   condition?: string;
+  shipping_type?: '20hq' | '40hq';
   features?: Record<string, unknown>[];
   collaborator_notes?: string;
 }
+
+export type ShippingType = '20hq' | '40hq';
+
+export const SHIPPING_TYPE_LABELS: Record<ShippingType, string> = {
+  '20hq': '20 pieds (2 véh.)',
+  '40hq': '40 pieds (4 véh.)',
+};
 
 export interface CreateBatchOrderInput {
   batch_id: string;

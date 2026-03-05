@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Upload, X, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -18,6 +18,8 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [make, setMake] = useState('');
@@ -37,12 +39,12 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
   const [bodyType, setBodyType] = useState('');
   const [color, setColor] = useState('');
   const [condition, setCondition] = useState('');
+  const [shippingType, setShippingType] = useState<'20hq' | '40hq'>('20hq');
   const [images, setImages] = useState<string[]>([]);
   const [collaboratorNotes, setCollaboratorNotes] = useState('');
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const uploadFiles = useCallback(async (fileList: File[]) => {
+    if (fileList.length === 0) return;
 
     setUploadingImages(true);
     setError('');
@@ -51,8 +53,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
       const supabase = createClient();
       const uploadedUrls: string[] = [];
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      for (const file of fileList) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
@@ -74,14 +75,45 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
         uploadedUrls.push(publicUrl);
       }
 
-      setImages([...images, ...uploadedUrls]);
+      setImages(prev => [...prev, ...uploadedUrls]);
     } catch (err) {
       console.error('Error uploading images:', err);
       setError(err instanceof Error ? err.message : 'Failed to upload images');
     } finally {
       setUploadingImages(false);
     }
+  }, []);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadFiles(Array.from(files));
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
   };
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (uploadingImages) return;
+
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+    await uploadFiles(files);
+  }, [uploadingImages, uploadFiles]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  }, []);
 
   const removeImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
@@ -132,6 +164,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
           body_type: bodyType || undefined,
           color: color || undefined,
           condition: condition || undefined,
+          shipping_type: shippingType,
           images,
           thumbnail_url: images[0] || undefined,
           collaborator_notes: collaboratorNotes || undefined,
@@ -162,6 +195,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
       setBodyType('');
       setColor('');
       setCondition('');
+      setShippingType('20hq');
       setImages([]);
       setCollaboratorNotes('');
 
@@ -253,6 +287,20 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
               <option value="dubai">Dubai</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Type d&apos;expédition
+          </label>
+          <select
+            value={shippingType}
+            onChange={(e) => setShippingType(e.target.value as '20hq' | '40hq')}
+            className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
+          >
+            <option value="20hq">20 pieds (2 véhicules)</option>
+            <option value="40hq">40 pieds (4 véhicules)</option>
+          </select>
         </div>
 
         <div>
@@ -520,7 +568,17 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
             ))}
           </div>
 
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-nobel/20 rounded-lg cursor-pointer hover:border-alto-orange/50 transition-colors">
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              dragActive
+                ? 'border-alto-orange bg-alto-orange/10'
+                : 'border-nobel/20 hover:border-alto-orange/50'
+            }`}
+          >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {uploadingImages ? (
                 <div className="text-sm text-gray-900">{t('imageUpload.uploading')}</div>
@@ -530,10 +588,14 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
                   <p className="text-sm text-gray-900">
                     {t('imageUpload.clickToUpload')}
                   </p>
+                  <p className="text-xs text-nobel mt-1">
+                    ou glisser-déposer
+                  </p>
                 </>
               )}
             </div>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               multiple
@@ -541,7 +603,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
               className="hidden"
               disabled={uploadingImages}
             />
-          </label>
+          </div>
         </div>
 
         {/* Collaborator Notes */}

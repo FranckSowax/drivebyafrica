@@ -368,6 +368,7 @@ async function handleCreateBatch(
     total_quantity, minimum_order_quantity,
     mileage, fuel_type, transmission, drive_type,
     engine_size, body_type, color, condition,
+    shipping_type,
     images, thumbnail_url, collaborator_notes,
   } = body as Record<string, unknown>;
 
@@ -412,6 +413,7 @@ async function handleCreateBatch(
       body_type: (body_type as string) || null,
       color: (color as string) || null,
       condition: (condition as string) || null,
+      shipping_type: (shipping_type as string) || '20hq',
       images: (images as string[]) || [],
       collaborator_notes: (collaborator_notes as string) || null,
       status: 'approved',
