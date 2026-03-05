@@ -65,6 +65,9 @@ export function BatchShippingEstimator({
 
   const quoteCurrencyCode = getQuoteCurrencyCode();
 
+  // Local state for shipping type (user can switch to compare costs)
+  const [selectedShippingType, setSelectedShippingType] = useState<'20hq' | '40hq' | 'roro' | 'flat_rack'>(shippingType);
+
   // Use shared hook for destinations (53 destinations from API)
   const [searchQuery, setSearchQuery] = useState('');
   const {
@@ -166,7 +169,7 @@ export function BatchShippingEstimator({
     '40hq': { vehiclesPerUnit: 4, label: 'Container 40HQ', unitLabel: 'container' },
     'roro': { vehiclesPerUnit: 1, label: 'RORO (Roll-on/Roll-off)', unitLabel: 'véhicule' },
     'flat_rack': { vehiclesPerUnit: 1, label: 'Flat Rack', unitLabel: 'unité' },
-  }[shippingType] || { vehiclesPerUnit: 4, label: 'Container 40HQ', unitLabel: 'container' };
+  }[selectedShippingType] || { vehiclesPerUnit: 4, label: 'Container 40HQ', unitLabel: 'container' };
 
   const { vehiclesPerUnit, label: containerLabel, unitLabel: shippingUnitLabel } = shippingConfig;
 
@@ -180,11 +183,11 @@ export function BatchShippingEstimator({
 
     // Shipping cost based on type
     let costPerUnit: number;
-    if (shippingType === 'roro') {
+    if (selectedShippingType === 'roro') {
       costPerUnit = selectedDestination.shippingCostRoro[batchSource];
-    } else if (shippingType === 'flat_rack') {
+    } else if (selectedShippingType === 'flat_rack') {
       costPerUnit = selectedDestination.shippingCostFlatRack[batchSource];
-    } else if (shippingType === '20hq') {
+    } else if (selectedShippingType === '20hq') {
       costPerUnit = selectedDestination.shippingCost[batchSource];
     } else {
       costPerUnit = selectedDestination.shippingCost40ft[batchSource];
@@ -223,7 +226,7 @@ export function BatchShippingEstimator({
       numberOfUnits,
       costPerUnit: Math.round(convertToQuoteCurrency(costPerUnit)),
     };
-  }, [unitPriceUSD, batchSource, selectedDestination, quantity, shippingType, vehiclesPerUnit, convertToQuoteCurrency, quoteCurrencyCode]);
+  }, [unitPriceUSD, batchSource, selectedDestination, quantity, selectedShippingType, vehiclesPerUnit, convertToQuoteCurrency, quoteCurrencyCode]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -423,21 +426,21 @@ export function BatchShippingEstimator({
             transition={{ duration: 0.2 }}
           >
             <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
-              <Ship className="w-4 h-4 inline mr-1" />
+              <Container className="w-4 h-4 inline mr-1" />
               Type d&apos;expedition
             </label>
-            <div className="w-full px-4 py-3 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl">
-              <span className="flex items-center gap-3">
-                <Container className="w-5 h-5 text-mandarin" />
-                <div>
-                  <span className="font-medium text-[var(--text-primary)] block">{containerLabel}</span>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {vehiclesPerUnit > 1
-                      ? `${vehiclesPerUnit} vehicules par ${shippingUnitLabel}`
-                      : 'Prix par vehicule'}
-                  </span>
-                </div>
-              </span>
+            <div className="relative">
+              <select
+                value={selectedShippingType}
+                onChange={(e) => setSelectedShippingType(e.target.value as '20hq' | '40hq' | 'roro' | 'flat_rack')}
+                className="w-full px-4 py-3 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl text-[var(--text-primary)] appearance-none cursor-pointer hover:border-mandarin/50 focus:border-mandarin focus:ring-2 focus:ring-mandarin/20 focus:outline-none transition-colors"
+              >
+                <option value="20hq">Container 20HQ (2 vehicules)</option>
+                <option value="40hq">Container 40HQ (4 vehicules)</option>
+                <option value="roro">RORO - Roll-on/Roll-off (par vehicule)</option>
+                <option value="flat_rack">Flat Rack (par unite)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)] pointer-events-none" />
             </div>
 
             {/* Last Update Info */}
