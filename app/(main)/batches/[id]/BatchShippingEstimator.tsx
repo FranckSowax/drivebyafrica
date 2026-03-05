@@ -38,6 +38,7 @@ interface BatchShippingEstimatorProps {
   minQuantity: number;
   maxQuantity: number;
   autoOpenQuote?: boolean;
+  shippingType?: '20hq' | '40hq';
 }
 
 export function BatchShippingEstimator({
@@ -51,6 +52,7 @@ export function BatchShippingEstimator({
   minQuantity,
   maxQuantity,
   autoOpenQuote = false,
+  shippingType = '40hq',
 }: BatchShippingEstimatorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -158,8 +160,9 @@ export function BatchShippingEstimator({
   }, [autoOpenQuote, user, hasAutoOpened, selectedDestination, isLoadingDestinations]);
 
   // Calculate costs for batch
-  // Lots use 40ft containers: 4 vehicles per container, ceil(qty/4) containers
-  const VEHICLES_PER_40FT = 4;
+  // 20HQ = 2 vehicles per container, 40HQ = 4 vehicles per container
+  const vehiclesPerContainer = shippingType === '20hq' ? 2 : 4;
+  const containerLabel = shippingType === '20hq' ? 'Container 20HQ' : 'Container 40HQ';
 
   const calculations = useMemo(() => {
     if (!selectedDestination) return null;
@@ -169,10 +172,12 @@ export function BatchShippingEstimator({
     const effectiveUnitPriceUSD = unitPriceUSD + exportTaxUSD;
     const totalVehiclePriceUSD = effectiveUnitPriceUSD * quantity;
 
-    // 40ft container calculation for lots: 4 vehicles per container
-    const cost40ft = selectedDestination.shippingCost40ft[batchSource];
-    const numberOfContainers = Math.ceil(quantity / VEHICLES_PER_40FT);
-    const totalShippingCostUSD = numberOfContainers * cost40ft;
+    // Container cost based on shipping type
+    const costPerContainer = shippingType === '20hq'
+      ? selectedDestination.shippingCost[batchSource]
+      : selectedDestination.shippingCost40ft[batchSource];
+    const numberOfContainers = Math.ceil(quantity / vehiclesPerContainer);
+    const totalShippingCostUSD = numberOfContainers * costPerContainer;
     const shippingPerVehicleUSD = totalShippingCostUSD / quantity;
 
     // Insurance: 2.5% of (vehicle price + shipping)
@@ -201,11 +206,11 @@ export function BatchShippingEstimator({
       totalUSD,
       hasExportTax: exportTaxUSD > 0,
       quoteCurrencyCode,
-      // 40ft container info
+      // Container info
       numberOfContainers,
-      cost40ftPerContainer: Math.round(convertToQuoteCurrency(cost40ft)),
+      costPerContainer: Math.round(convertToQuoteCurrency(costPerContainer)),
     };
-  }, [unitPriceUSD, batchSource, selectedDestination, quantity, convertToQuoteCurrency, quoteCurrencyCode]);
+  }, [unitPriceUSD, batchSource, selectedDestination, quantity, shippingType, vehiclesPerContainer, convertToQuoteCurrency, quoteCurrencyCode]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -258,7 +263,7 @@ export function BatchShippingEstimator({
       flag: selectedDestination.flag,
     },
     shippingType: 'container' as const,
-    shippingTypeName: 'Container 40HQ',
+    shippingTypeName: containerLabel,
     calculations,
     userId: user?.id || '',
     userEmail: user?.email || '',
@@ -395,7 +400,7 @@ export function BatchShippingEstimator({
         </div>
       </div>
 
-      {/* Shipping Type - Fixed to Container 40HQ for batches */}
+      {/* Shipping Type - based on batch shipping_type */}
       <AnimatePresence>
         {selectedDestination && (
           <motion.div
@@ -412,8 +417,8 @@ export function BatchShippingEstimator({
               <span className="flex items-center gap-3">
                 <Container className="w-5 h-5 text-mandarin" />
                 <div>
-                  <span className="font-medium text-[var(--text-primary)] block">Container 40HQ</span>
-                  <span className="text-xs text-[var(--text-muted)]">4 vehicules par container</span>
+                  <span className="font-medium text-[var(--text-primary)] block">{containerLabel}</span>
+                  <span className="text-xs text-[var(--text-muted)]">{vehiclesPerContainer} vehicules par container</span>
                 </div>
               </span>
             </div>
@@ -465,10 +470,10 @@ export function BatchShippingEstimator({
                 <div>
                   <span className="text-[var(--text-muted)] block">Transport maritime</span>
                   <span className="text-xs text-royal-blue">
-                    Container 40HQ x {calculations.numberOfContainers} ({formatCurrency(calculations.cost40ftPerContainer)}/cont.)
+                    {containerLabel} x {calculations.numberOfContainers} ({formatCurrency(calculations.costPerContainer)}/cont.)
                   </span>
                   <span className="text-xs text-[var(--text-muted)] block">
-                    {quantity} vehicules / 4 par container = {calculations.numberOfContainers} container{calculations.numberOfContainers > 1 ? 's' : ''}
+                    {quantity} vehicules / {vehiclesPerContainer} par container = {calculations.numberOfContainers} container{calculations.numberOfContainers > 1 ? 's' : ''}
                   </span>
                 </div>
               </div>
