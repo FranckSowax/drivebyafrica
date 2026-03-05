@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { AdminBatchTable } from '@/components/admin/AdminBatchTable';
 import { AdminBatchDetailsModal } from '@/components/admin/AdminBatchDetailsModal';
+import { AddBatchModal } from '@/components/collaborator/AddBatchModal';
 import { EditBatchModal } from '@/components/collaborator/EditBatchModal';
 import { CollaboratorLocaleProvider } from '@/components/collaborator/CollaboratorLocaleProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Package } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 import type { VehicleBatchWithCollaborator } from '@/types/vehicle-batch';
 
 export default function AdminBatchesPage() {
@@ -20,6 +21,7 @@ export default function AdminBatchesPage() {
   const [selectedBatch, setSelectedBatch] = useState<VehicleBatchWithCollaborator | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve');
   const [adminNotes, setAdminNotes] = useState('');
@@ -150,6 +152,13 @@ export default function AdminBatchesPage() {
             Manage collaborator-submitted vehicle batches
           </p>
         </div>
+        <Button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-2 bg-mandarin hover:bg-mandarin/90 text-white"
+        >
+          <Plus className="w-4 h-4" />
+          Add Batch
+        </Button>
       </div>
 
       {/* Stats */}
@@ -198,8 +207,14 @@ export default function AdminBatchesPage() {
         />
       </Card>
 
-      {/* Edit Batch Modal - wrapped in CollaboratorLocaleProvider for translations */}
+      {/* Add & Edit Batch Modals - wrapped in CollaboratorLocaleProvider for translations */}
       <CollaboratorLocaleProvider>
+        <AddBatchModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => fetchBatches()}
+          apiEndpoint="/api/admin/batches"
+        />
         <EditBatchModal
           isOpen={isEditModalOpen}
           onClose={() => {

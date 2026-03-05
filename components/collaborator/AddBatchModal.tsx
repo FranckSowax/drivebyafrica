@@ -10,9 +10,10 @@ interface AddBatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  apiEndpoint?: string;
 }
 
-export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps) {
+export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/collaborator/batches' }: AddBatchModalProps) {
   const { t } = useCollaboratorLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,7 +109,7 @@ export function AddBatchModal({ isOpen, onClose, onSuccess }: AddBatchModalProps
     }
 
     try {
-      const response = await fetch('/api/collaborator/batches', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -298,7 +298,89 @@ export async function PUT(request: Request) {
   }
 }
 
-// POST - Create a batch order
+// Helper to create a batch as admin (auto-approved)
+async function handleCreateBatch(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  user: { id: string },
+  body: Record<string, unknown>
+) {
+  // Verify admin
+  if (!(await isUserAdmin(supabase, user.id))) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+  }
+
+  const {
+    make, model, year, title, description,
+    source_country, price_per_unit_usd,
+    total_quantity, minimum_order_quantity,
+    mileage, fuel_type, transmission, drive_type,
+    engine_size, body_type, color, condition,
+    images, thumbnail_url, collaborator_notes,
+  } = body as Record<string, unknown>;
+
+  // Validate required fields
+  if (!make || !model || !year || !title || !source_country || !price_per_unit_usd || !total_quantity || !minimum_order_quantity) {
+    return NextResponse.json(
+      { error: 'Missing required fields' },
+      { status: 400 }
+    );
+  }
+
+  const totalQty = Number(total_quantity);
+  const minQty = Number(minimum_order_quantity);
+
+  if (totalQty < minQty) {
+    return NextResponse.json(
+      { error: 'Total quantity must be >= minimum order quantity' },
+      { status: 400 }
+    );
+  }
+
+  // Admin-created batches are auto-approved
+  const { data: batch, error: insertError } = await supabase
+    .from('vehicle_batches')
+    .insert({
+      added_by_collaborator_id: user.id,
+      make: make as string,
+      model: model as string,
+      year: year as number,
+      title: title as string,
+      description: (description as string) || null,
+      source_country: source_country as 'china' | 'korea' | 'dubai',
+      price_per_unit_usd: Number(price_per_unit_usd),
+      total_quantity: totalQty,
+      available_quantity: totalQty,
+      minimum_order_quantity: minQty,
+      mileage: mileage ? Number(mileage) : null,
+      fuel_type: (fuel_type as string) || null,
+      transmission: (transmission as string) || null,
+      drive_type: (drive_type as string) || null,
+      engine_size: (engine_size as string) || null,
+      body_type: (body_type as string) || null,
+      color: (color as string) || null,
+      condition: (condition as string) || null,
+      images: (images as string[]) || [],
+      collaborator_notes: (collaborator_notes as string) || null,
+      status: 'approved',
+      is_visible: true,
+      approved_by_admin_id: user.id,
+      approved_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error('Error creating admin batch:', insertError);
+    return NextResponse.json(
+      { error: 'Erreur lors de la création du lot' },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true, batch });
+}
+
+// POST - Create a batch (admin) or Create a batch order
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -309,6 +391,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+
+    // If the body contains vehicle batch fields (make, model, etc.), it's a batch creation
+    if (body.make && body.model && body.year && body.title) {
+      return handleCreateBatch(supabase, user, body);
+    }
+
+    // Otherwise, handle batch order creation
     const {
       batchId,
       quantityOrdered,
