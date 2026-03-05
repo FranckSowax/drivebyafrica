@@ -83,12 +83,14 @@ export function EditBatchModal({ isOpen, onClose, onSuccess, batch, apiEndpoint 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `batch-images/${fileName}`;
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { data, error: uploadError } = await supabase.storage
           .from('batch-images')
-          .upload(filePath, file);
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
         if (uploadError) {
           throw uploadError;
@@ -96,7 +98,7 @@ export function EditBatchModal({ isOpen, onClose, onSuccess, batch, apiEndpoint 
 
         const { data: { publicUrl } } = supabase.storage
           .from('batch-images')
-          .getPublicUrl(filePath);
+          .getPublicUrl(data.path);
 
         uploadedUrls.push(publicUrl);
       }
@@ -104,7 +106,7 @@ export function EditBatchModal({ isOpen, onClose, onSuccess, batch, apiEndpoint 
       setImages([...images, ...uploadedUrls]);
     } catch (err) {
       console.error('Error uploading images:', err);
-      setError('Failed to upload images');
+      setError(err instanceof Error ? err.message : 'Failed to upload images');
     } finally {
       setUploadingImages(false);
     }

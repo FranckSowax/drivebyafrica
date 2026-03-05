@@ -22,6 +22,7 @@ export default function AdminBatchesPage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve');
   const [adminNotes, setAdminNotes] = useState('');
@@ -91,6 +92,36 @@ export default function AdminBatchesPage() {
     setApprovalAction('reject');
     setAdminNotes('');
     setIsApprovalModalOpen(true);
+  };
+
+  const handleDeleteClick = (batch: VehicleBatchWithCollaborator) => {
+    setSelectedBatch(batch);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedBatch) return;
+
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/admin/batches?batchId=${selectedBatch.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsDeleteModalOpen(false);
+        setSelectedBatch(null);
+        fetchBatches();
+      } else {
+        alert(data.error || 'Failed to delete batch');
+      }
+    } catch (error) {
+      console.error('Error deleting batch:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmitApproval = async () => {
@@ -204,6 +235,7 @@ export default function AdminBatchesPage() {
           onEdit={handleEditBatch}
           onApprove={handleApproveClick}
           onReject={handleRejectClick}
+          onDelete={handleDeleteClick}
         />
       </Card>
 
@@ -267,6 +299,44 @@ export default function AdminBatchesPage() {
                 className={`flex-1 ${approvalAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 {submitting ? 'Processing...' : approvalAction === 'approve' ? 'Approve Batch' : 'Reject Batch'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {selectedBatch && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Delete Batch"
+          description={`${selectedBatch.year} ${selectedBatch.make} ${selectedBatch.model}`}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--text-muted)]">
+              Are you sure you want to delete this batch? This action cannot be undone.
+            </p>
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-sm text-red-400">
+                <strong>{selectedBatch.title}</strong> — {selectedBatch.total_quantity} vehicles @ ${selectedBatch.price_per_unit_usd.toLocaleString()}/unit
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={submitting}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={submitting}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                {submitting ? 'Deleting...' : 'Delete Batch'}
               </Button>
             </div>
           </div>

@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   Check,
   User,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { VehicleBatchWithCollaborator } from '@/types/vehicle-batch';
@@ -37,6 +38,7 @@ interface AdminBatchTableProps {
   onEdit?: (batch: VehicleBatchWithCollaborator) => void;
   onApprove?: (batch: VehicleBatchWithCollaborator) => void;
   onReject?: (batch: VehicleBatchWithCollaborator) => void;
+  onDelete?: (batch: VehicleBatchWithCollaborator) => void;
 }
 
 const SOURCE_FLAGS: Record<string, string> = {
@@ -66,6 +68,7 @@ export function AdminBatchTable({
   onEdit,
   onApprove,
   onReject,
+  onDelete,
 }: AdminBatchTableProps) {
   const [localSearch, setLocalSearch] = useState(filters.search);
   const statusOptions = getStatusOptions();
@@ -363,6 +366,15 @@ export function AdminBatchTable({
                           title="Reject batch"
                         >
                           <X className="w-4 h-4" />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          onClick={() => onDelete(batch)}
+                          className="p-2 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                          title="Delete batch"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>

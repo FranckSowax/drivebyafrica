@@ -298,6 +298,59 @@ export async function PUT(request: Request) {
   }
 }
 
+// DELETE - Delete a batch (admin only)
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    if (!(await isUserAdmin(supabase, user.id))) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const batchId = searchParams.get('batchId');
+
+    if (!batchId) {
+      return NextResponse.json({ error: 'Batch ID requis' }, { status: 400 });
+    }
+
+    // Check for existing orders before deleting
+    const { count: orderCount } = await supabase
+      .from('batch_orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('batch_id', batchId);
+
+    if (orderCount && orderCount > 0) {
+      return NextResponse.json(
+        { error: `Impossible de supprimer : ${orderCount} commande(s) associée(s) à ce lot` },
+        { status: 400 }
+      );
+    }
+
+    const { error: deleteError } = await supabase
+      .from('vehicle_batches')
+      .delete()
+      .eq('id', batchId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting batch:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors de la suppression du lot' },
+      { status: 500 }
+    );
+  }
+}
+
 // Helper to create a batch as admin (auto-approved)
 async function handleCreateBatch(
   supabase: Awaited<ReturnType<typeof createClient>>,
