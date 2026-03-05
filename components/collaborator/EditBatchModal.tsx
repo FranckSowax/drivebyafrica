@@ -42,7 +42,7 @@ export function EditBatchModal({ isOpen, onClose, onSuccess, batch, apiEndpoint 
   const [bodyType, setBodyType] = useState('');
   const [color, setColor] = useState('');
   const [condition, setCondition] = useState('');
-  const [shippingType, setShippingType] = useState<'20hq' | '40hq'>('20hq');
+  const [shippingType, setShippingType] = useState<'20hq' | '40hq' | 'roro' | 'flat_rack'>('20hq');
   const [images, setImages] = useState<string[]>([]);
   const [collaboratorNotes, setCollaboratorNotes] = useState('');
 
@@ -306,11 +306,13 @@ export function EditBatchModal({ isOpen, onClose, onSuccess, batch, apiEndpoint 
           </label>
           <select
             value={shippingType}
-            onChange={(e) => setShippingType(e.target.value as '20hq' | '40hq')}
+            onChange={(e) => setShippingType(e.target.value as '20hq' | '40hq' | 'roro' | 'flat_rack')}
             className="w-full px-3 py-2 bg-white border border-nobel/20 rounded-lg text-gray-900 placeholder:text-nobel focus:outline-none focus:border-alto-orange"
           >
             <option value="20hq">20 pieds (2 véhicules)</option>
             <option value="40hq">40 pieds (4 véhicules)</option>
+            <option value="roro">RORO (Roll-on/Roll-off)</option>
+            <option value="flat_rack">Flat Rack</option>
           </select>
         </div>
 

@@ -40,7 +40,7 @@ export interface VehicleBatch {
   condition?: string;
 
   // Shipping
-  shipping_type?: '20hq' | '40hq';
+  shipping_type?: '20hq' | '40hq' | 'roro' | 'flat_rack';
 
   // Features
   features?: Record<string, unknown>[];
@@ -138,16 +138,18 @@ export interface CreateVehicleBatchInput {
   body_type?: string;
   color?: string;
   condition?: string;
-  shipping_type?: '20hq' | '40hq';
+  shipping_type?: '20hq' | '40hq' | 'roro' | 'flat_rack';
   features?: Record<string, unknown>[];
   collaborator_notes?: string;
 }
 
-export type ShippingType = '20hq' | '40hq';
+export type ShippingType = '20hq' | '40hq' | 'roro' | 'flat_rack';
 
 export const SHIPPING_TYPE_LABELS: Record<ShippingType, string> = {
   '20hq': '20 pieds (2 véh.)',
   '40hq': '40 pieds (4 véh.)',
+  'roro': 'RORO (Roll-on/Roll-off)',
+  'flat_rack': 'Flat Rack',
 };
 
 export interface CreateBatchOrderInput {

@@ -381,7 +381,7 @@ export function BatchDetailClient({ batch }: BatchDetailClientProps) {
                 minQuantity={batch.minimum_order_quantity}
                 maxQuantity={batch.available_quantity}
                 autoOpenQuote={shouldAutoOpenQuote}
-                shippingType={batch.shipping_type as '20hq' | '40hq' || '20hq'}
+                shippingType={(batch.shipping_type as '20hq' | '40hq' | 'roro' | 'flat_rack') || '20hq'}
               />
 
               {/* Share Button */}
