@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Package,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Card } from '@/components/ui/Card';
@@ -128,6 +129,7 @@ export default function QuotesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [quotesToValidate, setQuotesToValidate] = useState<Quote[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
 
@@ -208,6 +210,32 @@ export default function QuotesPage() {
     }
   };
 
+  const handleDeleteGroup = async (groupQuotes: Quote[]) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ce devis groupé (${groupQuotes.length} véhicules) ?`)) {
+      return;
+    }
+
+    setDeletingQuote(groupQuotes[0].group_id || groupQuotes[0].id);
+    try {
+      for (const q of groupQuotes) {
+        const response = await fetch(`/api/quotes?id=${q.id}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const data = await response.json();
+          toast.error(data.error || 'Erreur lors de la suppression');
+          break;
+        }
+      }
+      toast.success('Devis groupé supprimé avec succès');
+      const deletedIds = new Set(groupQuotes.map((q) => q.id));
+      setQuotes(quotes.filter((q) => !deletedIds.has(q.id)));
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeletingQuote(null);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     // Format with regular spaces as thousand separators
     const formatted = Math.round(amount)
@@ -233,8 +261,9 @@ export default function QuotesPage() {
     setIsModalOpen(true);
   };
 
-  const handleValidateQuote = (quote: Quote) => {
-    setSelectedQuote(quote);
+  const handleValidateQuote = (quotesOrSingle: Quote | Quote[]) => {
+    const arr = Array.isArray(quotesOrSingle) ? quotesOrSingle : [quotesOrSingle];
+    setQuotesToValidate(arr);
     setIsValidationModalOpen(true);
   };
 
@@ -245,7 +274,7 @@ export default function QuotesPage() {
 
   const handleCloseValidationModal = () => {
     setIsValidationModalOpen(false);
-    setSelectedQuote(null);
+    setQuotesToValidate([]);
   };
 
   // Convert Quote to QuoteData format for the modal
@@ -556,6 +585,41 @@ export default function QuotesPage() {
     return matchesStatus && matchesSearch;
   });
 
+  // Group filtered quotes by group_id
+  type ListItem =
+    | { type: 'single'; quote: Quote }
+    | { type: 'group'; groupId: string; quotes: Quote[] };
+
+  const groupedItems: ListItem[] = useMemo(() => {
+    const groups = new Map<string, Quote[]>();
+    const singles: Quote[] = [];
+
+    filteredQuotes.forEach((q) => {
+      if (q.group_id) {
+        const arr = groups.get(q.group_id) || [];
+        arr.push(q);
+        groups.set(q.group_id, arr);
+      } else {
+        singles.push(q);
+      }
+    });
+
+    const items: ListItem[] = [];
+    groups.forEach((groupQuotes, groupId) => {
+      items.push({ type: 'group', groupId, quotes: groupQuotes });
+    });
+    singles.forEach((q) => items.push({ type: 'single', quote: q }));
+
+    // Sort by most recent created_at
+    items.sort((a, b) => {
+      const dateA = a.type === 'group' ? a.quotes[0].created_at : a.quote.created_at;
+      const dateB = b.type === 'group' ? b.quotes[0].created_at : b.quote.created_at;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
+
+    return items;
+  }, [filteredQuotes]);
+
   // Count by status
   const statusCounts = {
     all: quotes.length,
@@ -664,7 +728,136 @@ export default function QuotesPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredQuotes.map((quote) => {
+          {groupedItems.map((item) => {
+            if (item.type === 'group') {
+              // ── Grouped Quote Card ──
+              const { quotes: groupQuotes, groupId } = item;
+              const firstQuote = groupQuotes[0];
+              const allPending = groupQuotes.every((q) => q.status === 'pending');
+              const anyExpired = groupQuotes.some((q) => isExpired(q.valid_until));
+              const canValidate = allPending && !anyExpired;
+              const canDelete = groupQuotes.every((q) => q.status !== 'accepted');
+              const totalXaf = groupQuotes.reduce((sum, q) => sum + q.total_cost_xaf, 0);
+              const status = STATUS_CONFIG[firstQuote.status] || DEFAULT_STATUS_CONFIG;
+              const StatusIcon = status.icon;
+              const isDeletingGroup = deletingQuote === groupId;
+
+              return (
+                <Card key={groupId} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  {/* Group Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                        <Package className="w-3.5 h-3.5" />
+                        Container 40ft ({groupQuotes.length} véhicules)
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${status.bg} ${status.color}`}
+                      >
+                        <StatusIcon className="w-3 h-3" />
+                        {anyExpired && allPending ? 'Expiré' : status.label}
+                      </span>
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {firstQuote.destination_name}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(firstQuote.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Vehicle List */}
+                  <div className="space-y-2">
+                    {groupQuotes.map((q) => {
+                      const vehicleImage = q.vehicles?.images?.[0];
+                      return (
+                        <div
+                          key={q.id}
+                          className="flex items-center gap-3 p-2 rounded-lg bg-[var(--surface)] border border-[var(--card-border)]"
+                        >
+                          <div className="relative w-16 h-12 flex-shrink-0 rounded-md overflow-hidden bg-[var(--surface)]">
+                            {vehicleImage ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={getProxiedImageUrl(vehicleImage)}
+                                alt={`${q.vehicle_make} ${q.vehicle_model}`}
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Car className="w-5 h-5 text-[var(--text-muted)]" />
+                              </div>
+                            )}
+                            <div className="absolute top-0.5 left-0.5 w-5 h-5 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-full text-[10px]">
+                              {SOURCE_FLAGS[q.vehicle_source] || '🚗'}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link href={`/cars/${q.vehicle_id}`} className="hover:text-mandarin transition-colors">
+                              <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
+                                {q.vehicle_make} {q.vehicle_model} ({q.vehicle_year})
+                              </p>
+                            </Link>
+                          </div>
+                          <span className="text-sm font-bold text-mandarin whitespace-nowrap">
+                            {formatCurrency(q.total_cost_xaf)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Total */}
+                  <div className="mt-3 pt-3 border-t border-[var(--card-border)] flex items-center justify-between">
+                    <span className="text-sm font-medium text-[var(--text-muted)]">Total estimé</span>
+                    <span className="text-lg font-bold text-mandarin">
+                      {formatCurrency(totalXaf)}
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {canValidate && (
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => handleValidateQuote(groupQuotes)}
+                        leftIcon={<CheckCircle className="w-4 h-4" />}
+                        className="flex-1 sm:flex-none"
+                      >
+                        Valider le devis ({groupQuotes.length} véhicules)
+                      </Button>
+                    )}
+
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteGroup(groupQuotes)}
+                        disabled={isDeletingGroup}
+                        leftIcon={
+                          isDeletingGroup ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )
+                        }
+                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10 ml-auto"
+                      >
+                        Supprimer le groupe
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              );
+            }
+
+            // ── Single Quote Card (unchanged) ──
+            const quote = item.quote;
             const status = STATUS_CONFIG[quote.status] || DEFAULT_STATUS_CONFIG;
             const StatusIcon = status.icon;
             const expired = isExpired(quote.valid_until) && quote.status === 'pending';
@@ -709,11 +902,6 @@ export default function QuotesPage() {
                       <span className="text-xs text-[var(--text-muted)] font-mono">
                         {quote.quote_number}
                       </span>
-                      {quote.container_type === '40ft' && (
-                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">
-                          40ft ({quote.group_vehicle_count || 1} véh.)
-                        </span>
-                      )}
                     </div>
 
                     {/* Vehicle title */}
@@ -855,7 +1043,7 @@ export default function QuotesPage() {
       <QuoteValidationModal
         isOpen={isValidationModalOpen}
         onClose={handleCloseValidationModal}
-        quote={selectedQuote}
+        quotes={quotesToValidate}
       />
     </div>
   );
