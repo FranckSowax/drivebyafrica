@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
 // Initialize OpenAI client (GPT-4o)
@@ -323,13 +324,36 @@ EXEMPLES DE RECENTRAGE:
 - Question hors-sujet: "Raconte-moi une blague" → "Je prefere me concentrer sur ce que je fais de mieux: vous aider a importer votre vehicule! Avez-vous deja consulte notre catalogue?"
 - Question vague: "Bonjour" → "Bonjour! Bienvenue sur Driveby Africa. Je suis la pour vous accompagner dans l'achat de votre vehicule. Recherchez-vous une marque particuliere ou avez-vous un budget en tete?"`;
 
+// CORS headers for mobile app access
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    // Support both cookie auth (web) and Bearer token auth (mobile)
+    const authHeader = request.headers.get('authorization');
+    let supabase;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { headers: { Authorization: `Bearer ${token}` } } }
+      );
+    } else {
+      supabase = await createClient();
+    }
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Non autorise' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorise' }, { status: 401, headers: corsHeaders });
     }
 
     const body = await request.json();
@@ -342,14 +366,14 @@ export async function POST(request: Request) {
     if (!conversationId || !userMessage) {
       return NextResponse.json(
         { error: 'conversationId et userMessage requis' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     if (typeof userMessage === 'string' && userMessage.length > 5000) {
       return NextResponse.json(
         { error: 'Message trop long (max 5000 caractères)' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -740,7 +764,7 @@ export async function POST(request: Request) {
 
       if (insertError) throw insertError;
 
-      return NextResponse.json({ message: botMessage });
+      return NextResponse.json({ message: botMessage }, { headers: corsHeaders });
     }
 
     // Call OpenAI GPT-4o API
@@ -773,7 +797,7 @@ export async function POST(request: Request) {
 
     if (insertError) throw insertError;
 
-    return NextResponse.json({ message: botMessage });
+    return NextResponse.json({ message: botMessage }, { headers: corsHeaders });
   } catch (error) {
     console.error('Chat AI error:', error);
 
@@ -783,7 +807,7 @@ export async function POST(request: Request) {
         error: 'Erreur lors de la generation de la reponse',
         fallbackMessage: "Je rencontre des difficultes techniques. Vous pouvez demander l'aide d'un agent en cliquant sur le bouton 'Parler à un agent', ou nous contacter directement via WhatsApp au +241 77 00 00 00."
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
