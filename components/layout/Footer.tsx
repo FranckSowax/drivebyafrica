@@ -37,7 +37,7 @@ export function Footer() {
     : '/logo-driveby-africa-dark.png';
 
   return (
-    <footer className="bg-[var(--surface)] border-t border-[var(--card-border)]">
+    <footer className="hidden lg:block bg-[var(--surface)] border-t border-[var(--card-border)]">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
