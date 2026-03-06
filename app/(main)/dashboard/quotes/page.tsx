@@ -18,7 +18,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
-  Package,
+  ShoppingCart,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Card } from '@/components/ui/Card';
@@ -748,7 +748,7 @@ export default function QuotesPage() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                        <Package className="w-3.5 h-3.5" />
+                        <ShoppingCart className="w-3.5 h-3.5" />
                         Container 40ft ({groupQuotes.length} véhicules)
                       </span>
                       <span
