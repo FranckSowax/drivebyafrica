@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+*.json.bak
+qualee-wallet*.json
 
 # debug
 npm-debug.log*
@@ -46,3 +48,6 @@ next-env.d.ts
 
 # OpenMemory - IDE/Assistant specific rules
 .windsurf/rules/openmemory.md
+
+# Mobile app (separate repo)
+/mobile-drivebyafrica
