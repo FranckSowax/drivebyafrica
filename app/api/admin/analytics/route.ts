@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // GET: Fetch comprehensive analytics data
 export async function GET() {
@@ -10,7 +11,8 @@ export async function GET() {
       return adminCheck.response;
     }
 
-    const supabase = adminCheck.supabase;
+    // Use supabaseAdmin (service role) for all DB queries to avoid RLS/cookie issues
+    const supabase = supabaseAdmin;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
