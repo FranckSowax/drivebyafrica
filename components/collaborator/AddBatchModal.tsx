@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Upload, X, Star } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { useCollaboratorLocale } from '@/components/collaborator/CollaboratorLocaleProvider';
 
 interface AddBatchModalProps {
@@ -50,32 +49,24 @@ export function AddBatchModal({ isOpen, onClose, onSuccess, apiEndpoint = '/api/
     setError('');
 
     try {
-      const supabase = createClient();
-      const uploadedUrls: string[] = [];
-
+      const formData = new FormData();
       for (const file of fileList) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        formData.append('files', file);
+      }
+      formData.append('bucket', 'batch-images');
 
-        const { data, error: uploadError } = await supabase.storage
-          .from('batch-images')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('batch-images')
-          .getPublicUrl(data.path);
-
-        uploadedUrls.push(publicUrl);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
       }
 
-      setImages(prev => [...prev, ...uploadedUrls]);
+      const { urls } = await response.json();
+      setImages(prev => [...prev, ...urls]);
     } catch (err) {
       console.error('Error uploading images:', err);
       setError(err instanceof Error ? err.message : 'Failed to upload images');
