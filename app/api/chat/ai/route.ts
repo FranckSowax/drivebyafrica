@@ -557,7 +557,7 @@ export async function POST(request: Request) {
     let ragContext = '';
     try {
       const { searchKnowledge } = await import('@/lib/rag/knowledge-base');
-      const ragResults = await searchKnowledge(userMessage, { threshold: 0.65, limit: 3 });
+      const ragResults = await searchKnowledge(userMessage, { threshold: 0.7, limit: 5 });
       if (ragResults.length > 0) {
         ragContext = '\n\nBASE DE CONNAISSANCE:';
         for (const r of ragResults) {

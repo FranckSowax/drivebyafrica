@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   verifyWebhookSignature,
@@ -144,8 +145,9 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     throw insertError;
   }
 
-  // 5. Try chatbot auto-reply for text messages
-  if (message.type === 'text' && content) {
+  // 5. Try chatbot auto-reply for text messages (if enabled)
+  const autoReplyEnabled = process.env.CHATBOT_AUTO_REPLY !== 'false';
+  if (autoReplyEnabled && message.type === 'text' && content) {
     try {
       const chatbotResult = await handleChatbotMessage(phone, content, message.contactName);
       if (chatbotResult.replied) {
@@ -272,6 +274,10 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST: Incoming messages and status updates from Meta
+ *
+ * IMPORTANT: Return 200 immediately, then process async.
+ * Meta imposes a 15s timeout — chatbot RAG + GPT can exceed that.
+ * Using fire-and-forget pattern to avoid webhook retries.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -291,25 +297,28 @@ export async function POST(request: NextRequest) {
     // Parse Meta webhook format
     const { messages, statuses } = parseWebhookPayload(body);
 
-    // Handle incoming messages
-    for (const message of messages) {
-      try {
-        await handleIncomingMessage(message);
-      } catch (err) {
-        console.error('[MetaWebhook] Error processing message:', err);
+    // Schedule async processing via next/server after()
+    // This returns 200 immediately to Meta (within their 15s timeout)
+    // while the chatbot RAG + GPT work continues in the background
+    after(async () => {
+      for (const message of messages) {
+        try {
+          await handleIncomingMessage(message);
+        } catch (err) {
+          console.error('[MetaWebhook] Error processing message:', err);
+        }
       }
-    }
 
-    // Handle status updates
-    for (const status of statuses) {
-      try {
-        await handleStatusUpdate(status);
-      } catch (err) {
-        console.error('[MetaWebhook] Error processing status:', err);
+      for (const status of statuses) {
+        try {
+          await handleStatusUpdate(status);
+        } catch (err) {
+          console.error('[MetaWebhook] Error processing status:', err);
+        }
       }
-    }
+    });
 
-    // Meta expects 200 response
+    // Return 200 immediately to Meta
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[MetaWebhook] Fatal error:', error);

@@ -24,6 +24,8 @@ const ESCALATION_KEYWORDS = [
 ];
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://driveby-africa.com';
+const FALLBACK_MESSAGE = process.env.CHATBOT_FALLBACK_MESSAGE
+  || `Désolé, je rencontre un problème technique. Veuillez réessayer ou contacter notre équipe directement :\n📞 WhatsApp: +86 130 2205 2798`;
 
 function getAdmin() {
   return createClient(
@@ -102,9 +104,7 @@ export async function handleChatbotMessage(
     console.error('[Chatbot] Error:', error);
     // Send fallback message
     try {
-      await sendTextMessage(phone,
-        `Désolé, je rencontre un problème technique. Veuillez réessayer ou contacter notre équipe directement :\n📞 WhatsApp: +86 130 2205 2798`
-      );
+      await sendTextMessage(phone, FALLBACK_MESSAGE);
     } catch {
       // Ignore send error
     }
@@ -191,7 +191,7 @@ async function buildContext(
 
   // RAG knowledge search
   try {
-    const ragResults = await searchKnowledge(message, { threshold: 0.65, limit: 3 });
+    const ragResults = await searchKnowledge(message, { threshold: 0.7, limit: 5 });
     if (ragResults.length > 0) {
       parts.push('BASE DE CONNAISSANCE:');
       for (const r of ragResults) {

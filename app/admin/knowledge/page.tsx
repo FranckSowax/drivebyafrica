@@ -17,6 +17,7 @@ import {
   X,
   Save,
   ChevronDown,
+  Upload,
 } from 'lucide-react';
 
 interface KnowledgeDocument {
@@ -71,6 +72,9 @@ export default function KnowledgeBasePage() {
 
   // Seed state
   const [seeding, setSeeding] = useState(false);
+
+  // Upload state
+  const [uploading, setUploading] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -187,6 +191,39 @@ export default function KnowledgeBasePage() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const category = prompt('Catégorie du document (faq, process, pricing, policy, vehicle_info, shipping, general)', 'general');
+    if (!category) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', category);
+
+      const res = await fetch('/api/admin/knowledge/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'Document importé');
+        fetchDocuments();
+      } else {
+        alert(data.error || 'Erreur lors de l\'import');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Erreur de connexion');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
   const totalDocs = Object.values(stats).reduce((a, b) => a + b, 0);
 
   return (
@@ -209,6 +246,17 @@ export default function KnowledgeBasePage() {
             {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
             Initialiser
           </button>
+          <label className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer disabled:opacity-50">
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            Importer fichier
+            <input
+              type="file"
+              accept=".txt,.md,.csv,.json"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
           <button
             onClick={() => setEditingDoc({ category: 'general', language: 'fr' })}
             className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
