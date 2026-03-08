@@ -207,30 +207,42 @@ export async function sendDocumentMessage(
 
 /**
  * Send an interactive message with CTA URL button
- * Meta Cloud API interactive message format
+ * Supports optional image header for rich vehicle cards
  */
 export async function sendInteractiveMessage(
   phone: string,
   bodyText: string,
   buttonText: string,
-  buttonUrl: string
+  buttonUrl: string,
+  imageUrl?: string
 ): Promise<MetaSendResult> {
   const to = formatPhoneForMeta(phone);
+
+  const interactive: Record<string, unknown> = {
+    type: 'cta_url',
+    body: { text: bodyText },
+    footer: { text: 'Driveby Africa - Import véhicules' },
+    action: {
+      name: 'cta_url',
+      parameters: {
+        display_text: buttonText.substring(0, 20),
+        url: buttonUrl,
+      },
+    },
+  };
+
+  // Add image header if provided
+  if (imageUrl) {
+    interactive.header = {
+      type: 'image',
+      image: { link: imageUrl },
+    };
+  }
+
   const result = await sendToMeta({
     to,
     type: 'interactive',
-    interactive: {
-      type: 'cta_url',
-      body: { text: bodyText },
-      footer: { text: 'Driveby Africa - Import véhicules' },
-      action: {
-        name: 'cta_url',
-        parameters: {
-          display_text: buttonText.substring(0, 20),
-          url: buttonUrl,
-        },
-      },
-    },
+    interactive,
   });
 
   // Fallback to text with link if interactive fails
