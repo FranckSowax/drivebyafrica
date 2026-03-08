@@ -280,7 +280,7 @@ INFORMATIONS CLE SUR DRIVEBY AFRICA:
 - Suivi en temps reel de l'expedition
 
 5. CONTACT:
-- WhatsApp: +241 77 00 00 00
+- WhatsApp: +86 130 2205 2798
 - Email: contact@driveby-africa.com
 - Horaires: Lun-Ven 8h-18h, Sam 9h-14h
 
@@ -805,7 +805,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: 'Erreur lors de la generation de la reponse',
-        fallbackMessage: "Je rencontre des difficultes techniques. Vous pouvez demander l'aide d'un agent en cliquant sur le bouton 'Parler à un agent', ou nous contacter directement via WhatsApp au +241 77 00 00 00."
+        fallbackMessage: "Je rencontre des difficultes techniques. Vous pouvez demander l'aide d'un agent en cliquant sur le bouton 'Parler à un agent', ou nous contacter directement via WhatsApp au +86 130 2205 2798."
       },
       { status: 500, headers: corsHeaders }
     );

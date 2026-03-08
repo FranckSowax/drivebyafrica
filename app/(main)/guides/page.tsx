@@ -268,7 +268,7 @@ export default function GuidesPage() {
                 et vous accompagner dans votre projet.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="https://wa.me/24177000000" target="_blank" rel="noopener noreferrer">
+                <a href="https://wa.me/8613022052798" target="_blank" rel="noopener noreferrer">
                   <Button
                     variant="secondary"
                     size="lg"

@@ -64,11 +64,11 @@ export function Footer() {
                 contact@driveby-africa.com
               </a>
               <a
-                href="tel:+24177000000"
+                href="tel:+8613022052798"
                 className="flex items-center gap-2 text-[var(--text-muted)] hover:text-mandarin transition-colors"
               >
                 <Phone className="w-4 h-4" />
-                +241 77 00 00 00
+                +86 130 2205 2798
               </a>
               <p className="flex items-center gap-2 text-[var(--text-muted)]">
                 <MapPin className="w-4 h-4" />

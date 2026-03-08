@@ -16,8 +16,8 @@ const contactMethods = [
     icon: MessageCircle,
     title: 'WhatsApp',
     description: 'Réponse instantanée 24/7',
-    value: '+241 77 00 00 00',
-    href: 'https://wa.me/24177000000',
+    value: '+86 130 2205 2798',
+    href: 'https://wa.me/8613022052798',
     color: 'text-green-500',
     bgColor: 'bg-green-500/10',
   },
@@ -34,8 +34,8 @@ const contactMethods = [
     icon: Phone,
     title: 'Téléphone',
     description: 'Lun-Ven, 9h-18h',
-    value: '+241 11 00 00 00',
-    href: 'tel:+24111000000',
+    value: '+86 130 2205 2798',
+    href: 'tel:+8613022052798',
     color: 'text-mandarin',
     bgColor: 'bg-mandarin/10',
   },
@@ -46,7 +46,7 @@ const offices = [
     city: 'Hong Kong',
     country: 'Chine',
     address: 'Central Business District',
-    phone: '+852 0000 0000',
+    phone: '+86 130 2205 2798',
   },
 ];
 
@@ -252,7 +252,7 @@ export default function ContactPage() {
                           value={formData.phone}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-cod-gray border border-nobel/20 rounded-xl text-white placeholder:text-nobel focus:outline-none focus:border-mandarin"
-                          placeholder="+241 77 00 00 00"
+                          placeholder="+86 130 2205 2798"
                         />
                       </div>
                       <div>

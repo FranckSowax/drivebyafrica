@@ -73,7 +73,7 @@ export function QuoteValidationModal({ isOpen, onClose, quotes }: QuoteValidatio
       ? `groupé (${vehicleCount} véhicules)`
       : firstQuote?.quote_number;
     window.open(
-      `https://wa.me/24177000000?text=Bonjour, je souhaite payer l'acompte pour le devis ${quoteRef} par Mobile Money`,
+      `https://wa.me/8613022052798?text=Bonjour, je souhaite payer l'acompte pour le devis ${quoteRef} par Mobile Money`,
       '_blank'
     );
   };

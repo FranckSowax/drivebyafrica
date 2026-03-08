@@ -204,7 +204,7 @@ export default function HowItWorksPage() {
               <p className="text-nobel mb-6">
                 Notre équipe est disponible 24/7 par WhatsApp pour répondre à toutes vos questions.
               </p>
-              <a href="https://wa.me/24177000000" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/8613022052798" target="_blank" rel="noopener noreferrer">
                 <Button variant="primary">
                   Contacter sur WhatsApp
                 </Button>

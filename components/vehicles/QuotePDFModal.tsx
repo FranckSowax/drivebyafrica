@@ -546,7 +546,7 @@ export function QuotePDFModal({ isOpen, onClose, quoteData, user, profile, defau
       doc.setFont('helvetica', 'normal');
       doc.text('Email: contact@driveby-africa.com', margin + 5, y + 14);
       doc.text('Site: www.drivebyafrica.com', margin + 5, y + 20);
-      doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
+      doc.text('WhatsApp: +86 130 2205 2798', margin + contentWidth / 2, y + 14);
       doc.text('Hong Kong', margin + contentWidth / 2, y + 20);
 
       // ========== BOTTOM ACCENT BAR ==========
@@ -940,7 +940,7 @@ return createPortal(
                   </div>
                   <div className="space-y-1">
                     <p className="text-[8px] font-bold text-gray-400 uppercase">WhatsApp</p>
-                    <p className="text-[10px] font-medium text-gray-900">+241 77 00 00 00</p>
+                    <p className="text-[10px] font-medium text-gray-900">+86 130 2205 2798</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[8px] font-bold text-gray-400 uppercase">Site Web</p>

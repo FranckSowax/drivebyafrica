@@ -551,7 +551,7 @@ export default function QuotesPage() {
       doc.setFont('helvetica', 'normal');
       doc.text('Driveby Africa', margin + 5, y + 14);
       doc.text('Email: contact@driveby-africa.com', margin + 5, y + 20);
-      doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
+      doc.text('WhatsApp: +86 130 2205 2798', margin + contentWidth / 2, y + 14);
       doc.text('Site: www.drivebyafrica.com', margin + contentWidth / 2, y + 20);
 
       // Page Footer

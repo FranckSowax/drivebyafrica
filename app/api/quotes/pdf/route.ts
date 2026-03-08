@@ -320,7 +320,7 @@ export async function GET(request: Request) {
     doc.setFont('helvetica', 'normal');
     doc.text('Email: contact@driveby-africa.com', margin + 5, y + 14);
     doc.text('Site: www.drivebyafrica.com', margin + 5, y + 20);
-    doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
+    doc.text('WhatsApp: +86 130 2205 2798', margin + contentWidth / 2, y + 14);
     doc.text('Hong Kong', margin + contentWidth / 2, y + 20);
 
     // ========== BOTTOM ACCENT BAR ==========

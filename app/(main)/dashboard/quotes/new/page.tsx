@@ -444,7 +444,7 @@ export default function NewQuotePage() {
       doc.text('Site: www.drivebyafrica.com', margin + 5, y + 20);
 
       // Right column
-      doc.text('WhatsApp: +241 77 00 00 00', margin + contentWidth / 2, y + 14);
+      doc.text('WhatsApp: +86 130 2205 2798', margin + contentWidth / 2, y + 14);
       doc.text('Hong Kong', margin + contentWidth / 2, y + 20);
 
       // ========== BOTTOM ACCENT BAR ==========
@@ -749,7 +749,7 @@ export default function NewQuotePage() {
             variant="secondary"
             className="w-full"
             leftIcon={<FileText className="w-4 h-4" />}
-            onClick={() => window.open('https://wa.me/24177000000?text=Bonjour, je souhaite des informations sur le devis ' + quoteNumber, '_blank')}
+            onClick={() => window.open('https://wa.me/8613022052798?text=Bonjour, je souhaite des informations sur le devis ' + quoteNumber, '_blank')}
           >
             Nous contacter par WhatsApp
           </Button>
