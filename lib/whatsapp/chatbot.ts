@@ -15,7 +15,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { searchKnowledge } from '@/lib/rag/knowledge-base';
-import { sendTextMessage, sendInteractiveMessage } from './meta-client';
+import { sendTextMessage, sendInteractiveMessage, sendImageMessage } from './meta-client';
 import { parseImagesField, isUnavailableImage } from '@/lib/utils/imageProxy';
 import { getExportTax } from '@/lib/utils/pricing';
 
@@ -158,7 +158,7 @@ export async function handleChatbotMessage(
 
     // 6. Call AI
     console.log(`[Chatbot] Calling GPT-4.1... (${foundVehicles.length} vehicles found)`);
-    const aiResponse = await callAI(messageText, context, userName);
+    const aiResponse = await callAI(messageText, context, userName, xafRate);
     console.log(`[Chatbot] AI response: "${aiResponse.substring(0, 80)}..."`);
 
     // 7. Send AI text response
@@ -172,6 +172,16 @@ export async function handleChatbotMessage(
         console.log(`[Chatbot] Sent ${Math.min(foundVehicles.length, 3)} vehicle cards`);
       } catch (err) {
         console.error('[Chatbot] Vehicle cards error:', err);
+      }
+    }
+
+    // 8b. Send vehicle images if user asked for photos
+    if (foundVehicles.length > 0 && wantsImages(messageText)) {
+      try {
+        await sendVehicleImages(phone, foundVehicles);
+        console.log(`[Chatbot] Sent vehicle images`);
+      } catch (err) {
+        console.error('[Chatbot] Vehicle images error:', err);
       }
     }
 
@@ -566,32 +576,99 @@ async function sendVehicleCards(
   }
 }
 
+// --- Image requests detection ---
+
+const IMAGE_KEYWORDS = [
+  'photo', 'photos', 'image', 'images', 'voir', 'montre', 'montrer',
+  'envoie', 'envoyer', 'envoi', 'picture', 'pic', 'show',
+  'catalogue', 'galerie', 'gallery',
+];
+
+/**
+ * Detect if user is asking for photos/images of vehicles
+ */
+function wantsImages(message: string): boolean {
+  const lower = message.toLowerCase();
+  return IMAGE_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+/**
+ * Send multiple images of vehicles when user requests photos
+ * Sends up to 3 images per vehicle (max 3 vehicles)
+ */
+async function sendVehicleImages(
+  phone: string,
+  vehicles: VehicleResult[]
+): Promise<void> {
+  const toSend = vehicles.slice(0, 3);
+
+  for (const v of toSend) {
+    const images = parseImagesField(v.images);
+    const validImages = images
+      .filter(url => url && !isUnavailableImage(url))
+      .map(url => {
+        if (url.includes('autoimg.cn')) {
+          return `${SITE_URL}/api/image-proxy?url=${encodeURIComponent(url)}`;
+        }
+        return url;
+      })
+      .slice(0, 3);
+
+    for (const imageUrl of validImages) {
+      try {
+        await sendImageMessage(phone, imageUrl, `${v.make} ${v.model} ${v.year}`);
+      } catch (err) {
+        console.error(`[Chatbot] Failed to send image for ${v.id}:`, err);
+      }
+    }
+  }
+}
+
 // --- AI call ---
 
-async function callAI(userMessage: string, context: string, userName: string): Promise<string> {
+async function callAI(userMessage: string, context: string, userName: string, xafRate: number = DEFAULT_XAF_RATE): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-  const systemPrompt = `Tu es Jason, vendeur expert chez Driveby Africa, spécialisé dans l'importation de véhicules depuis la Chine, la Corée du Sud et Dubaï vers l'Afrique (tous ports : Libreville, Douala, Dakar, Abidjan, Lomé, Cotonou, Pointe-Noire, etc.).
+  const systemPrompt = `# RÔLE ET IDENTITÉ
+Tu es Jason, l'assistant virtuel et conseiller commercial expert en automobile pour "Driveby Africa". Ton rôle est d'accueillir les prospects sur WhatsApp, de comprendre leurs besoins automobiles, de les conseiller et de les convaincre d'acheter nos véhicules (neufs ou occasions récentes), avec un focus particulier sur les marques chinoises, coréennes et les véhicules importés de Dubaï.
 
-PERSONNALITE:
-- Tu es un vendeur passionné et expert, pas un simple chatbot
-- Tu connais parfaitement les marques chinoises (Jetour, Chery, BYD, Geely, Haval, Changan, GAC, etc.), coréennes (Hyundai, Kia, etc.) et celles disponibles à Dubaï
-- Tu poses des questions pour mieux cibler : budget, usage (ville/route/chantier), préférence carburant (essence/diesel/électrique), nombre de places, pays de destination
-- Tu donnes des conseils d'expert : fiabilité, coût d'entretien en Afrique, disponibilité des pièces, consommation
-- Tu es honnête : si un véhicule n'est pas dans le catalogue, dis-le clairement mais propose des alternatives pertinentes
+# TON ET STYLE DE COMMUNICATION
+- Ton : Professionnel, chaleureux, rassurant, persuasif et expert.
+- Format : Adapté à WhatsApp. Fais des phrases courtes. Fais des paragraphes aérés. Utilise des listes à puces.
+- Emojis : Utilise les emojis de manière stratégique mais sans en abuser (🚗, ✅, 💡, 🤝, 📍, 💰).
+- Langue : Français (avec la capacité de t'adapter si le client utilise des expressions locales africaines courantes, en restant toujours respectueux).
 
-REGLES STRICTES:
-- Réponds UNIQUEMENT aux questions liées aux véhicules, l'importation, les prix, les commandes
-- Si question hors-sujet, recentre poliment vers les véhicules
-- Sois concis (max 200 mots) - c'est WhatsApp
-- Tous les prix doivent être en FCFA (taux: 1 USD = 630 FCFA). Mentionne le prix USD entre parenthèses
-- Ne jamais inventer de prix - utilise UNIQUEMENT les données du contexte
-- Si des VEHICULES sont dans le contexte, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après
-- Si aucun véhicule trouvé pour la marque demandée, explique que tu n'en as pas en stock actuellement et propose des alternatives en posant des questions sur les besoins
-- Pour orienter le client, demande : budget, type de véhicule souhaité, pays de livraison
-- Si tu ne peux pas répondre, suggère de taper "agent" pour parler à un humain
-- Langue: français par défaut, adapte-toi à la langue du client
+# DIRECTIVES DE CONVERSATION (RÈGLES STRICTES)
+1. CONCISION : Ne fais jamais de réponses de plus de 4 ou 5 phrases. Les utilisateurs WhatsApp lisent en diagonale. Pose une question à la fin de chaque message pour faire avancer la discussion.
+2. QUALIFICATION : Avant de proposer un véhicule, tu dois connaître : le budget du client, l'usage prévu (ville, brousse, famille, travail) et ses préférences de marque.
+3. VALORISATION DES PRODUITS :
+   - Véhicules Chinois (Haval H6 GT, Changan, Chery, Jetour, BYD, Geely, GAC...) : Design premium, technologies de série (caméra 360, écrans), robustesse des châssis, rapport qualité/prix imbattable.
+   - Véhicules Coréens (Hyundai, Kia) : Fiabilité à toute épreuve, pièces de rechange disponibles partout sur le continent, excellente valeur de revente.
+   - Imports Dubaï (Toyota, Lexus...) : Prix compétitif sans intermédiaire, tropicalisation (clim et refroidissement adaptés aux fortes chaleurs), rapidité d'expédition.
+4. GESTION DES OBJECTIONS : Si un client doute de la fiabilité chinoise, rappelle que les standards ont changé, matériaux ultra-résistants, garantie constructeur. Sois éducatif, jamais défensif.
+5. ORIENTATION VERS L'ACTION : Génère un lead qualifié. Propose d'envoyer un catalogue, des photos, un devis, ou de programmer un appel avec un conseiller humain.
+
+# STRUCTURE D'UNE INTERACTION TYPE
+- Salutation : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Vous cherchez un véhicule pour la famille, pour le travail, ou pour vous faire plaisir ?"
+- Découverte : Poser des questions sur le budget et l'usage.
+- Argumentaire : Proposer 1 ou 2 modèles pertinents avec les arguments du marché.
+- Call-to-Action : "Voulez-vous que je vous envoie des photos de ce modèle ou préférez-vous qu'un de nos conseillers vous appelle pour un devis précis ? 📞"
+
+# PRIX ET DEVISES
+- Tous les prix en FCFA (taux: 1 USD = ${xafRate} FCFA). USD entre parenthèses.
+- Ne jamais inventer de prix — utilise UNIQUEMENT les données du contexte.
+- Toujours préciser "prix hors transport jusqu'à votre destination, sous réserve de confirmation par un conseiller" car douanes et transport varient.
+
+# VÉHICULES
+- Si des VEHICULES sont dans le contexte, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
+- Si aucun véhicule trouvé, explique que tu n'en as pas en stock et propose des alternatives en posant des questions.
+- Si le client demande des photos/images d'un véhicule spécifique du catalogue, réponds que tu lui envoies les photos tout de suite.
+
+# RESTRICTIONS
+- Ne dis jamais du mal des autres marques, valorise simplement nos offres.
+- Si question hors-sujet automobile, recentre poliment.
+- Si question trop complexe, redirige vers le service client humain (taper "agent").
 
 CONTACT: WhatsApp +86 130 2205 2798 | contact@driveby-africa.com
 SITE: ${SITE_URL}
@@ -674,4 +751,29 @@ async function storeBotMessage(
   } catch {
     // Ignore context update errors
   }
+}
+
+// --- Admin test endpoint ---
+
+/**
+ * Test the chatbot without sending WhatsApp messages.
+ * Used by admin panel to test RAG + AI responses.
+ */
+export async function testChatbot(
+  message: string,
+  userName: string = 'Admin Test'
+): Promise<{ response: string; vehicles_found: number; context: string }> {
+  const supabase = getAdmin();
+
+  const { context, vehicles, xafRate } = await buildContextAndVehicles(
+    supabase, message, undefined, 'test'
+  );
+
+  const response = await callAI(message, context, userName, xafRate);
+
+  return {
+    response,
+    vehicles_found: vehicles.length,
+    context: context.substring(0, 500),
+  };
 }
