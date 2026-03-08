@@ -51,6 +51,8 @@ export async function handleChatbotMessage(
   const supabase = getAdmin();
 
   try {
+    console.log(`[Chatbot] Processing message from ${phone}: "${messageText.substring(0, 50)}..."`);
+
     // 1. Find user by phone
     const { data: profile } = await supabase
       .from('profiles')
@@ -61,6 +63,7 @@ export async function handleChatbotMessage(
 
     const userName = profile?.full_name || contactName || 'Client';
     const userId = profile?.id;
+    console.log(`[Chatbot] User: ${userName} (${userId || 'unknown'})`);
 
     // 2. Load or create WhatsApp conversation state
     let conversation = await getOrCreateConversation(supabase, phone, userId);
@@ -79,14 +82,25 @@ export async function handleChatbotMessage(
       return { replied: true, escalated: true };
     }
 
-    // 5. Build context
-    const context = await buildContext(supabase, messageText, userId, conversation.id);
+    // 5. Build context (with timeout protection)
+    let context = '';
+    try {
+      context = await Promise.race([
+        buildContext(supabase, messageText, userId, conversation.id),
+        new Promise<string>((_, reject) => setTimeout(() => reject(new Error('Context timeout')), 5000)),
+      ]);
+    } catch (err) {
+      console.warn('[Chatbot] Context build timeout/error, proceeding without full context:', err);
+    }
 
     // 6. Call AI
+    console.log(`[Chatbot] Calling GPT-4o-mini...`);
     const aiResponse = await callAI(messageText, context, userName);
+    console.log(`[Chatbot] AI response: "${aiResponse.substring(0, 80)}..."`);
 
     // 7. Send response
     const sendResult = await sendTextMessage(phone, aiResponse);
+    console.log(`[Chatbot] Send result: success=${sendResult.success}, error=${sendResult.error || 'none'}`);
 
     // 8. Store bot response in chat_messages (find the chat_conversation linked to this user)
     if (userId) {

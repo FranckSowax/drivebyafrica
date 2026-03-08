@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   verifyWebhookSignature,
@@ -297,28 +296,26 @@ export async function POST(request: NextRequest) {
     // Parse Meta webhook format
     const { messages, statuses } = parseWebhookPayload(body);
 
-    // Schedule async processing via next/server after()
-    // This returns 200 immediately to Meta (within their 15s timeout)
-    // while the chatbot RAG + GPT work continues in the background
-    after(async () => {
-      for (const message of messages) {
-        try {
-          await handleIncomingMessage(message);
-        } catch (err) {
-          console.error('[MetaWebhook] Error processing message:', err);
-        }
+    // Process messages and statuses synchronously
+    // Netlify kills the process after response is sent, so after() doesn't work.
+    // We process everything before returning 200 to Meta (must complete within 15s).
+    for (const message of messages) {
+      try {
+        await handleIncomingMessage(message);
+      } catch (err) {
+        console.error('[MetaWebhook] Error processing message:', err);
       }
+    }
 
-      for (const status of statuses) {
-        try {
-          await handleStatusUpdate(status);
-        } catch (err) {
-          console.error('[MetaWebhook] Error processing status:', err);
-        }
+    for (const status of statuses) {
+      try {
+        await handleStatusUpdate(status);
+      } catch (err) {
+        console.error('[MetaWebhook] Error processing status:', err);
       }
-    });
+    }
 
-    // Return 200 immediately to Meta
+    // Return 200 to Meta
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[MetaWebhook] Fatal error:', error);
