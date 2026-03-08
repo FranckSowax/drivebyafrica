@@ -6,6 +6,7 @@ import {
   parseWebhookPayload,
 } from '@/lib/whatsapp/meta-client';
 import type { MetaWebhookMessage, MetaWebhookStatus } from '@/lib/whatsapp/meta-client';
+import { handleChatbotMessage } from '@/lib/whatsapp/chatbot';
 
 // ─── Helpers ─────────────────────────────────────────────
 
@@ -143,7 +144,20 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     throw insertError;
   }
 
-  // 5. Ensure conversation is in waiting_agent status
+  // 5. Try chatbot auto-reply for text messages
+  if (message.type === 'text' && content) {
+    try {
+      const chatbotResult = await handleChatbotMessage(phone, content, message.contactName);
+      if (chatbotResult.replied) {
+        console.log(`[MetaWebhook] Chatbot replied to ${phone} (escalated: ${chatbotResult.escalated})`);
+        return; // Chatbot handled it — no need for admin notification
+      }
+    } catch (err) {
+      console.error('[MetaWebhook] Chatbot error, falling back to agent notification:', err);
+    }
+  }
+
+  // 6. Ensure conversation is in waiting_agent status (fallback when chatbot didn't reply)
   await supabaseAdmin
     .from('chat_conversations')
     .update({
@@ -153,7 +167,7 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     .eq('id', conversationId)
     .neq('status', 'waiting_agent');
 
-  // 6. Create admin notification
+  // 7. Create admin notification
   const customerName = profile.full_name || message.contactName || `+${phone}`;
   await supabaseAdmin.from('admin_notifications').insert({
     type: 'agent_request',
@@ -215,6 +229,21 @@ async function handleStatusUpdate(status: MetaWebhookStatus): Promise<void> {
       .update({ read_at: new Date().toISOString() })
       .eq('whatsapp_message_id', messageId)
       .is('read_at', null);
+  }
+
+  // Update campaign recipient status if applicable
+  if (['delivered', 'read', 'failed'].includes(newStatus)) {
+    const updateData: Record<string, string> = { status: newStatus };
+    if (newStatus === 'delivered') updateData.delivered_at = new Date().toISOString();
+    if (newStatus === 'read') {
+      updateData.delivered_at = new Date().toISOString();
+      updateData.read_at = new Date().toISOString();
+    }
+
+    await (supabaseAdmin as any)
+      .from('whatsapp_campaign_recipients')
+      .update(updateData)
+      .eq('whatsapp_message_id', messageId);
   }
 
   console.log(`[MetaWebhook] Status update: ${messageId} -> ${newStatus}`);

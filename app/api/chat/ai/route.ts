@@ -553,6 +553,21 @@ export async function POST(request: Request) {
 
     const uniqueBrands = [...new Set(availableBrands?.map(v => v.make).filter(Boolean) || [])];
 
+    // RAG knowledge base search for relevant context
+    let ragContext = '';
+    try {
+      const { searchKnowledge } = await import('@/lib/rag/knowledge-base');
+      const ragResults = await searchKnowledge(userMessage, { threshold: 0.65, limit: 3 });
+      if (ragResults.length > 0) {
+        ragContext = '\n\nBASE DE CONNAISSANCE:';
+        for (const r of ragResults) {
+          ragContext += `\n[${r.category}] ${r.content}`;
+        }
+      }
+    } catch (err) {
+      console.error('[Chat AI] RAG search failed:', err);
+    }
+
     // Build customer context
     let customerContext = '\n\nINFORMATIONS CLIENT:';
     customerContext += `\nNom: ${profile?.full_name || 'Non renseigné'}`;
@@ -729,7 +744,7 @@ export async function POST(request: Request) {
     }
 
     // Combine all context
-    const fullContext = SYSTEM_PROMPT + customerContext + ordersContext + quotesContext + vehicleContext;
+    const fullContext = SYSTEM_PROMPT + ragContext + customerContext + ordersContext + quotesContext + vehicleContext;
 
     // Build conversation history for Claude
     const conversationHistory = recentMessages

@@ -22,6 +22,7 @@ import {
   Package,
   PlusCircle,
   BookOpen,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +57,8 @@ const mainNavItems: NavItem[] = [
   { href: '/admin/users', label: 'Utilisateurs', icon: Users },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
   { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+  { href: '/admin/campaigns', label: 'Campagnes', icon: Megaphone },
+  { href: '/admin/knowledge', label: 'Base connaissance', icon: BookOpen },
   { href: '/admin/guides', label: 'Guides', icon: BookOpen },
 ];
 
