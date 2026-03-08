@@ -15,7 +15,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { searchKnowledge } from '@/lib/rag/knowledge-base';
-import { sendTextMessage, sendReplyButtons } from './meta-client';
+import { sendTextMessage, sendImageMessage, sendInteractiveMessage } from './meta-client';
+import { parseImagesField, isUnavailableImage } from '@/lib/utils/imageProxy';
 
 const ESCALATION_KEYWORDS = [
   'agent', 'humain', 'parler a quelqu', 'parler à quelqu',
@@ -82,32 +83,47 @@ export async function handleChatbotMessage(
       return { replied: true, escalated: true };
     }
 
-    // 5. Build context (with timeout protection)
+    // 5. Build context + search vehicles (with timeout protection)
     let context = '';
+    let foundVehicles: VehicleResult[] = [];
     try {
-      context = await Promise.race([
-        buildContext(supabase, messageText, userId, conversation.id),
-        new Promise<string>((_, reject) => setTimeout(() => reject(new Error('Context timeout')), 5000)),
+      const result = await Promise.race([
+        buildContextAndVehicles(supabase, messageText, userId, conversation.id),
+        new Promise<{ context: string; vehicles: VehicleResult[] }>((_, reject) =>
+          setTimeout(() => reject(new Error('Context timeout')), 5000)
+        ),
       ]);
+      context = result.context;
+      foundVehicles = result.vehicles;
     } catch (err) {
       console.warn('[Chatbot] Context build timeout/error, proceeding without full context:', err);
     }
 
     // 6. Call AI
-    console.log(`[Chatbot] Calling GPT-4o-mini...`);
+    console.log(`[Chatbot] Calling GPT-4o-mini... (${foundVehicles.length} vehicles found)`);
     const aiResponse = await callAI(messageText, context, userName);
     console.log(`[Chatbot] AI response: "${aiResponse.substring(0, 80)}..."`);
 
-    // 7. Send response
+    // 7. Send AI text response
     const sendResult = await sendTextMessage(phone, aiResponse);
     console.log(`[Chatbot] Send result: success=${sendResult.success}, error=${sendResult.error || 'none'}`);
 
-    // 8. Store bot response in chat_messages (find the chat_conversation linked to this user)
+    // 8. Send vehicle cards with images + CTA buttons (if vehicles found)
+    if (foundVehicles.length > 0) {
+      try {
+        await sendVehicleCards(phone, foundVehicles);
+        console.log(`[Chatbot] Sent ${Math.min(foundVehicles.length, 3)} vehicle cards`);
+      } catch (err) {
+        console.error('[Chatbot] Vehicle cards error:', err);
+      }
+    }
+
+    // 9. Store bot response in chat_messages (find the chat_conversation linked to this user)
     if (userId) {
       await storeBotMessage(supabase, userId, aiResponse, conversation.id);
     }
 
-    // 9. Update conversation last_message_at
+    // 10. Update conversation last_message_at
     await supabase
       .from('whatsapp_conversations')
       .update({ last_message_at: new Date().toISOString() })
@@ -195,13 +211,14 @@ async function escalateConversation(
 
 // --- Context building ---
 
-async function buildContext(
+async function buildContextAndVehicles(
   supabase: ReturnType<typeof getAdmin>,
   message: string,
   userId: string | undefined,
   conversationId: string
-): Promise<string> {
+): Promise<{ context: string; vehicles: VehicleResult[] }> {
   const parts: string[] = [];
+  let vehicles: VehicleResult[] = [];
 
   // RAG knowledge search
   try {
@@ -253,7 +270,8 @@ async function buildContext(
 
   // Vehicle search if message mentions brands/models
   try {
-    const vehicleContext = await searchVehicles(supabase, message);
+    vehicles = await searchVehicles(supabase, message);
+    const vehicleContext = buildVehicleContext(vehicles);
     if (vehicleContext) {
       parts.push(vehicleContext);
     }
@@ -278,29 +296,89 @@ async function buildContext(
     // Ignore
   }
 
-  return parts.join('\n');
+  return { context: parts.join('\n'), vehicles };
 }
 
-// Simple vehicle search based on message keywords
+// --- Vehicle types ---
+
+interface VehicleResult {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  start_price_usd: number | null;
+  mileage: number | null;
+  source: string | null;
+  images: string[] | string | null;
+}
+
+// Common brand patterns (Korean, Japanese, German, Chinese, others)
+const BRANDS: Record<string, string[]> = {
+  'kia': ['kia', 'k3', 'k5', 'sportage', 'sorento', 'seltos', 'carnival', 'stinger', 'niro', 'ev6'],
+  'hyundai': ['hyundai', 'tucson', 'santa fe', 'elantra', 'sonata', 'ioniq', 'kona', 'palisade', 'venue', 'creta'],
+  'toyota': ['toyota', 'camry', 'corolla', 'rav4', 'land cruiser', 'prado', 'fortuner', 'hilux', 'yaris', 'highlander'],
+  'honda': ['honda', 'civic', 'accord', 'cr-v', 'crv', 'hr-v', 'pilot'],
+  'bmw': ['bmw', 'serie 3', 'serie 5', 'x3', 'x5', 'x1', 'x6'],
+  'mercedes': ['mercedes', 'benz', 'classe c', 'classe e', 'gle', 'glc', 'gla', 'glb'],
+  'byd': ['byd', 'han', 'tang', 'song', 'seal', 'dolphin', 'atto', 'yuan'],
+  'nissan': ['nissan', 'qashqai', 'rogue', 'pathfinder', 'x-trail', 'kicks'],
+  'lexus': ['lexus', 'rx', 'nx', 'es', 'ux', 'lx'],
+  'porsche': ['porsche', 'cayenne', 'macan', 'panamera'],
+  'jetour': ['jetour', 'dashing', 'x70', 'x90', 't2'],
+  'chery': ['chery', 'tiggo', 'arrizo', 'omoda'],
+  'geely': ['geely', 'coolray', 'emgrand', 'monjaro', 'atlas', 'okavango'],
+  'changan': ['changan', 'cs75', 'cs55', 'uni-t', 'uni-k', 'eado'],
+  'haval': ['haval', 'jolion', 'h6', 'h9', 'dargo'],
+  'great wall': ['great wall', 'gwm', 'poer', 'cannon'],
+  'gac': ['gac', 'trumpchi', 'gs4', 'gs8', 'aion'],
+  'tank': ['tank', 'tank 300', 'tank 500'],
+  'zeekr': ['zeekr'],
+  'nio': ['nio', 'et5', 'et7', 'es6', 'es8'],
+  'xpeng': ['xpeng', 'p7', 'g6', 'g9'],
+  'li auto': ['li auto', 'li l7', 'li l8', 'li l9', 'ideal'],
+  'volkswagen': ['volkswagen', 'vw', 'golf', 'tiguan', 'passat', 'polo', 'touareg'],
+  'audi': ['audi', 'a3', 'a4', 'a6', 'q3', 'q5', 'q7'],
+  'ford': ['ford', 'ranger', 'escape', 'explorer', 'bronco'],
+  'suzuki': ['suzuki', 'swift', 'vitara', 'jimny'],
+  'mitsubishi': ['mitsubishi', 'outlander', 'pajero', 'l200'],
+  'peugeot': ['peugeot', '208', '308', '3008', '5008'],
+  'renault': ['renault', 'duster', 'clio', 'kadjar'],
+  'land rover': ['land rover', 'range rover', 'defender', 'discovery', 'evoque'],
+};
+
+/**
+ * Extract max price from message (supports CFA millions and USD)
+ * e.g. "moins de 10 millions" -> 10000000 CFA -> ~$16000 USD approx
+ */
+function extractMaxPrice(message: string): number | null {
+  const lower = message.toLowerCase();
+
+  // Pattern: "moins de X millions" or "budget X millions" or "X millions max"
+  const cfaMatch = lower.match(/(?:moins de|budget|max(?:imum)?|under|en dessous de)\s*(\d+(?:[.,]\d+)?)\s*(?:millions?|m)/);
+  if (cfaMatch) {
+    const cfaMillions = parseFloat(cfaMatch[1].replace(',', '.'));
+    // Rough CFA -> USD conversion (1 USD ≈ 600 CFA)
+    return Math.round((cfaMillions * 1_000_000) / 600);
+  }
+
+  // Pattern: "$X" or "X dollars" or "X usd"
+  const usdMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:k|\$|dollars?|usd)/);
+  if (usdMatch) {
+    const val = parseFloat(usdMatch[1].replace(',', '.'));
+    return val >= 1000 ? val : val * 1000; // "15k" or "15000"
+  }
+
+  return null;
+}
+
+/**
+ * Search vehicles and return structured results for rich messages
+ */
 async function searchVehicles(
   supabase: ReturnType<typeof getAdmin>,
   message: string
-): Promise<string | null> {
+): Promise<VehicleResult[]> {
   const lower = message.toLowerCase();
-
-  // Common brand patterns
-  const BRANDS: Record<string, string[]> = {
-    'kia': ['kia', 'k3', 'k5', 'sportage', 'sorento', 'seltos'],
-    'hyundai': ['hyundai', 'tucson', 'santa fe', 'elantra', 'sonata', 'ioniq', 'kona'],
-    'toyota': ['toyota', 'camry', 'corolla', 'rav4', 'land cruiser', 'prado', 'fortuner', 'hilux'],
-    'honda': ['honda', 'civic', 'accord', 'cr-v', 'crv'],
-    'bmw': ['bmw', 'serie 3', 'serie 5', 'x3', 'x5'],
-    'mercedes': ['mercedes', 'benz', 'classe c', 'classe e', 'gle', 'glc'],
-    'byd': ['byd', 'han', 'tang', 'song', 'seal', 'dolphin'],
-    'nissan': ['nissan', 'qashqai', 'rogue', 'pathfinder'],
-    'lexus': ['lexus', 'rx', 'nx', 'es'],
-    'porsche': ['porsche', 'cayenne', 'macan'],
-  };
 
   const foundBrands: string[] = [];
   const keywords: string[] = [];
@@ -314,7 +392,16 @@ async function searchVehicles(
     }
   }
 
-  if (foundBrands.length === 0 && keywords.length === 0) return null;
+  // Fallback: extract any word > 3 chars that could be a brand/model
+  if (foundBrands.length === 0 && keywords.length === 0) {
+    const words = lower.replace(/[^a-zà-ÿ0-9\s-]/g, '').split(/\s+/).filter(w => w.length > 3);
+    // Filter common French words that aren't vehicle terms
+    const stopWords = ['dans', 'pour', 'avec', 'quel', 'quelle', 'moins', 'plus', 'cherche', 'voudrais', 'veux', 'besoin', 'budget', 'millions', 'prix', 'voiture', 'vehicule', 'véhicule', 'auto', 'importation'];
+    const searchWords = words.filter(w => !stopWords.includes(w));
+    if (searchWords.length > 0) keywords.push(...searchWords.slice(0, 3));
+  }
+
+  if (foundBrands.length === 0 && keywords.length === 0) return [];
 
   const conditions: string[] = [];
   for (const brand of foundBrands) conditions.push(`make.ilike.%${brand}%`);
@@ -323,15 +410,34 @@ async function searchVehicles(
     conditions.push(`model.ilike.%${kw}%`);
   }
 
-  const { data: vehicles } = await supabase
+  let query = supabase
     .from('vehicles')
-    .select('id, make, model, year, start_price_usd, mileage, source')
+    .select('id, make, model, year, start_price_usd, mileage, source, images')
     .eq('is_visible', true)
     .or(conditions.join(','))
     .order('year', { ascending: false })
     .limit(5);
 
-  if (!vehicles || vehicles.length === 0) return null;
+  // Apply price filter if detected
+  const maxPriceUsd = extractMaxPrice(message);
+  if (maxPriceUsd) {
+    query = query.lte('start_price_usd', maxPriceUsd);
+  }
+
+  const { data: vehicles, error } = await query;
+  if (error) {
+    console.error('[Chatbot] Vehicle search error:', error);
+    return [];
+  }
+
+  return (vehicles as VehicleResult[]) || [];
+}
+
+/**
+ * Build context string from vehicle results (for AI prompt)
+ */
+function buildVehicleContext(vehicles: VehicleResult[]): string | null {
+  if (vehicles.length === 0) return null;
 
   const lines = ['\nVEHICULES TROUVES:'];
   for (const v of vehicles) {
@@ -339,8 +445,69 @@ async function searchVehicles(
     lines.push(`- ${v.make} ${v.model} ${v.year} | ${price} | ${v.mileage?.toLocaleString() || 'N/A'} km | ${SITE_URL}/cars/${v.id}`);
   }
   lines.push(`Total disponible: ${vehicles.length}+ véhicules`);
-
   return lines.join('\n');
+}
+
+/**
+ * Get best available image URL for a vehicle (for WhatsApp sending)
+ * Returns full public URL or null if no usable image
+ */
+function getVehicleImageUrl(vehicle: VehicleResult): string | null {
+  const images = parseImagesField(vehicle.images);
+  if (images.length === 0) return null;
+
+  for (const url of images) {
+    if (!url || isUnavailableImage(url)) continue;
+
+    // autoimg.cn needs proxy — build full public URL
+    if (url.includes('autoimg.cn')) {
+      return `${SITE_URL}/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+
+    // Direct URL for other domains (byteimg.com p9 works, etc.)
+    if (url.startsWith('http')) return url;
+  }
+
+  return null;
+}
+
+/**
+ * Send rich vehicle cards via WhatsApp (image + CTA button)
+ * Sends up to 3 vehicles after the AI text response
+ */
+async function sendVehicleCards(phone: string, vehicles: VehicleResult[]): Promise<void> {
+  const toSend = vehicles.slice(0, 3); // Max 3 cards
+
+  for (const v of toSend) {
+    const price = v.start_price_usd ? `$${v.start_price_usd.toLocaleString()}` : 'Prix sur demande';
+    const mileage = v.mileage ? `${v.mileage.toLocaleString()} km` : '';
+    const caption = `🚗 ${v.make} ${v.model} ${v.year}\n💰 ${price}${mileage ? `\n📏 ${mileage}` : ''}`;
+    const vehicleUrl = `${SITE_URL}/cars/${v.id}`;
+    const imageUrl = getVehicleImageUrl(v);
+
+    try {
+      // Send image with caption if available
+      if (imageUrl) {
+        await sendImageMessage(phone, imageUrl, caption);
+      }
+
+      // Send CTA button to view vehicle on site
+      await sendInteractiveMessage(
+        phone,
+        imageUrl ? `Voir les détails de ${v.make} ${v.model} ${v.year}` : caption,
+        'Voir le véhicule',
+        vehicleUrl
+      );
+    } catch (err) {
+      console.error(`[Chatbot] Failed to send vehicle card for ${v.id}:`, err);
+      // Fallback: simple text with link
+      try {
+        await sendTextMessage(phone, `${caption}\n\n👉 ${vehicleUrl}`);
+      } catch {
+        // Ignore
+      }
+    }
+  }
 }
 
 // --- AI call ---
@@ -358,8 +525,10 @@ REGLES:
 - Utilise des emojis avec parcimonie
 - Termine par une question ou suggestion orientée achat
 - Ne jamais inventer de prix - utilise UNIQUEMENT les données fournies dans le contexte
+- Si des VEHICULES TROUVES sont dans le contexte, mentionne-les avec leur prix et dis que des fiches détaillées avec photos suivent juste après
+- Si aucun véhicule trouvé pour la marque demandée, suggère des alternatives disponibles
 - Si tu ne peux pas répondre, suggère de taper "agent" pour parler à un humain
-- Langue: français par défaut
+- Langue: français par défaut, mais adapte-toi à la langue du client
 
 CONTACT: WhatsApp +86 130 2205 2798 | contact@driveby-africa.com
 SITE: ${SITE_URL}
