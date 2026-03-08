@@ -833,8 +833,10 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching analytics:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération des analytics' },
+      { error: 'Erreur lors de la récupération des analytics', details: errorMessage, stack: errorStack },
       { status: 500 }
     );
   }

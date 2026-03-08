@@ -102,18 +102,30 @@ export async function GET() {
     };
 
     // Get sync config
-    const { data: syncConfig } = await supabase
-      .from('sync_config')
-      .select('*')
-      .eq('source', 'encar')
-      .single();
+    let syncConfig = null;
+    try {
+      const { data } = await supabase
+        .from('sync_config')
+        .select('*')
+        .eq('source', 'encar')
+        .single();
+      syncConfig = data;
+    } catch {
+      // sync_config table may not exist
+    }
 
     // Get recent sync logs
-    const { data: syncLogs } = await supabase
-      .from('sync_logs')
-      .select('*')
-      .order('started_at', { ascending: false })
-      .limit(10);
+    let syncLogs = null;
+    try {
+      const { data } = await supabase
+        .from('sync_logs')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(10);
+      syncLogs = data;
+    } catch {
+      // sync_logs table may not exist
+    }
 
     return NextResponse.json({
       // Return flat structure for admin API page
@@ -126,6 +138,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 });
   }
 }
