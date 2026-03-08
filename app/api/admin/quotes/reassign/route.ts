@@ -209,174 +209,7 @@ function getFirstImageUrl(images: string[] | null): string | null {
   return imageUrl || null;
 }
 
-// Send WhatsApp text message via Whapi
-async function sendWhatsAppTextMessage(
-  whapiToken: string,
-  formattedPhone: string,
-  message: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    const response = await fetch('https://gate.whapi.cloud/messages/text', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${whapiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: formattedPhone,
-        body: message,
-      }),
-    });
-
-    const result = await response.json();
-    console.log('WhatsApp text message result:', result);
-
-    if (response.ok && result.sent) {
-      return { success: true, messageId: result.message?.id };
-    } else {
-      return { success: false, error: result.error?.message || 'Erreur envoi WhatsApp' };
-    }
-  } catch (error) {
-    console.error('WhatsApp text send error:', error);
-    return { success: false, error: 'Erreur de connexion à Whapi' };
-  }
-}
-
-// Send WhatsApp interactive message with image and button via Whapi
-async function sendWhatsAppInteractiveMessage(
-  whapiToken: string,
-  formattedPhone: string,
-  vehicle: SimilarVehicle,
-  baseUrl: string,
-  reassignmentId: string,
-  index: number,
-  xafRate: number
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  // Link to the reassignment selection page
-  const selectionUrl = `${baseUrl}/reassignment/${reassignmentId}`;
-  const imageUrl = getFirstImageUrl(vehicle.images);
-
-  const bodyText = `*Option ${index + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
-
-💰 Prix: *${formatPriceWithTax(vehicle.current_price_usd, vehicle.source, xafRate)}*
-📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
-🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}`;
-
-  try {
-    // Send image first if available
-    if (imageUrl) {
-      await fetch('https://gate.whapi.cloud/messages/image', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${whapiToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: formattedPhone,
-          image: { link: imageUrl },
-          caption: `📷 Option ${index + 1}: ${vehicle.make} ${vehicle.model}`,
-        }),
-      });
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    // Interactive message with URL button
-    const response = await fetch('https://gate.whapi.cloud/messages/interactive', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${whapiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: formattedPhone,
-        type: 'button',
-        body: {
-          text: bodyText,
-        },
-        footer: {
-          text: 'Driveby Africa - Import vehicules',
-        },
-        action: {
-          buttons: [
-            {
-              type: 'url',
-              title: `Option ${index + 1}`,
-              id: `option_${index + 1}`,
-              url: selectionUrl,
-            },
-          ],
-        },
-      }),
-    });
-
-    const result = await response.json();
-    console.log(`WhatsApp interactive message ${index + 1} result:`, JSON.stringify(result));
-
-    if (response.ok && result.sent) {
-      return { success: true, messageId: result.message?.id };
-    } else {
-      // If interactive fails, try sending image with caption + text with link
-      console.log('Interactive message failed, trying image + text fallback');
-      return sendImageWithLinkFallback(whapiToken, formattedPhone, vehicle, selectionUrl, imageUrl, index, xafRate);
-    }
-  } catch (error) {
-    console.error('WhatsApp interactive send error:', error);
-    return { success: false, error: 'Erreur de connexion à Whapi' };
-  }
-}
-
-// Fallback: Send image with caption, then text with link
-async function sendImageWithLinkFallback(
-  whapiToken: string,
-  formattedPhone: string,
-  vehicle: SimilarVehicle,
-  selectionUrl: string,
-  imageUrl: string | null,
-  index: number,
-  xafRate: number
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const caption = `*Option ${index + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
-
-💰 Prix: *${formatPriceWithTax(vehicle.current_price_usd, vehicle.source, xafRate)}*
-📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
-🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}
-
-👉 Voir et choisir: ${selectionUrl}`;
-
-  try {
-    if (imageUrl) {
-      // Try sending image with caption
-      const imageResponse = await fetch('https://gate.whapi.cloud/messages/image', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${whapiToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: formattedPhone,
-          media: imageUrl,
-          caption: caption,
-        }),
-      });
-
-      const imageResult = await imageResponse.json();
-      console.log(`WhatsApp image message ${index + 1} result:`, JSON.stringify(imageResult));
-
-      if (imageResponse.ok && imageResult.sent) {
-        return { success: true, messageId: imageResult.message?.id };
-      }
-    }
-
-    // Final fallback: just text message
-    return sendWhatsAppTextMessage(whapiToken, formattedPhone, caption);
-  } catch (error) {
-    console.error('WhatsApp image fallback error:', error);
-    // Final fallback: just text message
-    return sendWhatsAppTextMessage(whapiToken, formattedPhone, caption);
-  }
-}
-
-// Send WhatsApp messages via Whapi - sends intro + 3 vehicle messages
+// Send WhatsApp reassignment messages via Meta Cloud API
 async function sendWhatsAppMessage(
   phone: string,
   customerName: string,
@@ -385,28 +218,15 @@ async function sendWhatsAppMessage(
   reassignmentId: string,
   baseUrl: string
 ): Promise<{ success: boolean; messageId?: string; error?: string; sentCount?: number }> {
-  const whapiToken = process.env.WHAPI_TOKEN;
+  const { sendTextMessage, sendImageMessage, sendInteractiveMessage, isConfigured } = await import('@/lib/whatsapp/meta-client');
 
-  if (!whapiToken) {
-    return { success: false, error: 'WHAPI_TOKEN non configuré' };
+  if (!isConfigured()) {
+    return { success: false, error: 'Meta WhatsApp API non configuré' };
   }
 
-  // Get XAF rate for price conversion
   const xafRate = await getXafRate();
-
-  // Format phone number (remove spaces, add country code if needed)
-  let formattedPhone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
-  if (!formattedPhone.startsWith('+')) {
-    // Assume Gabon country code if no prefix
-    formattedPhone = '+241' + formattedPhone.replace(/^0+/, '');
-  }
-  // Whapi expects number without +
-  formattedPhone = formattedPhone.replace('+', '') + '@s.whatsapp.net';
-
-  // Selection page URL
   const selectionUrl = `${baseUrl}/reassignment/${reassignmentId}`;
 
-  // Message 1: Introduction message
   const introMessage = `Bonjour ${customerName},
 
 Nous vous contactons concernant votre devis pour le véhicule *${originalVehicle}*.
@@ -422,36 +242,38 @@ Votre acompte de *$1,000* reste bien entendu réservé.
 L'équipe Driveby Africa`;
 
   try {
-    // Send intro message
-    const introResult = await sendWhatsAppTextMessage(whapiToken, formattedPhone, introMessage);
+    const introResult = await sendTextMessage(phone, introMessage);
     if (!introResult.success) {
-      return introResult;
+      return { success: false, error: introResult.error };
     }
 
-    // Small delay between messages to ensure order
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Send interactive messages for each proposed vehicle
-    let sentCount = 1; // Intro already sent
+    let sentCount = 1;
     const messageIds: string[] = [introResult.messageId || ''];
 
     for (let i = 0; i < proposedVehicles.length; i++) {
       const vehicle = proposedVehicles[i];
 
-      // Small delay between messages
       if (i > 0) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      const result = await sendWhatsAppInteractiveMessage(
-        whapiToken,
-        formattedPhone,
-        vehicle,
-        baseUrl,
-        reassignmentId,
-        i,
-        xafRate
-      );
+      const imageUrl = getFirstImageUrl(vehicle.images);
+      const bodyText = `*Option ${i + 1}: ${vehicle.make} ${vehicle.model} ${vehicle.year || ''}*
+
+💰 Prix: *${formatPriceWithTax(vehicle.current_price_usd, vehicle.source, xafRate)}*
+📍 Kilométrage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km
+🌍 Source: ${vehicle.source?.toUpperCase() || 'N/A'}`;
+
+      // Send image first if available
+      if (imageUrl) {
+        await sendImageMessage(phone, imageUrl, `📷 Option ${i + 1}: ${vehicle.make} ${vehicle.model}`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Send interactive CTA button
+      const result = await sendInteractiveMessage(phone, bodyText, `Option ${i + 1}`, selectionUrl);
 
       if (result.success) {
         sentCount++;
@@ -462,13 +284,13 @@ L'équipe Driveby Africa`;
     }
 
     return {
-      success: sentCount > 1, // At least intro + 1 vehicle
+      success: sentCount > 1,
       messageId: messageIds.join(','),
       sentCount,
     };
   } catch (error) {
     console.error('WhatsApp send error:', error);
-    return { success: false, error: 'Erreur de connexion à Whapi' };
+    return { success: false, error: 'Erreur de connexion Meta WhatsApp API' };
   }
 }
 

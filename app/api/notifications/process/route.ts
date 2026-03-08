@@ -209,31 +209,13 @@ async function processCustomNotification(notification: QueuedNotification): Prom
   }
 
   try {
-    // Send simple text message via Whapi
-    const response = await fetch('https://gate.whapi.cloud/messages/text', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.WHAPI_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        to: formatPhoneForWhapi(notification.recipient_phone),
-        body: payload.customMessage
-      })
-    });
+    const { sendTextMessage } = await import('@/lib/whatsapp/meta-client');
+    const result = await sendTextMessage(notification.recipient_phone, payload.customMessage);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        error: errorData.message || `HTTP ${response.status}`
-      };
-    }
-
-    const data = await response.json();
     return {
-      success: true,
-      messageId: data.message?.id
+      success: result.success,
+      messageId: result.messageId,
+      error: result.error,
     };
   } catch (error) {
     return {
@@ -241,21 +223,6 @@ async function processCustomNotification(notification: QueuedNotification): Prom
       error: error instanceof Error ? error.message : 'Failed to send custom message'
     };
   }
-}
-
-/**
- * Format phone number for Whapi
- */
-function formatPhoneForWhapi(phone: string): string {
-  // Remove all non-digits
-  let cleaned = phone.replace(/\D/g, '');
-
-  // Add Gabon country code if no country code
-  if (cleaned.length <= 9) {
-    cleaned = '241' + cleaned;
-  }
-
-  return `${cleaned}@s.whatsapp.net`;
 }
 
 /**

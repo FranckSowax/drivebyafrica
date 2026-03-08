@@ -4,15 +4,14 @@ import { createClient } from '@supabase/supabase-js';
  * Netlify Scheduled Function for processing notification queue
  * Schedule: Run every minute
  *
- * This function processes pending WhatsApp notifications from the queue,
- * with automatic retries and exponential backoff for failed notifications.
+ * Uses Meta WhatsApp Cloud API for sending notifications.
  */
 export const config = {
   schedule: '* * * * *', // Every minute
 };
 
 const MAX_BATCH_SIZE = 10;
-const NOTIFICATION_TIMEOUT = 25000; // 25 seconds (Netlify function timeout is 26s for scheduled)
+const META_API_VERSION = 'v21.0';
 
 interface NotificationPayload {
   status?: string;
@@ -62,31 +61,72 @@ function getSupabaseAdmin() {
 }
 
 /**
- * Format phone number for Whapi
+ * Format phone number for Meta Cloud API (digits only)
  */
-function formatPhoneForWhapi(phone: string): string {
-  let cleaned = phone.replace(/\D/g, '');
+function formatPhoneForMeta(phone: string): string {
+  let digits = phone.replace(/[^0-9]/g, '');
 
-  // Add Gabon country code if no country code
-  if (cleaned.length <= 9) {
-    cleaned = '241' + cleaned;
+  if (digits.startsWith('0')) {
+    digits = '241' + digits.substring(1);
   }
 
-  return `${cleaned}@s.whatsapp.net`;
+  if (digits.length <= 9) {
+    digits = '241' + digits;
+  }
+
+  return digits;
 }
 
 /**
- * Send WhatsApp notification via Whapi
+ * Send message via Meta WhatsApp Cloud API
+ */
+async function sendMetaMessage(
+  to: string,
+  payload: Record<string, unknown>
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const token = process.env.META_WHATSAPP_TOKEN;
+  const phoneId = process.env.META_WHATSAPP_PHONE_ID;
+
+  if (!token || !phoneId) {
+    return { success: false, error: 'Meta WhatsApp API not configured' };
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/${META_API_VERSION}/${phoneId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to,
+          ...payload,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok && result.messages?.[0]?.id) {
+      return { success: true, messageId: result.messages[0].id };
+    }
+
+    return { success: false, error: result.error?.message || JSON.stringify(result) };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Send WhatsApp notification via Meta Cloud API
  */
 async function sendWhatsAppNotification(
   notification: QueuedNotification
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const whapiToken = process.env.WHAPI_TOKEN;
-
-  if (!whapiToken) {
-    return { success: false, error: 'WHAPI_TOKEN not configured' };
-  }
-
   const payload = notification.payload;
 
   // Build message based on notification type
@@ -95,7 +135,6 @@ async function sendWhatsAppNotification(
   if (notification.notification_type === 'custom' && payload.customMessage) {
     message = payload.customMessage;
   } else {
-    // Build status change message
     const customerName = notification.recipient_name || payload.customerName || 'Client';
     const vehicleName = payload.vehicleInfo
       ? `${payload.vehicleInfo.make} ${payload.vehicleInfo.model} ${payload.vehicleInfo.year || ''}`
@@ -103,7 +142,6 @@ async function sendWhatsAppNotification(
     const orderNumber = payload.orderNumber || payload.quoteNumber || '';
     const status = payload.status || 'processing';
 
-    // Status labels in French
     const statusLabels: Record<string, string> = {
       deposit_paid: 'Acompte payé',
       vehicle_locked: 'Véhicule bloqué',
@@ -136,84 +174,41 @@ async function sendWhatsAppNotification(
     if (payload.note) {
       message += `\n📝 *Note:* ${payload.note}\n`;
     }
-
   }
 
-  const formattedPhone = formatPhoneForWhapi(notification.recipient_phone);
+  const formattedPhone = formatPhoneForMeta(notification.recipient_phone);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://driveby-africa.com';
   const dashboardUrl = notification.order_id
     ? `${siteUrl}/dashboard/orders/${notification.order_id}`
     : payload.dashboardUrl || `${siteUrl}/dashboard/orders`;
 
-  try {
-    // Try interactive button format first
-    const interactiveResponse = await fetch('https://gate.whapi.cloud/messages/interactive', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${whapiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        to: formattedPhone,
-        type: 'button',
-        body: { text: message },
-        footer: { text: 'Driveby Africa - Import vehicules' },
-        action: {
-          buttons: [
-            {
-              type: 'url',
-              title: 'Voir ma commande',
-              id: 'view_order',
-              url: dashboardUrl,
-            },
-          ],
+  // Try interactive CTA URL button first
+  const interactiveResult = await sendMetaMessage(formattedPhone, {
+    type: 'interactive',
+    interactive: {
+      type: 'cta_url',
+      body: { text: message },
+      footer: { text: 'Driveby Africa - Import véhicules' },
+      action: {
+        name: 'cta_url',
+        parameters: {
+          display_text: 'Voir ma commande',
+          url: dashboardUrl,
         },
-      }),
-      signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT),
-    });
-
-    if (interactiveResponse.ok) {
-      const data = await interactiveResponse.json();
-      if (data.sent) {
-        return { success: true, messageId: data.message?.id };
-      }
-    }
-
-    // Fallback to plain text if interactive fails
-    console.log('Interactive button failed, falling back to text');
-    const textResponse = await fetch('https://gate.whapi.cloud/messages/text', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${whapiToken}`,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        to: formattedPhone,
-        body: `${message}\n\n👉 ${dashboardUrl}`,
-      }),
-      signal: AbortSignal.timeout(NOTIFICATION_TIMEOUT),
-    });
+    },
+  });
 
-    if (!textResponse.ok) {
-      const errorData = await textResponse.json().catch(() => ({}));
-      return {
-        success: false,
-        error: errorData.message || `HTTP ${textResponse.status}`,
-      };
-    }
-
-    const data = await textResponse.json();
-    return {
-      success: true,
-      messageId: data.message?.id,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return {
-      success: false,
-      error: errorMessage.includes('abort') ? 'Request timeout' : errorMessage,
-    };
+  if (interactiveResult.success) {
+    return interactiveResult;
   }
+
+  // Fallback to plain text
+  console.log('Interactive button failed, falling back to text');
+  return sendMetaMessage(formattedPhone, {
+    type: 'text',
+    text: { preview_url: true, body: `${message}\n\n👉 ${dashboardUrl}` },
+  });
 }
 
 export default async function handler() {
@@ -230,15 +225,12 @@ export default async function handler() {
   try {
     const supabase = getSupabaseAdmin();
 
-    // Process up to MAX_BATCH_SIZE notifications
     for (let i = 0; i < MAX_BATCH_SIZE; i++) {
-      // Check if we're running out of time (leave 5s buffer)
       if (Date.now() - startTime > 20000) {
         console.log('Time limit approaching, stopping batch');
         break;
       }
 
-      // Get next pending notification
       const { data: notification, error: fetchError } = await supabase
         .from('notification_queue')
         .select('*')
@@ -251,11 +243,9 @@ export default async function handler() {
         .single();
 
       if (fetchError || !notification) {
-        // No more pending notifications
         break;
       }
 
-      // Mark as processing
       await supabase
         .from('notification_queue')
         .update({
@@ -267,7 +257,6 @@ export default async function handler() {
 
       results.processed++;
 
-      // Process the notification
       const sendStartTime = Date.now();
       const result = await sendWhatsAppNotification(notification as QueuedNotification);
       const durationMs = Date.now() - sendStartTime;
@@ -275,7 +264,6 @@ export default async function handler() {
       if (result.success) {
         results.succeeded++;
 
-        // Mark as sent
         await supabase
           .from('notification_queue')
           .update({
@@ -287,7 +275,6 @@ export default async function handler() {
           })
           .eq('id', notification.id);
 
-        // Log success
         await supabase.from('notification_log').insert({
           queue_id: notification.id,
           event_type: 'message_sent',
@@ -304,13 +291,11 @@ export default async function handler() {
         const newAttempts = (notification.attempts || 0) + 1;
         const maxReached = newAttempts >= (notification.max_attempts || 3);
 
-        // Calculate next retry with exponential backoff (1min, 5min, 15min)
         const backoffMinutes = Math.min(Math.pow(2, notification.attempts || 0) * 1, 60);
         const nextRetry = maxReached
           ? null
           : new Date(Date.now() + backoffMinutes * 60000).toISOString();
 
-        // Mark as failed or schedule retry
         await supabase
           .from('notification_queue')
           .update({
@@ -323,7 +308,6 @@ export default async function handler() {
           })
           .eq('id', notification.id);
 
-        // Log failure
         await supabase.from('notification_log').insert({
           queue_id: notification.id,
           event_type: maxReached ? 'failed' : 'retry_scheduled',

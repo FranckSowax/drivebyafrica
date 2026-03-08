@@ -1,14 +1,11 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
+import { sendTextMessage, isConfigured } from '@/lib/whatsapp/meta-client';
 
-const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
-const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID;
-const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://drivebyafrica.com';
 
 /**
- * Send WhatsApp message to notify user about price
+ * Send WhatsApp message to notify user about price via Meta Cloud API
  */
 async function sendWhatsAppNotification(
   phone: string,
@@ -19,18 +16,10 @@ async function sendWhatsAppNotification(
   priceUsd: number,
   vehicleId: string
 ): Promise<boolean> {
-  if (!WHATSAPP_PHONE_ID || !WHATSAPP_TOKEN) {
-    console.log('WhatsApp credentials not configured, skipping notification');
+  if (!isConfigured()) {
+    console.log('Meta WhatsApp API not configured, skipping notification');
     return false;
   }
-
-  // Format phone number (remove spaces, ensure country code)
-  let formattedPhone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
-  if (!formattedPhone.startsWith('+')) {
-    // Default to Gabon country code if no prefix
-    formattedPhone = '+241' + formattedPhone.replace(/^0+/, '');
-  }
-  formattedPhone = formattedPhone.replace('+', '');
 
   const vehicleUrl = `${SITE_URL}/cars/${vehicleId}`;
   const message = `Bonjour ${customerName},
@@ -45,35 +34,13 @@ ${vehicleUrl}
 
 Équipe Driveby Africa`;
 
-  try {
-    const response = await fetch(`${WHATSAPP_API_URL}/${WHATSAPP_PHONE_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: formattedPhone,
-        type: 'text',
-        text: {
-          body: message,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('WhatsApp API error:', errorData);
-      return false;
-    }
-
-    console.log('WhatsApp notification sent successfully to', formattedPhone);
-    return true;
-  } catch (error) {
-    console.error('Error sending WhatsApp notification:', error);
-    return false;
+  const result = await sendTextMessage(phone, message);
+  if (result.success) {
+    console.log('WhatsApp notification sent successfully');
+  } else {
+    console.error('WhatsApp API error:', result.error);
   }
+  return result.success;
 }
 
 /**
