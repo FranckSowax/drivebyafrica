@@ -587,7 +587,10 @@ function extractMaxPrice(message: string, xafRate: number): number | null {
 }
 
 /**
- * Search vehicles - only returns vehicles matching the detected brands
+ * Search vehicles — 2-phase approach:
+ * Phase 1: Match brands from dictionary → strict brand filter
+ * Phase 2: Direct ILIKE search on make + model columns for any word ≥ 3 chars
+ * This ensures we find models like "Tiggo 7", "Coolray", "H6 GT" even if not in BRANDS dict
  */
 async function searchVehicles(
   supabase: ReturnType<typeof getAdmin>,
@@ -596,6 +599,23 @@ async function searchVehicles(
 ): Promise<VehicleResult[]> {
   const lower = message.toLowerCase();
 
+  // Stop words — never search these as vehicle terms
+  const STOP_WORDS = new Set([
+    'dans', 'pour', 'avec', 'quel', 'quelle', 'quels', 'quelles', 'moins', 'plus',
+    'cherche', 'voudrais', 'veux', 'besoin', 'budget', 'millions', 'million', 'prix',
+    'voiture', 'vehicule', 'véhicule', 'auto', 'importation', 'proposer', 'propose',
+    'peux', 'bonjour', 'bonsoir', 'salut', 'merci', 'comment', 'combien', 'cher',
+    'chere', 'disponible', 'destination', 'livraison', 'transport', 'port', 'vers',
+    'est', 'les', 'des', 'une', 'que', 'sur', 'pas', 'bon', 'bien', 'oui', 'non',
+    'moi', 'toi', 'nous', 'vous', 'leur', 'elle', 'elles', 'sont', 'tout', 'tous',
+    'comme', 'aussi', 'mais', 'donc', 'car', 'ici', 'avoir', 'être', 'faire',
+    'gabon', 'cameroun', 'senegal', 'sénégal', 'nigeria', 'togo', 'benin', 'bénin',
+    'congo', 'kenya', 'afrique', 'libreville', 'douala', 'dakar', 'abidjan', 'lagos',
+    'hello', 'looking', 'want', 'need', 'show', 'send', 'photo', 'photos', 'image',
+    'envoi', 'envoie', 'envoyer', 'montre', 'voir', 'catalogue',
+  ]);
+
+  // --- Phase 1: Dictionary brand matching ---
   const foundBrands: string[] = [];
   const modelKeywords: string[] = [];
 
@@ -608,16 +628,26 @@ async function searchVehicles(
     }
   }
 
-  // If no brands detected, don't do fuzzy search — only search when we have a clear brand/model match
-  // This prevents sending random vehicles (like Lexus) when user asks for a brand not in catalog
-  if (foundBrands.length === 0 && modelKeywords.length === 0) return [];
+  // --- Phase 2: Extract search terms from message (any word ≥ 3 chars not in stop words) ---
+  const rawWords = lower
+    .replace(/[^a-zà-ÿ0-9\s-]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
 
-  // Build conditions: prioritize brand match on make, model keywords on model
+  // Deduplicate with existing keywords
+  const existingSet = new Set([...foundBrands, ...modelKeywords]);
+  const extraTerms = rawWords.filter(w => !existingSet.has(w)).slice(0, 3);
+
+  // Build all search terms
+  const allSearchTerms = [...new Set([...foundBrands, ...modelKeywords, ...extraTerms])];
+
+  if (allSearchTerms.length === 0) return [];
+
+  // Build OR conditions — search both make and model for every term (case-insensitive via ilike)
   const conditions: string[] = [];
-  for (const brand of foundBrands) conditions.push(`make.ilike.%${brand}%`);
-  for (const kw of modelKeywords) {
-    conditions.push(`make.ilike.%${kw}%`);
-    conditions.push(`model.ilike.%${kw}%`);
+  for (const term of allSearchTerms) {
+    conditions.push(`make.ilike.%${term}%`);
+    conditions.push(`model.ilike.%${term}%`);
   }
 
   let query = supabase
@@ -626,7 +656,7 @@ async function searchVehicles(
     .eq('is_visible', true)
     .or(conditions.join(','))
     .order('year', { ascending: false })
-    .limit(5);
+    .limit(10);
 
   // Apply price filter if detected
   const maxPriceUsd = extractMaxPrice(message, xafRate);
@@ -642,16 +672,49 @@ async function searchVehicles(
 
   if (!vehicles || vehicles.length === 0) return [];
 
-  // STRICT: if specific brands were detected, only return matching brands
-  // Never fall back to unrelated vehicles — return empty instead
+  // --- Scoring: rank results by relevance ---
+  const scored = (vehicles as VehicleResult[]).map(v => {
+    let score = 0;
+    const vmake = v.make.toLowerCase();
+    const vmodel = v.model.toLowerCase();
+
+    // Exact brand match (highest priority)
+    for (const brand of foundBrands) {
+      if (vmake.includes(brand)) score += 10;
+    }
+
+    // Model keyword match
+    for (const kw of modelKeywords) {
+      if (vmodel.includes(kw)) score += 8;
+      if (vmake.includes(kw)) score += 5;
+    }
+
+    // Extra term match (lower priority)
+    for (const term of extraTerms) {
+      if (vmake.includes(term)) score += 3;
+      if (vmodel.includes(term)) score += 3;
+    }
+
+    return { vehicle: v, score };
+  });
+
+  // Sort by score descending, then year descending
+  scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
+
+  // STRICT: if known brands were detected, only return vehicles matching those brands
   if (foundBrands.length > 0) {
-    const filtered = vehicles.filter((v: VehicleResult) =>
-      foundBrands.some(brand => v.make.toLowerCase().includes(brand))
+    const brandMatched = scored.filter(s =>
+      foundBrands.some(brand => s.vehicle.make.toLowerCase().includes(brand))
     );
-    return filtered as VehicleResult[];
+    if (brandMatched.length > 0) {
+      return brandMatched.slice(0, 5).map(s => s.vehicle);
+    }
+    // No brand match in DB → return empty (don't fall back to unrelated vehicles)
+    return [];
   }
 
-  return vehicles as VehicleResult[];
+  // No specific brand detected, return best scored results
+  return scored.slice(0, 5).map(s => s.vehicle);
 }
 
 /**
