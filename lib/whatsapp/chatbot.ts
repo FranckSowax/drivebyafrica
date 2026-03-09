@@ -507,8 +507,9 @@ async function buildContextAndVehicles(
 
   // Vehicle search if message mentions brands/models
   try {
-    vehicles = await searchVehicles(supabase, message, xafRate);
-    const vehicleContext = buildVehicleContext(vehicles, xafRate);
+    const searchResult = await searchVehicles(supabase, message, xafRate);
+    vehicles = searchResult.vehicles;
+    const vehicleContext = buildVehicleContext(vehicles, xafRate, searchResult.isSuggestion);
     if (vehicleContext) {
       parts.push(vehicleContext);
     }
@@ -596,11 +597,16 @@ function extractMaxPrice(message: string, xafRate: number): number | null {
  * Phase 2: Direct ILIKE search on make + model columns for any word ≥ 3 chars
  * This ensures we find models like "Tiggo 7", "Coolray", "H6 GT" even if not in BRANDS dict
  */
+interface VehicleSearchResult {
+  vehicles: VehicleResult[];
+  isSuggestion: boolean;
+}
+
 async function searchVehicles(
   supabase: ReturnType<typeof getAdmin>,
   message: string,
   xafRate: number
-): Promise<VehicleResult[]> {
+): Promise<VehicleSearchResult> {
   const lower = message.toLowerCase();
 
   // Stop words — never search these as vehicle terms
@@ -645,7 +651,11 @@ async function searchVehicles(
   // Build all search terms
   const allSearchTerms = [...new Set([...foundBrands, ...modelKeywords, ...extraTerms])];
 
-  if (allSearchTerms.length === 0) return [];
+  if (allSearchTerms.length === 0) {
+    // No specific vehicle terms — return random featured vehicles
+    const vehicles = await getRandomVehicles(supabase);
+    return { vehicles, isSuggestion: true };
+  }
 
   // Build OR conditions — search both make and model for every term (case-insensitive via ilike)
   const conditions: string[] = [];
@@ -671,10 +681,14 @@ async function searchVehicles(
   const { data: vehicles, error } = await query;
   if (error) {
     console.error('[Chatbot] Vehicle search error:', error);
-    return [];
+    return { vehicles: [], isSuggestion: false };
   }
 
-  if (!vehicles || vehicles.length === 0) return [];
+  if (!vehicles || vehicles.length === 0) {
+    // No exact matches — suggest random vehicles from stock
+    const suggested = await getRandomVehicles(supabase);
+    return { vehicles: suggested, isSuggestion: true };
+  }
 
   // --- Scoring: rank results by relevance ---
   const scored = (vehicles as VehicleResult[]).map(v => {
@@ -711,23 +725,148 @@ async function searchVehicles(
       foundBrands.some(brand => s.vehicle.make.toLowerCase().includes(brand))
     );
     if (brandMatched.length > 0) {
-      return brandMatched.slice(0, 5).map(s => s.vehicle);
+      return { vehicles: brandMatched.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
     }
-    // No brand match in DB → return empty (don't fall back to unrelated vehicles)
-    return [];
+    // Brand requested but not in DB → suggest other models of similar category
+    const alternatives = await getSuggestedVehicles(supabase, foundBrands);
+    return { vehicles: alternatives, isSuggestion: true };
   }
 
   // No specific brand detected, return best scored results
-  return scored.slice(0, 5).map(s => s.vehicle);
+  return { vehicles: scored.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
+}
+
+/**
+ * Get random vehicles from available stock (diverse brands/models)
+ */
+async function getRandomVehicles(
+  supabase: ReturnType<typeof getAdmin>
+): Promise<VehicleResult[]> {
+  try {
+    // Fetch a larger pool then pick diverse results
+    const { data } = await supabase
+      .from('vehicles')
+      .select('id, make, model, year, start_price_usd, mileage, source, images')
+      .eq('is_visible', true)
+      .not('start_price_usd', 'is', null)
+      .order('year', { ascending: false })
+      .limit(50);
+
+    if (!data || data.length === 0) return [];
+
+    // Pick up to 5 vehicles from different brands
+    const seen = new Set<string>();
+    const diverse: VehicleResult[] = [];
+
+    // Shuffle to get random picks each time
+    const shuffled = (data as VehicleResult[]).sort(() => Math.random() - 0.5);
+
+    for (const v of shuffled) {
+      const brand = v.make.toLowerCase();
+      if (!seen.has(brand)) {
+        seen.add(brand);
+        diverse.push(v);
+        if (diverse.length >= 5) break;
+      }
+    }
+
+    // Fill remaining slots if needed
+    if (diverse.length < 3) {
+      for (const v of shuffled) {
+        if (!diverse.some(d => d.id === v.id)) {
+          diverse.push(v);
+          if (diverse.length >= 5) break;
+        }
+      }
+    }
+
+    return diverse;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get suggested vehicles when a specific brand isn't in stock
+ * Tries related brands (e.g. Chinese → other Chinese, Korean → other Korean)
+ */
+async function getSuggestedVehicles(
+  supabase: ReturnType<typeof getAdmin>,
+  requestedBrands: string[]
+): Promise<VehicleResult[]> {
+  // Group brands by category for smart suggestions
+  const BRAND_CATEGORIES: Record<string, string[]> = {
+    chinese: ['byd', 'chery', 'geely', 'changan', 'haval', 'great wall', 'gac', 'jetour', 'tank', 'zeekr', 'nio', 'xpeng', 'li auto', 'dongfeng', 'foton', 'jac', 'wuling', 'kaiyi', 'maxus', 'hongqi', 'lynk', 'ora', 'voyah', 'aion', 'neta', 'seres', 'skywell', 'dfsk', 'mg', 'lifan'],
+    korean: ['hyundai', 'kia'],
+    japanese: ['toyota', 'honda', 'nissan', 'lexus', 'suzuki', 'mitsubishi'],
+    german: ['bmw', 'mercedes', 'volkswagen', 'audi', 'porsche'],
+    french: ['peugeot', 'renault'],
+    british: ['land rover'],
+    american: ['ford'],
+  };
+
+  // Find what category the requested brand belongs to
+  const categories = new Set<string>();
+  for (const brand of requestedBrands) {
+    for (const [cat, brands] of Object.entries(BRAND_CATEGORIES)) {
+      if (brands.includes(brand)) categories.add(cat);
+    }
+  }
+
+  // Build alternative brand list from same categories
+  const altBrands: string[] = [];
+  for (const cat of categories) {
+    for (const b of BRAND_CATEGORIES[cat]) {
+      if (!requestedBrands.includes(b)) altBrands.push(b);
+    }
+  }
+
+  if (altBrands.length === 0) {
+    return getRandomVehicles(supabase);
+  }
+
+  // Search for alternative brands
+  const conditions = altBrands.map(b => `make.ilike.%${b}%`);
+  try {
+    const { data } = await supabase
+      .from('vehicles')
+      .select('id, make, model, year, start_price_usd, mileage, source, images')
+      .eq('is_visible', true)
+      .or(conditions.join(','))
+      .not('start_price_usd', 'is', null)
+      .order('year', { ascending: false })
+      .limit(20);
+
+    if (!data || data.length === 0) return getRandomVehicles(supabase);
+
+    // Pick diverse results
+    const seen = new Set<string>();
+    const diverse: VehicleResult[] = [];
+    const shuffled = (data as VehicleResult[]).sort(() => Math.random() - 0.5);
+    for (const v of shuffled) {
+      const brand = v.make.toLowerCase();
+      if (!seen.has(brand)) {
+        seen.add(brand);
+        diverse.push(v);
+        if (diverse.length >= 5) break;
+      }
+    }
+    return diverse;
+  } catch {
+    return getRandomVehicles(supabase);
+  }
 }
 
 /**
  * Build context string from vehicle results (for AI prompt) with FCFA prices
  */
-function buildVehicleContext(vehicles: VehicleResult[], xafRate: number): string | null {
+function buildVehicleContext(vehicles: VehicleResult[], xafRate: number, isSuggestion = false): string | null {
   if (vehicles.length === 0) return null;
 
-  const lines = ['\nVEHICULES DISPONIBLES DANS NOTRE CATALOGUE:'];
+  const header = isSuggestion
+    ? '\nSUGGESTIONS ALTERNATIVES DE NOTRE CATALOGUE (pas exactement ce que le client a demandé):'
+    : '\nVEHICULES DISPONIBLES DANS NOTRE CATALOGUE:';
+  const lines = [header];
   for (const v of vehicles) {
     const exportTax = getExportTax(v.source || '');
     const totalUsd = (v.start_price_usd || 0) + exportTax;
@@ -912,8 +1051,9 @@ IMPORTANT : Réponds TOUJOURS dans la langue du client. Langue détectée : ${la
 - Si le contexte contient des infos TRANSPORT avec prix total, mentionne le prix total rendu destination.
 
 # VÉHICULES
-- Si des VEHICULES sont dans le contexte, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
-- Si aucun véhicule trouvé, explique que tu n'en as pas en stock et propose des alternatives en posant des questions.
+- Si des VEHICULES DISPONIBLES sont dans le contexte, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
+- Si des SUGGESTIONS ALTERNATIVES sont dans le contexte (pas exactement ce que le client a demandé), présente-les comme des alternatives intéressantes : "Nous n'avons pas ce modèle exact en ce moment, mais voici quelques alternatives qui pourraient vous plaire :" — puis demande ce que le client en pense.
+- NE PROPOSE JAMAIS les mêmes véhicules à chaque message. Varie tes suggestions et pose des questions pour affiner (budget, usage, préférences).
 - Si le client demande des photos/images d'un véhicule spécifique du catalogue, réponds que tu lui envoies les photos tout de suite.
 
 # RESTRICTIONS

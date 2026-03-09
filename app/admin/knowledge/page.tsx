@@ -602,6 +602,7 @@ function ConversationsTab() {
   const [messages, setMessages] = useState<Array<{ sender_type: string; content: string; created_at: string }>>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
@@ -669,6 +670,15 @@ function ConversationsTab() {
 
   useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
+  // Client-side search filter
+  const filteredConversations = conversations.filter(conv => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const name = (conv.user_name || '').toLowerCase();
+    const phone = (conv.phone || '').toLowerCase();
+    return name.includes(q) || phone.includes(q);
+  });
+
   const loadMessages = async (conversationId: string) => {
     setSelectedConv(conversationId);
     setLoadingMessages(true);
@@ -699,6 +709,16 @@ function ConversationsTab() {
       <Card className="flex flex-col overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--card-border)]">
           <h3 className="font-medium text-sm text-[var(--text-primary)]">Conversations WhatsApp</h3>
+          <div className="relative mt-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Rechercher par nom, numéro, mot-clé..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-[var(--surface)] border border-[var(--input-border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-mandarin"
+            />
+          </div>
           <div className="flex gap-1 mt-2">
             {['', 'active', 'escalated', 'closed'].map(s => (
               <button key={s} onClick={() => setStatusFilter(s)}
@@ -711,10 +731,10 @@ function ConversationsTab() {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-mandarin" /></div>
-          ) : conversations.length === 0 ? (
-            <div className="text-center py-8 text-sm text-[var(--text-muted)]">Aucune conversation</div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="text-center py-8 text-sm text-[var(--text-muted)]">{searchQuery ? 'Aucun résultat' : 'Aucune conversation'}</div>
           ) : (
-            conversations.map(conv => (
+            filteredConversations.map(conv => (
               <button key={conv.id} onClick={() => loadMessages(conv.id)}
                 className={`w-full text-left px-4 py-3 border-b border-[var(--card-border)] hover:bg-[var(--surface)] transition ${selectedConv === conv.id ? 'bg-mandarin/5 border-l-2 border-l-mandarin' : ''}`}>
                 <div className="flex items-center justify-between">
