@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BookOpen, Plus, Search, Edit2, Trash2, Loader2, Eye, EyeOff,
   Database, Sparkles, X, Save, Upload, MessageSquare, Bot,
-  Send, User, Brain, MessageCircle, ChevronRight,
+  Send, User, Brain, MessageCircle, FileText, Calendar,
+  CheckCircle, AlertCircle, BarChart3,
 } from 'lucide-react';
 
 // --- Types ---
@@ -54,6 +55,7 @@ const TABS = [
   { id: 'chatbot', label: 'Chatbot RAG', icon: Bot },
   { id: 'knowledge', label: 'Base de connaissance', icon: BookOpen },
   { id: 'conversations', label: 'Conversations', icon: MessageCircle },
+  { id: 'rapports', label: 'Rapports', icon: BarChart3 },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -115,6 +117,7 @@ export default function KnowledgeBasePage() {
       {activeTab === 'chatbot' && <ChatbotTestTab />}
       {activeTab === 'knowledge' && <KnowledgeBaseTab />}
       {activeTab === 'conversations' && <ConversationsTab />}
+      {activeTab === 'rapports' && <RapportsTab />}
     </div>
   );
 }
@@ -609,6 +612,54 @@ function ConversationsTab() {
   const [messages, setMessages] = useState<Array<{ sender_type: string; content: string; created_at: string }>>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
+  const selectedConvData = conversations.find(c => c.id === selectedConv);
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !selectedConv || sendingReply) return;
+    const text = replyText.trim();
+    setReplyText('');
+    setSendingReply(true);
+    try {
+      const res = await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send_reply', conversation_id: selectedConv, message: text }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Add message optimistically
+        setMessages(prev => [...prev, {
+          sender_type: 'agent',
+          content: text,
+          created_at: new Date().toISOString(),
+        }]);
+      } else {
+        alert(data.error || 'Échec envoi');
+        setReplyText(text);
+      }
+    } catch {
+      alert('Erreur de connexion');
+      setReplyText(text);
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const updateConvStatus = async (convId: string, newStatus: string) => {
+    try {
+      await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_conv_status', conversation_id: convId, status: newStatus }),
+      });
+      setConversations(prev => prev.map(c => c.id === convId ? { ...c, status: newStatus } : c));
+    } catch (err) {
+      console.error('Status update error:', err);
+    }
+  };
 
   const fetchConversations = useCallback(async () => {
     setLoading(true);
@@ -692,7 +743,7 @@ function ConversationsTab() {
         </div>
       </div>
 
-      {/* Messages viewer */}
+      {/* Messages viewer + reply */}
       <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
         {!selectedConv ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
@@ -706,36 +757,289 @@ function ConversationsTab() {
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-            {messages.length === 0 ? (
-              <p className="text-center text-sm text-gray-400 py-8">Aucun message</p>
-            ) : (
-              messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                    msg.sender_type === 'user'
-                      ? 'bg-green-600 text-white rounded-br-md'
-                      : msg.sender_type === 'bot'
-                        ? 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
-                        : 'bg-blue-600 text-white rounded-bl-md'
-                  }`}>
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      {msg.sender_type === 'bot' && <Bot className="h-3 w-3 text-purple-500" />}
-                      {msg.sender_type === 'user' && <User className="h-3 w-3" />}
-                      {msg.sender_type === 'agent' && <User className="h-3 w-3" />}
-                      <span className={`text-[10px] font-medium ${msg.sender_type === 'user' ? 'text-green-100' : msg.sender_type === 'bot' ? 'text-purple-500' : 'text-blue-100'}`}>
-                        {msg.sender_type === 'bot' ? 'Jason (Bot)' : msg.sender_type === 'agent' ? 'Agent' : 'Client'}
-                      </span>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    <p className={`text-[10px] mt-1 ${msg.sender_type === 'user' ? 'text-green-200' : msg.sender_type === 'bot' ? 'text-gray-400' : 'text-blue-200'}`}>
-                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
+          <>
+            {/* Status bar */}
+            {selectedConvData && (
+              <div className="px-4 py-2 border-b border-gray-200 flex items-center justify-between bg-white">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{selectedConvData.user_name || `+${selectedConvData.phone}`}</span>
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${statusColors[selectedConvData.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {selectedConvData.status}
+                  </span>
                 </div>
-              ))
+                <div className="flex gap-1">
+                  {['active', 'escalated', 'closed'].map(s => (
+                    <button key={s} onClick={() => updateConvStatus(selectedConv!, s)}
+                      className={`px-2 py-1 text-[10px] rounded font-medium ${selectedConvData.status === s ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                      {s === 'active' ? 'Actif' : s === 'escalated' ? 'Escaladé' : 'Fermé'}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+              {messages.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-8">Aucun message</p>
+              ) : (
+                messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                      msg.sender_type === 'user'
+                        ? 'bg-green-600 text-white rounded-br-md'
+                        : msg.sender_type === 'bot'
+                          ? 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
+                          : 'bg-blue-600 text-white rounded-bl-md'
+                    }`}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        {msg.sender_type === 'bot' && <Bot className="h-3 w-3 text-purple-500" />}
+                        {msg.sender_type === 'user' && <User className="h-3 w-3" />}
+                        {msg.sender_type === 'agent' && <User className="h-3 w-3" />}
+                        <span className={`text-[10px] font-medium ${msg.sender_type === 'user' ? 'text-green-100' : msg.sender_type === 'bot' ? 'text-purple-500' : 'text-blue-100'}`}>
+                          {msg.sender_type === 'bot' ? 'Jason (Bot)' : msg.sender_type === 'agent' ? 'Agent' : 'Client'}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className={`text-[10px] mt-1 ${msg.sender_type === 'user' ? 'text-green-200' : msg.sender_type === 'bot' ? 'text-gray-400' : 'text-blue-200'}`}>
+                        {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Reply input */}
+            <div className="px-4 py-3 border-t border-gray-200 bg-white">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendReply()}
+                  placeholder="Répondre au client via WhatsApp..."
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={sendingReply}
+                />
+                <button
+                  onClick={handleSendReply}
+                  disabled={sendingReply || !replyText.trim()}
+                  className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab 4: Rapports ─────────────────────────────────────
+
+interface Report {
+  id: string;
+  report_date: string;
+  summary: string;
+  content?: string;
+  conversations_analyzed: number;
+  added_to_knowledge_base: boolean;
+  created_at: string;
+}
+
+function RapportsTab() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [addingToKb, setAddingToKb] = useState<string | null>(null);
+
+  const fetchReports = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_reports' }),
+      });
+      const data = await res.json();
+      setReports(data.reports || []);
+    } catch (err) {
+      console.error('Fetch reports error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchReports(); }, [fetchReports]);
+
+  const handleGenerate = async (date?: string) => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate_report', date }),
+      });
+      const data = await res.json();
+      if (res.ok && data.report) {
+        setSelectedReport(data.report);
+        fetchReports();
+      } else {
+        alert(data.error || 'Erreur de génération');
+      }
+    } catch {
+      alert('Erreur de connexion');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const loadFullReport = async (reportId: string) => {
+    setLoadingReport(true);
+    try {
+      const res = await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_report', report_id: reportId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.report) {
+        setSelectedReport(data.report);
+      }
+    } catch (err) {
+      console.error('Load report error:', err);
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  const handleAddToKb = async (reportId: string) => {
+    setAddingToKb(reportId);
+    try {
+      const res = await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_report_to_kb', report_id: reportId }),
+      });
+      if (res.ok) {
+        fetchReports();
+        if (selectedReport?.id === reportId) {
+          setSelectedReport(prev => prev ? { ...prev, added_to_knowledge_base: true } : null);
+        }
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Erreur');
+      }
+    } catch {
+      alert('Erreur de connexion');
+    } finally {
+      setAddingToKb(null);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Reports list */}
+      <div className="bg-white rounded-xl border border-gray-200 flex flex-col" style={{ height: '600px' }}>
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="font-medium text-sm flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-purple-500" />
+            Rapports quotidiens
+          </h3>
+          <button
+            onClick={() => handleGenerate()}
+            disabled={generating}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          >
+            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+            Générer
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+          ) : reports.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">Aucun rapport</p>
+              <p className="text-xs text-gray-400 mt-1">Cliquez sur Générer pour créer le premier</p>
+            </div>
+          ) : (
+            reports.map(report => (
+              <button key={report.id} onClick={() => loadFullReport(report.id)}
+                className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition ${selectedReport?.id === report.id ? 'bg-purple-50 border-l-2 border-l-purple-600' : ''}`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm text-gray-900 flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                    {new Date(report.report_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </span>
+                  {report.added_to_knowledge_base && (
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{report.summary}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{report.conversations_analyzed} conversation{report.conversations_analyzed !== 1 ? 's' : ''} analysée{report.conversations_analyzed !== 1 ? 's' : ''}</p>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Report viewer */}
+      <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ height: '600px' }}>
+        {!selectedReport ? (
+          <div className="flex-1 flex items-center justify-center text-gray-400">
+            <div className="text-center">
+              <BarChart3 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-sm">Sélectionnez un rapport ou générez-en un nouveau</p>
+            </div>
           </div>
+        ) : loadingReport ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          </div>
+        ) : (
+          <>
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-sm">
+                  Rapport du {new Date(selectedReport.report_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </h3>
+                <p className="text-xs text-gray-400">{selectedReport.conversations_analyzed} conversations analysées</p>
+              </div>
+              <div className="flex gap-2">
+                {selectedReport.added_to_knowledge_base ? (
+                  <span className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg">
+                    <CheckCircle className="h-3 w-3" /> Dans la KB
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleAddToKb(selectedReport.id)}
+                    disabled={addingToKb === selectedReport.id}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50"
+                  >
+                    {addingToKb === selectedReport.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+                    Ajouter à la KB
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 prose prose-sm max-w-none">
+              {(selectedReport.content || selectedReport.summary).split('\n').map((line, i) => {
+                if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-bold text-gray-900 mt-4 mb-2">{line.replace('## ', '')}</h2>;
+                if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold text-gray-900 mt-4 mb-2">{line.replace('# ', '')}</h1>;
+                if (line.startsWith('- ')) return <li key={i} className="text-gray-700 ml-4">{line.replace('- ', '')}</li>;
+                if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-gray-900">{line.replace(/\*\*/g, '')}</p>;
+                if (line.trim() === '') return <br key={i} />;
+                return <p key={i} className="text-gray-700">{line}</p>;
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

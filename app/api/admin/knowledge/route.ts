@@ -256,6 +256,134 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ messages });
     }
 
+    // --- Admin reply to WhatsApp conversation ---
+    if (action === 'send_reply') {
+      const { conversation_id, message } = body;
+      if (!conversation_id || !message) {
+        return NextResponse.json({ error: 'conversation_id et message requis' }, { status: 400 });
+      }
+
+      // Get conversation phone
+      const { data: conv } = await (supabaseAdmin as any)
+        .from('whatsapp_conversations')
+        .select('phone, user_id, last_message_at')
+        .eq('id', conversation_id)
+        .single();
+
+      if (!conv) {
+        return NextResponse.json({ error: 'Conversation introuvable' }, { status: 404 });
+      }
+
+      // Check 24h window
+      const lastMsg = new Date(conv.last_message_at);
+      const hoursSince = (Date.now() - lastMsg.getTime()) / (1000 * 60 * 60);
+      if (hoursSince > 24) {
+        return NextResponse.json({
+          error: 'Fenêtre de 24h dépassée. Utilisez un template pour envoyer un message.',
+          expired: true,
+        }, { status: 400 });
+      }
+
+      // Send via Meta WhatsApp
+      const { sendTextMessage } = await import('@/lib/whatsapp/meta-client');
+      const sendResult = await sendTextMessage(conv.phone, message);
+
+      if (!sendResult.success) {
+        return NextResponse.json({ error: sendResult.error || 'Échec envoi' }, { status: 500 });
+      }
+
+      // Store agent message in chat_messages if user_id exists
+      if (conv.user_id) {
+        const { data: chatConv } = await supabaseAdmin
+          .from('chat_conversations')
+          .select('id')
+          .eq('user_id', conv.user_id)
+          .order('last_message_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (chatConv) {
+          await supabaseAdmin.from('chat_messages').insert({
+            conversation_id: chatConv.id,
+            sender_type: 'agent',
+            content: message,
+            metadata: { source: 'admin_reply', whatsapp_conversation_id: conversation_id },
+          });
+        }
+      }
+
+      // Update conversation
+      await (supabaseAdmin as any)
+        .from('whatsapp_conversations')
+        .update({
+          last_message_at: new Date().toISOString(),
+          status: 'active', // De-escalate if was escalated
+        })
+        .eq('id', conversation_id);
+
+      return NextResponse.json({ success: true, messageId: sendResult.messageId });
+    }
+
+    // --- Update conversation status ---
+    if (action === 'update_conv_status') {
+      const { conversation_id, status: newStatus } = body;
+      if (!conversation_id || !newStatus) {
+        return NextResponse.json({ error: 'conversation_id et status requis' }, { status: 400 });
+      }
+
+      await (supabaseAdmin as any)
+        .from('whatsapp_conversations')
+        .update({ status: newStatus })
+        .eq('id', conversation_id);
+
+      return NextResponse.json({ success: true });
+    }
+
+    // --- Daily Reports ---
+    if (action === 'list_reports') {
+      const { data: reports } = await (supabaseAdmin as any)
+        .from('daily_reports')
+        .select('id, report_date, summary, conversations_analyzed, added_to_knowledge_base, created_at')
+        .order('report_date', { ascending: false })
+        .limit(30);
+
+      return NextResponse.json({ reports: reports || [] });
+    }
+
+    if (action === 'generate_report') {
+      const { date } = body;
+      const { generateDailyReport } = await import('@/lib/reports/daily-report');
+      const report = await generateDailyReport(date);
+      return NextResponse.json({ report });
+    }
+
+    if (action === 'add_report_to_kb') {
+      const { report_id } = body;
+      if (!report_id) {
+        return NextResponse.json({ error: 'report_id requis' }, { status: 400 });
+      }
+      const { addReportToKnowledgeBase } = await import('@/lib/reports/daily-report');
+      await addReportToKnowledgeBase(report_id);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'get_report') {
+      const { report_id } = body;
+      if (!report_id) {
+        return NextResponse.json({ error: 'report_id requis' }, { status: 400 });
+      }
+      const { data: report } = await (supabaseAdmin as any)
+        .from('daily_reports')
+        .select('*')
+        .eq('id', report_id)
+        .single();
+
+      if (!report) {
+        return NextResponse.json({ error: 'Rapport introuvable' }, { status: 404 });
+      }
+      return NextResponse.json({ report });
+    }
+
     return NextResponse.json({ error: 'Action inconnue' }, { status: 400 });
   } catch (error) {
     console.error('Knowledge action error:', error);

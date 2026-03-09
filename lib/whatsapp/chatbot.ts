@@ -6,8 +6,8 @@
  * 1. Identify user by phone
  * 2. Load/create conversation state
  * 3. If escalated -> skip AI, notify agent
- * 4. Build context (RAG + orders/quotes + vehicle search + history)
- * 5. Call GPT-4.1
+ * 4. Build context (RAG + orders/quotes + vehicle search + shipping + history)
+ * 5. Call GPT-4.1 (multilingual)
  * 6. Send response via Meta Cloud API
  * 7. Send vehicle cards (image header + CTA button)
  * 8. Store in chat_messages
@@ -94,7 +94,142 @@ const BRANDS: Record<string, string[]> = {
   'jac': ['jac'],
   'wuling': ['wuling'],
   'mg': ['mg zs', 'mg hs', 'mg4'],
+  'kaiyi': ['kaiyi', 'kunlun'],
+  'maxus': ['maxus'],
+  'hongqi': ['hongqi'],
+  'lynk': ['lynk'],
+  'ora': ['ora'],
+  'voyah': ['voyah'],
+  'aion': ['aion'],
+  'neta': ['neta'],
+  'seres': ['seres'],
+  'skywell': ['skywell'],
+  'dfsk': ['dfsk'],
 };
+
+// --- Language detection ---
+
+type Language = 'fr' | 'en' | 'zh' | 'ar' | 'pt' | 'es';
+
+const LANG_LABELS: Record<Language, string> = {
+  fr: 'Français',
+  en: 'English',
+  zh: '中文 (Chinois simplifié)',
+  ar: 'العربية (Arabe)',
+  pt: 'Português',
+  es: 'Español',
+};
+
+const EN_WORDS = ['hello', 'hi', 'looking', 'car', 'want', 'need', 'price', 'how much', 'shipping', 'delivery', 'vehicle', 'buy', 'available', 'thank', 'please', 'good morning', 'good evening'];
+const PT_WORDS = ['olá', 'ola', 'carro', 'quero', 'preço', 'preco', 'obrigado', 'obrigada', 'bom dia', 'boa tarde', 'veículo', 'veiculo', 'comprar', 'quanto'];
+const ES_WORDS = ['hola', 'coche', 'carro', 'quiero', 'precio', 'gracias', 'buenos dias', 'buenas tardes', 'vehículo', 'vehiculo', 'comprar', 'cuanto'];
+
+function detectLanguage(text: string): Language {
+  // Chinese characters
+  if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
+  // Arabic script
+  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+
+  const lower = text.toLowerCase();
+  const words = lower.split(/\s+/);
+
+  // Count matching words per language
+  const enCount = EN_WORDS.filter(w => lower.includes(w)).length;
+  const ptCount = PT_WORDS.filter(w => lower.includes(w)).length;
+  const esCount = ES_WORDS.filter(w => lower.includes(w)).length;
+
+  // Need at least 2 matches to be confident
+  if (enCount >= 2 && enCount > ptCount && enCount > esCount) return 'en';
+  if (ptCount >= 2 && ptCount > enCount) return 'pt';
+  if (esCount >= 2 && esCount > enCount) return 'es';
+
+  // Single strong indicator
+  if (words.includes('hello') || words.includes('hi')) return 'en';
+  if (words.includes('olá') || words.includes('obrigado')) return 'pt';
+  if (words.includes('hola') || words.includes('gracias')) return 'es';
+
+  return 'fr';
+}
+
+// --- Destination / shipping detection ---
+
+const DESTINATIONS: Record<string, string[]> = {
+  'libreville': ['libreville', 'gabon', 'gabonais', 'gabonaise'],
+  'douala': ['douala', 'cameroun', 'camerounais'],
+  'kribi': ['kribi'],
+  'dakar': ['dakar', 'senegal', 'sénégal', 'sénégalais', 'senegalais'],
+  'abidjan': ['abidjan', 'cote d\'ivoire', 'côte d\'ivoire', 'ivoirien', 'ivoirienne'],
+  'tema': ['tema', 'ghana', 'ghanéen', 'ghaneen'],
+  'lagos': ['lagos', 'nigeria', 'nigérian', 'nigerian'],
+  'port-harcourt': ['port harcourt', 'port-harcourt'],
+  'lome': ['lomé', 'lome', 'togo', 'togolais'],
+  'cotonou': ['cotonou', 'benin', 'bénin', 'béninois', 'beninois'],
+  'conakry': ['conakry', 'guinée', 'guinee', 'guinéen', 'guineen'],
+  'freetown': ['freetown', 'sierra leone'],
+  'monrovia': ['monrovia', 'liberia', 'libéria'],
+  'banjul': ['banjul', 'gambie'],
+  'pointe-noire': ['pointe-noire', 'pointe noire', 'congo', 'congolais'],
+  'matadi': ['matadi', 'rd congo', 'rdc', 'kinshasa'],
+  'luanda': ['luanda', 'angola', 'angolais'],
+  'malabo': ['malabo', 'guinée équatoriale', 'guinee equatoriale'],
+  'mombasa': ['mombasa', 'kenya', 'kényan', 'kenyan'],
+  'dar-es-salaam': ['dar es salaam', 'dar-es-salaam', 'tanzanie'],
+  'maputo': ['maputo', 'mozambique'],
+  'djibouti': ['djibouti'],
+  'durban': ['durban', 'afrique du sud', 'south africa'],
+  'cape-town': ['le cap', 'cape town', 'cape-town'],
+  'port-gentil': ['port-gentil', 'port gentil'],
+  'nouakchott': ['nouakchott', 'mauritanie'],
+  'casablanca': ['casablanca', 'maroc', 'marocain'],
+  'alger': ['alger', 'algérie', 'algerie', 'algérien'],
+  'tunis': ['tunis', 'tunisie', 'tunisien'],
+  'alexandrie': ['alexandrie', 'egypte', 'égypte', 'égyptien'],
+  'toamasina': ['toamasina', 'madagascar', 'malgache'],
+  'port-louis': ['port-louis', 'port louis', 'maurice', 'mauricien'],
+};
+
+interface ShippingInfo {
+  destination_name: string;
+  destination_country: string;
+  destination_flag: string;
+  china_cost_usd: number;
+  korea_cost_usd: number;
+  dubai_cost_usd: number;
+}
+
+/**
+ * Detect destination from message and fetch shipping cost
+ */
+async function detectAndFetchShipping(
+  supabase: ReturnType<typeof getAdmin>,
+  message: string
+): Promise<{ destinationId: string; shipping: ShippingInfo } | null> {
+  const lower = message.toLowerCase();
+
+  let matchedId: string | null = null;
+  for (const [destId, keywords] of Object.entries(DESTINATIONS)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      matchedId = destId;
+      break;
+    }
+  }
+
+  if (!matchedId) return null;
+
+  try {
+    const { data } = await supabase
+      .from('shipping_routes')
+      .select('destination_name, destination_country, destination_flag, china_cost_usd, korea_cost_usd, dubai_cost_usd')
+      .eq('destination_id', matchedId)
+      .eq('is_active', true)
+      .single();
+
+    if (!data) return null;
+    return { destinationId: matchedId, shipping: data as ShippingInfo };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Main chatbot entry point - called from webhook on incoming message
@@ -138,6 +273,19 @@ export async function handleChatbotMessage(
       return { replied: true, escalated: true };
     }
 
+    // 4b. Detect language (use conversation history for consistency)
+    const convCtx = conversation.context as { language?: Language } | null;
+    const detectedLang = detectLanguage(messageText);
+    const language: Language = detectedLang !== 'fr' ? detectedLang : (convCtx?.language || 'fr');
+
+    // Store detected language in conversation context
+    if (language !== convCtx?.language) {
+      await supabase
+        .from('whatsapp_conversations')
+        .update({ context: { ...(conversation.context || {}), language } })
+        .eq('id', conversation.id);
+    }
+
     // 5. Build context + search vehicles (with timeout protection)
     let context = '';
     let foundVehicles: VehicleResult[] = [];
@@ -156,9 +304,9 @@ export async function handleChatbotMessage(
       console.warn('[Chatbot] Context build timeout/error, proceeding without full context:', err);
     }
 
-    // 6. Call AI
-    console.log(`[Chatbot] Calling GPT-4.1... (${foundVehicles.length} vehicles found)`);
-    const aiResponse = await callAI(messageText, context, userName, xafRate);
+    // 6. Call AI (multilingual)
+    console.log(`[Chatbot] Calling GPT-4.1... (${foundVehicles.length} vehicles, lang=${language})`);
+    const aiResponse = await callAI(messageText, context, userName, xafRate, language);
     console.log(`[Chatbot] AI response: "${aiResponse.substring(0, 80)}..."`);
 
     // 7. Send AI text response
@@ -364,6 +512,35 @@ async function buildContextAndVehicles(
     console.error('[Chatbot] Vehicle search failed:', err);
   }
 
+  // Shipping/transport search if message mentions a destination
+  try {
+    const shippingResult = await detectAndFetchShipping(supabase, message);
+    if (shippingResult) {
+      const { shipping } = shippingResult;
+      parts.push(`\nTRANSPORT VERS ${shipping.destination_name.toUpperCase()} ${shipping.destination_flag} (${shipping.destination_country}):`);
+      parts.push(`- Conteneur 20HQ depuis Chine: $${shipping.china_cost_usd} USD (${formatFCFA(shipping.china_cost_usd, xafRate)})`);
+      parts.push(`- Conteneur 20HQ depuis Corée: $${shipping.korea_cost_usd} USD (${formatFCFA(shipping.korea_cost_usd, xafRate)})`);
+      parts.push(`- Conteneur 20HQ depuis Dubaï: $${shipping.dubai_cost_usd} USD (${formatFCFA(shipping.dubai_cost_usd, xafRate)})`);
+
+      // If vehicles found, add total cost estimates (vehicle + export tax + shipping)
+      if (vehicles.length > 0) {
+        parts.push('\nESTIMATION PRIX TOTAL (véhicule + taxe export + transport 20HQ):');
+        for (const v of vehicles.slice(0, 3)) {
+          if (!v.start_price_usd) continue;
+          const exportTax = getExportTax(v.source || '');
+          const source = (v.source || 'china').toLowerCase();
+          const shippingCost = source.includes('korea') ? shipping.korea_cost_usd
+            : source.includes('dubai') ? shipping.dubai_cost_usd
+            : shipping.china_cost_usd;
+          const totalUsd = v.start_price_usd + exportTax + shippingCost;
+          parts.push(`- ${v.make} ${v.model} ${v.year}: ${formatFCFA(totalUsd, xafRate)} ($${totalUsd.toLocaleString()}) [véhicule $${v.start_price_usd} + taxe $${exportTax} + transport $${shippingCost}]`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Chatbot] Shipping search failed:', err);
+  }
+
   // Recent conversation history
   try {
     const { data: history } = await supabase
@@ -431,17 +608,8 @@ async function searchVehicles(
     }
   }
 
-  // Fallback: extract words that could be brands/models (min 4 chars)
-  if (foundBrands.length === 0 && modelKeywords.length === 0) {
-    const words = lower.replace(/[^a-zà-ÿ0-9\s-]/g, '').split(/\s+/).filter(w => w.length >= 4);
-    const stopWords = ['dans', 'pour', 'avec', 'quel', 'quelle', 'quels', 'quelles', 'moins', 'plus',
-      'cherche', 'voudrais', 'veux', 'besoin', 'budget', 'millions', 'million', 'prix', 'voiture',
-      'vehicule', 'véhicule', 'auto', 'importation', 'proposer', 'propose', 'peux', 'bonjour',
-      'bonsoir', 'salut', 'merci', 'comment', 'combien', 'cher', 'chere', 'disponible'];
-    const searchWords = words.filter(w => !stopWords.includes(w));
-    if (searchWords.length > 0) modelKeywords.push(...searchWords.slice(0, 2));
-  }
-
+  // If no brands detected, don't do fuzzy search — only search when we have a clear brand/model match
+  // This prevents sending random vehicles (like Lexus) when user asks for a brand not in catalog
   if (foundBrands.length === 0 && modelKeywords.length === 0) return [];
 
   // Build conditions: prioritize brand match on make, model keywords on model
@@ -474,13 +642,13 @@ async function searchVehicles(
 
   if (!vehicles || vehicles.length === 0) return [];
 
-  // Filter: if specific brands were detected, only return matching brands
+  // STRICT: if specific brands were detected, only return matching brands
+  // Never fall back to unrelated vehicles — return empty instead
   if (foundBrands.length > 0) {
     const filtered = vehicles.filter((v: VehicleResult) =>
       foundBrands.some(brand => v.make.toLowerCase().includes(brand))
     );
-    // Return filtered if we have results, otherwise return all (fuzzy match)
-    if (filtered.length > 0) return filtered as VehicleResult[];
+    return filtered as VehicleResult[];
   }
 
   return vehicles as VehicleResult[];
@@ -626,22 +794,37 @@ async function sendVehicleImages(
 
 // --- AI call ---
 
-async function callAI(userMessage: string, context: string, userName: string, xafRate: number = DEFAULT_XAF_RATE): Promise<string> {
+async function callAI(
+  userMessage: string,
+  context: string,
+  userName: string,
+  xafRate: number = DEFAULT_XAF_RATE,
+  language: Language = 'fr'
+): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
+  const langLabel = LANG_LABELS[language];
+
   const systemPrompt = `# RÔLE ET IDENTITÉ
 Tu es Jason, l'assistant virtuel et conseiller commercial expert en automobile pour "Driveby Africa". Ton rôle est d'accueillir les prospects sur WhatsApp, de comprendre leurs besoins automobiles, de les conseiller et de les convaincre d'acheter nos véhicules (neufs ou occasions récentes), avec un focus particulier sur les marques chinoises, coréennes et les véhicules importés de Dubaï.
+
+# LANGUE
+IMPORTANT : Réponds TOUJOURS dans la langue du client. Langue détectée : ${langLabel}.
+- Si le client écrit en français → réponds en français
+- Si le client écrit en anglais → réponds en anglais
+- Si le client écrit en chinois → réponds en chinois simplifié
+- Si le client écrit en arabe → réponds en arabe
+- Adapte aussi le ton culturel à la langue
 
 # TON ET STYLE DE COMMUNICATION
 - Ton : Professionnel, chaleureux, rassurant, persuasif et expert.
 - Format : Adapté à WhatsApp. Fais des phrases courtes. Fais des paragraphes aérés. Utilise des listes à puces.
 - Emojis : Utilise les emojis de manière stratégique mais sans en abuser (🚗, ✅, 💡, 🤝, 📍, 💰).
-- Langue : Français (avec la capacité de t'adapter si le client utilise des expressions locales africaines courantes, en restant toujours respectueux).
 
 # DIRECTIVES DE CONVERSATION (RÈGLES STRICTES)
 1. CONCISION : Ne fais jamais de réponses de plus de 4 ou 5 phrases. Les utilisateurs WhatsApp lisent en diagonale. Pose une question à la fin de chaque message pour faire avancer la discussion.
-2. QUALIFICATION : Avant de proposer un véhicule, tu dois connaître : le budget du client, l'usage prévu (ville, brousse, famille, travail) et ses préférences de marque.
+2. QUALIFICATION : Avant de proposer un véhicule, tu dois connaître : le budget du client, la destination de livraison (port/pays africain) et ses préférences de marque.
 3. VALORISATION DES PRODUITS :
    - Véhicules Chinois (Haval H6 GT, Changan, Chery, Jetour, BYD, Geely, GAC...) : Design premium, technologies de série (caméra 360, écrans), robustesse des châssis, rapport qualité/prix imbattable.
    - Véhicules Coréens (Hyundai, Kia) : Fiabilité à toute épreuve, pièces de rechange disponibles partout sur le continent, excellente valeur de revente.
@@ -650,15 +833,16 @@ Tu es Jason, l'assistant virtuel et conseiller commercial expert en automobile p
 5. ORIENTATION VERS L'ACTION : Génère un lead qualifié. Propose d'envoyer un catalogue, des photos, un devis, ou de programmer un appel avec un conseiller humain.
 
 # STRUCTURE D'UNE INTERACTION TYPE
-- Salutation : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Vous cherchez un véhicule pour la famille, pour le travail, ou pour vous faire plaisir ?"
-- Découverte : Poser des questions sur le budget et l'usage.
+- Salutation : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Quel type de véhicule cherchez-vous et vers quel pays/port africain ?"
+- Découverte : Poser des questions sur le budget et la destination.
 - Argumentaire : Proposer 1 ou 2 modèles pertinents avec les arguments du marché.
 - Call-to-Action : "Voulez-vous que je vous envoie des photos de ce modèle ou préférez-vous qu'un de nos conseillers vous appelle pour un devis précis ? 📞"
 
 # PRIX ET DEVISES
 - Tous les prix en FCFA (taux: 1 USD = ${xafRate} FCFA). USD entre parenthèses.
 - Ne jamais inventer de prix — utilise UNIQUEMENT les données du contexte.
-- Toujours préciser "prix hors transport jusqu'à votre destination, sous réserve de confirmation par un conseiller" car douanes et transport varient.
+- Toujours préciser "prix hors transport jusqu'à votre destination, sous réserve de confirmation par un conseiller" sauf si le TRANSPORT est dans le contexte (auquel cas donne le prix total estimé).
+- Si le contexte contient des infos TRANSPORT avec prix total, mentionne le prix total rendu destination.
 
 # VÉHICULES
 - Si des VEHICULES sont dans le contexte, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
@@ -694,7 +878,7 @@ ${context ? `\nCONTEXTE:\n${context}` : ''}`;
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(`OpenAI error: ${err.error?.message || response.statusText}`);
+    throw new Error(`OpenAI error: ${(err as any).error?.message || response.statusText}`);
   }
 
   const data = await response.json();
@@ -769,7 +953,8 @@ export async function testChatbot(
     supabase, message, undefined, 'test'
   );
 
-  const response = await callAI(message, context, userName, xafRate);
+  const language = detectLanguage(message);
+  const response = await callAI(message, context, userName, xafRate, language);
 
   return {
     response,
