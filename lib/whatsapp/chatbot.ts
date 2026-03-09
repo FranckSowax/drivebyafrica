@@ -333,15 +333,25 @@ export async function handleChatbotMessage(
       }
     }
 
-    // 9. Store bot response in chat_messages
+    // 9. Store messages in conversation history
+    // Always store user + bot messages in whatsapp_conversations.context.recent_messages
+    await storeConversationMessages(supabase, conversation.id, messageText, aiResponse);
+
+    // Also store in chat_messages for registered users
     if (userId) {
       await storeBotMessage(supabase, userId, aiResponse, conversation.id);
     }
 
-    // 10. Update conversation last_message_at
+    // 10. Update conversation last_message_at + contact name
     await supabase
       .from('whatsapp_conversations')
-      .update({ last_message_at: new Date().toISOString() })
+      .update({
+        last_message_at: new Date().toISOString(),
+        context: {
+          ...(conversation.context || {}),
+          contact_name: userName,
+        },
+      })
       .eq('id', conversation.id);
 
     return { replied: sendResult.success, escalated: false, error: sendResult.error };
@@ -950,6 +960,40 @@ ${context ? `\nCONTEXTE:\n${context}` : ''}`;
 
 // --- Message storage ---
 
+/**
+ * Store user + bot messages in whatsapp_conversations.context.recent_messages
+ * Works for ALL contacts (registered or not).
+ */
+async function storeConversationMessages(
+  supabase: ReturnType<typeof getAdmin>,
+  conversationId: string,
+  userMessage: string,
+  botResponse: string
+) {
+  try {
+    const { data: conv } = await supabase
+      .from('whatsapp_conversations')
+      .select('context')
+      .eq('id', conversationId)
+      .single();
+
+    const ctx = (conv?.context || {}) as { recent_messages?: string[]; [key: string]: unknown };
+    const recentMessages = ctx.recent_messages || [];
+    recentMessages.push(`User: ${userMessage.substring(0, 300)}`);
+    recentMessages.push(`Bot: ${botResponse.substring(0, 300)}`);
+
+    // Keep last 20 messages (10 exchanges)
+    if (recentMessages.length > 20) recentMessages.splice(0, recentMessages.length - 20);
+
+    await supabase
+      .from('whatsapp_conversations')
+      .update({ context: { ...ctx, recent_messages: recentMessages } })
+      .eq('id', conversationId);
+  } catch {
+    // Ignore context update errors
+  }
+}
+
 async function storeBotMessage(
   supabase: ReturnType<typeof getAdmin>,
   userId: string,
@@ -976,28 +1020,6 @@ async function storeBotMessage(
       whatsapp_conversation_id: whatsappConversationId,
     },
   });
-
-  // Update conversation context with recent messages
-  try {
-    const { data: conv } = await supabase
-      .from('whatsapp_conversations')
-      .select('context')
-      .eq('id', whatsappConversationId)
-      .single();
-
-    const ctx = (conv?.context || {}) as { recent_messages?: string[] };
-    const recentMessages = ctx.recent_messages || [];
-    recentMessages.push(`Bot: ${content.substring(0, 200)}`);
-
-    if (recentMessages.length > 10) recentMessages.splice(0, recentMessages.length - 10);
-
-    await supabase
-      .from('whatsapp_conversations')
-      .update({ context: { ...ctx, recent_messages: recentMessages } })
-      .eq('id', whatsappConversationId);
-  } catch {
-    // Ignore context update errors
-  }
 }
 
 // --- Admin test endpoint ---

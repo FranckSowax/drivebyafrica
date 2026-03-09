@@ -181,7 +181,7 @@ export async function PATCH(request: Request) {
 
       const { data: conversations } = await query;
 
-      // Enrich with user names
+      // Enrich with user names (from profile or conversation context)
       const enriched = await Promise.all(
         (conversations || []).map(async (conv: any) => {
           let user_name = null;
@@ -192,6 +192,10 @@ export async function PATCH(request: Request) {
               .eq('id', conv.user_id)
               .single();
             user_name = profile?.full_name || null;
+          }
+          // Fallback: use contact_name from conversation context
+          if (!user_name && conv.context?.contact_name) {
+            user_name = conv.context.contact_name;
           }
           return { ...conv, user_name };
         })
