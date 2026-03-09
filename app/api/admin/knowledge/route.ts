@@ -210,10 +210,10 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'conversation_id requis' }, { status: 400 });
       }
 
-      // Get conversation to find user_id
+      // Get conversation with context (needed for recent_messages fallback)
       const { data: conv } = await (supabaseAdmin as any)
         .from('whatsapp_conversations')
-        .select('user_id, phone')
+        .select('user_id, phone, context')
         .eq('id', conversation_id)
         .single();
 
@@ -221,11 +221,10 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: 'Conversation introuvable' }, { status: 404 });
       }
 
-      // Get messages from chat_conversations/chat_messages
+      // Get messages from chat_conversations/chat_messages (registered users)
       let messages: Array<{ sender_type: string; content: string; created_at: string }> = [];
 
       if (conv.user_id) {
-        // Find the chat_conversation linked to this user
         const { data: chatConv } = await supabaseAdmin
           .from('chat_conversations')
           .select('id')
@@ -246,13 +245,12 @@ export async function PATCH(request: Request) {
         }
       }
 
-      // Also include context recent_messages as fallback
-      const ctx = (conv as { user_id: string | null; phone: string } & { context?: { recent_messages?: string[] } })
-        ?.context as { recent_messages?: string[] } | undefined;
-      if (messages.length === 0 && ctx?.recent_messages) {
+      // Fallback: use context.recent_messages from whatsapp_conversations
+      const ctx = conv.context as { recent_messages?: string[] } | null;
+      if (messages.length === 0 && ctx?.recent_messages && ctx.recent_messages.length > 0) {
         messages = ctx.recent_messages.map((msg: string, i: number) => ({
-          sender_type: msg.startsWith('Bot:') ? 'bot' : 'user',
-          content: msg.replace(/^(Bot|User): /, ''),
+          sender_type: msg.startsWith('Bot:') ? 'bot' : msg.startsWith('Admin:') ? 'agent' : 'user',
+          content: msg.replace(/^(Bot|User|Admin): /, ''),
           created_at: new Date(Date.now() - (ctx.recent_messages!.length - i) * 60000).toISOString(),
         }));
       }
@@ -316,14 +314,35 @@ export async function PATCH(request: Request) {
         }
       }
 
-      // Update conversation
-      await (supabaseAdmin as any)
-        .from('whatsapp_conversations')
-        .update({
-          last_message_at: new Date().toISOString(),
-          status: 'active', // De-escalate if was escalated
-        })
-        .eq('id', conversation_id);
+      // Store admin reply in context.recent_messages (for all contacts)
+      try {
+        const { data: convCtx } = await (supabaseAdmin as any)
+          .from('whatsapp_conversations')
+          .select('context')
+          .eq('id', conversation_id)
+          .single();
+        const ctx = (convCtx?.context || {}) as { recent_messages?: string[]; [key: string]: unknown };
+        const recentMessages = ctx.recent_messages || [];
+        recentMessages.push(`Admin: ${message.substring(0, 300)}`);
+        if (recentMessages.length > 20) recentMessages.splice(0, recentMessages.length - 20);
+        await (supabaseAdmin as any)
+          .from('whatsapp_conversations')
+          .update({
+            context: { ...ctx, recent_messages: recentMessages },
+            last_message_at: new Date().toISOString(),
+            status: 'active',
+          })
+          .eq('id', conversation_id);
+      } catch {
+        // Fallback: just update status
+        await (supabaseAdmin as any)
+          .from('whatsapp_conversations')
+          .update({
+            last_message_at: new Date().toISOString(),
+            status: 'active',
+          })
+          .eq('id', conversation_id);
+      }
 
       return NextResponse.json({ success: true, messageId: sendResult.messageId });
     }
