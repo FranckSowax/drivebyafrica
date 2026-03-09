@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { AFRICAN_COUNTRIES, REGIONS } from '@/lib/constants/african-countries';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -67,19 +68,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   cancelled: { label: 'Annulée', color: 'bg-red-100 text-red-700', icon: XCircle },
 };
 
-const COUNTRIES = [
-  { value: 'GA', label: '🇬🇦 Gabon' },
-  { value: 'CM', label: '🇨🇲 Cameroun' },
-  { value: 'SN', label: '🇸🇳 Sénégal' },
-  { value: 'CI', label: '🇨🇮 Côte d\'Ivoire' },
-  { value: 'CD', label: '🇨🇩 RD Congo' },
-  { value: 'CG', label: '🇨🇬 Congo' },
-  { value: 'BF', label: '🇧🇫 Burkina Faso' },
-  { value: 'ML', label: '🇲🇱 Mali' },
-  { value: 'GN', label: '🇬🇳 Guinée' },
-  { value: 'BJ', label: '🇧🇯 Bénin' },
-  { value: 'TG', label: '🇹🇬 Togo' },
-];
+// Use AFRICAN_COUNTRIES from lib/constants/african-countries
 
 const TABS = [
   { id: 'campaigns', label: 'Campagnes', icon: Megaphone },
@@ -598,20 +587,38 @@ function CampaignForm({ campaignId, onSave, onCancel }: { campaignId?: string; o
 
           {/* Inline segmentation */}
           <div>
-            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Ciblage</label>
-            <div className="flex flex-wrap gap-1">
-              {COUNTRIES.map(c => (
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Ciblage par région</label>
+            <div className="flex flex-wrap gap-1 mb-1.5">
+              {REGIONS.map(r => {
+                const regionCodes = AFRICAN_COUNTRIES.filter(c => c.region === r.value).map(c => c.value);
+                const allSelected = regionCodes.every(code => selectedCountries.includes(code));
+                return (
+                  <button key={r.value} onClick={() => {
+                    if (allSelected) setSelectedCountries(prev => prev.filter(x => !regionCodes.includes(x)));
+                    else setSelectedCountries(prev => [...new Set([...prev, ...regionCodes])]);
+                  }}
+                    className={`px-2 py-1 text-[10px] rounded-full font-medium transition ${
+                      allSelected ? 'bg-royal-blue text-white' : 'bg-[var(--surface)] text-[var(--text-muted)]'
+                    }`}>
+                    {r.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
+              {AFRICAN_COUNTRIES.map(c => (
                 <button key={c.value} onClick={() => setSelectedCountries(prev =>
                   prev.includes(c.value) ? prev.filter(x => x !== c.value) : [...prev, c.value]
                 )}
-                  className={`px-2 py-1 text-[10px] rounded-full font-medium transition ${
+                  className={`px-2 py-0.5 text-[10px] rounded-full font-medium transition ${
                     selectedCountries.includes(c.value) ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)]'
                   }`}>
-                  {c.label}
+                  {c.flag} {c.label}
                 </button>
               ))}
             </div>
             {selectedCountries.length === 0 && <p className="text-[10px] text-[var(--text-muted)] mt-0.5">Tous les pays si aucun sélectionné</p>}
+            {selectedCountries.length > 0 && <p className="text-[10px] text-mandarin mt-0.5">{selectedCountries.length} pays sélectionnés</p>}
             <div className="flex gap-4 mt-2">
               {[
                 { label: 'WhatsApp', checked: hasWhatsapp, set: setHasWhatsapp },
@@ -650,8 +657,7 @@ function TemplatesTab() {
   const [headerMediaUrl, setHeaderMediaUrl] = useState('');
   const [bodyText, setBodyText] = useState('');
   const [footerText, setFooterText] = useState('');
-  const [ctaUrl, setCtaUrl] = useState('');
-  const [ctaLabel, setCtaLabel] = useState('');
+  const [buttons, setButtons] = useState<Array<{ type: 'URL' | 'PHONE_NUMBER' | 'QUICK_REPLY'; text: string; value: string }>>([]);
 
   const bodyVariableCount = (bodyText.match(/\{\{\d+\}\}/g) || []).length;
 
@@ -678,10 +684,15 @@ function TemplatesTab() {
       components.push({ type: 'FOOTER', text: footerText });
     }
 
-    if (ctaUrl && ctaLabel) {
+    const validButtons = buttons.filter(b => b.text.trim() && b.value.trim());
+    if (validButtons.length > 0) {
       components.push({
         type: 'BUTTONS',
-        buttons: [{ type: 'URL', text: ctaLabel, url: ctaUrl }],
+        buttons: validButtons.map(b => {
+          if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.value };
+          if (b.type === 'PHONE_NUMBER') return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.value };
+          return { type: 'QUICK_REPLY', text: b.text };
+        }),
       });
     }
 
@@ -793,17 +804,51 @@ function TemplatesTab() {
                 placeholder="Driveby Africa — Votre partenaire auto" maxLength={60} />
             </div>
 
-            {/* CTA Button */}
+            {/* CTA Buttons (up to 3) */}
             <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Bouton CTA (optionnel)</label>
-              <div className="grid grid-cols-2 gap-2">
-                <input type="text" value={ctaLabel} onChange={e => setCtaLabel(e.target.value)}
-                  className="px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--input-border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-mandarin"
-                  placeholder="Texte du bouton" maxLength={25} />
-                <input type="url" value={ctaUrl} onChange={e => setCtaUrl(e.target.value)}
-                  className="px-3 py-2 text-sm rounded-lg bg-[var(--surface)] border border-[var(--input-border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-mandarin"
-                  placeholder="https://driveby-africa.com/..." />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Boutons CTA (max 3)</label>
+                {buttons.length < 3 && (
+                  <button onClick={() => setButtons(prev => [...prev, { type: 'URL', text: '', value: '' }])}
+                    className="text-xs text-mandarin hover:underline flex items-center gap-0.5">
+                    <Plus className="w-3 h-3" /> Ajouter
+                  </button>
+                )}
               </div>
+              {buttons.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)]">Aucun bouton</p>
+              ) : (
+                <div className="space-y-2">
+                  {buttons.map((btn, i) => (
+                    <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--surface)] border border-[var(--card-border)]">
+                      <select value={btn.type} onChange={e => {
+                        const next = [...buttons]; next[i] = { ...next[i], type: e.target.value as typeof btn.type }; setButtons(next);
+                      }}
+                        className="px-2 py-1.5 text-[10px] rounded-lg bg-[var(--card-bg)] border border-[var(--input-border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-mandarin w-20">
+                        <option value="URL">URL</option>
+                        <option value="PHONE_NUMBER">Tél</option>
+                        <option value="QUICK_REPLY">Réponse</option>
+                      </select>
+                      <input type="text" value={btn.text} onChange={e => {
+                        const next = [...buttons]; next[i] = { ...next[i], text: e.target.value }; setButtons(next);
+                      }}
+                        className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--input-border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-mandarin"
+                        placeholder="Texte du bouton" maxLength={25} />
+                      {btn.type !== 'QUICK_REPLY' && (
+                        <input type={btn.type === 'URL' ? 'url' : 'tel'} value={btn.value} onChange={e => {
+                          const next = [...buttons]; next[i] = { ...next[i], value: e.target.value }; setButtons(next);
+                        }}
+                          className="flex-1 px-2 py-1.5 text-xs rounded-lg bg-[var(--card-bg)] border border-[var(--input-border)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-mandarin"
+                          placeholder={btn.type === 'URL' ? 'https://...' : '+86...'} />
+                      )}
+                      <button onClick={() => setButtons(prev => prev.filter((_, j) => j !== i))}
+                        className="p-1 rounded hover:bg-red-50 mt-0.5">
+                        <X className="w-3.5 h-3.5 text-red-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -898,12 +943,12 @@ function TemplatesTab() {
                 </span>
               </div>
 
-              {/* CTA */}
-              {ctaLabel && (
-                <div className="border-t border-gray-100 px-3 py-2.5 text-center">
-                  <span className="text-sm text-blue-500 font-medium">{ctaLabel}</span>
+              {/* CTA Buttons */}
+              {buttons.filter(b => b.text.trim()).map((btn, i) => (
+                <div key={i} className="border-t border-gray-100 px-3 py-2.5 text-center">
+                  <span className="text-sm text-blue-500 font-medium">{btn.text}</span>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </Card>
@@ -976,18 +1021,52 @@ function SegmentationTab() {
           </h3>
 
           <div className="space-y-5">
+            {/* Regions */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Sélection par région</label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {REGIONS.map(r => {
+                  const regionCodes = AFRICAN_COUNTRIES.filter(c => c.region === r.value).map(c => c.value);
+                  const allSelected = regionCodes.every(code => selectedCountries.includes(code));
+                  const someSelected = regionCodes.some(code => selectedCountries.includes(code));
+                  return (
+                    <button key={r.value} onClick={() => {
+                      if (allSelected) setSelectedCountries(prev => prev.filter(x => !regionCodes.includes(x)));
+                      else setSelectedCountries(prev => [...new Set([...prev, ...regionCodes])]);
+                    }}
+                      className={`px-3 py-1.5 text-sm rounded-full font-medium transition ${
+                        allSelected ? 'bg-royal-blue text-white' : someSelected ? 'bg-royal-blue/20 text-royal-blue' : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                      }`}>
+                      {r.label} ({regionCodes.length})
+                    </button>
+                  );
+                })}
+                <button onClick={() => {
+                  if (selectedCountries.length === AFRICAN_COUNTRIES.length) setSelectedCountries([]);
+                  else setSelectedCountries(AFRICAN_COUNTRIES.map(c => c.value));
+                }}
+                  className={`px-3 py-1.5 text-sm rounded-full font-medium transition ${
+                    selectedCountries.length === AFRICAN_COUNTRIES.length ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)]'
+                  }`}>
+                  Tout le continent ({AFRICAN_COUNTRIES.length})
+                </button>
+              </div>
+            </div>
+
             {/* Countries */}
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Pays cibles</label>
-              <div className="flex flex-wrap gap-2">
-                {COUNTRIES.map(c => (
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                Pays cibles {selectedCountries.length > 0 && <span className="text-mandarin">({selectedCountries.length} sélectionnés)</span>}
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-y-auto p-2 rounded-lg border border-[var(--card-border)]">
+                {AFRICAN_COUNTRIES.map(c => (
                   <button key={c.value} onClick={() => setSelectedCountries(prev =>
                     prev.includes(c.value) ? prev.filter(x => x !== c.value) : [...prev, c.value]
                   )}
-                    className={`px-3 py-1.5 text-sm rounded-full font-medium transition ${
-                      selectedCountries.includes(c.value) ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]'
+                    className={`px-2.5 py-1 text-xs rounded-full font-medium transition ${
+                      selectedCountries.includes(c.value) ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                     }`}>
-                    {c.label}
+                    {c.flag} {c.label}
                   </button>
                 ))}
               </div>
@@ -1016,6 +1095,35 @@ function SegmentationTab() {
                     </div>
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* Meta Pixel integration info */}
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-royal-blue" />
+                Intégration Meta Pixel
+              </label>
+              <div className="p-3 rounded-lg border border-royal-blue/20 bg-royal-blue/5">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-[var(--text-primary)]">Pixel Meta actif (ID: 936800708773453)</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                      Les visiteurs du site sont trackés. Créez des Custom Audiences dans Meta Business Manager pour cibler :
+                    </p>
+                    <ul className="text-[10px] text-[var(--text-muted)] mt-1 space-y-0.5 list-disc list-inside">
+                      <li>Visiteurs des pages véhicules (retargeting)</li>
+                      <li>Ajouts aux favoris sans commande</li>
+                      <li>Visiteurs qui ont vu le catalogue</li>
+                      <li>Lookalike audiences basées sur vos clients</li>
+                    </ul>
+                    <a href="https://business.facebook.com/events_manager2/list/pixel/936800708773453" target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] text-royal-blue hover:underline mt-1 inline-block">
+                      Ouvrir le gestionnaire d'événements Meta →
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
