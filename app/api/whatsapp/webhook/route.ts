@@ -50,19 +50,38 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     .limit(1)
     .maybeSingle();
 
+  const content = extractContent(message);
+  const customerName = profile?.full_name || message.contactName || `+${phone}`;
+
+  // 3. For unknown numbers: still run chatbot, then notify admin
   if (!profile) {
-    console.log(`[MetaWebhook] Unknown number: +${phone}`);
+    console.log(`[MetaWebhook] New contact: +${phone} (${message.contactName || 'unknown'})`);
+
+    // Try chatbot auto-reply even for unknown numbers
+    const autoReplyEnabled = process.env.CHATBOT_AUTO_REPLY !== 'false';
+    if (autoReplyEnabled && message.type === 'text' && content) {
+      try {
+        const chatbotResult = await handleChatbotMessage(phone, content, message.contactName);
+        if (chatbotResult.replied) {
+          console.log(`[MetaWebhook] Chatbot replied to new contact +${phone}`);
+        }
+      } catch (err) {
+        console.error('[MetaWebhook] Chatbot error for new contact:', err);
+      }
+    }
+
+    // Notify admin about new contact
     await supabaseAdmin.from('admin_notifications').insert({
       type: 'agent_request',
-      title: 'Message WhatsApp - Numéro inconnu',
-      message: `Message reçu de +${phone}: "${extractContent(message).substring(0, 200)}"`,
-      priority: 'high',
+      title: `Nouveau contact WhatsApp: ${customerName}`,
+      message: `Message de +${phone}: "${content.substring(0, 200)}"`,
+      priority: 'normal',
       action_url: '/admin/messages',
       action_label: 'Voir',
       icon: 'message-circle',
       data: {
         phone,
-        message_content: extractContent(message),
+        message_content: content,
         whatsapp_message_id: message.id,
         from_name: message.contactName,
       },
@@ -70,7 +89,7 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     return;
   }
 
-  // 3. Find or create conversation
+  // 4. Find or create conversation (for registered users)
   let conversationId: string;
 
   const { data: conv } = await supabaseAdmin
@@ -121,8 +140,7 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     }
   }
 
-  // 4. Insert message
-  const content = extractContent(message);
+  // 5. Insert message
   const { error: insertError } = await supabaseAdmin
     .from('chat_messages')
     .insert({
@@ -144,7 +162,7 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     throw insertError;
   }
 
-  // 5. Try chatbot auto-reply for text messages (if enabled)
+  // 6. Try chatbot auto-reply for text messages (if enabled)
   const autoReplyEnabled = process.env.CHATBOT_AUTO_REPLY !== 'false';
   if (autoReplyEnabled && message.type === 'text' && content) {
     try {
@@ -158,7 +176,7 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     }
   }
 
-  // 6. Ensure conversation is in waiting_agent status (fallback when chatbot didn't reply)
+  // 7. Ensure conversation is in waiting_agent status (fallback when chatbot didn't reply)
   await supabaseAdmin
     .from('chat_conversations')
     .update({
@@ -168,8 +186,7 @@ async function handleIncomingMessage(message: MetaWebhookMessage & { contactName
     .eq('id', conversationId)
     .neq('status', 'waiting_agent');
 
-  // 7. Create admin notification
-  const customerName = profile.full_name || message.contactName || `+${phone}`;
+  // 8. Create admin notification
   await supabaseAdmin.from('admin_notifications').insert({
     type: 'agent_request',
     title: `Message WhatsApp de ${customerName}`,
