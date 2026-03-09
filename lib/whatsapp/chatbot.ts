@@ -333,25 +333,19 @@ export async function handleChatbotMessage(
       }
     }
 
-    // 9. Store messages in conversation history
+    // 9. Store messages in conversation history + update contact name
     // Always store user + bot messages in whatsapp_conversations.context.recent_messages
-    await storeConversationMessages(supabase, conversation.id, messageText, aiResponse);
+    await storeConversationMessages(supabase, conversation.id, messageText, aiResponse, userName);
 
     // Also store in chat_messages for registered users
     if (userId) {
       await storeBotMessage(supabase, userId, aiResponse, conversation.id);
     }
 
-    // 10. Update conversation last_message_at + contact name
+    // 10. Update conversation last_message_at (context already updated in step 9)
     await supabase
       .from('whatsapp_conversations')
-      .update({
-        last_message_at: new Date().toISOString(),
-        context: {
-          ...(conversation.context || {}),
-          contact_name: userName,
-        },
-      })
+      .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversation.id);
 
     return { replied: sendResult.success, escalated: false, error: sendResult.error };
@@ -968,7 +962,8 @@ async function storeConversationMessages(
   supabase: ReturnType<typeof getAdmin>,
   conversationId: string,
   userMessage: string,
-  botResponse: string
+  botResponse: string,
+  contactName?: string
 ) {
   try {
     const { data: conv } = await supabase
@@ -977,17 +972,20 @@ async function storeConversationMessages(
       .eq('id', conversationId)
       .single();
 
-    const ctx = (conv?.context || {}) as { recent_messages?: string[]; [key: string]: unknown };
-    const recentMessages = ctx.recent_messages || [];
+    const ctx = (conv?.context || {}) as Record<string, unknown>;
+    const recentMessages = (ctx.recent_messages as string[] | undefined) || [];
     recentMessages.push(`User: ${userMessage.substring(0, 300)}`);
     recentMessages.push(`Bot: ${botResponse.substring(0, 300)}`);
 
     // Keep last 20 messages (10 exchanges)
     if (recentMessages.length > 20) recentMessages.splice(0, recentMessages.length - 20);
 
+    const updatedContext: Record<string, unknown> = { ...ctx, recent_messages: recentMessages };
+    if (contactName) updatedContext.contact_name = contactName;
+
     await supabase
       .from('whatsapp_conversations')
-      .update({ context: { ...ctx, recent_messages: recentMessages } })
+      .update({ context: updatedContext })
       .eq('id', conversationId);
   } catch {
     // Ignore context update errors
