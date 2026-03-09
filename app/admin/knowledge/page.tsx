@@ -7,6 +7,8 @@ import {
   Send, User, Brain, MessageCircle, FileText, Calendar,
   CheckCircle, AlertCircle, BarChart3,
 } from 'lucide-react';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 // --- Types ---
 
@@ -80,18 +82,18 @@ export default function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState<TabId>('chatbot');
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Brain className="h-7 w-7 text-purple-600" />
+        <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+          <Brain className="h-7 w-7 text-mandarin" />
           Chatbot RAG & Base de connaissance
         </h1>
-        <p className="text-gray-500 mt-1">Testez le chatbot, gérez la base de connaissance et suivez les conversations</p>
+        <p className="text-[var(--text-muted)] mt-1">Testez le chatbot, gérez la base de connaissance et suivez les conversations</p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-[var(--card-border)]">
         <div className="flex gap-0">
           {TABS.map(tab => {
             const Icon = tab.icon;
@@ -101,8 +103,8 @@ export default function KnowledgeBasePage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'border-purple-600 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-mandarin text-mandarin'
+                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--card-border)]'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -167,7 +169,7 @@ function ChatbotTestTab() {
           timestamp: new Date(),
         }]);
       }
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
         role: 'bot',
         content: 'Erreur de connexion au serveur.',
@@ -181,30 +183,30 @@ function ChatbotTestTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Chat area */}
-      <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ height: '600px' }}>
+      <Card className="lg:col-span-2 flex flex-col overflow-hidden h-[600px]">
         {/* Chat header */}
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-purple-600" />
+        <div className="px-4 py-3 border-b border-[var(--card-border)] flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-mandarin/10 flex items-center justify-center">
+            <Bot className="h-5 w-5 text-mandarin" />
           </div>
           <div>
-            <p className="font-medium text-sm">Jason - Assistant Driveby Africa</p>
-            <p className="text-xs text-gray-500">GPT-4.1 + RAG | Mode test admin</p>
+            <p className="font-medium text-sm text-[var(--text-primary)]">Jason - Assistant Driveby Africa</p>
+            <p className="text-xs text-[var(--text-muted)]">GPT-4.1 + RAG | Mode test admin</p>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--surface)]">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                 msg.role === 'user'
-                  ? 'bg-purple-600 text-white rounded-br-md'
-                  : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
+                  ? 'bg-mandarin text-white rounded-br-md'
+                  : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-primary)] rounded-bl-md'
               }`}>
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 <div className={`flex items-center gap-2 mt-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <span className={`text-[10px] ${msg.role === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] ${msg.role === 'user' ? 'text-orange-200' : 'text-[var(--text-muted)]'}`}>
                     {msg.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   {msg.vehicles !== undefined && msg.vehicles > 0 && (
@@ -218,11 +220,11 @@ function ChatbotTestTab() {
           ))}
           {sending && (
             <div className="flex justify-start">
-              <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl rounded-bl-md px-4 py-3">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-2 h-2 bg-mandarin/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-mandarin/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-mandarin/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -231,7 +233,7 @@ function ChatbotTestTab() {
         </div>
 
         {/* Input */}
-        <div className="px-4 py-3 border-t border-gray-200">
+        <div className="px-4 py-3 border-t border-[var(--card-border)]">
           <div className="flex gap-2">
             <input
               type="text"
@@ -239,25 +241,25 @@ function ChatbotTestTab() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
               placeholder="Tapez un message pour tester le chatbot..."
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-4 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-full text-sm focus:ring-2 focus:ring-mandarin focus:border-transparent"
               disabled={sending}
             />
             <button
               onClick={handleSend}
               disabled={sending || !input.trim()}
-              className="p-2.5 bg-purple-600 text-white rounded-full hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2.5 bg-mandarin text-white rounded-full hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
             </button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Side panel - Quick tests */}
       <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-yellow-500" />
+        <Card className="p-4">
+          <h3 className="font-medium text-sm text-[var(--text-primary)] mb-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-mandarin" />
             Tests rapides
           </h3>
           <div className="space-y-2">
@@ -273,42 +275,34 @@ function ChatbotTestTab() {
               <button
                 key={i}
                 onClick={() => { setInput(q); }}
-                className="w-full text-left px-3 py-2 text-xs bg-gray-50 rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-colors border border-gray-100"
+                className="w-full text-left px-3 py-2 text-xs text-[var(--text-secondary)] bg-[var(--surface)] rounded-lg hover:bg-mandarin/10 hover:text-mandarin transition-colors border border-[var(--card-border)]"
               >
                 {q}
               </button>
             ))}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
-            <Database className="h-4 w-4 text-blue-500" />
+        <Card className="p-4">
+          <h3 className="font-medium text-sm text-[var(--text-primary)] mb-3 flex items-center gap-2">
+            <Database className="h-4 w-4 text-royal-blue" />
             Info système
           </h3>
-          <div className="space-y-2 text-xs text-gray-600">
-            <div className="flex justify-between">
-              <span>Modèle IA</span>
-              <span className="font-mono text-gray-900">GPT-4.1</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Embeddings</span>
-              <span className="font-mono text-gray-900">text-embedding-3-small</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Seuil RAG</span>
-              <span className="font-mono text-gray-900">0.7</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Top K</span>
-              <span className="font-mono text-gray-900">5</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Timeout contexte</span>
-              <span className="font-mono text-gray-900">5s</span>
-            </div>
+          <div className="space-y-2 text-xs text-[var(--text-muted)]">
+            {[
+              ['Modèle IA', 'GPT-4.1'],
+              ['Embeddings', 'text-embedding-3-small'],
+              ['Seuil RAG', '0.7'],
+              ['Top K', '5'],
+              ['Timeout contexte', '5s'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between">
+                <span>{label}</span>
+                <span className="font-mono text-[var(--text-primary)]">{value}</span>
+              </div>
+            ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -437,164 +431,160 @@ function KnowledgeBaseTab() {
     <div className="space-y-5">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{totalDocs} document{totalDocs !== 1 ? 's' : ''} dans la base RAG</p>
+        <p className="text-sm text-[var(--text-muted)]">{totalDocs} document{totalDocs !== 1 ? 's' : ''} dans la base RAG</p>
         <div className="flex gap-2">
-          <button onClick={handleSeed} disabled={seeding}
-            className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
-            {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+          <Button variant="outline" size="sm" onClick={handleSeed} disabled={seeding}
+            leftIcon={seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}>
             Initialiser
-          </button>
-          <label className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+          </Button>
+          <label className="flex items-center gap-2 px-3 py-2 text-sm border border-[var(--card-border)] rounded-lg hover:bg-[var(--surface)] cursor-pointer text-[var(--text-primary)]">
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             Importer
             <input type="file" accept=".txt,.md,.csv,.json" onChange={handleFileUpload} disabled={uploading} className="hidden" />
           </label>
-          <button onClick={() => setEditingDoc({ category: 'general', language: 'fr' })}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-            <Plus className="h-4 w-4" />
+          <Button size="sm" onClick={() => setEditingDoc({ category: 'general', language: 'fr' })}
+            leftIcon={<Plus className="h-4 w-4" />}>
             Ajouter
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Category filters */}
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilterCategory('')}
-          className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${filterCategory === '' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+          className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${filterCategory === '' ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'}`}>
           Tous ({totalDocs})
         </button>
         {CATEGORIES.map(cat => (
           <button key={cat.value} onClick={() => setFilterCategory(filterCategory === cat.value ? '' : cat.value)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${filterCategory === cat.value ? 'bg-gray-900 text-white' : `${cat.color} hover:opacity-80`}`}>
+            className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${filterCategory === cat.value ? 'bg-mandarin text-white' : `${cat.color} hover:opacity-80`}`}>
             {cat.label} ({stats[cat.value] || 0})
           </button>
         ))}
       </div>
 
       {/* Semantic search */}
-      <div className="bg-white rounded-lg border p-4">
+      <Card className="p-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
             <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="Recherche sémantique dans la base..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+              className="w-full pl-10 pr-4 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-sm focus:ring-2 focus:ring-mandarin focus:border-transparent" />
           </div>
-          <button onClick={handleSearch} disabled={searching || !searchQuery.trim()}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
-            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <Button size="sm" onClick={handleSearch} disabled={searching || !searchQuery.trim()}
+            leftIcon={searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}>
             Rechercher
-          </button>
+          </Button>
           {searchResults && (
-            <button onClick={() => setSearchResults(null)} className="flex items-center px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
+            <button onClick={() => setSearchResults(null)} className="flex items-center px-3 py-2 text-sm border border-[var(--card-border)] rounded-lg hover:bg-[var(--surface)] text-[var(--text-muted)]">
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
         {searchResults && (
           <div className="mt-4 space-y-2">
-            <h3 className="text-sm font-medium text-gray-700">{searchResults.length} résultat{searchResults.length !== 1 ? 's' : ''}</h3>
+            <h3 className="text-sm font-medium text-[var(--text-secondary)]">{searchResults.length} résultat{searchResults.length !== 1 ? 's' : ''}</h3>
             {searchResults.map(r => (
-              <div key={r.id} className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+              <div key={r.id} className="p-3 bg-mandarin/5 rounded-lg border border-mandarin/20">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-purple-900">{r.document_title}</span>
-                  <span className="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full">{(r.similarity * 100).toFixed(1)}%</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{r.document_title}</span>
+                  <span className="text-xs bg-mandarin/10 text-mandarin px-2 py-0.5 rounded-full font-medium">{(r.similarity * 100).toFixed(1)}%</span>
                 </div>
-                <p className="text-sm text-gray-700 line-clamp-3">{r.content}</p>
+                <p className="text-sm text-[var(--text-secondary)] line-clamp-3">{r.content}</p>
               </div>
             ))}
-            {searchResults.length === 0 && <p className="text-sm text-gray-500">Aucun résultat.</p>}
+            {searchResults.length === 0 && <p className="text-sm text-[var(--text-muted)]">Aucun résultat.</p>}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Editor modal */}
       {editingDoc && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 space-y-4">
-              <h2 className="text-lg font-bold">{editingDoc.id ? 'Modifier le document' : 'Nouveau document'}</h2>
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">{editingDoc.id ? 'Modifier le document' : 'Nouveau document'}</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Titre</label>
                 <input type="text" value={editingDoc.title || ''}
                   onChange={e => setEditingDoc(prev => prev ? { ...prev, title: e.target.value } : null)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="Titre du document" />
+                  className="w-full px-3 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-sm focus:ring-2 focus:ring-mandarin" placeholder="Titre du document" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Catégorie</label>
                 <select value={editingDoc.category || 'general'}
                   onChange={e => setEditingDoc(prev => prev ? { ...prev, category: e.target.value } : null)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                  className="w-full px-3 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-sm focus:ring-2 focus:ring-mandarin">
                   {CATEGORIES.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contenu</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Contenu</label>
                 <textarea value={editingDoc.content || ''}
                   onChange={e => setEditingDoc(prev => prev ? { ...prev, content: e.target.value } : null)}
-                  rows={15} className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:ring-2 focus:ring-purple-500"
+                  rows={15} className="w-full px-3 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-sm font-mono focus:ring-2 focus:ring-mandarin"
                   placeholder="Contenu du document..." />
                 {editingDoc.content && (
-                  <p className="text-xs text-gray-400 mt-1">{editingDoc.content.length} car. ~{Math.ceil(editingDoc.content.length / 2000)} chunks</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">{editingDoc.content.length} car. ~{Math.ceil(editingDoc.content.length / 2000)} chunks</p>
                 )}
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setEditingDoc(null)} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">Annuler</button>
-                <button onClick={handleSave} disabled={saving || !editingDoc.title || !editingDoc.content}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                <Button variant="outline" size="sm" onClick={() => setEditingDoc(null)}>Annuler</Button>
+                <Button size="sm" onClick={handleSave} disabled={saving || !editingDoc.title || !editingDoc.content}
+                  leftIcon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}>
                   {editingDoc.id ? 'Mettre à jour' : 'Créer'}
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Documents list */}
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-mandarin" /></div>
       ) : documents.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border">
-          <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Aucun document</p>
-          <p className="text-sm text-gray-400 mt-1">Cliquez sur &quot;Initialiser&quot; pour charger les documents de base</p>
-        </div>
+        <Card className="text-center py-12">
+          <BookOpen className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-3 opacity-30" />
+          <p className="text-[var(--text-muted)]">Aucun document</p>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Cliquez sur &quot;Initialiser&quot; pour charger les documents de base</p>
+        </Card>
       ) : (
         <div className="space-y-3">
           {documents.map(doc => {
             const catStyle = getCategoryStyle(doc.category);
             return (
-              <div key={doc.id} className={`bg-white rounded-lg border p-4 ${!doc.is_active ? 'opacity-60' : ''}`}>
+              <Card key={doc.id} className={`p-4 ${!doc.is_active ? 'opacity-60' : ''}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-gray-900 truncate">{doc.title}</h3>
+                      <h3 className="font-medium text-[var(--text-primary)] truncate">{doc.title}</h3>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${catStyle.color}`}>{catStyle.label}</span>
                       {!doc.is_active && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">Inactif</span>}
                     </div>
-                    <p className="text-sm text-gray-500 line-clamp-2">{doc.content}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                    <p className="text-sm text-[var(--text-muted)] line-clamp-2">{doc.content}</p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)]">
                       <span>Source: {doc.source}</span>
                       <span>{doc.content.length} car.</span>
                       <span>Mis à jour: {new Date(doc.updated_at).toLocaleDateString('fr-FR')}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-4">
-                    <button onClick={() => handleToggleActive(doc)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                    <button onClick={() => handleToggleActive(doc)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--surface)]"
                       title={doc.is_active ? 'Désactiver' : 'Activer'}>
                       {doc.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     </button>
-                    <button onClick={() => setEditingDoc(doc)} className="p-2 text-gray-400 hover:text-purple-600 rounded-lg hover:bg-purple-50" title="Modifier">
+                    <button onClick={() => setEditingDoc(doc)} className="p-2 text-[var(--text-muted)] hover:text-mandarin rounded-lg hover:bg-mandarin/10" title="Modifier">
                       <Edit2 className="h-4 w-4" />
                     </button>
-                    <button onClick={() => handleDelete(doc.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50" title="Supprimer">
+                    <button onClick={() => handleDelete(doc.id)} className="p-2 text-[var(--text-muted)] hover:text-red-600 rounded-lg hover:bg-red-50" title="Supprimer">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -630,7 +620,6 @@ function ConversationsTab() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        // Add message optimistically
         setMessages(prev => [...prev, {
           sender_type: 'agent',
           content: text,
@@ -701,19 +690,19 @@ function ConversationsTab() {
   const statusColors: Record<string, string> = {
     active: 'bg-green-100 text-green-700',
     escalated: 'bg-red-100 text-red-700',
-    closed: 'bg-gray-100 text-gray-600',
+    closed: 'bg-[var(--surface)] text-[var(--text-muted)]',
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ height: '600px' }}>
       {/* Conversations list */}
-      <div className="bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h3 className="font-medium text-sm">Conversations WhatsApp</h3>
+      <Card className="flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--card-border)]">
+          <h3 className="font-medium text-sm text-[var(--text-primary)]">Conversations WhatsApp</h3>
           <div className="flex gap-1 mt-2">
             {['', 'active', 'escalated', 'closed'].map(s => (
               <button key={s} onClick={() => setStatusFilter(s)}
-                className={`px-2 py-1 text-[10px] rounded-full font-medium ${statusFilter === s ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                className={`px-2 py-1 text-[10px] rounded-full font-medium ${statusFilter === s ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)]'}`}>
                 {s || 'Toutes'}
               </button>
             ))}
@@ -721,56 +710,56 @@ function ConversationsTab() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-mandarin" /></div>
           ) : conversations.length === 0 ? (
-            <div className="text-center py-8 text-sm text-gray-400">Aucune conversation</div>
+            <div className="text-center py-8 text-sm text-[var(--text-muted)]">Aucune conversation</div>
           ) : (
             conversations.map(conv => (
               <button key={conv.id} onClick={() => loadMessages(conv.id)}
-                className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition ${selectedConv === conv.id ? 'bg-purple-50 border-l-2 border-l-purple-600' : ''}`}>
+                className={`w-full text-left px-4 py-3 border-b border-[var(--card-border)] hover:bg-[var(--surface)] transition ${selectedConv === conv.id ? 'bg-mandarin/5 border-l-2 border-l-mandarin' : ''}`}>
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm text-gray-900">{conv.user_name || `+${conv.phone}`}</span>
-                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${statusColors[conv.status] || 'bg-gray-100 text-gray-600'}`}>
+                  <span className="font-medium text-sm text-[var(--text-primary)]">{conv.user_name || `+${conv.phone}`}</span>
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${statusColors[conv.status] || 'bg-[var(--surface)] text-[var(--text-muted)]'}`}>
                     {conv.status}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
                   {new Date(conv.last_message_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </p>
               </button>
             ))
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Messages viewer + reply */}
-      <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
+      <Card className="lg:col-span-2 flex flex-col overflow-hidden">
         {!selectedConv ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
             <div className="text-center">
-              <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Sélectionnez une conversation</p>
             </div>
           </div>
         ) : loadingMessages ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-mandarin" />
           </div>
         ) : (
           <>
             {/* Status bar */}
             {selectedConvData && (
-              <div className="px-4 py-2 border-b border-gray-200 flex items-center justify-between bg-white">
+              <div className="px-4 py-2 border-b border-[var(--card-border)] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">{selectedConvData.user_name || `+${selectedConvData.phone}`}</span>
-                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${statusColors[selectedConvData.status] || 'bg-gray-100 text-gray-600'}`}>
+                  <span className="font-medium text-sm text-[var(--text-primary)]">{selectedConvData.user_name || `+${selectedConvData.phone}`}</span>
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded-full font-medium ${statusColors[selectedConvData.status] || 'bg-[var(--surface)] text-[var(--text-muted)]'}`}>
                     {selectedConvData.status}
                   </span>
                 </div>
                 <div className="flex gap-1">
                   {['active', 'escalated', 'closed'].map(s => (
                     <button key={s} onClick={() => updateConvStatus(selectedConv!, s)}
-                      className={`px-2 py-1 text-[10px] rounded font-medium ${selectedConvData.status === s ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                      className={`px-2 py-1 text-[10px] rounded font-medium ${selectedConvData.status === s ? 'bg-mandarin text-white' : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'}`}>
                       {s === 'active' ? 'Actif' : s === 'escalated' ? 'Escaladé' : 'Fermé'}
                     </button>
                   ))}
@@ -779,9 +768,9 @@ function ConversationsTab() {
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--surface)]">
               {messages.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-8">Aucun message</p>
+                <p className="text-center text-sm text-[var(--text-muted)] py-8">Aucun message</p>
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -789,19 +778,19 @@ function ConversationsTab() {
                       msg.sender_type === 'user'
                         ? 'bg-green-600 text-white rounded-br-md'
                         : msg.sender_type === 'bot'
-                          ? 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
-                          : 'bg-blue-600 text-white rounded-bl-md'
+                          ? 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-primary)] rounded-bl-md'
+                          : 'bg-royal-blue text-white rounded-bl-md'
                     }`}>
                       <div className="flex items-center gap-1.5 mb-0.5">
-                        {msg.sender_type === 'bot' && <Bot className="h-3 w-3 text-purple-500" />}
+                        {msg.sender_type === 'bot' && <Bot className="h-3 w-3 text-mandarin" />}
                         {msg.sender_type === 'user' && <User className="h-3 w-3" />}
                         {msg.sender_type === 'agent' && <User className="h-3 w-3" />}
-                        <span className={`text-[10px] font-medium ${msg.sender_type === 'user' ? 'text-green-100' : msg.sender_type === 'bot' ? 'text-purple-500' : 'text-blue-100'}`}>
+                        <span className={`text-[10px] font-medium ${msg.sender_type === 'user' ? 'text-green-100' : msg.sender_type === 'bot' ? 'text-mandarin' : 'text-blue-100'}`}>
                           {msg.sender_type === 'bot' ? 'Jason (Bot)' : msg.sender_type === 'agent' ? 'Agent' : 'Client'}
                         </span>
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      <p className={`text-[10px] mt-1 ${msg.sender_type === 'user' ? 'text-green-200' : msg.sender_type === 'bot' ? 'text-gray-400' : 'text-blue-200'}`}>
+                      <p className={`text-[10px] mt-1 ${msg.sender_type === 'user' ? 'text-green-200' : msg.sender_type === 'bot' ? 'text-[var(--text-muted)]' : 'text-blue-200'}`}>
                         {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -811,7 +800,7 @@ function ConversationsTab() {
             </div>
 
             {/* Reply input */}
-            <div className="px-4 py-3 border-t border-gray-200 bg-white">
+            <div className="px-4 py-3 border-t border-[var(--card-border)]">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -819,13 +808,13 @@ function ConversationsTab() {
                   onChange={e => setReplyText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendReply()}
                   placeholder="Répondre au client via WhatsApp..."
-                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-full text-sm focus:ring-2 focus:ring-mandarin focus:border-transparent"
                   disabled={sendingReply}
                 />
                 <button
                   onClick={handleSendReply}
                   disabled={sendingReply || !replyText.trim()}
-                  className="p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2.5 bg-mandarin text-white rounded-full hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {sendingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
@@ -833,7 +822,7 @@ function ConversationsTab() {
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -945,103 +934,97 @@ function RapportsTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Reports list */}
-      <div className="bg-white rounded-xl border border-gray-200 flex flex-col" style={{ height: '600px' }}>
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="font-medium text-sm flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-purple-500" />
+      <Card className="flex flex-col h-[600px]">
+        <div className="px-4 py-3 border-b border-[var(--card-border)] flex items-center justify-between">
+          <h3 className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-mandarin" />
             Rapports quotidiens
           </h3>
-          <button
-            onClick={() => handleGenerate()}
-            disabled={generating}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-          >
-            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+          <Button size="sm" onClick={() => handleGenerate()} disabled={generating}
+            leftIcon={generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}>
             Générer
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-mandarin" /></div>
           ) : reports.length === 0 ? (
             <div className="text-center py-8">
-              <FileText className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Aucun rapport</p>
-              <p className="text-xs text-gray-400 mt-1">Cliquez sur Générer pour créer le premier</p>
+              <FileText className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-2 opacity-30" />
+              <p className="text-sm text-[var(--text-muted)]">Aucun rapport</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Cliquez sur Générer pour créer le premier</p>
             </div>
           ) : (
             reports.map(report => (
               <button key={report.id} onClick={() => loadFullReport(report.id)}
-                className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition ${selectedReport?.id === report.id ? 'bg-purple-50 border-l-2 border-l-purple-600' : ''}`}>
+                className={`w-full text-left px-4 py-3 border-b border-[var(--card-border)] hover:bg-[var(--surface)] transition ${selectedReport?.id === report.id ? 'bg-mandarin/5 border-l-2 border-l-mandarin' : ''}`}>
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm text-gray-900 flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="font-medium text-sm text-[var(--text-primary)] flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                     {new Date(report.report_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </span>
                   {report.added_to_knowledge_base && (
-                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                    <CheckCircle className="h-3.5 w-3.5 text-jewel" />
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{report.summary}</p>
-                <p className="text-[10px] text-gray-400 mt-1">{report.conversations_analyzed} conversation{report.conversations_analyzed !== 1 ? 's' : ''} analysée{report.conversations_analyzed !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{report.summary}</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1">{report.conversations_analyzed} conversation{report.conversations_analyzed !== 1 ? 's' : ''} analysée{report.conversations_analyzed !== 1 ? 's' : ''}</p>
               </button>
             ))
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Report viewer */}
-      <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 flex flex-col" style={{ height: '600px' }}>
+      <Card className="lg:col-span-2 flex flex-col h-[600px]">
         {!selectedReport ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
             <div className="text-center">
-              <BarChart3 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Sélectionnez un rapport ou générez-en un nouveau</p>
             </div>
           </div>
         ) : loadingReport ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-mandarin" />
           </div>
         ) : (
           <>
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-[var(--card-border)] flex items-center justify-between">
               <div>
-                <h3 className="font-medium text-sm">
+                <h3 className="font-medium text-sm text-[var(--text-primary)]">
                   Rapport du {new Date(selectedReport.report_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </h3>
-                <p className="text-xs text-gray-400">{selectedReport.conversations_analyzed} conversations analysées</p>
+                <p className="text-xs text-[var(--text-muted)]">{selectedReport.conversations_analyzed} conversations analysées</p>
               </div>
               <div className="flex gap-2">
                 {selectedReport.added_to_knowledge_base ? (
-                  <span className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg">
+                  <span className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-100 text-jewel rounded-lg font-medium">
                     <CheckCircle className="h-3 w-3" /> Dans la KB
                   </span>
                 ) : (
-                  <button
+                  <Button variant="outline" size="sm"
                     onClick={() => handleAddToKb(selectedReport.id)}
                     disabled={addingToKb === selectedReport.id}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50"
-                  >
-                    {addingToKb === selectedReport.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+                    leftIcon={addingToKb === selectedReport.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}>
                     Ajouter à la KB
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-6 prose prose-sm max-w-none">
               {(selectedReport.content || selectedReport.summary).split('\n').map((line, i) => {
-                if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-bold text-gray-900 mt-4 mb-2">{line.replace('## ', '')}</h2>;
-                if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold text-gray-900 mt-4 mb-2">{line.replace('# ', '')}</h1>;
-                if (line.startsWith('- ')) return <li key={i} className="text-gray-700 ml-4">{line.replace('- ', '')}</li>;
-                if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-gray-900">{line.replace(/\*\*/g, '')}</p>;
+                if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-bold text-[var(--text-primary)] mt-4 mb-2">{line.replace('## ', '')}</h2>;
+                if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold text-[var(--text-primary)] mt-4 mb-2">{line.replace('# ', '')}</h1>;
+                if (line.startsWith('- ')) return <li key={i} className="text-[var(--text-secondary)] ml-4">{line.replace('- ', '')}</li>;
+                if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-[var(--text-primary)]">{line.replace(/\*\*/g, '')}</p>;
                 if (line.trim() === '') return <br key={i} />;
-                return <p key={i} className="text-gray-700">{line}</p>;
+                return <p key={i} className="text-[var(--text-secondary)]">{line}</p>;
               })}
             </div>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
