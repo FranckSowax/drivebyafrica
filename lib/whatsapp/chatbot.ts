@@ -774,7 +774,16 @@ async function searchVehicles(
 
   for (const [brand, aliases] of Object.entries(BRANDS)) {
     for (const alias of aliases) {
-      if (lower.includes(alias)) {
+      let matched = false;
+      if (alias.length <= 3) {
+        // Short aliases (≤ 3 chars) must match as whole word to avoid false positives
+        // e.g. "es" in "des", "rx" in "brx", "h6" in "th6"
+        const wordBoundary = new RegExp(`(?:^|\\s|[^a-zà-ÿ])${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[^a-zà-ÿ0-9])`, 'i');
+        matched = wordBoundary.test(lower);
+      } else {
+        matched = lower.includes(alias);
+      }
+      if (matched) {
         if (!foundBrands.includes(brand)) foundBrands.push(brand);
         if (alias !== brand && alias.length > 2) modelKeywords.push(alias);
       }
