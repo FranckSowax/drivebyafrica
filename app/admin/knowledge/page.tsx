@@ -5,7 +5,7 @@ import {
   BookOpen, Plus, Search, Edit2, Trash2, Loader2, Eye, EyeOff,
   Database, Sparkles, X, Save, Upload, MessageSquare, Bot,
   Send, User, Brain, MessageCircle, FileText, Calendar,
-  CheckCircle, AlertCircle, BarChart3,
+  CheckCircle, AlertCircle, BarChart3, Car,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -322,6 +322,7 @@ function KnowledgeBaseTab() {
   const [searching, setSearching] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [syncingVehicles, setSyncingVehicles] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -407,6 +408,22 @@ function KnowledgeBaseTab() {
     finally { setSeeding(false); }
   };
 
+  const handleSyncVehicleKB = async () => {
+    if (!confirm('Synchroniser la base de connaissance véhicules ? Cela peut prendre 1-2 minutes.')) return;
+    setSyncingVehicles(true);
+    try {
+      const res = await fetch('/api/admin/knowledge', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_vehicle_knowledge' }),
+      });
+      const data = await res.json();
+      if (res.ok) { alert('Base de connaissance véhicules synchronisée avec succès !'); fetchDocuments(); }
+      else { alert(data.error || 'Erreur de synchronisation'); }
+    } catch { alert('Erreur de connexion'); }
+    finally { setSyncingVehicles(false); }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -433,6 +450,10 @@ function KnowledgeBaseTab() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-[var(--text-muted)]">{totalDocs} document{totalDocs !== 1 ? 's' : ''} dans la base RAG</p>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleSyncVehicleKB} disabled={syncingVehicles}
+            leftIcon={syncingVehicles ? <Loader2 className="h-4 w-4 animate-spin" /> : <Car className="h-4 w-4" />}>
+            {syncingVehicles ? 'Sync...' : 'Sync Véhicules'}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSeed} disabled={seeding}
             leftIcon={seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}>
             Initialiser

@@ -390,6 +390,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'sync_vehicle_knowledge') {
+      const { syncVehicleKnowledge } = await import('@/lib/rag/vehicle-knowledge-sync');
+      const result = await syncVehicleKnowledge();
+      return NextResponse.json({ success: true, ...result });
+    }
+
     if (action === 'get_report') {
       const { report_id } = body;
       if (!report_id) {

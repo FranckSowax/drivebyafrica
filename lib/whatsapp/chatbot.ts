@@ -107,6 +107,56 @@ const BRANDS: Record<string, string[]> = {
   'dfsk': ['dfsk'],
 };
 
+// --- Origin / country-of-manufacture to brand mapping ---
+const ORIGIN_TO_BRANDS: Record<string, string[]> = {
+  'korean': ['hyundai', 'kia'],
+  'japanese': ['toyota', 'honda', 'nissan', 'lexus', 'suzuki', 'mitsubishi'],
+  'chinese': ['byd', 'chery', 'geely', 'changan', 'haval', 'great wall', 'gac', 'jetour', 'tank', 'zeekr', 'nio', 'xpeng', 'li auto', 'dongfeng', 'foton', 'jac', 'wuling', 'kaiyi', 'maxus', 'hongqi', 'lynk', 'ora', 'voyah', 'aion', 'neta', 'seres', 'skywell', 'dfsk', 'mg', 'lifan'],
+  'german': ['bmw', 'mercedes', 'volkswagen', 'audi', 'porsche'],
+  'french': ['peugeot', 'renault'],
+  'american': ['ford'],
+  'british': ['land rover'],
+};
+
+const ORIGIN_KEYWORDS: Record<string, string[]> = {
+  'korean': ['corée', 'coree', 'coréen', 'coreen', 'coréenne', 'coreenne', 'korea', 'korean', 'sud-coréen', 'sud coréen', 'sud-coreen', 'sud coreen'],
+  'japanese': ['japon', 'japonais', 'japonaise', 'japan', 'japanese'],
+  'chinese': ['chine', 'chinois', 'chinoise', 'china', 'chinese'],
+  'german': ['allemagne', 'allemand', 'allemande', 'germany', 'german'],
+  'french': ['france', 'français', 'francais', 'française', 'francaise', 'french'],
+  'american': ['américain', 'americain', 'américaine', 'americaine', 'american', 'usa', 'états-unis', 'etats-unis'],
+  'british': ['anglais', 'anglaise', 'britannique', 'british', 'england'],
+};
+
+/**
+ * Detect if the user is asking for vehicles by country of origin
+ * Returns the list of brands from that origin, or null
+ */
+function detectOriginBrands(message: string): { brands: string[]; originLabel: string } | null {
+  const lower = message.toLowerCase();
+  for (const [origin, keywords] of Object.entries(ORIGIN_KEYWORDS)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      return { brands: ORIGIN_TO_BRANDS[origin], originLabel: origin };
+    }
+  }
+  return null;
+}
+
+/**
+ * Detect if user wants cheapest vehicles
+ */
+function wantsCheapest(message: string): boolean {
+  const lower = message.toLowerCase();
+  const cheapPatterns = [
+    'moins ch', 'moins cher', 'moins chère', 'moins chères', 'moins chers',
+    'pas cher', 'pas chère', 'pas chères', 'pas chers',
+    'abordable', 'économique', 'economique', 'petit budget', 'petit prix',
+    'cheapest', 'affordable', 'budget', 'low price', 'lowest price',
+    'bon marché', 'bon marche', 'meilleur prix',
+  ];
+  return cheapPatterns.some(p => lower.includes(p));
+}
+
 // --- Language detection ---
 
 type Language = 'fr' | 'en' | 'zh' | 'ar' | 'pt' | 'es';
@@ -608,6 +658,7 @@ async function searchVehicles(
   xafRate: number
 ): Promise<VehicleSearchResult> {
   const lower = message.toLowerCase();
+  const sortByPrice = wantsCheapest(message);
 
   // Stop words — never search these as vehicle terms
   const STOP_WORDS = new Set([
@@ -615,7 +666,7 @@ async function searchVehicles(
     'cherche', 'voudrais', 'veux', 'besoin', 'budget', 'millions', 'million', 'prix',
     'voiture', 'vehicule', 'véhicule', 'auto', 'importation', 'proposer', 'propose',
     'peux', 'bonjour', 'bonsoir', 'salut', 'merci', 'comment', 'combien', 'cher',
-    'chere', 'disponible', 'destination', 'livraison', 'transport', 'port', 'vers',
+    'chere', 'chères', 'cheres', 'disponible', 'destination', 'livraison', 'transport', 'port', 'vers',
     'est', 'les', 'des', 'une', 'que', 'sur', 'pas', 'bon', 'bien', 'oui', 'non',
     'moi', 'toi', 'nous', 'vous', 'leur', 'elle', 'elles', 'sont', 'tout', 'tous',
     'comme', 'aussi', 'mais', 'donc', 'car', 'ici', 'avoir', 'être', 'faire',
@@ -623,7 +674,81 @@ async function searchVehicles(
     'congo', 'kenya', 'afrique', 'libreville', 'douala', 'dakar', 'abidjan', 'lagos',
     'hello', 'looking', 'want', 'need', 'show', 'send', 'photo', 'photos', 'image',
     'envoi', 'envoie', 'envoyer', 'montre', 'voir', 'catalogue',
+    // Origin keywords are NOT vehicle terms — they are handled separately
+    'corée', 'coree', 'coréen', 'coreen', 'coréenne', 'coreenne', 'korea', 'korean',
+    'japon', 'japonais', 'japonaise', 'japan', 'japanese',
+    'chine', 'chinois', 'chinoise', 'china', 'chinese',
+    'allemagne', 'allemand', 'allemande', 'germany', 'german',
+    'france', 'français', 'francais', 'française', 'francaise', 'french',
+    'américain', 'americain', 'américaine', 'americaine', 'american',
+    'anglais', 'anglaise', 'britannique', 'british',
+    'dubai', 'dubaï', 'émirats', 'emirats',
   ]);
+
+  // --- Phase 0: Origin detection (e.g. "voitures de Corée") ---
+  const originResult = detectOriginBrands(message);
+  if (originResult) {
+    console.log(`[Chatbot] Origin detected: ${originResult.originLabel} → brands: ${originResult.brands.join(', ')}`);
+    // Search ONLY for brands from this origin
+    const conditions = originResult.brands.map(b => `make.ilike.%${b}%`);
+    const orderCol = sortByPrice ? 'start_price_usd' : 'year';
+    const ascending = sortByPrice;
+
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('id, make, model, year, start_price_usd, mileage, source, images')
+      .eq('is_visible', true)
+      .not('start_price_usd', 'is', null)
+      .or(conditions.join(','))
+      .order(orderCol, { ascending })
+      .limit(20);
+
+    if (error) {
+      console.error('[Chatbot] Origin vehicle search error:', error);
+      return { vehicles: [], isSuggestion: false };
+    }
+
+    if (data && data.length > 0) {
+      // Apply price filter if detected
+      let filtered = data as VehicleResult[];
+      const maxPriceUsd = extractMaxPrice(message, xafRate);
+      if (maxPriceUsd) {
+        filtered = filtered.filter(v => (v.start_price_usd || 0) <= maxPriceUsd);
+      }
+
+      if (filtered.length > 0) {
+        // Pick diverse brands from this origin (max 5)
+        const seen = new Set<string>();
+        const diverse: VehicleResult[] = [];
+        for (const v of filtered) {
+          const brand = v.make.toLowerCase();
+          if (!seen.has(brand)) {
+            seen.add(brand);
+            diverse.push(v);
+            if (diverse.length >= 5) break;
+          }
+        }
+        // If fewer than 5, fill with more from same brands (still sorted by price/year)
+        if (diverse.length < 5) {
+          for (const v of filtered) {
+            if (!diverse.some(d => d.id === v.id)) {
+              diverse.push(v);
+              if (diverse.length >= 5) break;
+            }
+          }
+        }
+        return { vehicles: diverse, isSuggestion: false };
+      }
+    }
+
+    // No vehicles from this origin in stock — suggest from related origins
+    const alternatives = await getSuggestedVehicles(supabase, originResult.brands);
+    if (alternatives.length > 0) {
+      return { vehicles: alternatives, isSuggestion: true };
+    }
+    const random = await getRandomVehicles(supabase);
+    return { vehicles: random, isSuggestion: true };
+  }
 
   // --- Phase 1: Dictionary brand matching ---
   const foundBrands: string[] = [];
@@ -664,13 +789,17 @@ async function searchVehicles(
     conditions.push(`model.ilike.%${term}%`);
   }
 
+  // Sort by price if user wants cheapest, otherwise by year
+  const orderCol = sortByPrice ? 'start_price_usd' : 'year';
+  const ascending = sortByPrice;
+
   let query = supabase
     .from('vehicles')
     .select('id, make, model, year, start_price_usd, mileage, source, images')
     .eq('is_visible', true)
     .or(conditions.join(','))
-    .order('year', { ascending: false })
-    .limit(10);
+    .order(orderCol, { ascending })
+    .limit(20);
 
   // Apply price filter if detected
   const maxPriceUsd = extractMaxPrice(message, xafRate);
@@ -685,7 +814,14 @@ async function searchVehicles(
   }
 
   if (!vehicles || vehicles.length === 0) {
-    // No exact matches — suggest random vehicles from stock
+    // No exact matches — try suggesting from related brands first
+    if (foundBrands.length > 0) {
+      const alternatives = await getSuggestedVehicles(supabase, foundBrands);
+      if (alternatives.length > 0) {
+        return { vehicles: alternatives, isSuggestion: true };
+      }
+    }
+    // Fallback: random diverse vehicles
     const suggested = await getRandomVehicles(supabase);
     return { vehicles: suggested, isSuggestion: true };
   }
@@ -716,8 +852,12 @@ async function searchVehicles(
     return { vehicle: v, score };
   });
 
-  // Sort by score descending, then year descending
-  scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
+  // Sort by score descending, then by price or year
+  if (sortByPrice) {
+    scored.sort((a, b) => b.score - a.score || (a.vehicle.start_price_usd || 0) - (b.vehicle.start_price_usd || 0));
+  } else {
+    scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
+  }
 
   // STRICT: if known brands were detected, only return vehicles matching those brands
   if (foundBrands.length > 0) {
@@ -737,29 +877,50 @@ async function searchVehicles(
 }
 
 /**
- * Get random vehicles from available stock (diverse brands/models)
+ * Fisher-Yates shuffle — unbiased random permutation
+ */
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Get random vehicles from available stock (diverse brands/models).
+ * Uses a random offset to avoid always picking from the same pool.
  */
 async function getRandomVehicles(
   supabase: ReturnType<typeof getAdmin>
 ): Promise<VehicleResult[]> {
   try {
-    // Fetch a larger pool then pick diverse results
+    // First get total count to compute a random offset
+    const { count } = await supabase
+      .from('vehicles')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_visible', true)
+      .not('start_price_usd', 'is', null);
+
+    const total = count || 0;
+    const poolSize = 200; // fetch a large pool for diversity
+    const maxOffset = Math.max(0, total - poolSize);
+    const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) : 0;
+
     const { data } = await supabase
       .from('vehicles')
       .select('id, make, model, year, start_price_usd, mileage, source, images')
       .eq('is_visible', true)
       .not('start_price_usd', 'is', null)
-      .order('year', { ascending: false })
-      .limit(50);
+      .range(randomOffset, randomOffset + poolSize - 1);
 
     if (!data || data.length === 0) return [];
 
-    // Pick up to 5 vehicles from different brands
+    // Proper shuffle then pick 1 per brand (max 5)
+    const shuffled = fisherYatesShuffle(data as VehicleResult[]);
     const seen = new Set<string>();
     const diverse: VehicleResult[] = [];
-
-    // Shuffle to get random picks each time
-    const shuffled = (data as VehicleResult[]).sort(() => Math.random() - 0.5);
 
     for (const v of shuffled) {
       const brand = v.make.toLowerCase();
@@ -770,7 +931,7 @@ async function getRandomVehicles(
       }
     }
 
-    // Fill remaining slots if needed
+    // Fill remaining slots if fewer than 3 brands available
     if (diverse.length < 3) {
       for (const v of shuffled) {
         if (!diverse.some(d => d.id === v.id)) {
@@ -842,7 +1003,7 @@ async function getSuggestedVehicles(
     // Pick diverse results
     const seen = new Set<string>();
     const diverse: VehicleResult[] = [];
-    const shuffled = (data as VehicleResult[]).sort(() => Math.random() - 0.5);
+    const shuffled = fisherYatesShuffle(data as VehicleResult[]);
     for (const v of shuffled) {
       const brand = v.make.toLowerCase();
       if (!seen.has(brand)) {
@@ -1050,9 +1211,12 @@ IMPORTANT : Réponds TOUJOURS dans la langue du client. Langue détectée : ${la
 - Toujours préciser "prix hors transport jusqu'à votre destination, sous réserve de confirmation par un conseiller" sauf si le TRANSPORT est dans le contexte (auquel cas donne le prix total estimé).
 - Si le contexte contient des infos TRANSPORT avec prix total, mentionne le prix total rendu destination.
 
-# VÉHICULES
-- Si des VEHICULES DISPONIBLES sont dans le contexte, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
-- Si des SUGGESTIONS ALTERNATIVES sont dans le contexte (pas exactement ce que le client a demandé), présente-les comme des alternatives intéressantes : "Nous n'avons pas ce modèle exact en ce moment, mais voici quelques alternatives qui pourraient vous plaire :" — puis demande ce que le client en pense.
+# VÉHICULES (RÈGLES ABSOLUES — NE JAMAIS DÉROGER)
+- Tu ne connais QUE les véhicules listés dans la section CONTEXTE ci-dessous. Tu n'as accès à AUCUN autre inventaire.
+- NE MENTIONNE JAMAIS un véhicule, une marque ou un modèle qui n'apparaît pas explicitement dans le CONTEXTE. Pas de Toyota, pas de Lexus, pas de BMW, RIEN sauf ce qui est dans le contexte.
+- Si le contexte contient des VEHICULES DISPONIBLES, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
+- Si le contexte contient des SUGGESTIONS ALTERNATIVES, présente-les comme : "Nous n'avons pas ce modèle exact en ce moment, mais voici quelques alternatives qui pourraient vous plaire :" — NE CITE QUE les véhicules du contexte.
+- Si AUCUN véhicule n'est dans le contexte, ne propose rien. Dis : "Laissez-moi vérifier notre catalogue et revenir vers vous."
 - NE PROPOSE JAMAIS les mêmes véhicules à chaque message. Varie tes suggestions et pose des questions pour affiner (budget, usage, préférences).
 - Si le client demande des photos/images d'un véhicule spécifique du catalogue, réponds que tu lui envoies les photos tout de suite.
 

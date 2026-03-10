@@ -15,7 +15,7 @@ function getAdmin() {
 }
 
 export type KnowledgeCategory = 'faq' | 'process' | 'pricing' | 'policy' | 'vehicle_info' | 'shipping' | 'general';
-export type KnowledgeSource = 'manual' | 'conversation' | 'admin' | 'import' | 'file_upload';
+export type KnowledgeSource = 'manual' | 'conversation' | 'admin' | 'import' | 'file_upload' | 'daily_report' | 'vehicle_sync';
 
 export interface KnowledgeDocument {
   id: string;
