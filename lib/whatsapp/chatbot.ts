@@ -801,25 +801,75 @@ async function searchVehicles(
   const existingSet = new Set([...foundBrands, ...modelKeywords]);
   const extraTerms = rawWords.filter(w => !existingSet.has(w)).slice(0, 3);
 
-  // Build all search terms
-  const allSearchTerms = [...new Set([...foundBrands, ...modelKeywords, ...extraTerms])];
+  const maxPriceUsd = extractMaxPrice(message, xafRate);
+  const orderCol = sortByPrice ? 'start_price_usd' : 'year';
+  const ascending = sortByPrice;
+
+  // ──── PATH A: Brand detected → dedicated brand-first query ────
+  if (foundBrands.length > 0) {
+    // Query ONLY by brand (make) — no cross-brand model pollution
+    const brandConditions = foundBrands.map(b => `make.ilike.%${b}%`);
+
+    let brandQuery = supabase
+      .from('vehicles')
+      .select('id, make, model, year, start_price_usd, mileage, source, images')
+      .eq('is_visible', true)
+      .or(brandConditions.join(','))
+      .order(orderCol, { ascending })
+      .limit(50);
+
+    if (maxPriceUsd) brandQuery = brandQuery.lte('start_price_usd', maxPriceUsd);
+
+    const { data: brandVehicles, error: brandError } = await brandQuery;
+    console.log(`[Chatbot] Brand query: brands=${JSON.stringify(foundBrands)}, results=${brandVehicles?.length || 0}, error=${brandError?.message || 'none'}`);
+
+    if (brandVehicles && brandVehicles.length > 0) {
+      // Score by model keyword relevance within brand results
+      const scored = (brandVehicles as VehicleResult[]).map(v => {
+        let score = 0;
+        const vmodel = v.model.toLowerCase();
+        for (const kw of modelKeywords) {
+          if (vmodel.includes(kw)) score += 10;
+        }
+        for (const term of extraTerms) {
+          if (vmodel.includes(term)) score += 5;
+        }
+        return { vehicle: v, score };
+      });
+
+      // Sort: model match first, then by price or year
+      if (sortByPrice) {
+        scored.sort((a, b) => b.score - a.score || (a.vehicle.start_price_usd || 0) - (b.vehicle.start_price_usd || 0));
+      } else {
+        scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
+      }
+
+      return { vehicles: scored.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
+    }
+
+    // Brand not in stock → suggest similar category
+    console.log(`[Chatbot] No vehicles found for brands=${JSON.stringify(foundBrands)} — suggesting alternatives`);
+    const alternatives = await getSuggestedVehicles(supabase, foundBrands);
+    if (alternatives.length > 0) {
+      return { vehicles: alternatives, isSuggestion: true };
+    }
+    const random = await getRandomVehicles(supabase);
+    return { vehicles: random, isSuggestion: true };
+  }
+
+  // ──── PATH B: No brand detected → general keyword search ────
+  const allSearchTerms = [...new Set([...modelKeywords, ...extraTerms])];
 
   if (allSearchTerms.length === 0) {
-    // No specific vehicle terms — return random featured vehicles
     const vehicles = await getRandomVehicles(supabase);
     return { vehicles, isSuggestion: true };
   }
 
-  // Build OR conditions — search both make and model for every term (case-insensitive via ilike)
   const conditions: string[] = [];
   for (const term of allSearchTerms) {
     conditions.push(`make.ilike.%${term}%`);
     conditions.push(`model.ilike.%${term}%`);
   }
-
-  // Sort by price if user wants cheapest, otherwise by year
-  const orderCol = sortByPrice ? 'start_price_usd' : 'year';
-  const ascending = sortByPrice;
 
   let query = supabase
     .from('vehicles')
@@ -829,80 +879,38 @@ async function searchVehicles(
     .order(orderCol, { ascending })
     .limit(20);
 
-  // Apply price filter if detected
-  const maxPriceUsd = extractMaxPrice(message, xafRate);
-  if (maxPriceUsd) {
-    query = query.lte('start_price_usd', maxPriceUsd);
-  }
+  if (maxPriceUsd) query = query.lte('start_price_usd', maxPriceUsd);
 
   const { data: vehicles, error } = await query;
-  console.log(`[Chatbot] DB query: terms=${JSON.stringify(allSearchTerms)}, results=${vehicles?.length || 0}, error=${error?.message || 'none'}`);
-  if (error) {
-    console.error('[Chatbot] Vehicle search error:', error);
-    return { vehicles: [], isSuggestion: false };
-  }
+  console.log(`[Chatbot] General query: terms=${JSON.stringify(allSearchTerms)}, results=${vehicles?.length || 0}, error=${error?.message || 'none'}`);
 
-  if (!vehicles || vehicles.length === 0) {
-    console.log(`[Chatbot] No vehicles found for brands=${JSON.stringify(foundBrands)} — falling back to suggestions`);
-    // No exact matches — try suggesting from related brands first
-    if (foundBrands.length > 0) {
-      const alternatives = await getSuggestedVehicles(supabase, foundBrands);
-      if (alternatives.length > 0) {
-        return { vehicles: alternatives, isSuggestion: true };
-      }
-    }
-    // Fallback: random diverse vehicles
+  if (error || !vehicles || vehicles.length === 0) {
     const suggested = await getRandomVehicles(supabase);
     return { vehicles: suggested, isSuggestion: true };
   }
 
-  // --- Scoring: rank results by relevance ---
+  // Score and sort
   const scored = (vehicles as VehicleResult[]).map(v => {
     let score = 0;
     const vmake = v.make.toLowerCase();
     const vmodel = v.model.toLowerCase();
-
-    // Exact brand match (highest priority)
-    for (const brand of foundBrands) {
-      if (vmake.includes(brand)) score += 10;
-    }
-
-    // Model keyword match
     for (const kw of modelKeywords) {
       if (vmodel.includes(kw)) score += 8;
       if (vmake.includes(kw)) score += 5;
     }
-
-    // Extra term match (lower priority)
     for (const term of extraTerms) {
       if (vmake.includes(term)) score += 3;
       if (vmodel.includes(term)) score += 3;
     }
-
     return { vehicle: v, score };
   });
 
-  // Sort by score descending, then by price or year
   if (sortByPrice) {
     scored.sort((a, b) => b.score - a.score || (a.vehicle.start_price_usd || 0) - (b.vehicle.start_price_usd || 0));
   } else {
     scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
   }
 
-  // STRICT: if known brands were detected, only return vehicles matching those brands
-  if (foundBrands.length > 0) {
-    const brandMatched = scored.filter(s =>
-      foundBrands.some(brand => s.vehicle.make.toLowerCase().includes(brand))
-    );
-    if (brandMatched.length > 0) {
-      return { vehicles: brandMatched.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
-    }
-    // Brand requested but not in DB → suggest other models of similar category
-    const alternatives = await getSuggestedVehicles(supabase, foundBrands);
-    return { vehicles: alternatives, isSuggestion: true };
-  }
-
-  // No specific brand detected, return best scored results
   return { vehicles: scored.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
 }
 
