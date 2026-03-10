@@ -340,22 +340,24 @@ export async function handleChatbotMessage(
     let context = '';
     let foundVehicles: VehicleResult[] = [];
     let xafRate = DEFAULT_XAF_RATE;
+    let vehiclesAreSuggestion = false;
     try {
       const result = await Promise.race([
         buildContextAndVehicles(supabase, messageText, userId, conversation.id),
-        new Promise<{ context: string; vehicles: VehicleResult[]; xafRate: number }>((_, reject) =>
+        new Promise<{ context: string; vehicles: VehicleResult[]; xafRate: number; isSuggestion: boolean }>((_, reject) =>
           setTimeout(() => reject(new Error('Context timeout')), 5000)
         ),
       ]);
       context = result.context;
       foundVehicles = result.vehicles;
       xafRate = result.xafRate;
+      vehiclesAreSuggestion = result.isSuggestion;
     } catch (err) {
       console.warn('[Chatbot] Context build timeout/error, proceeding without full context:', err);
     }
 
     // 6. Call AI (multilingual)
-    console.log(`[Chatbot] Calling GPT-4.1... (${foundVehicles.length} vehicles, lang=${language})`);
+    console.log(`[Chatbot] Calling GPT-4.1... (${foundVehicles.length} vehicles, suggestion=${vehiclesAreSuggestion}, lang=${language})`);
     const aiResponse = await callAI(messageText, context, userName, xafRate, language);
     console.log(`[Chatbot] AI response: "${aiResponse.substring(0, 80)}..."`);
 
@@ -363,18 +365,31 @@ export async function handleChatbotMessage(
     const sendResult = await sendTextMessage(phone, aiResponse);
     console.log(`[Chatbot] Send result: success=${sendResult.success}, error=${sendResult.error || 'none'}`);
 
-    // 8. Send vehicle cards with image header + CTA buttons (if vehicles found)
-    if (foundVehicles.length > 0) {
+    // 8. Send vehicle cards ONLY for direct matches (not suggestions/random)
+    if (foundVehicles.length > 0 && !vehiclesAreSuggestion) {
       try {
         await sendVehicleCards(phone, foundVehicles, xafRate);
         console.log(`[Chatbot] Sent ${Math.min(foundVehicles.length, 3)} vehicle cards`);
       } catch (err) {
         console.error('[Chatbot] Vehicle cards error:', err);
       }
+    } else if (vehiclesAreSuggestion || foundVehicles.length === 0) {
+      // No direct match → send CTA to browse the full catalog on the website
+      try {
+        await sendInteractiveMessage(
+          phone,
+          `Parcourez notre catalogue complet avec filtres par marque, prix, origine et type de véhicule.`,
+          'Voir le catalogue',
+          `${SITE_URL}/cars`
+        );
+        console.log(`[Chatbot] Sent catalog CTA (no direct match)`);
+      } catch (err) {
+        console.error('[Chatbot] Catalog CTA error:', err);
+      }
     }
 
-    // 8b. Send vehicle images if user asked for photos
-    if (foundVehicles.length > 0 && wantsImages(messageText)) {
+    // 8b. Send vehicle images if user asked for photos (only for direct matches)
+    if (foundVehicles.length > 0 && !vehiclesAreSuggestion && wantsImages(messageText)) {
       try {
         await sendVehicleImages(phone, foundVehicles);
         console.log(`[Chatbot] Sent vehicle images`);
@@ -499,9 +514,10 @@ async function buildContextAndVehicles(
   message: string,
   userId: string | undefined,
   conversationId: string
-): Promise<{ context: string; vehicles: VehicleResult[]; xafRate: number }> {
+): Promise<{ context: string; vehicles: VehicleResult[]; xafRate: number; isSuggestion: boolean }> {
   const parts: string[] = [];
   let vehicles: VehicleResult[] = [];
+  let isSuggestion = false;
 
   // Get XAF rate for price display
   const xafRate = await getXafRate(supabase);
@@ -559,7 +575,9 @@ async function buildContextAndVehicles(
   try {
     const searchResult = await searchVehicles(supabase, message, xafRate);
     vehicles = searchResult.vehicles;
-    const vehicleContext = buildVehicleContext(vehicles, xafRate, searchResult.isSuggestion);
+    isSuggestion = searchResult.isSuggestion;
+    console.log(`[Chatbot] Vehicle search: ${vehicles.length} results, isSuggestion=${isSuggestion}, makes=${vehicles.map(v => v.make).join(',')}`);
+    const vehicleContext = buildVehicleContext(vehicles, xafRate, isSuggestion);
     if (vehicleContext) {
       parts.push(vehicleContext);
     }
@@ -613,7 +631,7 @@ async function buildContextAndVehicles(
     // Ignore
   }
 
-  return { context: parts.join('\n'), vehicles, xafRate };
+  return { context: parts.join('\n'), vehicles, xafRate, isSuggestion };
 }
 
 // --- Vehicle search ---
@@ -762,6 +780,7 @@ async function searchVehicles(
       }
     }
   }
+  console.log(`[Chatbot] Brand detection: foundBrands=${JSON.stringify(foundBrands)}, modelKw=${JSON.stringify(modelKeywords)}`);
 
   // --- Phase 2: Extract search terms from message (any word ≥ 3 chars not in stop words) ---
   const rawWords = lower
@@ -808,12 +827,14 @@ async function searchVehicles(
   }
 
   const { data: vehicles, error } = await query;
+  console.log(`[Chatbot] DB query: terms=${JSON.stringify(allSearchTerms)}, results=${vehicles?.length || 0}, error=${error?.message || 'none'}`);
   if (error) {
     console.error('[Chatbot] Vehicle search error:', error);
     return { vehicles: [], isSuggestion: false };
   }
 
   if (!vehicles || vehicles.length === 0) {
+    console.log(`[Chatbot] No vehicles found for brands=${JSON.stringify(foundBrands)} — falling back to suggestions`);
     // No exact matches — try suggesting from related brands first
     if (foundBrands.length > 0) {
       const alternatives = await getSuggestedVehicles(supabase, foundBrands);
@@ -1216,7 +1237,7 @@ IMPORTANT : Réponds TOUJOURS dans la langue du client. Langue détectée : ${la
 - NE MENTIONNE JAMAIS un véhicule, une marque ou un modèle qui n'apparaît pas explicitement dans le CONTEXTE. Pas de Toyota, pas de Lexus, pas de BMW, RIEN sauf ce qui est dans le contexte.
 - Si le contexte contient des VEHICULES DISPONIBLES, mentionne-les brièvement et dis que les fiches avec photos arrivent juste après.
 - Si le contexte contient des SUGGESTIONS ALTERNATIVES, présente-les comme : "Nous n'avons pas ce modèle exact en ce moment, mais voici quelques alternatives qui pourraient vous plaire :" — NE CITE QUE les véhicules du contexte.
-- Si AUCUN véhicule n'est dans le contexte, ne propose rien. Dis : "Laissez-moi vérifier notre catalogue et revenir vers vous."
+- Si AUCUN véhicule n'est dans le contexte ou si tu n'as que des SUGGESTIONS ALTERNATIVES qui ne correspondent pas à la demande, ne propose PAS de véhicules spécifiques. Dis plutôt : "Nous avons un large catalogue — je vous envoie un lien pour explorer tous nos véhicules avec des filtres par marque, prix et origine." Un bouton vers le site web sera envoyé automatiquement après ton message.
 - NE PROPOSE JAMAIS les mêmes véhicules à chaque message. Varie tes suggestions et pose des questions pour affiner (budget, usage, préférences).
 - Si le client demande des photos/images d'un véhicule spécifique du catalogue, réponds que tu lui envoies les photos tout de suite.
 
