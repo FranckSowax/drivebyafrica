@@ -151,6 +151,7 @@ export function useVehicles({
           queryKey: buildQueryKey(filters, page + 1, limit),
           queryFn: () => fetchVehicles(filters, page + 1, limit),
           staleTime: 60 * 1000,
+          retry: false,
         });
       }
     }
