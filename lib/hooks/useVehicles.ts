@@ -73,11 +73,13 @@ async function fetchVehicles(
 
   const response = await fetch(`/api/vehicles/list?${params.toString()}`);
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error('Failed to fetch vehicles. Please try again or adjust your filters.');
+    const msg = data?.error || 'Échec du chargement des véhicules.';
+    throw new Error(msg);
   }
 
-  const data = await response.json();
   return {
     vehicles: data.vehicles || [],
     totalCount: data.totalCount || 0,

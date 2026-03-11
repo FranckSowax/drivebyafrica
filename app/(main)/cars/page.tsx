@@ -193,7 +193,7 @@ export default function CarsPage() {
                 {/* Sort */}
                 <Select
                   options={SORT_OPTIONS}
-                  value={filters.sortBy || 'price_asc'}
+                  value={filters.sortBy || 'newest'}
                   onChange={(e) =>
                     setFilters({ sortBy: e.target.value as typeof filters.sortBy })
                   }

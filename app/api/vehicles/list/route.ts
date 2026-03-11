@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
+/**
+ * Sanitize search input for PostgREST ILIKE patterns.
+ * Remove characters that break .or() syntax: parentheses, commas, dots, backslashes.
+ */
+function sanitizeSearch(input: string): string {
+  return input
+    .replace(/[(),.*\\%_]/g, ' ')  // Remove PostgREST special chars
+    .replace(/\s+/g, ' ')          // Collapse multiple spaces
+    .trim();
+}
+
 const SELECT_COLUMNS = [
   'id', 'source', 'source_id', 'source_url', 'make', 'model', 'grade',
   'year', 'mileage', 'start_price_usd', 'current_price_usd', 'buy_now_price_usd',
@@ -47,10 +58,11 @@ export async function GET(request: Request) {
       .select(SELECT_COLUMNS, { count: filtersActive ? 'exact' : 'estimated' })
       .eq('is_visible', true);
 
-    // Search (ILIKE on make and model)
-    const search = searchParams.get('search')?.trim();
+    // Search (ILIKE on make, model, and grade)
+    const rawSearch = searchParams.get('search')?.trim();
+    const search = rawSearch ? sanitizeSearch(rawSearch) : null;
     if (search && search.length >= 2) {
-      query = query.or(`make.ilike.%${search}%,model.ilike.%${search}%`);
+      query = query.or(`make.ilike.%${search}%,model.ilike.%${search}%,grade.ilike.%${search}%`);
     }
 
     // Source filter
@@ -148,7 +160,7 @@ export async function GET(request: Request) {
     if (error) {
       console.error('[vehicles/list] Supabase error:', error);
       return NextResponse.json(
-        { vehicles: [], totalCount: 0 },
+        { vehicles: [], totalCount: 0, error: error.message },
         { status: 500, headers: CACHE_HEADERS }
       );
     }
