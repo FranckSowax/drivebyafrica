@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
 import { useFilterStore } from '@/store/useFilterStore';
 
@@ -21,14 +21,9 @@ interface UseVehiclesReturn {
   refetch: () => Promise<void>;
 }
 
-// Query key factory for better cache management
+// Query key factory for detail pages
 export const vehicleKeys = {
-  all: ['vehicles'] as const,
-  lists: () => [...vehicleKeys.all, 'list'] as const,
-  list: (filters: VehicleFilters | undefined, page: number, limit: number) =>
-    [...vehicleKeys.lists(), { filters, page, limit }] as const,
-  details: () => [...vehicleKeys.all, 'detail'] as const,
-  detail: (id: string) => [...vehicleKeys.details(), id] as const,
+  detail: (id: string) => ['vehicles', 'detail', id] as const,
 };
 
 /**
@@ -96,17 +91,9 @@ export function useVehicles({
   const queryClient = useQueryClient();
   const hasHydrated = useFilterStore((s) => s._hasHydrated);
 
-  // Stable serialized filters for query key to avoid reference changes
-  const stableFilters = useMemo(
-    () => JSON.stringify(filters),
-    [filters]
-  );
-
-  const queryKey = useMemo(
-    () => vehicleKeys.list(filters, page, limit),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stableFilters, page, limit]
-  );
+  // Serialize filters into a stable string for the query key.
+  // This guarantees React Query detects every filter/sort change reliably.
+  const filterKey = JSON.stringify(filters ?? {});
 
   const {
     data,
@@ -115,34 +102,25 @@ export function useVehicles({
     error,
     refetch: queryRefetch,
   } = useQuery({
-    queryKey,
+    queryKey: ['vehicles', 'list', filterKey, page, limit],
     queryFn: () => fetchVehicles(filters, page, limit),
-    // Don't fetch until Zustand store has hydrated from localStorage
     enabled: hasHydrated,
-    // Keep previous data while fetching new data (smooth pagination & filter changes)
-    placeholderData: (previousData) => previousData,
-    // Data is fresh for 2 minutes
-    staleTime: 2 * 60 * 1000,
-    // Keep in cache for 10 minutes
-    gcTime: 10 * 60 * 1000,
-    // Retry transient errors
-    retry: (failureCount) => failureCount < 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    // No retries — prevents infinite re-render loop on 500 errors
+    retry: false,
   });
 
   // Prefetch next page for smoother pagination
-  // Only prefetch if there are more items beyond current page
   useEffect(() => {
     if (data && data.vehicles.length === limit) {
       const currentOffset = (page - 1) * limit + data.vehicles.length;
-      const hasMoreItems = currentOffset < data.totalCount;
-
-      if (hasMoreItems) {
-        const nextPageKey = vehicleKeys.list(filters, page + 1, limit);
+      if (currentOffset < data.totalCount) {
+        const nextFilterKey = JSON.stringify(filters ?? {});
         queryClient.prefetchQuery({
-          queryKey: nextPageKey,
+          queryKey: ['vehicles', 'list', nextFilterKey, page + 1, limit],
           queryFn: () => fetchVehicles(filters, page + 1, limit),
-          staleTime: 5 * 60 * 1000,
+          staleTime: 60 * 1000,
         });
       }
     }
@@ -175,8 +153,8 @@ export function useInvalidateVehicles() {
   const queryClient = useQueryClient();
 
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: vehicleKeys.all }),
-    invalidateLists: () => queryClient.invalidateQueries({ queryKey: vehicleKeys.lists() }),
+    invalidateAll: () => queryClient.invalidateQueries({ queryKey: ['vehicles'] }),
+    invalidateLists: () => queryClient.invalidateQueries({ queryKey: ['vehicles', 'list'] }),
     invalidateDetail: (id: string) =>
       queryClient.invalidateQueries({ queryKey: vehicleKeys.detail(id) }),
   };

@@ -128,7 +128,7 @@ export async function GET(request: Request) {
       query = query.gte('created_at', since);
     }
 
-    // Sorting - use fob_price_usd for price sorts
+    // Sorting — secondary sort uses id DESC to match existing composite indexes
     switch (sortBy) {
       case 'price_asc':
         query = query.order('fob_price_usd', { ascending: true, nullsFirst: false });
@@ -152,8 +152,8 @@ export async function GET(request: Request) {
         query = query.order('created_at', { ascending: false });
     }
 
-    // Secondary sort for consistency
-    query = query.order('created_at', { ascending: false });
+    // Secondary sort for stable pagination (id correlates with created_at)
+    query = query.order('id', { ascending: false });
 
     // Pagination
     query = query.range(offset, offset + limit - 1);
