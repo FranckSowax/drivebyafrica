@@ -245,7 +245,7 @@ export default function CarsPage() {
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowMobileFilters(false)}
           />
-          <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-[var(--card-bg)] flex flex-col">
+          <div className="absolute inset-y-0 right-0 w-full sm:max-w-md bg-[var(--card-bg)] flex flex-col">
             {/* Sticky header */}
             <div className="flex items-center justify-between px-4 py-3 bg-[var(--card-bg)] border-b border-[var(--card-border)] flex-shrink-0">
               <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
@@ -268,8 +268,8 @@ export default function CarsPage() {
               </div>
             </div>
 
-            {/* Scrollable filter content */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Scrollable filter content — dropdowns use z-50 which works inside this scroll container */}
+            <div className="flex-1 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
               <VehicleFilters
                 className="border-0 rounded-none"
                 hideHeader
@@ -277,7 +277,7 @@ export default function CarsPage() {
               />
             </div>
 
-            {/* Sticky footer with apply button */}
+            {/* Sticky footer — filters auto-apply, button just closes the modal */}
             <div
               className="flex-shrink-0 px-4 pt-3 bg-[var(--card-bg)] border-t border-[var(--card-border)]"
               style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
@@ -285,12 +285,11 @@ export default function CarsPage() {
               <Button
                 variant="primary"
                 className="w-full h-12 text-base font-semibold"
-                onClick={() => {
-                  refetch();
-                  setShowMobileFilters(false);
-                }}
+                onClick={() => setShowMobileFilters(false)}
               >
-                Voir les résultats
+                {isLoading
+                  ? 'Chargement...'
+                  : `Voir ${totalCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} résultats`}
               </Button>
             </div>
           </div>

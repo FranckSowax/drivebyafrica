@@ -151,7 +151,7 @@ function FilterDropdown({
       {/* Dropdown Menu */}
       {isOpen && (
         <div className={cn(
-          'absolute z-50 w-full py-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-72 overflow-hidden',
+          'absolute z-[60] left-0 right-0 py-2 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl shadow-xl max-h-72 overflow-hidden',
           openUpward
             ? 'bottom-full mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200'
             : 'top-full mt-2 animate-in fade-in slide-in-from-top-2 duration-200'

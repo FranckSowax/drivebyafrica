@@ -55,6 +55,7 @@ function buildQueryString(
     'start_price_usd',
     'current_price_usd',
     'buy_now_price_usd',
+    'fob_price_usd',
     'fuel_type',
     'transmission',
     'drive_type',
@@ -87,20 +88,24 @@ function buildQueryString(
     params.append('model', `in.(${filters.models.join(',')})`);
   }
 
-  if (filters?.yearFrom) {
+  // Year range: use PostgREST AND logic via a single `and` param when both bounds set,
+  // otherwise append directly. Duplicate `year` keys in URLSearchParams cause 500 errors.
+  if (filters?.yearFrom && filters?.yearTo) {
+    params.append('and', `(year.gte.${filters.yearFrom},year.lte.${filters.yearTo})`);
+  } else if (filters?.yearFrom) {
     params.append('year', `gte.${filters.yearFrom}`);
-  }
-
-  if (filters?.yearTo) {
+  } else if (filters?.yearTo) {
     params.append('year', `lte.${filters.yearTo}`);
   }
 
-  if (filters?.priceFrom) {
-    params.append('current_price_usd', `gte.${filters.priceFrom}`);
-  }
-
-  if (filters?.priceTo) {
-    params.append('current_price_usd', `lte.${filters.priceTo}`);
+  // Price range: use fob_price_usd (includes export taxes, indexed, always populated)
+  // current_price_usd is often NULL for China-sourced vehicles, causing 500 errors
+  if (filters?.priceFrom && filters?.priceTo) {
+    params.append('and', `(fob_price_usd.gte.${filters.priceFrom},fob_price_usd.lte.${filters.priceTo})`);
+  } else if (filters?.priceFrom) {
+    params.append('fob_price_usd', `gte.${filters.priceFrom}`);
+  } else if (filters?.priceTo) {
+    params.append('fob_price_usd', `lte.${filters.priceTo}`);
   }
 
   if (filters?.mileageMax) {
@@ -272,7 +277,14 @@ async function fetchVehiclesDirectly(
 
   // 200 = all results, 206 = partial content (paginated with count header)
   if (!response.ok && response.status !== 206) {
-    throw new Error(`Failed to fetch vehicles: ${response.status}`);
+    let detail = '';
+    try {
+      const errBody = await response.json();
+      detail = errBody?.message || errBody?.details || errBody?.hint || JSON.stringify(errBody);
+    } catch {
+      // response body not JSON
+    }
+    throw new Error(`Failed to fetch vehicles: ${response.status}${detail ? ` — ${detail}` : ''}`);
   }
 
   const data = await response.json();
