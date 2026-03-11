@@ -39,6 +39,12 @@
   [headers.values]
     Cache-Control = "public, max-age=86400"
 
+# Vehicle list API - vary cache by query params (sort, filters, page)
+[[headers]]
+  for = "/api/vehicles/list"
+  [headers.values]
+    Netlify-Vary = "query"
+
 # Image proxy caching - let the API set cache headers dynamically
 # Vary by query to cache different images separately
 [[headers]]

@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import type { Vehicle, VehicleFilters } from '@/types/vehicle';
 import { useFilterStore } from '@/store/useFilterStore';
@@ -132,6 +132,8 @@ export function useVehicles({
     queryKey,
     queryFn: () => fetchVehicles(filters, page, limit),
     enabled: hasHydrated,
+    // Show previous data while new data loads (prevents loading flash on filter change)
+    placeholderData: keepPreviousData,
     // Override QueryClient defaults — always refetch on key change
     staleTime: 0,
     gcTime: 5 * 60 * 1000,

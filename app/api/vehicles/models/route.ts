@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       { models: modelsByMake },
-      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } }
+      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600', 'Netlify-Vary': 'query' } }
     );
   } catch {
     return NextResponse.json({ models: {} }, { status: 500 });
