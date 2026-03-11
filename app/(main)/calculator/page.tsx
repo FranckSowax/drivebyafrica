@@ -6,6 +6,7 @@ import { Calculator, Ship, Shield, FileCheck, ArrowRight, Info, MapPin } from 'l
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useCurrency } from '@/components/providers/LocaleProvider';
+import { formatCurrency } from '@/lib/utils/currency';
 import { INSURANCE_RATE, INSPECTION_FEE_XAF, getExportTax } from '@/lib/utils/pricing';
 
 // Destinations africaines avec coûts de transport (estimations en USD)
@@ -82,10 +83,10 @@ export default function CalculatorPage() {
   const [source, setSource] = useState(sources[0]);
   const { availableCurrencies } = useCurrency();
 
-  // Get XAF rate dynamically from currency API (default to 615 if not available)
+  // Get XAF rate dynamically from currency API (default to 630 if not available)
   const xafRate = useMemo(() => {
     const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
-    return xafCurrency?.rateToUsd || 615;
+    return xafCurrency?.rateToUsd || 630;
   }, [availableCurrencies]);
 
   const calculations = useMemo(() => {
@@ -111,14 +112,6 @@ export default function CalculatorPage() {
       hasExportTax: exportTaxUSD > 0,
     };
   }, [vehiclePriceXAF, destination, source, xafRate]);
-
-  const formatCurrency = (amount: number) => {
-    // Format with regular spaces as thousand separators
-    const formatted = Math.round(amount)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return `${formatted} FCFA`;
-  };
 
   return (
     <div className="min-h-screen bg-[var(--background)]">

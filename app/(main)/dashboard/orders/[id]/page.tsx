@@ -11,7 +11,7 @@ import { OrderTimeline } from '@/components/orders/OrderTimeline';
 import { OrderDocuments } from '@/components/orders/OrderDocuments';
 import { TransitairesSuggestion } from '@/components/orders/TransitairesSuggestion';
 import { ORDER_STATUSES, type OrderStatus } from '@/lib/hooks/useOrders';
-import { formatUsdToLocal } from '@/lib/utils/currency';
+import { formatUsdToLocal, getRate } from '@/lib/utils/currency';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -27,8 +27,6 @@ import {
 } from 'lucide-react';
 import type { Order, OrderTracking, QuoteReassignment, Quote } from '@/types/database';
 import type { Vehicle } from '@/types/vehicle';
-
-const XAF_TO_USD_RATE = 615;
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -142,10 +140,11 @@ export default function OrderDetailPage() {
     );
   }
 
+  const xafRate = getRate('XAF');
   const shippingPriceUsd = orderData.shipping_price_usd ||
-    (quoteData?.shipping_cost_xaf ? Math.round(quoteData.shipping_cost_xaf / XAF_TO_USD_RATE) : null);
+    (quoteData?.shipping_cost_xaf ? Math.round(quoteData.shipping_cost_xaf / xafRate) : null);
   const insurancePriceUsd = orderData.insurance_price_usd ||
-    (quoteData?.insurance_cost_xaf ? Math.round(quoteData.insurance_cost_xaf / XAF_TO_USD_RATE) : null);
+    (quoteData?.insurance_cost_xaf ? Math.round(quoteData.insurance_cost_xaf / xafRate) : null);
 
   const orderStatus = orderData.status as OrderStatus;
   const status = orderStatus && ORDER_STATUSES[orderStatus]

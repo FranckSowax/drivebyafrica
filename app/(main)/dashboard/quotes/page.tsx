@@ -28,6 +28,7 @@ import { useToast } from '@/components/ui/Toast';
 import { QuotePDFModal } from '@/components/vehicles/QuotePDFModal';
 import { QuoteValidationModal } from '@/components/vehicles/QuoteValidationModal';
 import { useCurrency } from '@/components/providers/LocaleProvider';
+import { formatCurrency } from '@/lib/utils/currency';
 import { getExportTax } from '@/lib/utils/pricing';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
 
@@ -115,10 +116,10 @@ export default function QuotesPage() {
   const toast = useToast();
   const { availableCurrencies } = useCurrency();
 
-  // Get XAF rate dynamically from currency API (default to 615 if not available)
+  // Get XAF rate dynamically from currency API (default to 630 if not available)
   const xafRate = useMemo(() => {
     const xafCurrency = availableCurrencies.find(c => c.code === 'XAF');
-    return xafCurrency?.rateToUsd || 615;
+    return xafCurrency?.rateToUsd || 630;
   }, [availableCurrencies]);
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -236,13 +237,7 @@ export default function QuotesPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    // Format with regular spaces as thousand separators
-    const formatted = Math.round(amount)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return `${formatted} FCFA`;
-  };
+  // formatCurrency imported from @/lib/utils/currency (uses dynamic rates)
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('fr-FR', {

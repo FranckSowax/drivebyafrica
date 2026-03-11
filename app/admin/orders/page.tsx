@@ -40,6 +40,7 @@ import { CollaboratorBadgeCompact } from '@/components/shared/CollaboratorBadge'
 import { OrderActivityHistory } from '@/components/shared/OrderActivityHistory';
 import { subscribeToOrders } from '@/lib/realtime/orders-sync';
 import { getProxiedImageUrl } from '@/lib/utils/imageProxy';
+import { useCurrency } from '@/components/providers/LocaleProvider';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { UploadedStatusDocument } from '@/lib/order-documents-config';
@@ -250,35 +251,42 @@ const countryFlags: Record<string, string> = {
   'Maroc': '🇲🇦',
 };
 
-// Map countries to their currencies
-const countryCurrency: Record<string, { code: string; symbol: string; rate: number }> = {
+// Map countries to their currency codes (rates fetched dynamically)
+const countryCurrencyCode: Record<string, { code: string; symbol: string }> = {
   // Central Africa (XAF)
-  'Gabon': { code: 'XAF', symbol: 'FCFA', rate: 615 },
-  'Cameroun': { code: 'XAF', symbol: 'FCFA', rate: 615 },
-  'Congo': { code: 'XAF', symbol: 'FCFA', rate: 615 },
-  'Centrafrique': { code: 'XAF', symbol: 'FCFA', rate: 615 },
-  'Tchad': { code: 'XAF', symbol: 'FCFA', rate: 615 },
-  'Guinée équatoriale': { code: 'XAF', symbol: 'FCFA', rate: 615 },
+  'Gabon': { code: 'XAF', symbol: 'FCFA' },
+  'Cameroun': { code: 'XAF', symbol: 'FCFA' },
+  'Congo': { code: 'XAF', symbol: 'FCFA' },
+  'Centrafrique': { code: 'XAF', symbol: 'FCFA' },
+  'Tchad': { code: 'XAF', symbol: 'FCFA' },
+  'Guinée équatoriale': { code: 'XAF', symbol: 'FCFA' },
   // West Africa (XOF)
-  "Côte d'Ivoire": { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Sénégal': { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Togo': { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Bénin': { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Mali': { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Burkina Faso': { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Niger': { code: 'XOF', symbol: 'FCFA', rate: 615 },
-  'Guinée-Bissau': { code: 'XOF', symbol: 'FCFA', rate: 615 },
+  "Côte d'Ivoire": { code: 'XOF', symbol: 'FCFA' },
+  'Sénégal': { code: 'XOF', symbol: 'FCFA' },
+  'Togo': { code: 'XOF', symbol: 'FCFA' },
+  'Bénin': { code: 'XOF', symbol: 'FCFA' },
+  'Mali': { code: 'XOF', symbol: 'FCFA' },
+  'Burkina Faso': { code: 'XOF', symbol: 'FCFA' },
+  'Niger': { code: 'XOF', symbol: 'FCFA' },
+  'Guinée-Bissau': { code: 'XOF', symbol: 'FCFA' },
   // Nigeria (NGN)
-  'Nigeria': { code: 'NGN', symbol: '₦', rate: 1550 },
+  'Nigeria': { code: 'NGN', symbol: '₦' },
   // Other countries default to USD
-  'Ghana': { code: 'USD', symbol: '$', rate: 1 },
-  'Kenya': { code: 'USD', symbol: '$', rate: 1 },
-  'Tanzanie': { code: 'USD', symbol: '$', rate: 1 },
-  'Afrique du Sud': { code: 'USD', symbol: '$', rate: 1 },
-  'Maroc': { code: 'USD', symbol: '$', rate: 1 },
+  'Ghana': { code: 'USD', symbol: '$' },
+  'Kenya': { code: 'USD', symbol: '$' },
+  'Tanzanie': { code: 'USD', symbol: '$' },
+  'Afrique du Sud': { code: 'USD', symbol: '$' },
+  'Maroc': { code: 'USD', symbol: '$' },
 };
 
+// Helper to get dynamic rate for a currency code from available currencies
+function getDynamicRate(code: string, availableCurrencies: Array<{ code: string; rateToUsd: number }>): number {
+  const found = availableCurrencies.find(c => c.code === code);
+  return found?.rateToUsd || 1;
+}
+
 export default function AdminOrdersPage() {
+  const { availableCurrencies } = useCurrency();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -379,10 +387,15 @@ export default function AdminOrdersPage() {
     return `${formatWithSpaces(value)} FCFA`;
   };
 
-  // Get customer currency info from country
+  // Get customer currency info from country (rate fetched dynamically)
   const getCustomerCurrency = (country: string) => {
-    return countryCurrency[country] || { code: 'XAF', symbol: 'FCFA', rate: 615 };
+    const info = countryCurrencyCode[country] || { code: 'XAF', symbol: 'FCFA' };
+    const rate = getDynamicRate(info.code, availableCurrencies);
+    return { ...info, rate };
   };
+
+  // Get dynamic XAF rate for converting XAF amounts back to USD
+  const xafRate = getDynamicRate('XAF', availableCurrencies);
 
   // Format price in customer's currency
   const formatInCustomerCurrency = (amountUsd: number, country: string) => {
@@ -1123,19 +1136,19 @@ export default function AdminOrdersPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Transport</span>
                     <span className="text-[var(--text-primary)]">
-                      {formatInCustomerCurrency(selectedOrder.shipping_cost_xaf / 615, selectedOrder.destination_country)}
+                      {formatInCustomerCurrency(selectedOrder.shipping_cost_xaf / xafRate, selectedOrder.destination_country)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[var(--text-muted)]">Assurance</span>
                     <span className="text-[var(--text-primary)]">
-                      {formatInCustomerCurrency(selectedOrder.insurance_cost_xaf / 615, selectedOrder.destination_country)}
+                      {formatInCustomerCurrency(selectedOrder.insurance_cost_xaf / xafRate, selectedOrder.destination_country)}
                     </span>
                   </div>
                   <div className="border-t border-[var(--card-border)] pt-2 mt-2 flex justify-between font-semibold">
                     <span className="text-[var(--text-primary)]">Total</span>
                     <span className="text-mandarin">
-                      {formatInCustomerCurrency(selectedOrder.total_cost_xaf / 615, selectedOrder.destination_country)}
+                      {formatInCustomerCurrency(selectedOrder.total_cost_xaf / xafRate, selectedOrder.destination_country)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm pt-2">
@@ -1148,7 +1161,7 @@ export default function AdminOrdersPage() {
                     <span className="text-yellow-500 font-medium">Solde restant</span>
                     <span className="text-yellow-500 font-medium">
                       {formatInCustomerCurrency(
-                        (selectedOrder.total_cost_xaf / 615) - selectedOrder.deposit_amount_usd,
+                        (selectedOrder.total_cost_xaf / xafRate) - selectedOrder.deposit_amount_usd,
                         selectedOrder.destination_country
                       )}
                     </span>

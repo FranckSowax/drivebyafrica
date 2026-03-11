@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { getRate } from '@/lib/utils/currency';
 
 // Initialize OpenAI client (GPT-4o)
 const openai = new OpenAI({
@@ -205,7 +206,7 @@ function extractFiltersFromMessage(message: string): ExtractedFilters {
   // Detect price constraints (simplified - in millions FCFA or thousands USD)
   const priceFCFA = lowerMessage.match(/moins de (\d+)\s*millions?\s*(fcfa|xaf)?/i);
   if (priceFCFA) {
-    maxPrice = parseInt(priceFCFA[1]) * 1000000 / 615; // Convert FCFA to USD
+    maxPrice = parseInt(priceFCFA[1]) * 1000000 / getRate('XAF'); // Convert FCFA to USD
   }
   const priceUSD = lowerMessage.match(/moins de (\d+)\s*000?\s*\$?\s*usd?/i);
   if (priceUSD) {
@@ -361,7 +362,7 @@ export async function POST(request: Request) {
 
     // Currency settings from frontend (default to XAF)
     const userCurrency = currency || 'XAF';
-    const userExchangeRate = exchangeRate || 615; // Default XAF rate
+    const userExchangeRate = exchangeRate || getRate(userCurrency);
 
     if (!conversationId || !userMessage) {
       return NextResponse.json(

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import {
   DollarSign,
   Loader2,
-  AlertCircle,
   Search,
   Clock,
   History,
@@ -14,6 +13,8 @@ import {
   TrendingUp,
   TrendingDown,
   Plus,
+  RefreshCw,
+  Zap,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -111,6 +112,7 @@ export default function AdminCurrenciesPage() {
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Filter currencies based on search query
   const filteredCurrencies = currencies.filter(
@@ -151,6 +153,64 @@ export default function AdminCurrenciesPage() {
 
     fetchCurrencies();
   }, []);
+
+  // Sync live rates from ExchangeRate-API
+  const syncLiveRates = async () => {
+    setIsSyncing(true);
+    try {
+      // Fetch live rates
+      const ratesRes = await fetch('https://open.er-api.com/v6/latest/USD');
+      const ratesData = await ratesRes.json();
+
+      if (ratesData.result !== 'success' || !ratesData.rates) {
+        toast.error('Impossible de récupérer les taux en direct');
+        return;
+      }
+
+      const liveRates: Record<string, number> = ratesData.rates;
+      let updated = 0;
+
+      // Update each currency that exists in our list
+      for (const currency of currencies) {
+        const newRate = liveRates[currency.code];
+        if (!newRate || currency.code === 'USD') continue;
+
+        const response = await fetch('/api/admin/currencies', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: currency.code,
+            rateToUsd: newRate,
+            note: 'Sync auto - ExchangeRate-API',
+          }),
+        });
+
+        if (response.ok) updated++;
+      }
+
+      toast.success(`${updated} taux mis à jour depuis l'API en direct`);
+
+      // Refresh the list
+      const refreshResponse = await fetch('/api/admin/currencies?withHistory=true');
+      const refreshData = await refreshResponse.json();
+      if (refreshData.currencies) {
+        setCurrencies(refreshData.currencies);
+        const mostRecent = refreshData.currencies.reduce(
+          (latest: string | null, c: CurrencyRate) => {
+            if (!latest) return c.updatedAt;
+            return new Date(c.updatedAt) > new Date(latest) ? c.updatedAt : latest;
+          },
+          null
+        );
+        setLastUpdatedAt(mostRecent);
+      }
+    } catch (error) {
+      console.error('Error syncing live rates:', error);
+      toast.error('Erreur lors de la synchronisation');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Seed all African currencies
   const seedCurrencies = async () => {
@@ -335,35 +395,52 @@ export default function AdminCurrenciesPage() {
               </div>
             )}
           </div>
-          <Button
-            variant="primary"
-            onClick={seedCurrencies}
-            disabled={isSeeding}
-            leftIcon={
-              isSeeding ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )
-            }
-          >
-            {isSeeding ? 'Ajout en cours...' : 'Ajouter devises manquantes'}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="primary"
+              onClick={syncLiveRates}
+              disabled={isSyncing}
+              leftIcon={
+                isSyncing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )
+              }
+            >
+              {isSyncing ? 'Synchronisation...' : 'Sync taux en direct'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={seedCurrencies}
+              disabled={isSeeding}
+              leftIcon={
+                isSeeding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )
+              }
+            >
+              {isSeeding ? 'Ajout...' : 'Ajouter manquantes'}
+            </Button>
+          </div>
         </div>
 
         {/* Info Card */}
         <Card className="mb-6 bg-royal-blue/10 border-royal-blue/20">
           <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-royal-blue flex-shrink-0 mt-0.5" />
+            <Zap className="w-5 h-5 text-royal-blue flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-[var(--text-primary)] font-medium">
-                Taux de conversion USD → Devises locales
+                Taux de change en direct — ExchangeRate-API
               </p>
               <p className="text-sm text-[var(--text-muted)] mt-1">
-                Ces taux sont utilisés pour afficher les prix des véhicules et
-                les estimations de transport dans la devise sélectionnée par
-                l'utilisateur. Les prix sont stockés en USD et convertis à
-                l'affichage. Cliquez sur le taux pour le modifier.
+                Les taux sont synchronisés automatiquement toutes les 6 heures
+                depuis l&apos;API ExchangeRate (open.er-api.com). Vous pouvez
+                aussi forcer une mise à jour manuelle avec le bouton
+                &quot;Sync taux en direct&quot;. Les prix des véhicules sont
+                stockés en USD et convertis à l&apos;affichage.
               </p>
             </div>
           </div>

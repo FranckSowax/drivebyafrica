@@ -11,7 +11,7 @@ const REASSIGNMENT_REASONS = {
 };
 
 // USD to XAF exchange rate (fallback if not fetched from DB)
-const DEFAULT_USD_TO_XAF = 615;
+const DEFAULT_USD_TO_XAF = 630;
 
 // Export tax for China (added silently to price)
 const CHINA_EXPORT_TAX_USD = 980;

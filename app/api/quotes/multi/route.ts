@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch XAF rate
-    let xafRate = 615;
+    let xafRate = 630;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase as any)

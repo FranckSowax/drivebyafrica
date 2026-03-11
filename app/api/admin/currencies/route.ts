@@ -287,10 +287,10 @@ export async function PATCH() {
       { code: 'EUR', name: 'Euro', symbol: '€', rateToUsd: 0.92, countries: ['France', 'Belgique', 'Réunion', 'Mayotte'], displayOrder: 2 },
 
       // Zone Franc CFA BEAC (Afrique Centrale)
-      { code: 'XAF', name: 'Franc CFA BEAC', symbol: 'FCFA', rateToUsd: 615, countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'], displayOrder: 3 },
+      { code: 'XAF', name: 'Franc CFA BEAC', symbol: 'FCFA', rateToUsd: 630, countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'], displayOrder: 3 },
 
       // Zone Franc CFA BCEAO (Afrique de l'Ouest)
-      { code: 'XOF', name: 'Franc CFA BCEAO', symbol: 'FCFA', rateToUsd: 615, countries: ['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', "Côte d'Ivoire", 'Guinée-Bissau'], displayOrder: 4 },
+      { code: 'XOF', name: 'Franc CFA BCEAO', symbol: 'FCFA', rateToUsd: 630, countries: ['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', "Côte d'Ivoire", 'Guinée-Bissau'], displayOrder: 4 },
 
       // Afrique de l'Ouest
       { code: 'NGN', name: 'Naira nigérian', symbol: '₦', rateToUsd: 1550, countries: ['Nigeria'], displayOrder: 10 },

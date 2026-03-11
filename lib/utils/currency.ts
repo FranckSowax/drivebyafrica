@@ -3,8 +3,8 @@
 const DEFAULT_EXCHANGE_RATES: Record<string, number> = {
   USD: 1,
   EUR: 0.92,
-  XAF: 615, // CFA Franc BEAC (Central Africa)
-  XOF: 615, // CFA Franc BCEAO (West Africa)
+  XAF: 630, // CFA Franc BEAC (Central Africa)
+  XOF: 630, // CFA Franc BCEAO (West Africa)
   NGN: 1550,  // Nigerian Naira
 };
 

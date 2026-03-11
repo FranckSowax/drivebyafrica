@@ -1,131 +1,200 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-// Revalidate every 5 minutes (currencies change infrequently)
-export const revalidate = 300;
+// Revalidate every 6 hours (rates update from live API)
+export const revalidate = 21600;
 
-// Complete list of all African currencies (fallback if database not available)
-const DEFAULT_CURRENCIES = [
-  // Base currencies
-  { code: 'USD', name: 'Dollar américain', symbol: '$', rateToUsd: 1, countries: ['USA', 'RD Congo', 'Angola', 'Zimbabwe'] },
-  { code: 'EUR', name: 'Euro', symbol: '€', rateToUsd: 0.92, countries: ['France', 'Belgique', 'Réunion', 'Mayotte'] },
+// Currency metadata (names, symbols, countries) — rates come from live API
+const CURRENCY_META: Record<string, { name: string; symbol: string; countries: string[] }> = {
+  USD: { name: 'Dollar américain', symbol: '$', countries: ['USA', 'RD Congo', 'Angola', 'Zimbabwe'] },
+  EUR: { name: 'Euro', symbol: '€', countries: ['France', 'Belgique', 'Réunion', 'Mayotte'] },
+  XAF: { name: 'Franc CFA BEAC', symbol: 'FCFA', countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'] },
+  XOF: { name: 'Franc CFA BCEAO', symbol: 'FCFA', countries: ['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', "Côte d'Ivoire", 'Guinée-Bissau'] },
+  NGN: { name: 'Naira nigérian', symbol: '₦', countries: ['Nigeria'] },
+  GHS: { name: 'Cedi ghanéen', symbol: 'GH₵', countries: ['Ghana'] },
+  GNF: { name: 'Franc guinéen', symbol: 'FG', countries: ['Guinée'] },
+  SLE: { name: 'Leone sierra-léonais', symbol: 'Le', countries: ['Sierra Leone'] },
+  LRD: { name: 'Dollar libérien', symbol: 'L$', countries: ['Liberia'] },
+  GMD: { name: 'Dalasi gambien', symbol: 'D', countries: ['Gambie'] },
+  MRU: { name: 'Ouguiya mauritanien', symbol: 'UM', countries: ['Mauritanie'] },
+  CVE: { name: 'Escudo cap-verdien', symbol: '$', countries: ['Cap-Vert'] },
+  CDF: { name: 'Franc congolais', symbol: 'FC', countries: ['RD Congo'] },
+  AOA: { name: 'Kwanza angolais', symbol: 'Kz', countries: ['Angola'] },
+  STN: { name: 'Dobra santoméen', symbol: 'Db', countries: ['São Tomé-et-Príncipe'] },
+  KES: { name: 'Shilling kényan', symbol: 'KSh', countries: ['Kenya'] },
+  TZS: { name: 'Shilling tanzanien', symbol: 'TSh', countries: ['Tanzanie'] },
+  UGX: { name: 'Shilling ougandais', symbol: 'USh', countries: ['Ouganda'] },
+  RWF: { name: 'Franc rwandais', symbol: 'FRw', countries: ['Rwanda'] },
+  BIF: { name: 'Franc burundais', symbol: 'FBu', countries: ['Burundi'] },
+  ETB: { name: 'Birr éthiopien', symbol: 'Br', countries: ['Éthiopie'] },
+  DJF: { name: 'Franc djiboutien', symbol: 'Fdj', countries: ['Djibouti'] },
+  ERN: { name: 'Nakfa érythréen', symbol: 'Nkf', countries: ['Érythrée'] },
+  SOS: { name: 'Shilling somalien', symbol: 'Sh.So.', countries: ['Somalie'] },
+  SSP: { name: 'Livre sud-soudanaise', symbol: 'SSP', countries: ['Soudan du Sud'] },
+  MAD: { name: 'Dirham marocain', symbol: 'DH', countries: ['Maroc'] },
+  DZD: { name: 'Dinar algérien', symbol: 'DA', countries: ['Algérie'] },
+  TND: { name: 'Dinar tunisien', symbol: 'DT', countries: ['Tunisie'] },
+  LYD: { name: 'Dinar libyen', symbol: 'LD', countries: ['Libye'] },
+  EGP: { name: 'Livre égyptienne', symbol: 'E£', countries: ['Égypte'] },
+  SDG: { name: 'Livre soudanaise', symbol: 'SDG', countries: ['Soudan'] },
+  ZAR: { name: 'Rand sud-africain', symbol: 'R', countries: ['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'] },
+  BWP: { name: 'Pula botswanais', symbol: 'P', countries: ['Botswana'] },
+  MZN: { name: 'Metical mozambicain', symbol: 'MT', countries: ['Mozambique'] },
+  ZMW: { name: 'Kwacha zambien', symbol: 'ZK', countries: ['Zambie'] },
+  MWK: { name: 'Kwacha malawien', symbol: 'MK', countries: ['Malawi'] },
+  ZWL: { name: 'Dollar zimbabwéen', symbol: 'Z$', countries: ['Zimbabwe'] },
+  NAD: { name: 'Dollar namibien', symbol: 'N$', countries: ['Namibie'] },
+  SZL: { name: 'Lilangeni swazi', symbol: 'E', countries: ['Eswatini'] },
+  LSL: { name: 'Loti lesothan', symbol: 'L', countries: ['Lesotho'] },
+  MGA: { name: 'Ariary malgache', symbol: 'Ar', countries: ['Madagascar'] },
+  MUR: { name: 'Roupie mauricienne', symbol: 'Rs', countries: ['Maurice'] },
+  SCR: { name: 'Roupie seychelloise', symbol: 'SCR', countries: ['Seychelles'] },
+  KMF: { name: 'Franc comorien', symbol: 'CF', countries: ['Comores'] },
+};
 
-  // Zone Franc CFA BEAC (Afrique Centrale)
-  { code: 'XAF', name: 'Franc CFA BEAC', symbol: 'FCFA', rateToUsd: 615, countries: ['Cameroun', 'Gabon', 'Congo', 'Centrafrique', 'Tchad', 'Guinée Équatoriale'] },
+// All currency codes we need
+const CURRENCY_CODES = Object.keys(CURRENCY_META);
 
-  // Zone Franc CFA BCEAO (Afrique de l'Ouest)
-  { code: 'XOF', name: 'Franc CFA BCEAO', symbol: 'FCFA', rateToUsd: 615, countries: ['Sénégal', 'Mali', 'Burkina Faso', 'Bénin', 'Togo', 'Niger', "Côte d'Ivoire", 'Guinée-Bissau'] },
+/**
+ * Fetch live rates from ExchangeRate-API (free, no key required)
+ * Returns: { USD: 1, EUR: 0.92, XAF: 622.5, ... }
+ */
+async function fetchLiveRates(): Promise<Record<string, number> | null> {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', {
+      next: { revalidate: 21600 }, // Cache 6 hours
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.result !== 'success' || !data.rates) return null;
+    return data.rates as Record<string, number>;
+  } catch (e) {
+    console.error('Failed to fetch live exchange rates:', e);
+    return null;
+  }
+}
 
-  // Afrique de l'Ouest
-  { code: 'NGN', name: 'Naira nigérian', symbol: '₦', rateToUsd: 1550, countries: ['Nigeria'] },
-  { code: 'GHS', name: 'Cedi ghanéen', symbol: 'GH₵', rateToUsd: 15.5, countries: ['Ghana'] },
-  { code: 'GNF', name: 'Franc guinéen', symbol: 'FG', rateToUsd: 8600, countries: ['Guinée'] },
-  { code: 'SLE', name: 'Leone sierra-léonais', symbol: 'Le', rateToUsd: 22.5, countries: ['Sierra Leone'] },
-  { code: 'LRD', name: 'Dollar libérien', symbol: 'L$', rateToUsd: 192, countries: ['Liberia'] },
-  { code: 'GMD', name: 'Dalasi gambien', symbol: 'D', rateToUsd: 67, countries: ['Gambie'] },
-  { code: 'MRU', name: 'Ouguiya mauritanien', symbol: 'UM', rateToUsd: 39.5, countries: ['Mauritanie'] },
-  { code: 'CVE', name: 'Escudo cap-verdien', symbol: '$', rateToUsd: 103, countries: ['Cap-Vert'] },
-
-  // Afrique Centrale
-  { code: 'CDF', name: 'Franc congolais', symbol: 'FC', rateToUsd: 2800, countries: ['RD Congo'] },
-  { code: 'AOA', name: 'Kwanza angolais', symbol: 'Kz', rateToUsd: 830, countries: ['Angola'] },
-  { code: 'STN', name: 'Dobra santoméen', symbol: 'Db', rateToUsd: 23, countries: ['São Tomé-et-Príncipe'] },
-
-  // Afrique de l'Est
-  { code: 'KES', name: 'Shilling kényan', symbol: 'KSh', rateToUsd: 154, countries: ['Kenya'] },
-  { code: 'TZS', name: 'Shilling tanzanien', symbol: 'TSh', rateToUsd: 2640, countries: ['Tanzanie'] },
-  { code: 'UGX', name: 'Shilling ougandais', symbol: 'USh', rateToUsd: 3750, countries: ['Ouganda'] },
-  { code: 'RWF', name: 'Franc rwandais', symbol: 'FRw', rateToUsd: 1280, countries: ['Rwanda'] },
-  { code: 'BIF', name: 'Franc burundais', symbol: 'FBu', rateToUsd: 2850, countries: ['Burundi'] },
-  { code: 'ETB', name: 'Birr éthiopien', symbol: 'Br', rateToUsd: 56.5, countries: ['Éthiopie'] },
-  { code: 'DJF', name: 'Franc djiboutien', symbol: 'Fdj', rateToUsd: 178, countries: ['Djibouti'] },
-  { code: 'ERN', name: 'Nakfa érythréen', symbol: 'Nkf', rateToUsd: 15, countries: ['Érythrée'] },
-  { code: 'SOS', name: 'Shilling somalien', symbol: 'Sh.So.', rateToUsd: 571, countries: ['Somalie'] },
-  { code: 'SSP', name: 'Livre sud-soudanaise', symbol: 'SSP', rateToUsd: 1300, countries: ['Soudan du Sud'] },
-
-  // Afrique du Nord
-  { code: 'MAD', name: 'Dirham marocain', symbol: 'DH', rateToUsd: 10.1, countries: ['Maroc'] },
-  { code: 'DZD', name: 'Dinar algérien', symbol: 'DA', rateToUsd: 135, countries: ['Algérie'] },
-  { code: 'TND', name: 'Dinar tunisien', symbol: 'DT', rateToUsd: 3.15, countries: ['Tunisie'] },
-  { code: 'LYD', name: 'Dinar libyen', symbol: 'LD', rateToUsd: 4.85, countries: ['Libye'] },
-  { code: 'EGP', name: 'Livre égyptienne', symbol: 'E£', rateToUsd: 50.5, countries: ['Égypte'] },
-  { code: 'SDG', name: 'Livre soudanaise', symbol: 'SDG', rateToUsd: 600, countries: ['Soudan'] },
-
-  // Afrique Australe
-  { code: 'ZAR', name: 'Rand sud-africain', symbol: 'R', rateToUsd: 18.5, countries: ['Afrique du Sud', 'Eswatini', 'Lesotho', 'Namibie'] },
-  { code: 'BWP', name: 'Pula botswanais', symbol: 'P', rateToUsd: 13.7, countries: ['Botswana'] },
-  { code: 'MZN', name: 'Metical mozambicain', symbol: 'MT', rateToUsd: 63.5, countries: ['Mozambique'] },
-  { code: 'ZMW', name: 'Kwacha zambien', symbol: 'ZK', rateToUsd: 27, countries: ['Zambie'] },
-  { code: 'MWK', name: 'Kwacha malawien', symbol: 'MK', rateToUsd: 1750, countries: ['Malawi'] },
-  { code: 'ZWG', name: 'Dollar zimbabwéen ZiG', symbol: 'ZiG', rateToUsd: 13.5, countries: ['Zimbabwe'] },
-  { code: 'NAD', name: 'Dollar namibien', symbol: 'N$', rateToUsd: 18.5, countries: ['Namibie'] },
-  { code: 'SZL', name: 'Lilangeni swazi', symbol: 'E', rateToUsd: 18.5, countries: ['Eswatini'] },
-  { code: 'LSL', name: 'Loti lesothan', symbol: 'L', rateToUsd: 18.5, countries: ['Lesotho'] },
-
-  // Îles de l'Océan Indien
-  { code: 'MGA', name: 'Ariary malgache', symbol: 'Ar', rateToUsd: 4650, countries: ['Madagascar'] },
-  { code: 'MUR', name: 'Roupie mauricienne', symbol: 'Rs', rateToUsd: 46, countries: ['Maurice'] },
-  { code: 'SCR', name: 'Roupie seychelloise', symbol: 'SCR', rateToUsd: 14.5, countries: ['Seychelles'] },
-  { code: 'KMF', name: 'Franc comorien', symbol: 'CF', rateToUsd: 460, countries: ['Comores'] },
-];
-
-// GET: Fetch all active currencies
-export async function GET() {
+/**
+ * Update currency_rates table in Supabase with live rates (fire-and-forget)
+ */
+async function syncRatesToDB(rates: Record<string, number>) {
   try {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
-    // Try to fetch from database
-    const { data: currencies, error } = await supabaseAny
+    for (const code of CURRENCY_CODES) {
+      const rate = rates[code];
+      if (!rate || code === 'USD') continue;
+
+      await supabaseAny
+        .from('currency_rates')
+        .update({
+          rate_to_usd: rate,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('currency_code', code);
+    }
+  } catch (e) {
+    console.error('Failed to sync rates to DB:', e);
+  }
+}
+
+// GET: Fetch currencies with live exchange rates
+export async function GET() {
+  try {
+    // 1. Fetch live rates from API
+    const liveRates = await fetchLiveRates();
+
+    // 2. Build currency list with live rates (or DB fallback)
+    if (liveRates) {
+      const currencies = CURRENCY_CODES
+        .filter(code => liveRates[code] !== undefined || code === 'USD')
+        .map(code => ({
+          code,
+          ...CURRENCY_META[code],
+          rateToUsd: code === 'USD' ? 1 : (liveRates[code] || 0),
+        }));
+
+      // Sync to DB in background (non-blocking)
+      syncRatesToDB(liveRates).catch(() => {});
+
+      return NextResponse.json({
+        currencies,
+        source: 'live',
+        updatedAt: new Date().toISOString(),
+      }, {
+        headers: {
+          'Cache-Control': 'public, max-age=3600, s-maxage=21600, stale-while-revalidate=43200',
+        },
+      });
+    }
+
+    // 3. Fallback: try database
+    const supabase = await createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseAny = supabase as any;
+
+    const { data: dbCurrencies, error } = await supabaseAny
       .from('currency_rates')
       .select('*')
       .eq('is_active', true)
       .order('display_order', { ascending: true });
 
-    if (error) {
-      // If table doesn't exist, return defaults
-      console.log('Currency table not found, using defaults:', error.message);
+    if (!error && dbCurrencies && dbCurrencies.length > 0) {
+      const currencies = dbCurrencies.map((c: {
+        currency_code: string;
+        currency_name: string;
+        currency_symbol: string;
+        rate_to_usd: number;
+        countries: string[];
+        updated_at: string;
+      }) => ({
+        code: c.currency_code,
+        name: c.currency_name,
+        symbol: c.currency_symbol,
+        rateToUsd: Number(c.rate_to_usd),
+        countries: c.countries || [],
+        updatedAt: c.updated_at,
+      }));
+
       return NextResponse.json({
-        currencies: DEFAULT_CURRENCIES,
-        source: 'defaults',
+        currencies,
+        source: 'database',
+      }, {
+        headers: {
+          'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
+        },
       });
     }
 
-    // Map database format to API format
-    const mappedCurrencies = currencies.map((c: {
-      currency_code: string;
-      currency_name: string;
-      currency_symbol: string;
-      rate_to_usd: number;
-      countries: string[];
-      updated_at: string;
-    }) => ({
-      code: c.currency_code,
-      name: c.currency_name,
-      symbol: c.currency_symbol,
-      rateToUsd: Number(c.rate_to_usd),
-      countries: c.countries || [],
-      updatedAt: c.updated_at,
+    // 4. Last resort: hardcoded defaults
+    const fallback = CURRENCY_CODES.map(code => ({
+      code,
+      ...CURRENCY_META[code],
+      rateToUsd: code === 'USD' ? 1 : 0,
     }));
 
     return NextResponse.json({
-      currencies: mappedCurrencies.length > 0 ? mappedCurrencies : DEFAULT_CURRENCIES,
-      source: mappedCurrencies.length > 0 ? 'database' : 'defaults',
+      currencies: fallback,
+      source: 'fallback',
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
       },
     });
   } catch (error) {
     console.error('Error fetching currencies:', error);
     return NextResponse.json({
-      currencies: DEFAULT_CURRENCIES,
-      source: 'defaults',
-      error: 'Failed to fetch from database',
+      currencies: CURRENCY_CODES.map(code => ({
+        code,
+        ...CURRENCY_META[code],
+        rateToUsd: code === 'USD' ? 1 : 0,
+      })),
+      source: 'error-fallback',
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
+        'Cache-Control': 'public, max-age=60, s-maxage=60',
       },
     });
   }

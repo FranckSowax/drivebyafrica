@@ -52,7 +52,7 @@ export default function CartPage() {
 
   // Calculate costs
   const quoteCurrency = getQuoteCurrency();
-  const xafRate = quoteCurrency.code === 'XAF' ? (quoteCurrency.rateToUsd || 600) : 1;
+  const xafRate = quoteCurrency.code === 'XAF' ? (quoteCurrency.rateToUsd || 630) : 1;
   const currencyCode = quoteCurrency.code;
   const isXAF = currencyCode === 'XAF';
 
@@ -73,9 +73,9 @@ export default function CartPage() {
 
   const formatCostLine = (amountXafOrUsd: number) => {
     if (!isXAF) {
-      return `$${Math.round(amountXafOrUsd).toLocaleString('fr-FR')}`;
+      return formatPrice(amountXafOrUsd);
     }
-    return `${Math.round(amountXafOrUsd).toLocaleString('fr-FR')} FCFA`;
+    return Math.round(amountXafOrUsd).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
   };
 
   // Empty cart
@@ -252,9 +252,7 @@ export default function CartPage() {
             <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
               <span>Acompte ({DEPOSIT_PER_VEHICLE_USD.toLocaleString()}$ x {costs.vehicleCount})</span>
               <span className="font-medium">
-                {isXAF
-                  ? `${costs.depositTotalXAF.toLocaleString('fr-FR')} FCFA`
-                  : `$${costs.depositTotalUSD.toLocaleString('fr-FR')}`}
+                {formatCostLine(isXAF ? costs.depositTotalXAF : costs.depositTotalUSD)}
               </span>
             </div>
           </div>

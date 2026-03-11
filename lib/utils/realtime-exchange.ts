@@ -19,8 +19,8 @@ const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 const FALLBACK_RATES: Record<string, number> = {
   USD: 1,
   EUR: 0.92,
-  XAF: 615,
-  XOF: 615,
+  XAF: 630,
+  XOF: 630,
   NGN: 1550,
   GHS: 15.5,
   KES: 154,

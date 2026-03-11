@@ -9,7 +9,7 @@ import {
 } from '@/lib/rate-limit';
 
 // Default XAF rate (fallback if database unavailable)
-const DEFAULT_XAF_RATE = 615;
+const DEFAULT_XAF_RATE = 630;
 
 // Fetch current XAF rate directly from currency_rates table (same source as /api/admin/currencies)
 async function getXafRate(supabase: Awaited<ReturnType<typeof createClient>>): Promise<number> {
