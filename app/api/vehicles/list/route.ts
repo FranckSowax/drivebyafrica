@@ -131,7 +131,7 @@ export async function GET(request: Request) {
         query = query.order('fob_price_usd', { ascending: true, nullsFirst: false });
         break;
       case 'price_desc':
-        query = query.order('fob_price_usd', { ascending: false, nullsFirst: true });
+        query = query.order('fob_price_usd', { ascending: false, nullsFirst: false });
         break;
       case 'year_desc':
         query = query.order('year', { ascending: false, nullsFirst: false });
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
         query = query.order('mileage', { ascending: true, nullsFirst: false });
         break;
       case 'mileage_desc':
-        query = query.order('mileage', { ascending: false, nullsFirst: true });
+        query = query.order('mileage', { ascending: false, nullsFirst: false });
         break;
       default:
         query = query.order('created_at', { ascending: false });

@@ -29,7 +29,7 @@ export function SmartSearchBar({ value, onChange, onSubmit, isLoading, className
       </div>
       <input
         ref={inputRef}
-        type="search"
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
