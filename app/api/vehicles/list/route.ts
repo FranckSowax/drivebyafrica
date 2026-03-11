@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
+// Force dynamic rendering — prevent Next.js from caching this route handler
+export const dynamic = 'force-dynamic';
+
 /**
  * Sanitize search input for PostgREST ILIKE patterns.
  * Remove characters that break .or() syntax: parentheses, commas, dots, backslashes.

@@ -71,7 +71,9 @@ async function fetchVehicles(
   if (filters?.sortBy) params.set('sortBy', filters.sortBy);
   if (filters?.newArrivals) params.set('newArrivals', 'true');
 
-  const response = await fetch(`/api/vehicles/list?${params.toString()}`);
+  const response = await fetch(`/api/vehicles/list?${params.toString()}`, {
+    cache: 'no-store',
+  });
 
   const data = await response.json();
 
