@@ -314,13 +314,12 @@ function ActiveFilterBadge({ label, onClear }: { label: string; onClear: () => v
 
 // Main Component
 interface VehicleFiltersProps {
-  onApply?: () => void;
   className?: string;
   hideHeader?: boolean;
   hideFooter?: boolean;
 }
 
-export function VehicleFilters({ onApply, className, hideHeader, hideFooter }: VehicleFiltersProps) {
+export function VehicleFilters({ className, hideHeader, hideFooter }: VehicleFiltersProps) {
   const { filters, setFilters, resetFilters } = useFilterStore();
   const vehicleFilters = useVehicleFilters();
   const { currencyInfo, formatPrice } = useCurrency();
@@ -335,7 +334,7 @@ export function VehicleFilters({ onApply, className, hideHeader, hideFooter }: V
       startTransition(() => {
         setFilters(updates);
       });
-    }, 500);
+    }, 150);
   }, [setFilters]);
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
@@ -721,21 +720,16 @@ export function VehicleFilters({ onApply, className, hideHeader, hideFooter }: V
         />
       </div>
 
-      {/* Footer Actions */}
-      {!hideFooter && (
+      {/* Footer Actions — Desktop only, reset button (filters auto-apply) */}
+      {!hideFooter && activeFiltersCount > 0 && (
         <div className="px-5 py-4 bg-[var(--surface)] border-t border-[var(--card-border)]">
-          <Button
-            variant="primary"
-            className="w-full h-12 text-base font-semibold"
-            onClick={onApply}
+          <button
+            onClick={resetFilters}
+            className="w-full flex items-center justify-center gap-2 h-10 text-sm text-[var(--text-muted)] hover:text-mandarin hover:bg-mandarin/5 rounded-xl transition-colors border border-[var(--card-border)]"
           >
-            Appliquer les filtres
-            {activeFiltersCount > 0 && (
-              <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                {activeFiltersCount}
-              </span>
-            )}
-          </Button>
+            <RotateCcw className="w-4 h-4" />
+            Réinitialiser les {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''}
+          </button>
         </div>
       )}
     </div>

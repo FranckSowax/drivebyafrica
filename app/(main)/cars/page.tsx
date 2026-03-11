@@ -113,7 +113,7 @@ export default function CarsPage() {
             </p>
           </div>
         </div>
-        <div className="container mx-auto px-4 pb-12">
+        <div className="container mx-auto px-4 pb-4">
           <div className="flex justify-center items-center py-20">
             <div className="w-8 h-8 border-4 border-mandarin border-t-transparent rounded-full animate-spin" />
           </div>
@@ -138,11 +138,11 @@ export default function CarsPage() {
       </div>
 
       <div className="container mx-auto px-4 pb-12">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Desktop Sidebar Filters */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+          {/* Desktop Sidebar Filters — filters auto-apply via Zustand/React Query */}
           <aside className="hidden lg:block lg:w-80 flex-shrink-0">
             <div className="sticky top-24">
-              <VehicleFilters onApply={refetch} />
+              <VehicleFilters />
             </div>
           </aside>
 
@@ -213,13 +213,15 @@ export default function CarsPage() {
               </div>
             )}
 
-            {/* Vehicle Grid */}
-            <VehicleGrid
-              vehicles={vehicles}
-              isLoading={isLoading}
-              favorites={favorites}
-              onFavorite={toggleFavorite}
-            />
+            {/* Vehicle Grid — wraps with opacity transition during filter changes */}
+            <div className={`transition-opacity duration-200 ${isLoading && vehicles.length > 0 ? 'opacity-50' : 'opacity-100'}`}>
+              <VehicleGrid
+                vehicles={vehicles}
+                isLoading={isLoading}
+                favorites={favorites}
+                onFavorite={toggleFavorite}
+              />
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && !isLoading && (
