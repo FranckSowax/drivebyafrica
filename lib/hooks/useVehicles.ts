@@ -83,6 +83,35 @@ async function fetchVehicles(
   };
 }
 
+/**
+ * Build an explicit queryKey from individual filter values.
+ * Each element is a primitive (string | number | boolean | undefined),
+ * so React Query detects changes via simple === comparison.
+ */
+function buildQueryKey(f: VehicleFilters | undefined, page: number, limit: number) {
+  return [
+    'vehicles', 'list',
+    page, limit,
+    f?.sortBy ?? 'newest',
+    f?.source ?? 'all',
+    f?.search ?? '',
+    f?.makes?.join(',') ?? '',
+    f?.models?.join(',') ?? '',
+    f?.yearFrom ?? 0,
+    f?.yearTo ?? 0,
+    f?.priceFrom ?? 0,
+    f?.priceTo ?? 0,
+    f?.mileageMax ?? 0,
+    f?.transmission ?? '',
+    f?.fuelType ?? '',
+    f?.driveType ?? '',
+    f?.bodyType ?? '',
+    f?.color ?? '',
+    f?.status ?? '',
+    f?.newArrivals ?? false,
+  ] as const;
+}
+
 export function useVehicles({
   filters,
   page = 1,
@@ -91,9 +120,7 @@ export function useVehicles({
   const queryClient = useQueryClient();
   const hasHydrated = useFilterStore((s) => s._hasHydrated);
 
-  // Serialize filters into a stable string for the query key.
-  // This guarantees React Query detects every filter/sort change reliably.
-  const filterKey = JSON.stringify(filters ?? {});
+  const queryKey = buildQueryKey(filters, page, limit);
 
   const {
     data,
@@ -102,23 +129,24 @@ export function useVehicles({
     error,
     refetch: queryRefetch,
   } = useQuery({
-    queryKey: ['vehicles', 'list', filterKey, page, limit],
+    queryKey,
     queryFn: () => fetchVehicles(filters, page, limit),
     enabled: hasHydrated,
+    // Override QueryClient defaults — always refetch on key change
     staleTime: 0,
     gcTime: 5 * 60 * 1000,
-    // No retries — prevents infinite re-render loop on 500 errors
     retry: false,
+    refetchOnWindowFocus: false,
+    structuralSharing: false,
   });
 
-  // Prefetch next page for smoother pagination
+  // Prefetch next page
   useEffect(() => {
     if (data && data.vehicles.length === limit) {
       const currentOffset = (page - 1) * limit + data.vehicles.length;
       if (currentOffset < data.totalCount) {
-        const nextFilterKey = JSON.stringify(filters ?? {});
         queryClient.prefetchQuery({
-          queryKey: ['vehicles', 'list', nextFilterKey, page + 1, limit],
+          queryKey: buildQueryKey(filters, page + 1, limit),
           queryFn: () => fetchVehicles(filters, page + 1, limit),
           staleTime: 60 * 1000,
         });

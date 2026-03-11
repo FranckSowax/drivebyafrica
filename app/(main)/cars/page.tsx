@@ -84,7 +84,7 @@ export default function CarsPage() {
     }, 300);
 
     return () => clearTimeout(debounce);
-  }, [searchQuery, _hasHydrated]);
+  }, [searchQuery, _hasHydrated, filters.search, setFilters]);
 
   const handleSearch = () => {
     if (_hasHydrated) {
