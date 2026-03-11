@@ -15,3 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_vehicles_fob_price_desc_id
 -- Also add mileage DESC index (existing only covers ASC)
 CREATE INDEX IF NOT EXISTS idx_vehicles_mileage_desc_id
   ON vehicles (mileage DESC NULLS LAST, id DESC);
+
+-- Year ASC index (existing idx_vehicles_year_id_desc only covers DESC)
+CREATE INDEX IF NOT EXISTS idx_vehicles_year_asc_id
+  ON vehicles (year ASC NULLS LAST, id DESC);
