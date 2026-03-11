@@ -51,7 +51,7 @@ export default function CarsPage() {
 
   // Use vehicles hook with current filters
   // Always pass filters to ensure data loads (defaultFilters are used before hydration)
-  const { vehicles, isLoading, error, totalCount } = useVehicles({
+  const { vehicles, isLoading, isFetching, error, totalCount } = useVehicles({
     filters,
     page,
     limit: ITEMS_PER_PAGE,
@@ -233,8 +233,8 @@ export default function CarsPage() {
               </div>
             )}
 
-            {/* Vehicle Grid — wraps with opacity transition during filter changes */}
-            <div className={`transition-opacity duration-200 ${isLoading && vehicles.length > 0 ? 'opacity-50' : 'opacity-100'}`}>
+            {/* Vehicle Grid — dims during background refetch so user sees filter is working */}
+            <div className={`transition-opacity duration-200 ${isFetching && vehicles.length > 0 ? 'opacity-50' : 'opacity-100'}`}>
               <VehicleGrid
                 vehicles={vehicles}
                 isLoading={isLoading}
@@ -265,7 +265,7 @@ export default function CarsPage() {
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
         totalCount={totalCount}
-        isLoading={isLoading}
+        isLoading={isFetching}
       />
     </div>
   );

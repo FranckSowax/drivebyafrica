@@ -14,6 +14,7 @@ interface UseVehiclesOptions {
 interface UseVehiclesReturn {
   vehicles: Vehicle[];
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   totalCount: number;
   hasMore: boolean;
@@ -106,6 +107,7 @@ export function useVehicles({
   const {
     data,
     isLoading,
+    isFetching,
     error,
     refetch: queryRefetch,
   } = useQuery({
@@ -154,6 +156,7 @@ export function useVehicles({
   return {
     vehicles: data?.vehicles ?? [],
     isLoading: !hasHydrated || isLoading,
+    isFetching,
     error: error as Error | null,
     totalCount: data?.totalCount ?? 0,
     hasMore: hasMorePages,

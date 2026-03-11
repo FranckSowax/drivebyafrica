@@ -9,6 +9,7 @@ import {
   Check,
   RotateCcw,
   Search,
+  Loader2,
   Car,
   Calendar,
   DollarSign,
@@ -530,10 +531,19 @@ export function MobileFilterSheet({ isOpen, onClose, totalCount, isLoading }: Mo
             >
               <button
                 onClick={() => { setSubView(null); setSearchTerm(''); }}
-                className="w-full h-12 bg-mandarin text-white rounded-xl text-base font-semibold flex items-center justify-center gap-2 active:bg-mandarin/90 transition-colors"
+                className="w-full h-14 bg-mandarin text-white rounded-xl text-base font-bold flex items-center justify-center gap-2 active:bg-mandarin/90 transition-colors shadow-lg shadow-mandarin/25"
               >
-                <Search className="w-4 h-4" />
-                {isLoading ? 'Chargement...' : `Voir ${formattedCount} résultats`}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Mise à jour...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-5 h-5" />
+                    Voir {formattedCount} résultats
+                  </>
+                )}
               </button>
             </div>
           </>
@@ -594,17 +604,26 @@ export function MobileFilterSheet({ isOpen, onClose, totalCount, isLoading }: Mo
               })}
             </div>
 
-            {/* Bottom button */}
+            {/* Bottom button — prominent CTA to close and see results */}
             <div
               className="flex-shrink-0 px-4 pt-3 bg-[var(--card-bg)] border-t border-[var(--card-border)]"
               style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
             >
               <button
                 onClick={onClose}
-                className="w-full h-12 bg-mandarin text-white rounded-xl text-base font-semibold flex items-center justify-center gap-2 active:bg-mandarin/90 transition-colors"
+                className="w-full h-14 bg-mandarin text-white rounded-xl text-base font-bold flex items-center justify-center gap-2 active:bg-mandarin/90 transition-colors shadow-lg shadow-mandarin/25"
               >
-                <Search className="w-4 h-4" />
-                {isLoading ? 'Chargement...' : `Voir ${formattedCount} résultats`}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Mise à jour...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-5 h-5" />
+                    Voir {formattedCount} résultats
+                  </>
+                )}
               </button>
             </div>
           </>
