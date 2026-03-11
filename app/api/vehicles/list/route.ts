@@ -81,9 +81,11 @@ export async function GET(request: Request) {
     const models = searchParams.get('models');
     if (models) query = query.in('model', models.split(','));
 
-    // Year range
+    // Year range — year=0 means "unknown", treat as most recent
     const yearFrom = searchParams.get('yearFrom');
-    if (yearFrom) query = query.gte('year', parseInt(yearFrom, 10));
+    if (yearFrom) {
+      query = query.or(`year.gte.${parseInt(yearFrom, 10)},year.eq.0`);
+    }
 
     const yearTo = searchParams.get('yearTo');
     if (yearTo) query = query.lte('year', parseInt(yearTo, 10));
