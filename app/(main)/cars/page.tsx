@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { SlidersHorizontal, X, Sparkles, AlertTriangle, RotateCcw } from 'lucide-react';
-import { VehicleGrid, VehicleFilters, SmartSearchBar } from '@/components/vehicles';
+import { SlidersHorizontal, Sparkles, AlertTriangle } from 'lucide-react';
+import { VehicleGrid, VehicleFilters, MobileFilterSheet, SmartSearchBar } from '@/components/vehicles';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Pagination } from '@/components/ui/Pagination';
@@ -51,7 +51,7 @@ export default function CarsPage() {
 
   // Use vehicles hook with current filters
   // Always pass filters to ensure data loads (defaultFilters are used before hydration)
-  const { vehicles, isLoading, error, totalCount, refetch } = useVehicles({
+  const { vehicles, isLoading, error, totalCount } = useVehicles({
     filters,
     page,
     limit: ITEMS_PER_PAGE,
@@ -163,11 +163,31 @@ export default function CarsPage() {
                 {/* Mobile Filter Button */}
                 <Button
                   variant="outline"
-                  className="lg:hidden flex items-center gap-2"
+                  className="lg:hidden flex items-center gap-2 relative"
                   onClick={() => setShowMobileFilters(true)}
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   Filtres
+                  {(() => {
+                    const count = [
+                      filters.source && filters.source !== 'all',
+                      filters.makes && filters.makes.length > 0,
+                      filters.models && filters.models.length > 0,
+                      filters.bodyType,
+                      filters.yearFrom || filters.yearTo,
+                      filters.priceFrom || filters.priceTo,
+                      filters.mileageMax,
+                      filters.transmission,
+                      filters.fuelType,
+                      filters.driveType,
+                      filters.color,
+                    ].filter(Boolean).length;
+                    return count > 0 ? (
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-mandarin text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {count}
+                      </span>
+                    ) : null;
+                  })()}
                 </Button>
 
                 {/* Sort */}
@@ -240,63 +260,13 @@ export default function CarsPage() {
         </div>
       </div>
 
-      {/* Mobile Filters Modal */}
-      {showMobileFilters && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowMobileFilters(false)}
-          />
-          <div className="absolute inset-y-0 right-0 w-full sm:max-w-md bg-[var(--card-bg)] flex flex-col">
-            {/* Sticky header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[var(--card-bg)] border-b border-[var(--card-border)] flex-shrink-0">
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">Filtres</h2>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    useFilterStore.getState().resetFilters();
-                  }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-muted)] hover:text-mandarin hover:bg-mandarin/5 rounded-lg transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Réinitialiser
-                </button>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable filter content — dropdowns use z-50 which works inside this scroll container */}
-            <div className="flex-1 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
-              <VehicleFilters
-                className="border-0 rounded-none"
-                hideHeader
-                hideFooter
-              />
-            </div>
-
-            {/* Sticky footer — filters auto-apply, button just closes the modal */}
-            <div
-              className="flex-shrink-0 px-4 pt-3 bg-[var(--card-bg)] border-t border-[var(--card-border)]"
-              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-            >
-              <Button
-                variant="primary"
-                className="w-full h-12 text-base font-semibold"
-                onClick={() => setShowMobileFilters(false)}
-              >
-                {isLoading
-                  ? 'Chargement...'
-                  : `Voir ${totalCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} résultats`}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Mobile Filters — full-screen sheet with drill-down navigation */}
+      <MobileFilterSheet
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        totalCount={totalCount}
+        isLoading={isLoading}
+      />
     </div>
   );
 }
