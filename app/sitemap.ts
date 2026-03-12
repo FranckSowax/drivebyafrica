@@ -1,7 +1,53 @@
 import type { MetadataRoute } from 'next';
-import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const BASE_URL = 'https://driveby-africa.com';
+
+// Use REST API directly (like home page) to avoid supabaseAdmin issues at build time
+async function fetchVehicleIds(): Promise<{ id: string; updated_at: string }[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  const allVehicles: { id: string; updated_at: string }[] = [];
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  let hasMore = true;
+
+  try {
+    while (hasMore) {
+      const params = new URLSearchParams();
+      params.set('select', 'id,updated_at');
+      params.set('is_visible', 'eq.true');
+      params.set('order', 'updated_at.desc');
+      params.set('limit', String(PAGE_SIZE));
+      params.set('offset', String(offset));
+
+      const res = await fetch(`${supabaseUrl}/rest/v1/vehicles?${params}`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        next: { revalidate: 3600 },
+      });
+
+      if (!res.ok) break;
+
+      const batch = await res.json();
+      if (!Array.isArray(batch) || batch.length === 0) {
+        hasMore = false;
+      } else {
+        allVehicles.push(...batch);
+        offset += PAGE_SIZE;
+        if (batch.length < PAGE_SIZE) hasMore = false;
+      }
+    }
+  } catch (err) {
+    console.error('[sitemap] Failed to fetch vehicles:', err);
+  }
+
+  return allVehicles;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
@@ -22,26 +68,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
-  // Vehicle pages
-  let vehiclePages: MetadataRoute.Sitemap = [];
-  try {
-    const { data: vehicles } = await supabaseAdmin
-      .from('vehicles')
-      .select('id, updated_at')
-      .eq('is_visible', true)
-      .order('updated_at', { ascending: false });
-
-    if (vehicles) {
-      vehiclePages = vehicles.map((v) => ({
-        url: `${BASE_URL}/cars/${v.id}`,
-        lastModified: v.updated_at ? new Date(v.updated_at) : new Date(),
-        changeFrequency: 'daily' as const,
-        priority: 0.7,
-      }));
-    }
-  } catch (err) {
-    console.error('[sitemap] Failed to fetch vehicles:', err);
-  }
+  // Vehicle pages (paginated fetch)
+  const vehicles = await fetchVehicleIds();
+  const vehiclePages: MetadataRoute.Sitemap = vehicles.map((v) => ({
+    url: `${BASE_URL}/cars/${v.id}`,
+    lastModified: v.updated_at ? new Date(v.updated_at) : new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.7,
+  }));
 
   return [...staticPages, ...vehiclePages];
 }
