@@ -18,6 +18,11 @@ const footerLinks = {
     { label: 'Suivi de commande', href: '/dashboard/orders' },
     { label: 'Demander un devis', href: '/cars' },
   ],
+  origins: [
+    { label: 'Véhicules Chine', href: '/import/chine' },
+    { label: 'Véhicules Corée du Sud', href: '/import/coree' },
+    { label: 'Véhicules Dubaï', href: '/import/dubai' },
+  ],
   support: [
     { label: 'FAQ', href: '/faq' },
     { label: 'Guides', href: '/guides' },
@@ -39,7 +44,7 @@ export function Footer() {
   return (
     <footer className="hidden lg:block bg-[var(--surface)] border-t border-[var(--card-border)]">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-block mb-4">
@@ -99,6 +104,23 @@ export function Footer() {
             <h4 className="font-semibold text-[var(--text-primary)] mb-4">Services</h4>
             <ul className="space-y-2">
               {footerLinks.services.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-[var(--text-muted)] hover:text-mandarin transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Par origine */}
+          <div>
+            <h4 className="font-semibold text-[var(--text-primary)] mb-4">Par origine</h4>
+            <ul className="space-y-2">
+              {footerLinks.origins.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

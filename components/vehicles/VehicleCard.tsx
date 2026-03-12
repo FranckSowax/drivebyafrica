@@ -9,6 +9,7 @@ import { parseImagesField } from '@/lib/utils/imageProxy';
 import { cn } from '@/lib/utils';
 import { getExportTax } from '@/lib/utils/pricing';
 import type { Vehicle, VehicleSource } from '@/types/vehicle';
+import { SOURCE_NAMES } from '@/types/vehicle';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -47,7 +48,7 @@ export function VehicleCard({ vehicle, onFavorite, isFavorite = false }: Vehicle
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface)]">
           <OptimizedImage
             src={mainImage}
-            alt={`${vehicle.make} ${vehicle.model}`}
+            alt={`${vehicle.make} ${vehicle.model}${vehicle.year ? ` ${vehicle.year}` : ''} — véhicule occasion import ${SOURCE_NAMES[vehicle.source as VehicleSource] || vehicle.source}`}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"

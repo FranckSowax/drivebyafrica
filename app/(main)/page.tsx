@@ -1,4 +1,5 @@
 import { LandingContent } from '@/components/home/LandingContent';
+import { OrganizationJsonLd } from '@/components/seo/JsonLd';
 
 const FEATURED_BRANDS = [
   'Jetour', 'Changan', 'Toyota', 'Haval', 'Zeekr', 'BYD', 'Geely',
@@ -69,5 +70,10 @@ async function getPopularVehicles() {
 
 export default async function HomePage() {
   const popularVehicles = await getPopularVehicles();
-  return <LandingContent initialVehicles={popularVehicles} />;
+  return (
+    <>
+      <OrganizationJsonLd />
+      <LandingContent initialVehicles={popularVehicles} />
+    </>
+  );
 }

@@ -10,16 +10,26 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Driveby Africa - Importation de véhicules',
+  metadataBase: new URL('https://driveby-africa.com'),
+  title: {
+    default: 'Driveby Africa — Achat véhicules occasion Chine, Corée, Dubaï vers Afrique',
+    template: '%s | Driveby Africa',
+  },
   description:
-    "Plateforme d'importation de véhicules depuis la Corée du Sud, la Chine et Dubaï vers l'Afrique. Enchères en direct, suivi de livraison et paiement sécurisé.",
+    "Achat et importation de véhicules d'occasion depuis la Chine, la Corée du Sud et Dubaï vers l'Afrique. Voitures vérifiées, livraison port à port, paiement sécurisé. Plus de 15 000 véhicules disponibles.",
   keywords: [
-    'importation véhicules',
-    'voitures Corée',
-    'enchères auto',
-    'Gabon',
-    'Afrique',
-    'Dubaï',
+    'achat véhicule chine',
+    'voiture occasion corée',
+    'importation voiture dubai',
+    'véhicule occasion dubaï',
+    'voiture chine occasion',
+    'importation véhicules afrique',
+    'voiture occasion corée du sud',
+    'achat voiture dubaï',
+    'import auto chine afrique',
+    'véhicule importation gabon',
+    'voiture occasion cameroun',
+    'importation véhicule côte ivoire',
   ],
   authors: [{ name: 'Driveby Africa' }],
   icons: {
@@ -27,20 +37,30 @@ export const metadata: Metadata = {
     shortcut: '/Favcon -driveby-africa-dark.png',
     apple: '/Favcon -driveby-africa-dark.png',
   },
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: 'Driveby Africa - Importation de véhicules',
+    title: 'Driveby Africa — Achat véhicules occasion Chine, Corée, Dubaï',
     description:
-      "Votre partenaire de confiance pour l'importation de véhicules vers l'Afrique",
+      "Importez votre véhicule d'occasion depuis la Chine, la Corée du Sud ou Dubaï vers l'Afrique. Véhicules vérifiés, livraison complète, paiement sécurisé.",
     type: 'website',
     locale: 'fr_FR',
+    siteName: 'Driveby Africa',
     images: [
       {
         url: '/Favcon -driveby-africa-dark.png',
         width: 512,
         height: 512,
-        alt: 'Driveby Africa',
+        alt: 'Driveby Africa — Import véhicules occasion',
       },
     ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Driveby Africa — Achat véhicules occasion Chine, Corée, Dubaï',
+    description:
+      "Importez votre véhicule d'occasion depuis la Chine, la Corée du Sud ou Dubaï vers l'Afrique.",
   },
 };
 
