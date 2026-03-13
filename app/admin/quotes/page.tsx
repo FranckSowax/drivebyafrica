@@ -56,6 +56,7 @@ interface Quote {
   customer_phone?: string;
   customer_email?: string;
   customer_currency?: string;
+  vehicle_image_url?: string | null;
   // Price request fields
   quote_type?: 'quote' | 'price_request';
   admin_price_usd?: number | null;
@@ -554,13 +555,24 @@ export default function AdminQuotesPage() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex items-start gap-2">
-                          <div>
-                            <p className="text-sm font-medium text-[var(--text-primary)]">
+                        <div className="flex items-center gap-3">
+                          {quote.vehicle_image_url ? (
+                            <img
+                              src={quote.vehicle_image_url}
+                              alt={`${quote.vehicle_make} ${quote.vehicle_model}`}
+                              className="w-14 h-10 object-cover rounded-lg border border-[var(--card-border)] flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-14 h-10 rounded-lg border border-[var(--card-border)] bg-[var(--surface)] flex items-center justify-center flex-shrink-0">
+                              <ExternalLink className="w-4 h-4 text-[var(--text-muted)]" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                               {quote.vehicle_make} {quote.vehicle_model}
                             </p>
                             <p className="text-xs text-[var(--text-muted)]">
-                              {quote.vehicle_year} - {quote.vehicle_price_usd ? formatCurrency(quote.vehicle_price_usd, 'USD') : <span className="text-purple-500">Prix à définir</span>}
+                              {quote.vehicle_year} · {quote.vehicle_price_usd ? formatCurrency(quote.vehicle_price_usd, 'USD') : <span className="text-purple-500">Prix à définir</span>}
                             </p>
                           </div>
                           {quote.vehicle_source_url && (
@@ -568,10 +580,10 @@ export default function AdminQuotesPage() {
                               href={quote.vehicle_source_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1.5 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors"
+                              className="p-1.5 text-nobel hover:text-mandarin hover:bg-mandarin/10 rounded-lg transition-colors flex-shrink-0"
                               title="Voir sur le site source"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                         </div>

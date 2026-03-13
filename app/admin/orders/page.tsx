@@ -6,7 +6,6 @@ import {
   Search,
   Eye,
   CheckCircle,
-  Clock,
   Ship,
   Truck,
   DollarSign,
@@ -302,6 +301,11 @@ export default function AdminOrdersPage() {
   const [selectedShippingPartnerId, setSelectedShippingPartnerId] = useState<string>('');
   const [shippingPartners, setShippingPartners] = useState<Array<{ id: string; company_name: string; covered_countries: string[]; is_active: boolean }>>([]);
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
+  // WhatsApp notification state
+  const [showWhatsAppPanel, setShowWhatsAppPanel] = useState(false);
+  const [whatsAppMessage, setWhatsAppMessage] = useState('');
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [whatsAppSent, setWhatsAppSent] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -402,6 +406,52 @@ export default function AdminOrdersPage() {
     const currency = getCustomerCurrency(country);
     const converted = amountUsd * currency.rate;
     return formatCurrency(converted, currency.code as 'USD' | 'XAF' | 'XOF' | 'NGN');
+  };
+
+  // Fetch WhatsApp template preview for a given status
+  const loadWhatsAppTemplate = async (status: string, order: Order) => {
+    try {
+      const res = await fetch(`/api/admin/orders/notify?status=${status}`);
+      const data = await res.json();
+      if (data.template) {
+        // Personalize with real order data
+        const msg = data.template
+          .replace('Jean Dupont', order.customer_name)
+          .replace('2024 Toyota Land Cruiser', `${order.vehicle_year} ${order.vehicle_make} ${order.vehicle_model}`)
+          .replace('ORD-001', order.order_number)
+          .replace('15/04/2026', order.shipping_eta ? format(new Date(order.shipping_eta), 'dd/MM/yyyy', { locale: fr }) : '');
+        setWhatsAppMessage(msg);
+      }
+    } catch {
+      // Ignore — user can type manually
+    }
+  };
+
+  const sendWhatsAppNotification = async () => {
+    if (!selectedOrder || !whatsAppMessage) return;
+    setIsSendingWhatsApp(true);
+    try {
+      const body = selectedOrder.isLegacyQuote
+        ? { quoteId: selectedOrder.id, status: newStatus || selectedOrder.order_status, customMessage: whatsAppMessage }
+        : { orderId: selectedOrder.id, status: newStatus || selectedOrder.order_status, customMessage: whatsAppMessage };
+
+      const res = await fetch('/api/admin/orders/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWhatsAppSent(true);
+        setShowWhatsAppPanel(false);
+      } else {
+        alert(`Erreur WhatsApp: ${data.error}`);
+      }
+    } catch {
+      alert('Erreur lors de l\'envoi WhatsApp');
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
   };
 
   const openWhatsApp = (phone: string, customerName: string, orderNumber: string) => {
@@ -943,8 +993,13 @@ export default function AdminOrdersPage() {
                     value={newStatus}
                     onChange={(e) => {
                       setNewStatus(e.target.value);
+                      setWhatsAppSent(false);
+                      setShowWhatsAppPanel(false);
                       if (e.target.value !== 'vehicle_received') {
                         setSelectedShippingPartnerId('');
+                      }
+                      if (e.target.value && selectedOrder) {
+                        loadWhatsAppTemplate(e.target.value, selectedOrder);
                       }
                     }}
                     className="w-full px-4 py-2.5 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-mandarin focus:outline-none"
@@ -1040,6 +1095,60 @@ export default function AdminOrdersPage() {
                     </Button>
                   </div>
                 </div>
+
+                {/* WhatsApp Notification Panel */}
+                {newStatus && newStatus !== selectedOrder.order_status && selectedOrder.customer_whatsapp && (
+                  <div className="mt-4 border-t border-[var(--card-border)] pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-sm font-medium text-[var(--text-primary)]">Notification WhatsApp</span>
+                        {whatsAppSent && (
+                          <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-500 rounded-full">✓ Envoyé</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setShowWhatsAppPanel(v => !v)}
+                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] underline"
+                      >
+                        {showWhatsAppPanel ? 'Masquer' : 'Prévisualiser & envoyer'}
+                      </button>
+                    </div>
+                    {showWhatsAppPanel && (
+                      <div className="space-y-2">
+                        <textarea
+                          value={whatsAppMessage}
+                          onChange={(e) => setWhatsAppMessage(e.target.value)}
+                          rows={6}
+                          className="w-full px-3 py-2 text-xs bg-[var(--card-bg)] border border-[var(--card-border)] rounded-lg text-[var(--text-primary)] focus:border-green-500 focus:outline-none font-mono resize-none"
+                          placeholder="Message WhatsApp..."
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={sendWhatsAppNotification}
+                            disabled={isSendingWhatsApp || !whatsAppMessage}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {isSendingWhatsApp ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : (
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                            )}
+                            Envoyer via WhatsApp Bot
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => openWhatsApp(selectedOrder.customer_whatsapp, selectedOrder.customer_name, selectedOrder.order_number)}
+                            className="border-green-500 text-green-500 hover:bg-green-500/10"
+                            title="Ouvrir WhatsApp Web"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Status Documents Section - Upload documents for current status */}

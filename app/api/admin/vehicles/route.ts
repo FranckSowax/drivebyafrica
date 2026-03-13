@@ -165,9 +165,9 @@ export async function GET(request: NextRequest) {
   const priceMinParam = searchParams.get('priceMin');
   const priceMaxParam = searchParams.get('priceMax');
 
-  // Optimization: Ignore search if less than 2 characters to prevent DB timeout
-  // on expensive wildcard queries like '%a%' or '%j%'
-  const effectiveSearch = search && search.length >= 2 ? search : null;
+  // Optimization: Ignore search if less than 3 characters to prevent DB timeout
+  // on expensive wildcard queries like '%a%' or '%ab%'
+  const effectiveSearch = search && search.length >= 3 ? search : null;
 
   // Parse price filters
   const priceMin = priceMinParam ? parseInt(priceMinParam, 10) : null;
@@ -184,10 +184,10 @@ export async function GET(request: NextRequest) {
 
   try {
     // Run count query and data query in parallel for better performance
-    // Count query uses head: true to only get the count without fetching data
+    // Use 'estimated' count to avoid full sequential scan on 190k+ rows
     let countQuery = supabase
       .from('vehicles')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'estimated', head: true });
     countQuery = applyFilters(countQuery, filterParams);
 
     // Data query - select only needed columns for admin list view (faster than *)

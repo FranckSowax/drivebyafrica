@@ -309,7 +309,7 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                     key={`thumb-${vehicle.id}-${index}`}
                     onClick={() => setCurrentImageIndex(index)}
                     className={cn(
-                      'relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all',
+                      'relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all focus:outline-none focus:ring-0',
                       currentImageIndex === index
                         ? 'border-mandarin'
                         : 'border-transparent opacity-60 hover:opacity-100'
@@ -431,88 +431,74 @@ export function VehicleDetailClient({ vehicle }: VehicleDetailClientProps) {
                   ) : null;
                 })()}
 
-                {/* Ask Question Button - only show after destination and shipping type are selected */}
-                {isShippingSelected && (
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={handleAskQuestion}
-                    leftIcon={<MessageCircle className="w-4 h-4" />}
-                  >
-                    Poser une question
-                  </Button>
-                )}
-
-                {/* Add to Cart Button - visible only after destination selected */}
+                {/* Multi-Vehicle Cart - only show after destination selected, if price available */}
                 {isShippingSelected && (() => {
                   const price = vehicle.start_price_usd ?? vehicle.buy_now_price_usd ?? vehicle.current_price_usd;
                   if (price == null || vehicleStatus !== 'available') return null;
                   const isInCart = cartItems.some((i) => i.vehicleId === vehicle.id);
                   const check = canAddToCart(source);
                   const disabled = isInCart || !check.allowed;
-                  const tooltip = isInCart
-                    ? 'Déjà dans le panier'
-                    : !check.allowed
-                    ? check.reason
-                    : undefined;
+                  const tooltip = isInCart ? 'Déjà dans le panier' : !check.allowed ? check.reason : undefined;
                   return (
-                    <div className="space-y-1.5">
-                      <p className="text-xs text-[var(--text-muted)]">
-                        Pour acheter plusieurs véhicules et grouper le transport, cliquez sur le bouton ci-dessous.
-                      </p>
-                      <Button
-                        variant="outline"
-                        className="w-full border-mandarin text-mandarin hover:bg-mandarin/10"
-                        disabled={disabled}
-                        title={tooltip}
-                        onClick={() => {
-                          const result = addToCart({
-                            vehicleId: vehicle.id,
-                            vehicleSource: source,
-                            vehicleMake: vehicle.make || 'Unknown',
-                            vehicleModel: vehicle.model || 'Unknown',
-                            vehicleYear: vehicle.year || new Date().getFullYear(),
-                            vehiclePriceUSD: price + getExportTax(source),
-                            imageUrl: images[0] !== '/images/placeholder-car.svg' ? images[0] : null,
-                          });
-                          if (result.success) {
-                            toast.success('Véhicule ajouté au panier container 40 pieds');
-                          } else if (result.error) {
-                            toast.error(result.error);
-                          }
-                        }}
-                        leftIcon={<ShoppingCart className="w-4 h-4" />}
-                      >
-                        {isInCart ? 'Dans le panier' : 'Multi-Véhicules - Ajouter au panier'}
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full border-mandarin/60 text-mandarin hover:bg-mandarin/10 text-sm"
+                      disabled={disabled}
+                      title={tooltip}
+                      onClick={() => {
+                        const result = addToCart({
+                          vehicleId: vehicle.id,
+                          vehicleSource: source,
+                          vehicleMake: vehicle.make || 'Unknown',
+                          vehicleModel: vehicle.model || 'Unknown',
+                          vehicleYear: vehicle.year || new Date().getFullYear(),
+                          vehiclePriceUSD: price + getExportTax(source),
+                          imageUrl: images[0] !== '/images/placeholder-car.svg' ? images[0] : null,
+                        });
+                        if (result.success) {
+                          toast.success('Véhicule ajouté au panier container 40 pieds');
+                        } else if (result.error) {
+                          toast.error(result.error);
+                        }
+                      }}
+                      leftIcon={<ShoppingCart className="w-4 h-4" />}
+                    >
+                      {isInCart ? 'Dans le panier' : 'Commander avec d\'autres véhicules'}
+                    </Button>
                   );
                 })()}
 
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
+                {/* Utility row: Favorites, Share, Ask Question */}
+                <div className="flex gap-2">
+                  <button
                     onClick={() => toggleFavorite(vehicle.id)}
-                    leftIcon={
-                      <Heart
-                        className={cn(
-                          'w-4 h-4',
-                          isFavorite(vehicle.id) && 'fill-mandarin text-mandarin'
-                        )}
-                      />
-                    }
+                    title={isFavorite(vehicle.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                    className={cn(
+                      'flex items-center justify-center w-10 h-10 rounded-lg border transition-colors flex-shrink-0',
+                      isFavorite(vehicle.id)
+                        ? 'border-mandarin bg-mandarin/10 text-mandarin'
+                        : 'border-[var(--card-border)] text-[var(--text-muted)] hover:border-mandarin hover:text-mandarin'
+                    )}
                   >
-                    {isFavorite(vehicle.id) ? 'Favori' : 'Ajouter'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1"
+                    <Heart className={cn('w-4 h-4', isFavorite(vehicle.id) && 'fill-mandarin')} />
+                  </button>
+                  <button
                     onClick={handleShare}
-                    leftIcon={<Share2 className="w-4 h-4" />}
+                    title="Partager"
+                    className="flex items-center justify-center w-10 h-10 rounded-lg border border-[var(--card-border)] text-[var(--text-muted)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)] transition-colors flex-shrink-0"
                   >
-                    Partager
-                  </Button>
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  {isShippingSelected && (
+                    <button
+                      onClick={handleAskQuestion}
+                      title="Poser une question"
+                      className="flex items-center gap-2 flex-1 h-10 px-3 rounded-lg border border-[var(--card-border)] text-[var(--text-muted)] hover:border-[var(--text-primary)] hover:text-[var(--text-primary)] transition-colors text-sm"
+                    >
+                      <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>Une question ?</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </Card>

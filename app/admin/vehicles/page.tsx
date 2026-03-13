@@ -133,7 +133,11 @@ export default function AdminVehiclesPage() {
         ...(currentFilters.priceMax && { priceMax: currentFilters.priceMax }),
       });
 
-      const response = await fetch(`/api/admin/vehicles?${params}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000);
+
+      const response = await fetch(`/api/admin/vehicles?${params}`, { signal: controller.signal });
+      clearTimeout(timeout);
       const data = await response.json();
 
       if (data.error) {
@@ -143,9 +147,13 @@ export default function AdminVehiclesPage() {
       setVehicles(data.vehicles);
       setTotal(data.total);
       setTotalPages(data.totalPages);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching vehicles:', error);
-      toast.error('Erreur lors du chargement des véhicules');
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.error('Délai dépassé — essayez d\'affiner les filtres');
+      } else {
+        toast.error('Erreur lors du chargement des véhicules');
+      }
     } finally {
       setVehiclesLoading(false);
     }

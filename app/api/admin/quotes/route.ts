@@ -100,11 +100,12 @@ export async function GET(request: Request) {
     // Get vehicle source URLs
     const vehicleIds = [...new Set(quotes?.map(q => q.vehicle_id).filter(Boolean) || [])];
     let vehicleSourceUrls: Record<string, string | null> = {};
+    let vehicleImages: Record<string, unknown> = {};
 
     if (vehicleIds.length > 0) {
       const { data: vehiclesData } = await supabase
         .from('vehicles')
-        .select('id, source_url')
+        .select('id, source_url, images')
         .in('id', vehicleIds);
 
       if (vehiclesData) {
@@ -112,8 +113,35 @@ export async function GET(request: Request) {
           acc[v.id] = v.source_url;
           return acc;
         }, {} as Record<string, string | null>);
+        // Store images keyed by vehicle id
+        vehicleImages = vehiclesData.reduce((acc, v) => {
+          acc[v.id] = v.images;
+          return acc;
+        }, {} as Record<string, unknown>);
       }
     }
+
+    // Helper to extract first valid image URL from images field
+    const getFirstImage = (images: unknown): string | null => {
+      if (!images) return null;
+      let parsed = images;
+      if (typeof images === 'string') {
+        try { parsed = JSON.parse(images); } catch { return images as string; }
+      }
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (typeof item === 'string' && item.startsWith('http')) return item;
+          if (item && typeof item === 'object' && 'url' in item && typeof (item as {url:string}).url === 'string') return (item as {url:string}).url;
+        }
+      }
+      if (typeof parsed === 'object' && parsed !== null) {
+        const obj = parsed as Record<string, unknown>;
+        if (obj.main && typeof obj.main === 'string') return obj.main;
+        const vals = Object.values(obj);
+        if (vals.length > 0 && typeof vals[0] === 'string') return vals[0] as string;
+      }
+      return null;
+    };
 
     // Enrich quotes with user info and vehicle source URL
     const enrichedQuotes = quotes?.map(quote => ({
@@ -122,6 +150,7 @@ export async function GET(request: Request) {
       customer_phone: profiles[quote.user_id]?.phone || profiles[quote.user_id]?.whatsapp_number || '',
       customer_email: profiles[quote.user_id]?.email || userEmails[quote.user_id] || '',
       vehicle_source_url: quote.vehicle_id ? vehicleSourceUrls[quote.vehicle_id] : null,
+      vehicle_image_url: quote.vehicle_id ? getFirstImage(vehicleImages[quote.vehicle_id]) : null,
     })) || [];
 
     // Calculate stats using database function (O(1) instead of O(n) client-side filtering)
