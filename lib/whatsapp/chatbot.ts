@@ -585,6 +585,16 @@ async function buildContextAndVehicles(
     console.error('[Chatbot] Vehicle search failed:', err);
   }
 
+  // Vehicle batches (lots en gros) — fetch when message mentions batches/lots/gros/wholesale
+  try {
+    const batchResult = await searchBatches(supabase, message, xafRate);
+    if (batchResult) {
+      parts.push(batchResult);
+    }
+  } catch (err) {
+    console.error('[Chatbot] Batch search failed:', err);
+  }
+
   // Shipping/transport search if message mentions a destination
   try {
     const shippingResult = await detectAndFetchShipping(supabase, message);
@@ -1076,6 +1086,59 @@ function buildVehicleContext(vehicles: VehicleResult[], xafRate: number, isSugge
   return lines.join('\n');
 }
 
+/**
+ * Detect batch/lot keywords and fetch available batches from Supabase
+ */
+const BATCH_KEYWORDS = [
+  'lot', 'lots', 'batch', 'batches', 'gros', 'en gros', 'wholesale',
+  'quantité', 'quantite', 'quantity', 'bulk', 'conteneur', 'container',
+  'revendeur', 'concessionnaire', 'dealer', 'revente', 'stock',
+  'plusieurs véhicules', 'plusieurs voitures', 'multiple',
+  '批量', '批发', '整批', // Chinese batch/wholesale terms
+];
+
+async function searchBatches(
+  supabase: ReturnType<typeof getAdmin>,
+  message: string,
+  xafRate: number
+): Promise<string | null> {
+  const lower = message.toLowerCase();
+  const hasBatchKeyword = BATCH_KEYWORDS.some(kw => lower.includes(kw));
+  if (!hasBatchKeyword) return null;
+
+  // Detect source country filter
+  let sourceFilter: string | null = null;
+  if (/chin[eois]/i.test(message) || /中国|中/i.test(message)) sourceFilter = 'china';
+  else if (/cor[ée]/i.test(message) || /korea/i.test(message) || /韩国/i.test(message)) sourceFilter = 'korea';
+  else if (/duba[ïi]/i.test(message) || /emirat/i.test(message) || /迪拜/i.test(message)) sourceFilter = 'dubai';
+
+  let query = supabase
+    .from('vehicle_batches')
+    .select('id, title, make, model, year, price_per_unit_usd, available_quantity, minimum_order_quantity, source_country, condition, shipping_type, description')
+    .eq('status', 'approved')
+    .eq('is_visible', true)
+    .gt('available_quantity', 0)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (sourceFilter) {
+    query = query.eq('source_country', sourceFilter);
+  }
+
+  const { data: batches } = await query;
+  if (!batches || batches.length === 0) return null;
+
+  const SOURCE_LABELS: Record<string, string> = { china: 'Chine', korea: 'Corée', dubai: 'Dubaï' };
+  const lines = ['\nLOTS DE VÉHICULES EN GROS DISPONIBLES:'];
+  for (const b of batches) {
+    const origin = SOURCE_LABELS[b.source_country] || b.source_country;
+    const priceFcfa = formatFCFA(b.price_per_unit_usd, xafRate);
+    lines.push(`- ${b.title} (${b.make} ${b.model} ${b.year}) | ${priceFcfa} ($${b.price_per_unit_usd.toLocaleString()}) /unité | ${b.available_quantity} disponibles | Min: ${b.minimum_order_quantity} unités | Origine: ${origin} | Lien: ${SITE_URL}/batches/${b.id}`);
+  }
+  lines.push(`\nVoir tous les lots: ${SITE_URL}/batches`);
+  return lines.join('\n');
+}
+
 // --- Vehicle image URL ---
 
 function getVehicleImageUrl(vehicle: VehicleResult): string | null {
@@ -1236,6 +1299,14 @@ IMPORTANT : Réponds TOUJOURS dans la langue du client. Langue détectée : ${la
    - Imports Dubaï (Toyota, Lexus...) : Prix compétitif sans intermédiaire, tropicalisation (clim et refroidissement adaptés aux fortes chaleurs), rapidité d'expédition.
 4. GESTION DES OBJECTIONS : Si un client doute de la fiabilité chinoise, rappelle que les standards ont changé, matériaux ultra-résistants, garantie constructeur. Sois éducatif, jamais défensif.
 5. ORIENTATION VERS L'ACTION : Génère un lead qualifié. Propose d'envoyer un catalogue, des photos, un devis, ou de programmer un appel avec un conseiller humain.
+
+# LOTS / ACHATS EN GROS (BATCHES)
+Driveby Africa propose aussi des LOTS de véhicules pour les revendeurs, concessionnaires et importateurs professionnels.
+- Si le contexte contient des "LOTS DE VÉHICULES EN GROS DISPONIBLES", présente-les au client avec les prix unitaires, quantités disponibles et commande minimum.
+- Si le client mentionne lot, gros, wholesale, bulk, conteneur, revendeur, concessionnaire, stock, quantité importante ou veut acheter plusieurs véhicules identiques → cherche dans les lots disponibles et présente les offres.
+- Avantages des lots : prix unitaire réduit, expédition groupée en conteneur (20HQ ou 40HQ), accompagnement logistique complet, idéal pour les professionnels.
+- Toujours inclure le lien vers la fiche du lot et vers la page ${SITE_URL}/batches pour explorer tous les lots.
+- Si aucun lot ne correspond à la demande, propose au client de visiter ${SITE_URL}/batches ou de contacter un conseiller pour un lot personnalisé.
 
 # STRUCTURE D'UNE INTERACTION TYPE
 - Salutation : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Quel type de véhicule cherchez-vous et vers quel pays/port africain ?"
