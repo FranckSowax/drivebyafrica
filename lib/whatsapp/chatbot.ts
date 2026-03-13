@@ -473,6 +473,9 @@ function shouldEscalate(message: string): boolean {
   return ESCALATION_KEYWORDS.some(kw => lower.includes(kw));
 }
 
+// Agent phone number for escalation WhatsApp notifications
+const AGENT_PHONE = '24106871309';
+
 async function escalateConversation(
   supabase: ReturnType<typeof getAdmin>,
   conversationId: string,
@@ -494,6 +497,42 @@ async function escalateConversation(
     icon: 'message-circle',
     data: { phone, customer_name: customerName, conversation_id: conversationId },
   });
+
+  // Notify human agent via WhatsApp with conversation summary
+  try {
+    // Fetch recent conversation history for summary
+    const { data: conv } = await supabase
+      .from('whatsapp_conversations')
+      .select('context')
+      .eq('id', conversationId)
+      .single();
+
+    const ctx = conv?.context as { recent_messages?: string[] } | null;
+    const recentMessages = ctx?.recent_messages?.slice(-6) || [];
+    const summary = recentMessages.length > 0
+      ? recentMessages.join('\n')
+      : 'Pas d\'historique disponible';
+
+    const agentMessage = [
+      `🚨 *NOUVEAU LEAD À TRAITER*`,
+      ``,
+      `👤 *Client:* ${customerName}`,
+      `📞 *Numéro:* +${phone}`,
+      ``,
+      `📋 *Résumé conversation:*`,
+      summary,
+      ``,
+      `🔗 *Gérer la conversation:*`,
+      `${SITE_URL}/admin/knowledge?tab=conversations`,
+      ``,
+      `💡 Le client est prêt à passer commande. Contactez-le rapidement !`,
+    ].join('\n');
+
+    await sendTextMessage(AGENT_PHONE, agentMessage);
+    console.log(`[Chatbot] Agent notified via WhatsApp: +${AGENT_PHONE}`);
+  } catch (err) {
+    console.error('[Chatbot] Failed to notify agent via WhatsApp:', err);
+  }
 }
 
 // --- Currency ---
