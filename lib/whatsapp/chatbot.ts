@@ -361,9 +361,19 @@ export async function handleChatbotMessage(
     const aiResponse = await callAI(messageText, context, userName, xafRate, language);
     console.log(`[Chatbot] AI response: "${aiResponse.substring(0, 80)}..."`);
 
-    // 7. Send AI text response
-    const sendResult = await sendTextMessage(phone, aiResponse);
+    // 7. Check if AI wants to escalate to human agent (campaign conversion)
+    const shouldAutoEscalate = aiResponse.includes('[ESCALADE_AGENT]');
+    const cleanResponse = aiResponse.replace(/\s*\[ESCALADE_AGENT\]\s*/g, '').trim();
+
+    // 7b. Send AI text response
+    const sendResult = await sendTextMessage(phone, cleanResponse);
     console.log(`[Chatbot] Send result: success=${sendResult.success}, error=${sendResult.error || 'none'}`);
+
+    // 7c. Auto-escalate if AI detected purchase intent
+    if (shouldAutoEscalate) {
+      console.log(`[Chatbot] Auto-escalating conversation (campaign conversion intent)`);
+      await escalateConversation(supabase, conversation.id, phone, userName);
+    }
 
     // 8. Send vehicle cards ONLY for direct matches (not suggestions/random)
     if (foundVehicles.length > 0 && !vehiclesAreSuggestion) {
@@ -583,6 +593,12 @@ async function buildContextAndVehicles(
     }
   } catch (err) {
     console.error('[Chatbot] Vehicle search failed:', err);
+  }
+
+  // Campaign context — inject for prospects likely coming from Meta ad
+  const isCampaignLead = detectCampaignLead(message);
+  if (isCampaignLead) {
+    parts.push(buildCampaignContext(xafRate));
   }
 
   // Vehicle batches (lots en gros) — fetch when message mentions batches/lots/gros/wholesale
@@ -1087,6 +1103,44 @@ function buildVehicleContext(vehicles: VehicleResult[], xafRate: number, isSugge
 }
 
 /**
+ * Detect if message likely comes from Meta campaign lead (Toyota Corolla Hybride lot)
+ */
+const CAMPAIGN_KEYWORDS = [
+  'corolla', 'toyota', 'hybride', 'hybrid', 'lot', 'lots', 'offre',
+  'publicité', 'pub', 'vu sur', 'facebook', 'instagram', 'meta',
+  'intéressé', 'interesse', 'interested', 'info', 'prix',
+  'combien', 'how much', 'c\'est combien', 'disponible',
+  'dispo', 'encore disponible', 'available',
+  '9999', '9,999', '4999',
+  // Short first-contact messages typical of ad clicks
+  'bonjour', 'bonsoir', 'hello', 'hi', 'salut', 'bsr', 'bjr',
+];
+
+function detectCampaignLead(message: string): boolean {
+  const lower = message.toLowerCase().trim();
+  // Short messages (< 50 chars) are very likely from ad clicks
+  const isShortMessage = lower.length < 50;
+  // Check for campaign-specific keywords
+  const hasCampaignKeyword = CAMPAIGN_KEYWORDS.some(kw => lower.includes(kw));
+  // If message is short OR mentions campaign keywords, treat as campaign lead
+  return isShortMessage || hasCampaignKeyword;
+}
+
+function buildCampaignContext(xafRate: number): string {
+  const totalFcfa = Math.round(9999 * xafRate).toLocaleString();
+  const unitFcfa = Math.round(4999.5 * xafRate).toLocaleString();
+  return `
+OFFRE CAMPAGNE META EN COURS (PRIORITAIRE):
+- LOT DE 2 TOYOTA COROLLA HYBRIDE 2018 — Occasion Certifiée — Couleur Blanche
+- Prix total lot: $9,999 USD (≈ ${totalFcfa} FCFA) soit $4,999.50/véhicule (≈ ${unitFcfa} FCFA/véhicule)
+- Prix HORS TRANSPORT (transport en supplément selon destination)
+- Avantages: Hybride économique (~4L/100km), Toyota = fiabilité légendaire, pièces dispo partout en Afrique, couleur blanche = revente facile
+- Livraison: Tous ports africains, délai 3-5 semaines
+- Acompte 30% pour réserver ce lot
+- Ce prospect vient PROBABLEMENT de la publicité Meta. Accueille-le en faisant référence à l'offre Toyota Corolla Hybride.`;
+}
+
+/**
  * Detect batch/lot keywords and fetch available batches from Supabase
  */
 const BATCH_KEYWORDS = [
@@ -1308,11 +1362,41 @@ Driveby Africa propose aussi des LOTS de véhicules pour les revendeurs, concess
 - Toujours inclure le lien vers la fiche du lot et vers la page ${SITE_URL}/batches pour explorer tous les lots.
 - Si aucun lot ne correspond à la demande, propose au client de visiter ${SITE_URL}/batches ou de contacter un conseiller pour un lot personnalisé.
 
+# 🔥 CAMPAGNE META EN COURS — OFFRE LOT TOYOTA COROLLA HYBRIDE
+Tu vas recevoir des prospects venant d'une publicité Meta (Facebook/Instagram). Cette campagne promeut :
+- **Offre** : LOT DE 2 Toyota Corolla Hybride 2018, couleur blanche, occasion certifiée
+- **Prix lot** : $9,999 USD (≈ ${Math.round(9999 * xafRate).toLocaleString()} FCFA) soit $4,999.50/véhicule
+- **Prix HORS transport** — le transport est en supplément selon la destination
+- **Points forts** : Hybride économique, occasion certifiée, livraison vers TOUS les ports africains, cotation sur demande
+
+QUAND UN PROSPECT ARRIVE (souvent son premier message sera court : "bonjour", "je suis intéressé", "c'est combien", "info sur le lot", etc.) :
+1. **Accueille chaleureusement** et confirme l'offre : "Oui, notre offre exclusive sur le lot de 2 Toyota Corolla Hybride 2018 est bien disponible ! 🚗✅"
+2. **Qualifie rapidement** : Demande la destination (port/pays en Afrique) pour estimer le transport.
+3. **Rassure** : Occasion certifiée, véhicules inspectés, Driveby Africa gère tout (export, transport maritime, documents).
+4. **Pousse vers l'action** : "Pour bloquer ce lot à ce prix, un acompte de 30% suffit. Souhaitez-vous qu'un de nos conseillers vous appelle pour finaliser ? 📞"
+5. **Escalade vers un agent humain** : Dès que le client montre un intérêt concret (demande de devis, de modalités de paiement, dit "oui", "je veux", "comment payer"), propose IMMÉDIATEMENT : "Excellent ! Je vous passe notre conseiller spécialisé qui va vous accompagner pour finaliser votre commande. Un instant... 🤝" et ajoute [ESCALADE_AGENT] à la fin de ta réponse.
+
+ARGUMENTS DE VENTE COROLLA HYBRIDE :
+- Toyota Corolla : la berline la plus vendue au MONDE, fiabilité légendaire
+- Hybride : économie de carburant exceptionnelle (~4L/100km), idéal pour l'Afrique où le carburant est cher
+- 2018 : modèle récent, technologie moderne, airbags, ABS, écran tactile
+- Blanche : couleur la plus demandée en Afrique (revente facile, résiste à la chaleur)
+- Lot de 2 : prix de gros imbattable, idéal pour usage personnel + revente ou pour revendeurs
+- Pièces Toyota disponibles PARTOUT en Afrique
+
+GESTION DES OBJECTIONS CAMPAGNE :
+- "C'est trop cher" → "Le prix unitaire est de seulement $4,999.50, c'est exceptionnel pour une Corolla Hybride certifiée. En concession locale vous payeriez 2x plus."
+- "Pourquoi 2 voitures ?" → "C'est un prix de lot. Vous pouvez en garder une et revendre la seconde pour récupérer une partie de votre investissement. Beaucoup de nos clients font ça !"
+- "Comment être sûr de la qualité ?" → "Chaque véhicule est inspecté et certifié avant expédition. Vous recevez un rapport d'inspection complet avec photos."
+- "C'est long la livraison ?" → "Le transport maritime prend 3 à 5 semaines selon votre destination. On vous donne un suivi en temps réel."
+- "Je veux juste une voiture" → "On a aussi des véhicules à l'unité sur notre catalogue ${SITE_URL}/cars — voulez-vous que je vous montre ?"
+
 # STRUCTURE D'UNE INTERACTION TYPE
-- Salutation : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Quel type de véhicule cherchez-vous et vers quel pays/port africain ?"
+- Salutation prospect campagne : "Bonjour ! 👋 Merci pour votre intérêt pour notre offre Toyota Corolla Hybride ! Le lot de 2 véhicules à $9,999 est bien disponible. Vers quel pays/port souhaitez-vous être livré ? 🌍"
+- Salutation générique : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Quel type de véhicule cherchez-vous et vers quel pays/port africain ?"
 - Découverte : Poser des questions sur le budget et la destination.
 - Argumentaire : Proposer 1 ou 2 modèles pertinents avec les arguments du marché.
-- Call-to-Action : "Voulez-vous que je vous envoie des photos de ce modèle ou préférez-vous qu'un de nos conseillers vous appelle pour un devis précis ? 📞"
+- Call-to-Action : "Pour réserver ce lot, un acompte de 30% suffit. Souhaitez-vous que notre conseiller vous contacte pour finaliser ? 📞🤝"
 
 # PRIX ET DEVISES
 - Tous les prix en FCFA (taux: 1 USD = ${xafRate} FCFA). USD entre parenthèses.
