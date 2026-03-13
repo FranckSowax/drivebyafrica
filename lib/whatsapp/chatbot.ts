@@ -686,13 +686,14 @@ async function buildContextAndVehicles(
     if (shippingResult) {
       const { shipping } = shippingResult;
       parts.push(`\nTRANSPORT VERS ${shipping.destination_name.toUpperCase()} ${shipping.destination_flag} (${shipping.destination_country}):`);
-      parts.push(`- Conteneur 20HQ depuis Chine: $${shipping.china_cost_usd} USD (${formatFCFA(shipping.china_cost_usd, xafRate)})`);
-      parts.push(`- Conteneur 20HQ depuis Corée: $${shipping.korea_cost_usd} USD (${formatFCFA(shipping.korea_cost_usd, xafRate)})`);
-      parts.push(`- Conteneur 20HQ depuis Dubaï: $${shipping.dubai_cost_usd} USD (${formatFCFA(shipping.dubai_cost_usd, xafRate)})`);
+      parts.push(`- Conteneur 20HQ depuis Chine: ~$${shipping.china_cost_usd} USD (~${formatFCFA(shipping.china_cost_usd, xafRate)})`);
+      parts.push(`- Conteneur 20HQ depuis Corée: ~$${shipping.korea_cost_usd} USD (~${formatFCFA(shipping.korea_cost_usd, xafRate)})`);
+      parts.push(`- Conteneur 20HQ depuis Dubaï: ~$${shipping.dubai_cost_usd} USD (~${formatFCFA(shipping.dubai_cost_usd, xafRate)})`);
+      parts.push(`⚠️ IMPORTANT: Ces prix sont APPROXIMATIFS. Le contexte géopolitique actuel (conflit Iran, perturbations en mer Rouge) impacte fortement la logistique maritime mondiale. Les tarifs de fret varient quotidiennement. Précise TOUJOURS au client que ces prix sont indicatifs et susceptibles de changer, et qu'un devis précis sera établi par notre équipe au moment de la commande.`);
 
       // If vehicles found, add total cost estimates (vehicle + export tax + shipping)
       if (vehicles.length > 0) {
-        parts.push('\nESTIMATION PRIX TOTAL (véhicule + taxe export + transport 20HQ):');
+        parts.push('\nESTIMATION PRIX TOTAL APPROXIMATIF (véhicule + taxe export + transport 20HQ):');
         for (const v of vehicles.slice(0, 3)) {
           if (!v.start_price_usd) continue;
           const exportTax = getExportTax(v.source || '');
@@ -701,7 +702,7 @@ async function buildContextAndVehicles(
             : source.includes('dubai') ? shipping.dubai_cost_usd
             : shipping.china_cost_usd;
           const totalUsd = v.start_price_usd + exportTax + shippingCost;
-          parts.push(`- ${v.make} ${v.model} ${v.year}: ${formatFCFA(totalUsd, xafRate)} ($${totalUsd.toLocaleString()}) [véhicule $${v.start_price_usd} + taxe $${exportTax} + transport $${shippingCost}]`);
+          parts.push(`- ${v.make} ${v.model} ${v.year}: ~${formatFCFA(totalUsd, xafRate)} (~$${totalUsd.toLocaleString()}) [véhicule $${v.start_price_usd} + taxe $${exportTax} + transport ~$${shippingCost}]`);
         }
       }
     }
@@ -1472,6 +1473,14 @@ GESTION DES OBJECTIONS CAMPAGNE :
 - Ne jamais inventer de prix — utilise UNIQUEMENT les données du contexte.
 - Toujours préciser "prix hors transport jusqu'à votre destination, sous réserve de confirmation par un conseiller" sauf si le TRANSPORT est dans le contexte (auquel cas donne le prix total estimé).
 - Si le contexte contient des infos TRANSPORT avec prix total, mentionne le prix total rendu destination.
+
+# TRANSPORT MARITIME — AVERTISSEMENT OBLIGATOIRE
+⚠️ RÈGLE ABSOLUE : Quand tu donnes un prix de transport, tu DOIS TOUJOURS préciser :
+1. Que le prix est APPROXIMATIF et INDICATIF (utilise "environ", "~", "approximativement")
+2. Que le contexte géopolitique actuel (tensions Iran, perturbations en mer Rouge/détroit d'Ormuz) impacte fortement le fret maritime mondial
+3. Que les tarifs varient quotidiennement et sont susceptibles de changer
+4. Qu'un devis précis et à jour sera établi par notre équipe au moment de la commande
+Exemple : "Le transport depuis la Chine vers Libreville coûte environ X FCFA (~$Y), mais attention, les tarifs de fret évoluent chaque jour en raison du contexte géopolitique actuel. Notre équipe vous confirmera un prix exact lors de votre commande."
 
 # VÉHICULES (RÈGLES ABSOLUES — NE JAMAIS DÉROGER)
 - Tu ne connais QUE les véhicules listés dans la section CONTEXTE ci-dessous. Tu n'as accès à AUCUN autre inventaire.
