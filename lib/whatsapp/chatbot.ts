@@ -314,6 +314,34 @@ export async function handleChatbotMessage(
       return { replied: false, escalated: true };
     }
 
+    // 3b. Check if agent is handling (24h window after admin reply)
+    if (conversation.status === 'agent_handling') {
+      const ctx = conversation.context as { agent_handling_until?: string } | null;
+      const handlingUntil = ctx?.agent_handling_until ? new Date(ctx.agent_handling_until) : null;
+
+      if (handlingUntil && handlingUntil > new Date()) {
+        // Agent is still handling — don't respond, notify agent of new message
+        console.log(`[Chatbot] Agent handling until ${handlingUntil.toISOString()}, skipping bot response`);
+        try {
+          for (const agentNum of AGENT_PHONES) {
+            await sendTextMessage(agentNum,
+              `📩 *Nouveau message client* (conversation gérée par agent)\n\n👤 ${userName} (+${phone}):\n"${messageText.substring(0, 200)}"\n\n🔗 ${SITE_URL}/admin/knowledge?tab=conversations`
+            );
+          }
+        } catch { /* ignore notification error */ }
+        // Still store the message in history
+        await storeConversationMessages(supabase, conversation.id, messageText, '', userName);
+        return { replied: false, escalated: false };
+      }
+
+      // 24h expired — reactivate bot, continue with conversation history
+      console.log(`[Chatbot] Agent handling expired, reactivating bot`);
+      await supabase
+        .from('whatsapp_conversations')
+        .update({ status: 'active' })
+        .eq('id', conversation.id);
+    }
+
     // 4. Check for escalation keywords
     if (shouldEscalate(messageText)) {
       await escalateConversation(supabase, conversation.id, phone, userName);
@@ -446,7 +474,7 @@ async function getOrCreateConversation(
     .from('whatsapp_conversations')
     .select('*')
     .eq('phone', phone)
-    .in('status', ['active', 'escalated'])
+    .in('status', ['active', 'escalated', 'agent_handling'])
     .order('last_message_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -473,8 +501,8 @@ function shouldEscalate(message: string): boolean {
   return ESCALATION_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-// Agent phone number for escalation WhatsApp notifications
-const AGENT_PHONE = '24106871309';
+// Agent phone numbers for escalation WhatsApp notifications
+const AGENT_PHONES = ['24106871309', '8613928824920'];
 
 async function escalateConversation(
   supabase: ReturnType<typeof getAdmin>,
@@ -528,8 +556,10 @@ async function escalateConversation(
       `💡 Le client est prêt à passer commande. Contactez-le rapidement !`,
     ].join('\n');
 
-    await sendTextMessage(AGENT_PHONE, agentMessage);
-    console.log(`[Chatbot] Agent notified via WhatsApp: +${AGENT_PHONE}`);
+    for (const agentNum of AGENT_PHONES) {
+      await sendTextMessage(agentNum, agentMessage);
+    }
+    console.log(`[Chatbot] Agents notified via WhatsApp: ${AGENT_PHONES.join(', ')}`);
   } catch (err) {
     console.error('[Chatbot] Failed to notify agent via WhatsApp:', err);
   }

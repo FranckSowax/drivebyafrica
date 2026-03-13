@@ -325,21 +325,25 @@ export async function PATCH(request: Request) {
         const recentMessages = ctx.recent_messages || [];
         recentMessages.push(`Admin: ${message.substring(0, 300)}`);
         if (recentMessages.length > 20) recentMessages.splice(0, recentMessages.length - 20);
+        // Set agent_handling status with 24h window — bot won't respond during this period
+        const agentHandlingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         await (supabaseAdmin as any)
           .from('whatsapp_conversations')
           .update({
-            context: { ...ctx, recent_messages: recentMessages },
+            context: { ...ctx, recent_messages: recentMessages, agent_handling_until: agentHandlingUntil },
             last_message_at: new Date().toISOString(),
-            status: 'active',
+            status: 'agent_handling',
           })
           .eq('id', conversation_id);
       } catch {
         // Fallback: just update status
+        const agentHandlingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         await (supabaseAdmin as any)
           .from('whatsapp_conversations')
           .update({
             last_message_at: new Date().toISOString(),
-            status: 'active',
+            status: 'agent_handling',
+            context: { agent_handling_until: agentHandlingUntil },
           })
           .eq('id', conversation_id);
       }
