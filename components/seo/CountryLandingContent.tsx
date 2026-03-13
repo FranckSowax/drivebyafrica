@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Package } from 'lucide-react';
 import { useState } from 'react';
 import { VehicleCard } from '@/components/vehicles/VehicleCard';
+import { Card } from '@/components/ui/Card';
 import { useFavorites } from '@/lib/hooks/useFavorites';
 import type { Vehicle } from '@/types/vehicle';
+import type { VehicleBatch } from '@/types/vehicle-batch';
 
 interface FAQItem {
   question: string;
@@ -14,6 +16,7 @@ interface FAQItem {
 
 interface CountryLandingContentProps {
   vehicles: Vehicle[];
+  batches?: VehicleBatch[];
   sourceFilter: string;
   countryName: string;
   flag: string;
@@ -56,6 +59,7 @@ function FAQAccordion({ faqs }: { faqs: FAQItem[] }) {
 
 export default function CountryLandingContent({
   vehicles,
+  batches,
   sourceFilter,
   countryName,
   flag,
@@ -77,13 +81,20 @@ export default function CountryLandingContent({
           <p className="text-lg text-[var(--text-muted)] max-w-2xl mb-6">
             {intro[0]}
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Link
               href={`/cars?source=${sourceFilter}`}
               className="inline-flex items-center gap-2 px-6 py-3 bg-mandarin text-white font-semibold rounded-lg hover:bg-mandarin/90 transition-colors"
             >
               Voir tous les véhicules
               <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/batches"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-mandarin text-mandarin font-semibold rounded-lg hover:bg-mandarin/10 transition-colors"
+            >
+              <Package className="w-4 h-4" />
+              Acheter en gros
             </Link>
             <Link
               href="/how-it-works"
@@ -104,6 +115,71 @@ export default function CountryLandingContent({
             </p>
           ))}
         </div>
+
+        {/* Batches Section */}
+        {batches && batches.length > 0 && (
+          <section className="mb-16">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+              Lots de véhicules en gros depuis {countryName}
+            </h2>
+            <p className="text-[var(--text-muted)] mb-6">
+              Importez en quantité à prix préférentiels. Idéal pour les revendeurs et concessionnaires en Afrique.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {batches.map((batch) => (
+                <Link key={batch.id} href={`/batches/${batch.id}`}>
+                  <Card className="overflow-hidden hover:border-mandarin/50 transition-all duration-200 group h-full">
+                    <div className="relative h-48 bg-[var(--surface)] overflow-hidden">
+                      {batch.thumbnail_url || batch.images[0] ? (
+                        <img
+                          src={batch.thumbnail_url || batch.images[0]}
+                          alt={`Lot ${batch.make} ${batch.model} ${batch.year} depuis ${countryName}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-12 h-12 text-[var(--text-muted)]" />
+                        </div>
+                      )}
+                      <div className="absolute top-3 right-3 px-2 py-1 bg-mandarin text-white text-xs font-bold rounded-full">
+                        LOT
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-[var(--text-primary)] mb-1 line-clamp-2 group-hover:text-mandarin transition-colors">
+                        {batch.title}
+                      </h3>
+                      <p className="text-sm text-[var(--text-muted)] mb-3">
+                        {batch.year} &bull; {batch.make} {batch.model}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-lg font-bold text-mandarin">
+                            ${batch.price_per_unit_usd.toLocaleString()}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)]">/unité</span>
+                        </div>
+                        <span className="text-sm font-semibold text-green-600">
+                          {batch.available_quantity} dispo
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-8 text-center">
+              <Link
+                href="/batches"
+                className="inline-flex items-center gap-2 px-8 py-3 border border-mandarin text-mandarin font-semibold rounded-lg hover:bg-mandarin/10 transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                Voir tous les lots en gros
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </section>
+        )}
 
         {/* Vehicle Grid */}
         <section className="mb-16">

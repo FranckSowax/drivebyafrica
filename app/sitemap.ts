@@ -49,6 +49,37 @@ async function fetchVehicleIds(): Promise<{ id: string; updated_at: string }[]> 
   return allVehicles;
 }
 
+// Fetch approved visible batches for sitemap
+async function fetchBatchIds(): Promise<{ id: string; updated_at: string }[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  try {
+    const params = new URLSearchParams();
+    params.set('select', 'id,updated_at');
+    params.set('is_visible', 'eq.true');
+    params.set('status', 'eq.approved');
+    params.set('order', 'updated_at.desc');
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/vehicle_batches?${params}`, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('[sitemap] Failed to fetch batches:', err);
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
@@ -77,5 +108,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...vehiclePages];
+  // Batch pages
+  const batches = await fetchBatchIds();
+  const batchPages: MetadataRoute.Sitemap = batches.map((b) => ({
+    url: `${BASE_URL}/batches/${b.id}`,
+    lastModified: b.updated_at ? new Date(b.updated_at) : new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
+  }));
+
+  // Batches listing page
+  const batchesListing: MetadataRoute.Sitemap = [
+    { url: `${BASE_URL}/batches`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+  ];
+
+  return [...staticPages, ...batchesListing, ...vehiclePages, ...batchPages];
 }

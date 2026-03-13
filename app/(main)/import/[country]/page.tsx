@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import CountryLandingContent from '@/components/seo/CountryLandingContent';
 import { FAQPageJsonLd, ItemListJsonLd } from '@/components/seo/JsonLd';
 import type { Vehicle } from '@/types/vehicle';
+import type { VehicleBatch } from '@/types/vehicle-batch';
 import { parseImagesField } from '@/lib/utils/imageProxy';
 
 export const revalidate = 3600; // ISR: 1 hour
@@ -193,6 +194,18 @@ export default async function ImportCountryPage({ params }: PageProps) {
 
   const safeVehicles = (vehicles || []) as Vehicle[];
 
+  // Fetch batches from this source country
+  const { data: batches } = await supabaseAdmin
+    .from('vehicle_batches')
+    .select('*')
+    .eq('is_visible', true)
+    .eq('status', 'approved')
+    .eq('source_country', config.source as 'china' | 'korea' | 'dubai')
+    .order('created_at', { ascending: false })
+    .limit(6);
+
+  const safeBatches = (batches || []) as VehicleBatch[];
+
   // Build JSON-LD data
   const otherCountries = ALL_SLUGS
     .filter((s) => s !== country)
@@ -219,6 +232,7 @@ export default async function ImportCountryPage({ params }: PageProps) {
       )}
       <CountryLandingContent
         vehicles={safeVehicles}
+        batches={safeBatches}
         sourceFilter={config.source}
         countryName={config.name}
         flag={config.flag}
