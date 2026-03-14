@@ -24,10 +24,11 @@ export async function GET(request: Request) {
 
     // If conversationId is provided, fetch messages for that conversation
     if (conversationId) {
+      // Use supabaseAdmin (service role) to bypass RLS — ensures agent messages are visible
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const supabaseAny = supabase as any;
+      const adminAny = supabaseAdmin as any;
 
-      const { data: messages, error } = await supabaseAny
+      const { data: messages, error } = await adminAny
         .from('chat_messages')
         .select('*')
         .eq('conversation_id', conversationId)
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       if (error) throw error;
 
       // Mark messages as read
-      await supabaseAny
+      await adminAny
         .from('chat_messages')
         .update({ read_at: new Date().toISOString() })
         .eq('conversation_id', conversationId)
@@ -192,7 +193,6 @@ export async function POST(request: Request) {
       return adminCheck.response;
     }
 
-    const supabase = adminCheck.supabase;
     const body = await request.json();
     const { conversationId, content } = body;
 
@@ -203,11 +203,12 @@ export async function POST(request: Request) {
       );
     }
 
+    // Use supabaseAdmin (service role) to bypass RLS for all operations
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabaseAny = supabase as any;
+    const adminAny = supabaseAdmin as any;
 
     // 1. Get conversation details (need whatsapp_phone + user_id)
-    const { data: conversation } = await supabaseAny
+    const { data: conversation } = await adminAny
       .from('chat_conversations')
       .select('id, user_id, whatsapp_phone')
       .eq('id', conversationId)
@@ -220,7 +221,7 @@ export async function POST(request: Request) {
     // 2. Resolve WhatsApp phone from conversation or user profile
     let whatsappPhone = conversation.whatsapp_phone;
     if (!whatsappPhone && conversation.user_id) {
-      const { data: profile } = await supabaseAdmin
+      const { data: profile } = await adminAny
         .from('profiles')
         .select('whatsapp_number, phone')
         .eq('id', conversation.user_id)
@@ -244,7 +245,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Insert agent message in chat_messages
-    const { data: message, error: msgError } = await supabaseAny
+    const { data: message, error: msgError } = await adminAny
       .from('chat_messages')
       .insert({
         conversation_id: conversationId,
@@ -262,7 +263,7 @@ export async function POST(request: Request) {
     if (msgError) throw msgError;
 
     // 5. Update chat_conversations status
-    await supabaseAny
+    await adminAny
       .from('chat_conversations')
       .update({
         status: 'active',
