@@ -1238,7 +1238,7 @@ async function searchBatches(
 
   let query = supabase
     .from('vehicle_batches')
-    .select('id, title, make, model, year, price_per_unit_usd, available_quantity, minimum_order_quantity, source_country, condition, shipping_type, description')
+    .select('id, title, make, model, year, price_per_unit_usd, available_quantity, minimum_order_quantity, source_country, condition, shipping_type, description, images')
     .eq('status', 'approved')
     .eq('is_visible', true)
     .gt('available_quantity', 0)
@@ -1257,9 +1257,13 @@ async function searchBatches(
   for (const b of batches) {
     const origin = SOURCE_LABELS[b.source_country] || b.source_country;
     const priceFcfa = formatFCFA(b.price_per_unit_usd, xafRate);
-    lines.push(`- ${b.title} (${b.make} ${b.model} ${b.year}) | ${priceFcfa} ($${b.price_per_unit_usd.toLocaleString()}) /unité | ${b.available_quantity} disponibles | Min: ${b.minimum_order_quantity} unités | Origine: ${origin} | Lien: ${SITE_URL}/batches/${b.id}`);
+    const imageInfo = Array.isArray(b.images) && b.images.length > 0
+      ? ` | Photo: ${b.images[0]}`
+      : '';
+    lines.push(`- ${b.title} (${b.make} ${b.model} ${b.year}) | ${priceFcfa} ($${b.price_per_unit_usd.toLocaleString()}) /unité | ${b.available_quantity} disponibles | Min: ${b.minimum_order_quantity} unités | Origine: ${origin} | ${b.condition || 'Occasion'}${b.description ? ' | ' + b.description.slice(0, 120) : ''} | Lien: ${SITE_URL}/batches/${b.id}${imageInfo}`);
   }
   lines.push(`\nVoir tous les lots: ${SITE_URL}/batches`);
+  lines.push(`⚠️ INSTRUCTION: Le client demande des infos sur les LOTS. Ne parle QUE des lots ci-dessus. N'envoie AUCUNE photo de véhicule individuel — utilise UNIQUEMENT les photos/liens des lots (batches).`);
   return lines.join('\n');
 }
 
@@ -1431,6 +1435,12 @@ Driveby Africa propose aussi des LOTS de véhicules pour les revendeurs, concess
 - Avantages des lots : prix unitaire réduit, expédition groupée en conteneur (20HQ ou 40HQ), accompagnement logistique complet, idéal pour les professionnels.
 - Toujours inclure le lien vers la fiche du lot et vers la page ${SITE_URL}/batches pour explorer tous les lots.
 - Si aucun lot ne correspond à la demande, propose au client de visiter ${SITE_URL}/batches ou de contacter un conseiller pour un lot personnalisé.
+
+⚠️ RÈGLE STRICTE SUR LES LOTS :
+- Quand le client parle de LOTS/batches, ne parle QUE des lots disponibles dans le contexte.
+- N'envoie JAMAIS de photos de véhicules individuels quand on parle de lots — utilise UNIQUEMENT les images et liens des lots (depuis la table vehicle_batches / page /batches).
+- Ne mélange PAS les véhicules unitaires avec les lots. Si le client veut des lots, reste 100% sur les lots.
+- Les données des lots viennent EXCLUSIVEMENT de la table vehicle_batches sur Supabase et de la page ${SITE_URL}/batches.
 
 # 🔥 CAMPAGNE META EN COURS — OFFRE LOT TOYOTA COROLLA HYBRIDE
 Tu vas recevoir des prospects venant d'une publicité Meta (Facebook/Instagram). Cette campagne promeut :
