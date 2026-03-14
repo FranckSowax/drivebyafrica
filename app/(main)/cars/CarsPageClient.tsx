@@ -73,15 +73,22 @@ export default function CarsPageClient() {
   }, [filters, _hasHydrated]);
 
   // Debounced search - update store after user stops typing
+  // Shorter debounce for longer queries (user knows what they want)
+  // Longer debounce for short queries (user is still typing)
   useEffect(() => {
     if (!_hasHydrated) return;
 
+    const trimmed = searchQuery.trim();
+    // Don't trigger search under 3 characters (except clearing)
+    if (trimmed.length > 0 && trimmed.length < 3) return;
+
+    const delay = trimmed.length <= 4 ? 500 : 300;
     const debounce = setTimeout(() => {
       const currentSearch = filters.search || '';
       if (searchQuery !== currentSearch) {
         setFilters({ search: searchQuery || undefined });
       }
-    }, 300);
+    }, delay);
 
     return () => clearTimeout(debounce);
   }, [searchQuery, _hasHydrated, filters.search, setFilters]);

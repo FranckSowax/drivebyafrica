@@ -64,9 +64,15 @@ function applyFilters(
   searchParams: URLSearchParams,
   search: string | null,
 ) {
-  // Search (ILIKE on make, model, and grade)
-  if (search && search.length >= 2) {
-    query = query.or(`make.ilike.%${search}%,model.ilike.%${search}%,grade.ilike.%${search}%`);
+  // Search — progressive strategy:
+  // Short terms (3-4 chars): search make + model only (faster, uses trigram indexes better)
+  // Longer terms (5+): search make + model + grade
+  if (search && search.length >= 3) {
+    if (search.length <= 4) {
+      query = query.or(`make.ilike.%${search}%,model.ilike.%${search}%`);
+    } else {
+      query = query.or(`make.ilike.%${search}%,model.ilike.%${search}%,grade.ilike.%${search}%`);
+    }
   }
 
   // Source filter

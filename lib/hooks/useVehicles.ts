@@ -40,7 +40,7 @@ async function fetchVehicles(
   params.set('page', page.toString());
   params.set('limit', limit.toString());
 
-  if (filters?.search && filters.search.trim().length >= 2) {
+  if (filters?.search && filters.search.trim().length >= 3) {
     params.set('search', filters.search.trim());
   }
   if (filters?.source && filters.source !== 'all') {
