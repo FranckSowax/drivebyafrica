@@ -810,7 +810,7 @@ async function searchVehicles(
 
     const { data, error } = await supabase
       .from('vehicles')
-      .select('id, make, model, year, start_price_usd, mileage, source, images')
+      .select('id, make, model, year, start_price_usd, mileage, source, fuel_type, images')
       .eq('is_visible', true)
       .not('start_price_usd', 'is', null)
       .or(conditions.join(','))
@@ -901,6 +901,25 @@ async function searchVehicles(
   const orderCol = sortByPrice ? 'start_price_usd' : 'year';
   const ascending = sortByPrice;
 
+  // --- Extract year from message (e.g. "RAV4 2023", "Corolla 2024") ---
+  const yearMatch = lower.match(/\b(20[1-2]\d)\b/);
+  const requestedYear = yearMatch ? parseInt(yearMatch[1], 10) : null;
+
+  // --- Detect import source (Dubai, China, Korea) ---
+  let requestedSource: string | null = null;
+  if (/duba[ïi]|émirats|emirats|uae/i.test(message)) requestedSource = 'dubai';
+  else if (/chin[eois]|中国/i.test(message)) requestedSource = 'china';
+  else if (/cor[ée]e|korea|韩国/i.test(message)) requestedSource = 'korea';
+
+  // --- Detect fuel type ---
+  let requestedFuel: string | null = null;
+  if (/\bessence\b|gasoline|petrol|gas\b/i.test(message)) requestedFuel = 'gasoline';
+  else if (/\bdiesel\b/i.test(message)) requestedFuel = 'diesel';
+  else if (/\bhybride?\b|hybrid/i.test(message)) requestedFuel = 'hybrid';
+  else if (/\bélectrique\b|electrique|electric|\bev\b/i.test(message)) requestedFuel = 'electric';
+
+  console.log(`[Chatbot] Filters: year=${requestedYear}, source=${requestedSource}, fuel=${requestedFuel}, maxPrice=${maxPriceUsd}`);
+
   // ──── PATH A: Brand detected → dedicated brand-first query ────
   if (foundBrands.length > 0) {
     // Query ONLY by brand (make) — no cross-brand model pollution
@@ -908,19 +927,22 @@ async function searchVehicles(
 
     let brandQuery = supabase
       .from('vehicles')
-      .select('id, make, model, year, start_price_usd, mileage, source, images')
+      .select('id, make, model, year, start_price_usd, mileage, source, fuel_type, images')
       .eq('is_visible', true)
       .or(brandConditions.join(','))
       .order(orderCol, { ascending })
       .limit(50);
 
     if (maxPriceUsd) brandQuery = brandQuery.lte('start_price_usd', maxPriceUsd);
+    if (requestedSource) brandQuery = brandQuery.eq('source', requestedSource);
+    if (requestedFuel) brandQuery = brandQuery.ilike('fuel_type', `%${requestedFuel}%`);
+    if (requestedYear) brandQuery = brandQuery.gte('year', requestedYear - 1).lte('year', requestedYear + 1);
 
     const { data: brandVehicles, error: brandError } = await brandQuery;
     console.log(`[Chatbot] Brand query: brands=${JSON.stringify(foundBrands)}, results=${brandVehicles?.length || 0}, error=${brandError?.message || 'none'}`);
 
     if (brandVehicles && brandVehicles.length > 0) {
-      // Score by model keyword relevance within brand results
+      // Score by model keyword relevance + year match within brand results
       const scored = (brandVehicles as VehicleResult[]).map(v => {
         let score = 0;
         const vmodel = v.model.toLowerCase();
@@ -930,17 +952,62 @@ async function searchVehicles(
         for (const term of extraTerms) {
           if (vmodel.includes(term)) score += 5;
         }
+        // Year matching: exact year = +20, ±1 year = +10, ±2 years = +5
+        if (requestedYear && v.year) {
+          const diff = Math.abs(v.year - requestedYear);
+          if (diff === 0) score += 20;
+          else if (diff === 1) score += 10;
+          else if (diff === 2) score += 5;
+        }
         return { vehicle: v, score };
       });
 
-      // Sort: model match first, then by price or year
+      // Sort: best score first, then by year proximity to requested year (or newest)
       if (sortByPrice) {
         scored.sort((a, b) => b.score - a.score || (a.vehicle.start_price_usd || 0) - (b.vehicle.start_price_usd || 0));
+      } else if (requestedYear) {
+        scored.sort((a, b) => b.score - a.score || Math.abs(a.vehicle.year - requestedYear) - Math.abs(b.vehicle.year - requestedYear));
       } else {
         scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
       }
 
       return { vehicles: scored.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
+    }
+
+    // Filtered query returned nothing → retry without strict filters (source/fuel/year)
+    if (requestedSource || requestedFuel || requestedYear) {
+      console.log(`[Chatbot] No results with filters, retrying brand-only query...`);
+      let fallbackQuery = supabase
+        .from('vehicles')
+        .select('id, make, model, year, start_price_usd, mileage, source, fuel_type, images')
+        .eq('is_visible', true)
+        .or(brandConditions.join(','))
+        .order('year', { ascending: false })
+        .limit(50);
+
+      if (maxPriceUsd) fallbackQuery = fallbackQuery.lte('start_price_usd', maxPriceUsd);
+
+      const { data: fallbackVehicles } = await fallbackQuery;
+      if (fallbackVehicles && fallbackVehicles.length > 0) {
+        // Score with soft preference for requested source/fuel/year
+        const scored = (fallbackVehicles as VehicleResult[]).map(v => {
+          let score = 0;
+          const vmodel = v.model.toLowerCase();
+          for (const kw of modelKeywords) { if (vmodel.includes(kw)) score += 10; }
+          for (const term of extraTerms) { if (vmodel.includes(term)) score += 5; }
+          if (requestedSource && v.source === requestedSource) score += 15;
+          if (requestedFuel && (v as any).fuel_type?.toLowerCase().includes(requestedFuel)) score += 10;
+          if (requestedYear && v.year) {
+            const diff = Math.abs(v.year - requestedYear);
+            if (diff === 0) score += 20;
+            else if (diff === 1) score += 10;
+            else if (diff === 2) score += 5;
+          }
+          return { vehicle: v, score };
+        });
+        scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
+        return { vehicles: scored.slice(0, 5).map(s => s.vehicle), isSuggestion: false };
+      }
     }
 
     // Brand not in stock → suggest similar category
@@ -969,7 +1036,7 @@ async function searchVehicles(
 
   let query = supabase
     .from('vehicles')
-    .select('id, make, model, year, start_price_usd, mileage, source, images')
+    .select('id, make, model, year, start_price_usd, mileage, source, fuel_type, images')
     .eq('is_visible', true)
     .or(conditions.join(','))
     .order(orderCol, { ascending })
@@ -985,7 +1052,7 @@ async function searchVehicles(
     return { vehicles: suggested, isSuggestion: true };
   }
 
-  // Score and sort
+  // Score and sort (including year matching)
   const scored = (vehicles as VehicleResult[]).map(v => {
     let score = 0;
     const vmake = v.make.toLowerCase();
@@ -998,11 +1065,20 @@ async function searchVehicles(
       if (vmake.includes(term)) score += 3;
       if (vmodel.includes(term)) score += 3;
     }
+    // Year matching
+    if (requestedYear && v.year) {
+      const diff = Math.abs(v.year - requestedYear);
+      if (diff === 0) score += 20;
+      else if (diff === 1) score += 10;
+      else if (diff === 2) score += 5;
+    }
     return { vehicle: v, score };
   });
 
   if (sortByPrice) {
     scored.sort((a, b) => b.score - a.score || (a.vehicle.start_price_usd || 0) - (b.vehicle.start_price_usd || 0));
+  } else if (requestedYear) {
+    scored.sort((a, b) => b.score - a.score || Math.abs(a.vehicle.year - requestedYear) - Math.abs(b.vehicle.year - requestedYear));
   } else {
     scored.sort((a, b) => b.score - a.score || b.vehicle.year - a.vehicle.year);
   }
