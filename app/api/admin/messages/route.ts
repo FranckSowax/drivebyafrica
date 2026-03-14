@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/admin-check';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { sendTextMessage } from '@/lib/whatsapp/meta-client';
 
 // GET: Fetch all conversations with their last messages
 export async function GET(request: Request) {
@@ -204,21 +206,62 @@ export async function POST(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseAny = supabase as any;
 
-    // Insert agent message
+    // 1. Get conversation details (need whatsapp_phone + user_id)
+    const { data: conversation } = await supabaseAny
+      .from('chat_conversations')
+      .select('id, user_id, whatsapp_phone')
+      .eq('id', conversationId)
+      .single();
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation introuvable' }, { status: 404 });
+    }
+
+    // 2. Resolve WhatsApp phone from conversation or user profile
+    let whatsappPhone = conversation.whatsapp_phone;
+    if (!whatsappPhone && conversation.user_id) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('whatsapp_number, phone')
+        .eq('id', conversation.user_id)
+        .single();
+      whatsappPhone = profile?.whatsapp_number || profile?.phone || null;
+    }
+
+    // 3. Send message to WhatsApp if phone is available
+    let whatsappSent = false;
+    if (whatsappPhone) {
+      // Clean phone number (remove +, spaces, dashes)
+      const cleanPhone = whatsappPhone.replace(/[\s+\-()]/g, '');
+      try {
+        await sendTextMessage(cleanPhone, content);
+        whatsappSent = true;
+        console.log(`[AdminMessages] Sent WhatsApp to ${cleanPhone}`);
+      } catch (err) {
+        console.error('[AdminMessages] Failed to send WhatsApp:', err);
+        // Continue — still store the message in DB
+      }
+    }
+
+    // 4. Insert agent message in chat_messages
     const { data: message, error: msgError } = await supabaseAny
       .from('chat_messages')
       .insert({
         conversation_id: conversationId,
         sender_type: 'agent',
         content,
-        metadata: { type: 'agent_response' },
+        metadata: {
+          type: 'agent_response',
+          whatsapp_sent: whatsappSent,
+          sent_via: 'admin_ui',
+        },
       })
       .select()
       .single();
 
     if (msgError) throw msgError;
 
-    // Update conversation status to active (agent responded)
+    // 5. Update chat_conversations status
     await supabaseAny
       .from('chat_conversations')
       .update({
@@ -227,7 +270,41 @@ export async function POST(request: Request) {
       })
       .eq('id', conversationId);
 
-    return NextResponse.json({ success: true, message });
+    // 6. Pause bot for 24h — update whatsapp_conversations to agent_handling
+    if (whatsappPhone) {
+      const cleanPhone = whatsappPhone.replace(/[\s+\-()]/g, '');
+      const agentHandlingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      // Find matching whatsapp_conversation by phone
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabaseRaw = supabaseAdmin as any;
+      const { data: waConv } = await supabaseRaw
+        .from('whatsapp_conversations')
+        .select('id, context')
+        .eq('phone', cleanPhone)
+        .order('last_message_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (waConv) {
+        const existingCtx = (waConv.context || {}) as Record<string, unknown>;
+        await supabaseRaw
+          .from('whatsapp_conversations')
+          .update({
+            status: 'agent_handling',
+            context: {
+              ...existingCtx,
+              agent_handling_until: agentHandlingUntil,
+            },
+            last_message_at: new Date().toISOString(),
+          })
+          .eq('id', waConv.id);
+
+        console.log(`[AdminMessages] Bot paused for 24h on conversation ${waConv.id}`);
+      }
+    }
+
+    return NextResponse.json({ success: true, message, whatsappSent });
   } catch (error) {
     console.error('Error sending message:', error);
     return NextResponse.json(
