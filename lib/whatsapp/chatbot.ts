@@ -1273,12 +1273,11 @@ function detectCampaignLead(message: string): boolean {
 }
 
 function buildCampaignContext(xafRate: number): string {
-  const totalFcfa = Math.round(9999 * xafRate).toLocaleString();
-  const unitFcfa = Math.round(4999.5 * xafRate).toLocaleString();
+  void xafRate; // price is fixed in FCFA per campaign flyer
   return `
 OFFRE CAMPAGNE META EN COURS (PRIORITAIRE):
 - LOT DE 2 TOYOTA COROLLA HYBRIDE 2018 — Occasion Certifiée — Couleur Blanche
-- Prix total lot: $9,999 USD (≈ ${totalFcfa} FCFA) soit $4,999.50/véhicule (≈ ${unitFcfa} FCFA/véhicule)
+- Prix total lot: 5 999 400 FCFA ($9,999 USD) soit 2 999 700 FCFA/véhicule ($4,999.50/véhicule)
 - Prix HORS TRANSPORT (transport en supplément selon destination)
 - Avantages: Hybride économique (~4L/100km), Toyota = fiabilité légendaire, pièces dispo partout en Afrique, couleur blanche = revente facile
 - Livraison: Tous ports africains, délai 3-5 semaines
@@ -1522,7 +1521,7 @@ Driveby Africa propose aussi des LOTS de véhicules pour les revendeurs, concess
 # 🔥 CAMPAGNE META EN COURS — OFFRE LOT TOYOTA COROLLA HYBRIDE
 Tu vas recevoir des prospects venant d'une publicité Meta (Facebook/Instagram). Cette campagne promeut :
 - **Offre** : LOT DE 2 Toyota Corolla Hybride 2018, couleur blanche, occasion certifiée
-- **Prix lot** : $9,999 USD (≈ ${Math.round(9999 * xafRate).toLocaleString()} FCFA) soit $4,999.50/véhicule
+- **Prix lot** : 5 999 400 FCFA ($9,999 USD) soit 2 999 700 FCFA/véhicule ($4,999.50/véhicule)
 - **Prix HORS transport** — le transport est en supplément selon la destination
 - **Points forts** : Hybride économique, occasion certifiée, livraison vers TOUS les ports africains, cotation sur demande
 
@@ -1549,7 +1548,7 @@ GESTION DES OBJECTIONS CAMPAGNE :
 - "Je veux juste une voiture" → "On a aussi des véhicules à l'unité sur notre catalogue ${SITE_URL}/cars — voulez-vous que je vous montre ?"
 
 # STRUCTURE D'UNE INTERACTION TYPE
-- Salutation prospect campagne : "Bonjour ! 👋 Merci pour votre intérêt pour notre offre Toyota Corolla Hybride ! Le lot de 2 véhicules à $9,999 est bien disponible. Vers quel pays/port souhaitez-vous être livré ? 🌍"
+- Salutation prospect campagne : "Bonjour ! 👋 Merci pour votre intérêt pour notre offre Toyota Corolla Hybride ! Le lot de 2 véhicules à 5 999 400 FCFA est bien disponible. Vers quel pays/port souhaitez-vous être livré ? 🌍"
 - Salutation générique : "Bonjour ! 👋 Bienvenue chez Driveby Africa. Je suis Jason, votre conseiller automobile. Quel type de véhicule cherchez-vous et vers quel pays/port africain ?"
 - Découverte : Poser des questions sur le budget et la destination.
 - Argumentaire : Proposer 1 ou 2 modèles pertinents avec les arguments du marché.
